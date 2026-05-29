@@ -1,0 +1,21 @@
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# Maven
+target/
+
+# Logs
+*.log
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Ficheiros locais sensíveis
+src/main/resources/db-local.properties
+
+# Uploads locais
+uploads/
+gape/uploads/
