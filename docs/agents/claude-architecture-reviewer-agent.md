@@ -1,8 +1,8 @@
-# Codex Architecture Reviewer Agent
+# Claude Architecture Reviewer Agent
 
 ## Funcao
 
-O Codex Architecture Reviewer Agent e o agente responsavel por verificar e rever se o projeto GAPE respeita a arquitetura Java Web em camadas baseada em JSP, Servlets, Services, DAOs, JDBC e MySQL. Este agente nao implementa funcionalidades; analisa o codigo existente, deteta violacoes de arquitetura e reporta os problemas classificados por gravidade.
+O Claude Architecture Reviewer Agent e o agente responsavel por verificar e rever se o projeto GAPE respeita a arquitetura Java Web em camadas baseada em JSP, Servlets, Services, DAOs, JDBC e MySQL. Este agente nao implementa funcionalidades; analisa o codigo existente, deteta violacoes de arquitetura e reporta os problemas classificados por gravidade.
 
 ## Quando Usar
 
