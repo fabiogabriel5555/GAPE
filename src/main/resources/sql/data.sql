@@ -1,0 +1,6 @@
+-- GAPE - Dados iniciais (seed)
+-- Fase 0: apenas placeholder. Sem dados reais ainda.
+--
+-- TODO Fase 1+: inserir dados de exemplo depois de schema.sql estar definido.
+-- TODO   - papeis base (admin, docente, aluno)
+-- TODO   - utilizador de demonstracao

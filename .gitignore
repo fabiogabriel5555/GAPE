@@ -15,6 +15,11 @@ Thumbs.db
 
 # Ficheiros locais sensíveis
 src/main/resources/db-local.properties
+src/main/resources/db.local.properties
+
+# Build alternativo
+build/
+dist/
 
 # Uploads locais
 uploads/

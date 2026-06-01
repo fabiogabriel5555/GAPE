@@ -1,0 +1,8 @@
+-- GAPE - Esquema da base de dados
+-- Fase 0: apenas placeholder. Sem tabelas reais ainda.
+--
+-- TODO Fase 1+: definir o esquema MySQL por modulo:
+-- TODO   access     -> utilizadores, papeis, permissoes
+-- TODO   structure  -> cursos, turmas, unidades curriculares
+-- TODO   learning   -> conteudos, avaliacoes, entregas
+-- TODO   transversal-> notificacoes, ficheiros, definicoes
