@@ -237,7 +237,7 @@ Função:
 * analisar ficheiros XML, XSD e documentos do professor;
 * analisar código de exemplo feito pelo professor;
 * extrair regras úteis para implementação;
-* produzir ficheiros em `docs/analysis/`;
+* produzir ficheiros em `docs/docs/analysis/`;
 * ajudar outros agentes a perceberem o que deve ser implementado com base na documentação;
 * corrigir relatórios de análise quando forem encontrados erros ou incoerências.
 
@@ -521,7 +521,7 @@ Cria um agente chamado `Document Analyst Reviewer`.
 
 Função:
 
-* rever os ficheiros de análise em `docs/analysis/`;
+* rever os ficheiros de análise em `docs/docs/analysis/`;
 * confirmar que as análises são coerentes com `0. GAPE - ALL - V3`, com o relatório e com os ficheiros do professor;
 * identificar regras do modelo em falta nas análises;
 * identificar incoerências entre análise e implementação;
@@ -615,8 +615,8 @@ Cria:
 * `src/main/resources/config/xml`;
 * `src/main/resources/config/xsd`;
 * `src/test/java`;
-* `docs/professor`;
-* `docs/analysis`;
+* `docs/docs`;
+* `docs/docs/analysis`;
 * `docs/tests`;
 * `index.jsp` simples;
 * `login.jsp` simples.
@@ -656,8 +656,8 @@ O teste deve verificar:
 8. existência de `src/main/resources/config/xml`;
 9. existência de `src/main/resources/config/xsd`;
 10. existência de `src/test/java`;
-11. existência de `docs/professor`;
-12. existência de `docs/analysis`;
+11. existência de `docs/docs`;
+12. existência de `docs/docs/analysis`;
 13. existência de `docs/tests`;
 14. existência de `index.jsp`;
 15. existência de `login.jsp`.
@@ -841,7 +841,7 @@ Usa os agentes:
 Analisa:
 
 * `1. Planeamento de IA e Código`;
-* `docs/professor`;
+* `docs/docs`;
 * código do professor;
 * XML do professor;
 * XSD do professor;
@@ -850,7 +850,7 @@ Analisa:
 
 Cria:
 
-* `docs/analysis/database-support-analysis.md`.
+* `docs/docs/analysis/database-support-analysis.md`.
 
 O ficheiro deve indicar:
 
@@ -878,7 +878,7 @@ Usa os agentes:
 * `Codex Document Analyst`;
 * `Codex Database Agent`.
 
-Com base em `docs/analysis/database-support-analysis.md`, copia/adapta os ficheiros úteis para:
+Com base em `docs/docs/analysis/database-support-analysis.md`, copia/adapta os ficheiros úteis para:
 
 * `src/main/resources/config/xml`;
 * `src/main/resources/config/xsd`;
@@ -977,7 +977,7 @@ Com base em:
 * `7. Relatorio - 49862 - 7`;
 * `0. GAPE - ALL - V3`;
 * XML/XSD;
-* `docs/analysis/database-support-analysis.md`;
+* `docs/docs/analysis/database-support-analysis.md`;
 
 cria:
 
@@ -1012,7 +1012,7 @@ Regras:
 
 Cria também:
 
-* `docs/analysis/database-constraint-coverage.md`, indicando quais restrições aplicacionais ficam garantidas em SQL e quais ficam para a camada de negócio nas fases futuras.
+* `docs/docs/analysis/database-constraint-coverage.md`, indicando quais restrições aplicacionais ficam garantidas em SQL e quais ficam para a camada de negócio nas fases futuras.
 
 Depois de criar:
 
@@ -1294,7 +1294,7 @@ Antes de rever, analisa obrigatoriamente:
 * `1. Planeamento de IA e Código`;
 * `7. Relatorio - 49862 - 7`;
 * `0. GAPE - ALL - V3`;
-* `docs/analysis/database-support-analysis.md`;
+* `docs/docs/analysis/database-support-analysis.md`;
 * XML/XSD copiados;
 * XML/XSD criados;
 * `drop.sql`;
@@ -1483,7 +1483,7 @@ Também podes criar outras páginas base se o template já tiver páginas úteis
 
 Cria:
 
-* `docs/analysis/eduall-template-analysis.md`.
+* `docs/docs/analysis/eduall-template-analysis.md`.
 
 Esse ficheiro deve indicar:
 
@@ -1526,7 +1526,7 @@ Os testes devem verificar:
 * existência da pasta de assets;
 * existência dos fragments criados;
 * existência das páginas JSP base;
-* existência da documentação `docs/analysis/eduall-template-analysis.md`;
+* existência da documentação `docs/docs/analysis/eduall-template-analysis.md`;
 * referências CSS válidas;
 * referências JS válidas;
 * referências de imagens válidas;
@@ -1588,7 +1588,7 @@ Antes de rever, analisa obrigatoriamente:
 * `7. Relatorio - 49862 - 7`;
 * `0. GAPE - ALL - V3`;
 * template EduAll completo;
-* `docs/analysis/eduall-template-analysis.md`;
+* `docs/docs/analysis/eduall-template-analysis.md`;
 * assets copiados;
 * fragments JSP criados;
 * páginas JSP criadas;
@@ -1839,7 +1839,7 @@ Deves garantir que:
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-login-integration.md`.
+* `docs/docs/analysis/eduall-login-integration.md`.
 
 Esse ficheiro deve indicar:
 
@@ -1881,7 +1881,7 @@ Verifica:
 7. páginas públicas abrem sem sessão;
 8. páginas privadas bloqueiam sem sessão;
 9. CSS/JS carregam;
-10. documentação `docs/analysis/eduall-login-integration.md` existe.
+10. documentação `docs/docs/analysis/eduall-login-integration.md` existe.
 
 Se falhar:
 
@@ -1945,7 +1945,7 @@ Antes de rever, analisa obrigatoriamente:
 * `AuthenticationFilter.java`;
 * páginas JSP alteradas;
 * fragments JSP alterados;
-* `docs/analysis/eduall-login-integration.md`;
+* `docs/docs/analysis/eduall-login-integration.md`;
 * `AuthServiceTest.java`;
 * `SessionServiceTest.java`;
 * `AuthenticationFilterTest.java`;
@@ -2183,7 +2183,7 @@ O front-end apenas melhora a experiência do utilizador. A segurança real deve 
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-permissions-integration.md`.
+* `docs/docs/analysis/eduall-permissions-integration.md`.
 
 Esse ficheiro deve indicar:
 
@@ -2246,7 +2246,7 @@ Antes de rever, analisa obrigatoriamente:
 * `AuthorizationFilter.java`;
 * JSPs/menus alterados;
 * página de acesso negado;
-* `docs/analysis/eduall-permissions-integration.md`;
+* `docs/docs/analysis/eduall-permissions-integration.md`;
 * `PermissionServiceTest.java`;
 * `RoleAssignmentServiceTest.java`;
 * `AuthorizationFilterTest.java`;
@@ -2439,7 +2439,7 @@ Liga tudo ao back-end já testado.
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-users-integration.md`.
+* `docs/docs/analysis/eduall-users-integration.md`.
 
 Esse ficheiro deve indicar:
 
@@ -2500,7 +2500,7 @@ Antes de rever, analisa:
 * Models, DAOs e Services de pedidos de eliminação;
 * Model, DAO e Service de auditoria;
 * JSPs da fase;
-* `docs/analysis/eduall-users-integration.md`;
+* `docs/docs/analysis/eduall-users-integration.md`;
 * `UserServiceTest.java`;
 * `PrivacyServiceTest.java`;
 * `DeletionRequestServiceTest.java`;
@@ -2667,7 +2667,7 @@ Liga ao back-end já testado.
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-organizations-integration.md`.
+* `docs/docs/analysis/eduall-organizations-integration.md`.
 
 Depois:
 
@@ -2713,7 +2713,7 @@ Antes de rever, analisa:
 * Models, DAOs e Services de organizações;
 * Models, DAOs e Services de unidades orgânicas;
 * JSPs da fase;
-* `docs/analysis/eduall-organizations-integration.md`;
+* `docs/docs/analysis/eduall-organizations-integration.md`;
 * `OrganizationServiceTest.java`;
 * `OrganicUnitServiceTest.java`;
 * `docs/tests/organizations-tests.md`.
@@ -2889,7 +2889,7 @@ Liga ao back-end já testado.
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-courses-subjects-integration.md`.
+* `docs/docs/analysis/eduall-courses-subjects-integration.md`.
 
 Depois:
 
@@ -2940,7 +2940,7 @@ Antes de rever, analisa:
 * associação curso-disciplina;
 * Services de inscrição;
 * JSPs da fase;
-* `docs/analysis/eduall-courses-subjects-integration.md`;
+* `docs/docs/analysis/eduall-courses-subjects-integration.md`;
 * `CourseServiceTest.java`;
 * `SubjectServiceTest.java`;
 * `CourseSubjectServiceTest.java`;
@@ -3114,7 +3114,7 @@ Liga ao back-end já testado.
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-class-groups-blocks-integration.md`.
+* `docs/docs/analysis/eduall-class-groups-blocks-integration.md`.
 
 Depois:
 
@@ -3163,7 +3163,7 @@ Antes de rever, analisa:
 * Models, DAOs e Services de inscrições;
 * Models, DAOs e Services de blocos;
 * JSPs da fase;
-* `docs/analysis/eduall-class-groups-blocks-integration.md`;
+* `docs/docs/analysis/eduall-class-groups-blocks-integration.md`;
 * `ClassGroupServiceTest.java`;
 * `StudentClassGroupServiceTest.java`;
 * `ContentBlockServiceTest.java`;
@@ -3327,7 +3327,7 @@ Liga ao back-end já testado.
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-content-pdf-integration.md`.
+* `docs/docs/analysis/eduall-content-pdf-integration.md`.
 
 Depois:
 
@@ -3376,7 +3376,7 @@ Antes de rever, analisa:
 * Services de upload;
 * Servlets de upload/download;
 * JSPs da fase;
-* `docs/analysis/eduall-content-pdf-integration.md`;
+* `docs/docs/analysis/eduall-content-pdf-integration.md`;
 * `ContentItemServiceTest.java`;
 * `ContentAssociationServiceTest.java`;
 * `PdfUploadServiceTest.java`;
@@ -3543,7 +3543,7 @@ Liga ao back-end já testado.
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-lessons-rooms-integration.md`.
+* `docs/docs/analysis/eduall-lessons-rooms-integration.md`.
 
 Depois:
 
@@ -3591,7 +3591,7 @@ Antes de rever, analisa:
 * Models, DAOs e Services de salas;
 * adaptador de videoconferência;
 * JSPs da fase;
-* `docs/analysis/eduall-lessons-rooms-integration.md`;
+* `docs/docs/analysis/eduall-lessons-rooms-integration.md`;
 * `LessonServiceTest.java`;
 * `PhysicalRoomServiceTest.java`;
 * `docs/tests/lessons-rooms-tests.md`.
@@ -3770,7 +3770,7 @@ Liga ao back-end já testado.
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-assessments-integration.md`.
+* `docs/docs/analysis/eduall-assessments-integration.md`.
 
 Depois:
 
@@ -3825,7 +3825,7 @@ Antes de rever, analisa:
 * Models, DAOs e Services de tentativas e respostas;
 * serviço de correção e cálculo;
 * JSPs da fase;
-* `docs/analysis/eduall-assessments-integration.md`;
+* `docs/docs/analysis/eduall-assessments-integration.md`;
 * `AssessmentServiceTest.java`;
 * `QuestionServiceTest.java`;
 * `QuestionOptionServiceTest.java`;
@@ -3995,7 +3995,7 @@ Liga ao back-end já testado.
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-schedule-attendance-integration.md`.
+* `docs/docs/analysis/eduall-schedule-attendance-integration.md`.
 
 Depois:
 
@@ -4041,7 +4041,7 @@ Antes de rever, analisa:
 * Models, DAOs e Services de assiduidade;
 * Models, DAOs e Services de justificações;
 * JSPs da fase;
-* `docs/analysis/eduall-schedule-attendance-integration.md`;
+* `docs/docs/analysis/eduall-schedule-attendance-integration.md`;
 * `ScheduleEventServiceTest.java`;
 * `AttendanceRecordServiceTest.java`;
 * `AbsenceJustificationServiceTest.java`;
@@ -4210,7 +4210,7 @@ Liga ao back-end já testado.
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-grades-certificates-integration.md`.
+* `docs/docs/analysis/eduall-grades-certificates-integration.md`.
 
 Depois:
 
@@ -4258,7 +4258,7 @@ Antes de rever, analisa:
 * Models, DAOs e Services de classificações;
 * Models, DAOs e Services de certificados;
 * JSPs da fase;
-* `docs/analysis/eduall-grades-certificates-integration.md`;
+* `docs/docs/analysis/eduall-grades-certificates-integration.md`;
 * `GradeSheetServiceTest.java`;
 * `GradeRecordServiceTest.java`;
 * `CertificateServiceTest.java`;
@@ -4432,7 +4432,7 @@ Liga ao back-end já testado.
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-notifications-messages-integration.md`.
+* `docs/docs/analysis/eduall-notifications-messages-integration.md`.
 
 Depois:
 
@@ -4480,7 +4480,7 @@ Antes de rever, analisa:
 * serviço de notificações;
 * adaptador de email;
 * JSPs da fase;
-* `docs/analysis/eduall-notifications-messages-integration.md`;
+* `docs/docs/analysis/eduall-notifications-messages-integration.md`;
 * `ChannelServiceTest.java`;
 * `MessageServiceTest.java`;
 * `ChannelParticipationServiceTest.java`;
@@ -4629,7 +4629,7 @@ Liga ao back-end já testado.
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-management-views-integration.md`.
+* `docs/docs/analysis/eduall-management-views-integration.md`.
 
 Depois:
 
@@ -4671,7 +4671,7 @@ Antes de rever, analisa:
 * serviço de acesso por âmbito;
 * serviço de agregação;
 * JSPs da fase;
-* `docs/analysis/eduall-management-views-integration.md`;
+* `docs/docs/analysis/eduall-management-views-integration.md`;
 * `ManagementViewServiceTest.java`;
 * `ManagementViewAccessServiceTest.java`;
 * `ReportAggregationServiceTest.java`;
@@ -4814,7 +4814,7 @@ Liga ao back-end já testado.
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-audit-integration.md`.
+* `docs/docs/analysis/eduall-audit-integration.md`.
 
 Depois:
 
@@ -4857,7 +4857,7 @@ Antes de rever, analisa:
 * proteção de dados sensíveis;
 * configuração de ligação segura e cópias de segurança;
 * JSPs de auditoria;
-* `docs/analysis/eduall-audit-integration.md`;
+* `docs/docs/analysis/eduall-audit-integration.md`;
 * `ActivityLogQueryServiceTest.java`;
 * `AuditCoverageTest.java`;
 * `SensitiveDataCipherTest.java`;
@@ -5238,7 +5238,7 @@ Não podes:
 
 Cria ou atualiza:
 
-* `docs/analysis/eduall-demo-final-adjustments.md`.
+* `docs/docs/analysis/eduall-demo-final-adjustments.md`.
 
 Depois:
 
@@ -5273,7 +5273,7 @@ Antes de rever, analisa:
 * template EduAll;
 * dados carregados;
 * fluxo de demonstração;
-* `docs/analysis/eduall-demo-final-adjustments.md`.
+* `docs/docs/analysis/eduall-demo-final-adjustments.md`.
 
 Verifica:
 

@@ -79,7 +79,7 @@ Deve confirmar que:
 - a analise cobriu o template EduAll **completo** (todas as paginas e componentes relevantes), e nao apenas uma pagina de exemplo;
 - o front-end **nao ficou limitado a uma pagina**: todas as paginas necessarias ao GAPE foram criadas ou adaptadas;
 - cada pagina exigida pelos requisitos e pelos fluxos tem JSP correspondente, sem paginas necessarias por implementar;
-- a documentacao (tipicamente em `docs/analysis/`) indica, de forma explicita, as paginas do EduAll **analisadas**, **aproveitadas**, **ignoradas** e **alteradas**, com justificacao;
+- a documentacao (tipicamente em `docs/docs/analysis/`) indica, de forma explicita, as paginas do EduAll **analisadas**, **aproveitadas**, **ignoradas** e **alteradas**, com justificacao;
 - as paginas aproveitadas do template foram adaptadas ao dominio GAPE, e nao deixadas como exemplo do EduAll.
 
 Quando a documentacao das paginas estiver em falta ou incompleta, o agente assinala-o e, em coordenacao com o Claude Document Analyst Reviewer Agent, garante que fica registada.

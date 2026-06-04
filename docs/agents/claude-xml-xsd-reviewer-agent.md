@@ -26,7 +26,7 @@ src/main/resources/xml/
 src/main/resources/xsd/
 ```
 
-Tambem pode comparar com os exemplos XML/XSD do professor em `docs/professor/` quando for relevante. A estrutura concreta deve respeitar a organizacao real do projeto.
+Tambem pode comparar com os exemplos XML/XSD do professor em `docs/docs/` quando for relevante. A estrutura concreta deve respeitar a organizacao real do projeto.
 
 ## Responsabilidades
 

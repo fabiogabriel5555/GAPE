@@ -192,5 +192,5 @@ Os testes so devem ser considerados conformes quando:
 - existem testes de dados validos e de dados invalidos;
 - as paginas `/dev/...` funcionam e nao expoem dados sensiveis;
 - a checklist de testes manuais esta documentada;
-- os resultados de execucao estao registados na resposta ou em `docs/analysis/`;
+- os resultados de execucao estao registados na resposta ou em `docs/docs/analysis/`;
 - os problemas Medios e Baixos estao documentados ou corrigidos.

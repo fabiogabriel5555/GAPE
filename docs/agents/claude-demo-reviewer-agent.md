@@ -25,7 +25,7 @@ src/test/java/.../demo/DemoDataTest.java
 src/test/java/.../demo/DemoFlowTest.java
 src/main/java/.../servlet/dev/DemoTestsServlet.java
 src/main/webapp/WEB-INF/jsp/dev/demo-tests.jsp
-docs/analysis/demo-plan.md
+docs/docs/analysis/demo-plan.md
 ```
 
 Tambem percorre as paginas e fluxos principais da aplicacao. A estrutura concreta deve respeitar a organizacao real do projeto.

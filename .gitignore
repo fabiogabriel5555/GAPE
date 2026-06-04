@@ -25,6 +25,5 @@ dist/
 uploads/
 gape/uploads/
 
-# Material de referencia do professor (projetos de exemplo pesados - manter apenas local)
-docs/professor/1. Agenda/
-docs/professor/2. Moradia/
+# Templates originais/intactos (staging - integram-se a partir daqui; versiona-se so o que for copiado para webapp/)
+docs/templates/

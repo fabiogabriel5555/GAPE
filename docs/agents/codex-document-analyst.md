@@ -25,19 +25,19 @@ Este agente deve ser usado sempre que uma tarefa dependa de:
 - analisar codigo de exemplo feito pelo professor;
 - extrair regras uteis para implementacao;
 - distinguir regras confirmadas de inferencias;
-- produzir ficheiros em `docs/analysis/`;
+- produzir ficheiros em `docs/docs/analysis/`;
 - ajudar outros agentes a perceberem o que deve ser implementado com base na documentacao;
 - corrigir relatorios de analise quando forem encontrados erros ou incoerencias.
 
 ## Saidas Esperadas
 
-Sempre que concluir uma analise, o agente deve criar ou atualizar ficheiros em `docs/analysis/`, por exemplo:
+Sempre que concluir uma analise, o agente deve criar ou atualizar ficheiros em `docs/docs/analysis/`, por exemplo:
 
-- `docs/analysis/requisitos-aplicacionais.md`
-- `docs/analysis/regras-modelo-ea.md`
-- `docs/analysis/regras-xml-xsd-professor.md`
-- `docs/analysis/regras-codigo-professor.md`
-- `docs/analysis/plano-implementacao.md`
+- `docs/docs/analysis/requisitos-aplicacionais.md`
+- `docs/docs/analysis/regras-modelo-ea.md`
+- `docs/docs/analysis/regras-xml-xsd-professor.md`
+- `docs/docs/analysis/regras-codigo-professor.md`
+- `docs/docs/analysis/plano-implementacao.md`
 
 Cada ficheiro deve indicar:
 
@@ -55,7 +55,7 @@ Cada ficheiro deve indicar:
 - Referir sempre os ficheiros analisados.
 - Corrigir analises antigas quando forem detetados erros ou conflitos.
 - Priorizar exemplos e documentos do professor quando forem claramente normativos.
-- Manter o conhecimento reutilizavel concentrado em `docs/analysis/`.
+- Manter o conhecimento reutilizavel concentrado em `docs/docs/analysis/`.
 
 ## Relacao Com Outros Agentes
 

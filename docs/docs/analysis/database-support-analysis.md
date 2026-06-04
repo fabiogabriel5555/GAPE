@@ -4,14 +4,14 @@ Objetivo: registar a análise dos ficheiros do professor, do relatório e do mod
 
 Fontes analisadas:
 
-- `1. Planeamento de IA e Código` (`docs/analysis/planeamento-ia-e-codigo.md`, Fase 1);
+- `1. Planeamento de IA e Código` (`docs/docs/analysis/planeamento-ia-e-codigo.md`, Fase 1);
 - `7. Relatorio - 49862 - 7` (RF01–RF22, RNF, casos de uso);
 - `0. GAPE - ALL - V3` (modelo EA: 4 partes, entidades, associações, restrições);
-- `docs/professor/` (exemplos XML, XSD, XSL, Java).
+- documentos e exemplos do professor (`docs/docs/`; as pastas de exemplo `1. Agenda` e `2. Moradia` foram entretanto removidas do repositorio).
 
 ## XML/XSD aproveitados do professor
 
-Copiados/adaptados a partir de `docs/professor/1. Agenda/`:
+Copiados/adaptados dos exemplos do professor (pasta `1. Agenda`, entretanto removida do repositorio); residem agora em `src/main/resources/config/`:
 
 - `config/xsd/transversal/calendarioAcademico.xsd` + `config/xsl/transversal/calendarioAcademico.xsl`;
 - `config/xsd/transversal/calendarioPlurianual.xsd` + `config/xsl/transversal/calendarioPlurianual.xsl`;

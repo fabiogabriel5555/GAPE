@@ -1,6 +1,6 @@
 # Relatório de Restrições Testadas (Fase 1)
 
-Este relatório indica que restrições do modelo são garantidas e testadas em SQL na Fase 1, e quais ficam para fases futuras (camada de negócio). O mapa completo de cobertura está em `docs/analysis/database-constraint-coverage.md`.
+Este relatório indica que restrições do modelo são garantidas e testadas em SQL na Fase 1, e quais ficam para fases futuras (camada de negócio). O mapa completo de cobertura está em `docs/docs/analysis/database-constraint-coverage.md`.
 
 Teste dedicado: `src/test/java/pt/isel/gape/transversal/DatabaseRestrictionCoverageTest.java`
 
@@ -29,7 +29,7 @@ Tabelas cobertas (lista do planeamento 2.8): `user_account`, `user_session`, `us
 
 ## Restrições deixadas para fases futuras
 
-Restrições que dependem de contexto aplicacional (utilizador autenticado, perfil/âmbito, contagem transacional, processamento pós-escrita) **não** são forçadas em SQL. Estão listadas, com a camada-alvo (`SEC-Filtro`, `BN-Pre`, `BN-Tx`, `BN-Post`), em `docs/analysis/database-constraint-coverage.md`, secção "Restrições Não Implementadas". Exemplos: expiração de sessão, RBAC e permissões por perfil/âmbito, prevenção geral de ciclos na hierarquia de unidades orgânicas, lotação/sobreposição de inscrições, bloqueio de pautas publicadas, elegibilidade material para certificado, visibilidade/moderação de mensagens e painéis.
+Restrições que dependem de contexto aplicacional (utilizador autenticado, perfil/âmbito, contagem transacional, processamento pós-escrita) **não** são forçadas em SQL. Estão listadas, com a camada-alvo (`SEC-Filtro`, `BN-Pre`, `BN-Tx`, `BN-Post`), em `docs/docs/analysis/database-constraint-coverage.md`, secção "Restrições Não Implementadas". Exemplos: expiração de sessão, RBAC e permissões por perfil/âmbito, prevenção geral de ciclos na hierarquia de unidades orgânicas, lotação/sobreposição de inscrições, bloqueio de pautas publicadas, elegibilidade material para certificado, visibilidade/moderação de mensagens e painéis.
 
 ## Resultado da execução
 
