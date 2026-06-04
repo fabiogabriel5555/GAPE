@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<attendanceStates xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <status code="present">
+    <label>Presente</label>
+  </status>
+  <status code="absent">
+    <label>Ausente</label>
+  </status>
+  <status code="justified">
+    <label>Falta justificada</label>
+  </status>
+  <status code="late">
+    <label>Atraso</label>
+  </status>
+  <status code="partial">
+    <label>Presenca parcial</label>
+  </status>
+  <state code="active">
+    <label>Registo ativo</label>
+  </state>
+  <state code="corrected">
+    <label>Registo corrigido</label>
+  </state>
+  <state code="cancelled">
+    <label>Registo cancelado</label>
+  </state>
+  <state code="archived">
+    <label>Registo arquivado</label>
+  </state>
+</attendanceStates>

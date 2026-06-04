@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classStates xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <state code="active">
+    <label>Turma ativa</label>
+  </state>
+  <state code="inactive">
+    <label>Turma inativa</label>
+  </state>
+  <state code="closed">
+    <label>Turma encerrada</label>
+  </state>
+  <state code="archived">
+    <label>Turma arquivada</label>
+  </state>
+</classStates>

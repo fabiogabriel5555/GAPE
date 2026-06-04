@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="../../xsl/transversal/calendarioAcademico.xsl"?>
+<calendarioAcademico anoInicial="2025" anoFinal="2026"
+			   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="../../xsd/transversal/calendarioAcademico.xsd">
+  <inverno inicio="2025-09-08" fim="2025-12-20">
+    <normal inicio="2026-01-05" fim="2026-01-21" lancar="2026-01-28"/>
+  	<recurso inicio="2026-01-22" fim="2026-02-04" lancar="2026-02-10"/>
+  	<especial inicio="2026-02-09" fim="2026-02-14" lancar="2026-02-21"/>
+  	<natal inicio="2025-12-22" fim="2026-01-02"/>
+  </inverno>
+  <verao inicio="2026-02-18" fim="2026-06-06">
+    <normal inicio="2026-06-11" fim="2026-06-27" lancar="2026-07-04"/>
+  	<recurso inicio="2026-06-29" fim="2026-07-11" lancar="2026-07-17"/>
+  	<especial inicio="2026-07-20" fim="2026-07-28" lancar="2026-07-31"/>
+  	<carnaval inicio="2026-02-13" fim="2026-02-17"/>
+    <pascoa   inicio="2026-04-02" fim="2026-04-11"/>
+  </verao>
+</calendarioAcademico>

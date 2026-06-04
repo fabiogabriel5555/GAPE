@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<permissionStates xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <state code="active">
+    <label>Permissao ativa</label>
+  </state>
+  <state code="inactive">
+    <label>Permissao inativa</label>
+  </state>
+</permissionStates>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<messageStates xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <state code="draft">
+    <label>Em preparacao</label>
+  </state>
+  <state code="scheduled">
+    <label>Agendada</label>
+  </state>
+  <state code="sent">
+    <label>Enviada</label>
+  </state>
+  <state code="active">
+    <label>Ativa</label>
+  </state>
+  <state code="edited">
+    <label>Editada</label>
+  </state>
+  <state code="deleted">
+    <label>Eliminada</label>
+  </state>
+  <state code="cancelled">
+    <label>Cancelada</label>
+  </state>
+  <state code="archived">
+    <label>Arquivada</label>
+  </state>
+</messageStates>

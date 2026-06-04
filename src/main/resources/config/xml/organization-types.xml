@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<organizationTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <type code="educational_institution">
+    <label>Instituicao de ensino</label>
+  </type>
+  <type code="training_company">
+    <label>Empresa de formacao</label>
+  </type>
+  <type code="company">
+    <label>Empresa</label>
+  </type>
+  <type code="other">
+    <label>Outro tipo de organizacao</label>
+  </type>
+</organizationTypes>

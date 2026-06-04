@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<messageTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <type code="text">
+    <label>Texto</label>
+  </type>
+  <type code="comment">
+    <label>Comentario</label>
+  </type>
+  <type code="announcement">
+    <label>Anuncio</label>
+  </type>
+  <type code="warning">
+    <label>Aviso</label>
+  </type>
+  <type code="alert">
+    <label>Alerta</label>
+  </type>
+  <type code="reminder">
+    <label>Lembrete</label>
+  </type>
+  <type code="notification">
+    <label>Notificacao</label>
+  </type>
+  <type code="system">
+    <label>Sistema</label>
+  </type>
+  <type code="attachment">
+    <label>Anexo</label>
+  </type>
+  <type code="other">
+    <label>Outro</label>
+  </type>
+</messageTypes>

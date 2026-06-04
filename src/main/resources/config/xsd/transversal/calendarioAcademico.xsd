@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="unqualified" 
+           elementFormDefault="qualified" 
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:annotation>
+    <xs:documentation>
+      📜 ESQUEMA XML PARA CALENDÁRIO ACADÉMICO
+      Este esquema define a estrutura do calendário onde a própria raiz contém 
+      os metadados do ano letivo (anoInicial e anoFinal).
+      Nenhum elemento contém texto, apenas atributos de dados puros.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:element name="calendarioAcademico">
+    <xs:annotation>
+      <xs:documentation>📅 Raiz do calendário que agrupa o biénio académico e os semestres.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        
+        <xs:element name="inverno" type="semestreInvernoType">
+          <xs:annotation><xs:documentation>❄️ Dados e épocas de exames do 1º Semestre.</xs:documentation></xs:annotation>
+        </xs:element>
+
+        <xs:element name="verao" type="semestreVeraoType">
+          <xs:annotation><xs:documentation>☀️ Dados e épocas de exames do 2º Semestre.</xs:documentation></xs:annotation>
+        </xs:element>
+
+      </xs:sequence>
+
+      <xs:attribute name="anoInicial" type="xs:gYear" use="required">
+        <xs:annotation>
+          <xs:documentation>🚀 Ano de início do ciclo académico (ex: 2025).</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="anoFinal" type="xs:gYear" use="required">
+        <xs:annotation>
+          <xs:documentation>🏁 Ano de término do ciclo académico (ex: 2026).</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="semestreType" abstract="true">
+    <xs:annotation>
+      <xs:documentation>
+        🏛️ Estrutura base comum a todos os semestres. 
+        Contém as épocas de exames: Normal, Recurso e Especial.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element type="exameType" name="normal"/>
+      <xs:element type="exameType" name="recurso"/>
+      <xs:element type="exameType" name="especial" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute type="xs:date" name="inicio" use="required">
+      <xs:annotation><xs:documentation>🎬 Data oficial de início das aulas do semestre.</xs:documentation></xs:annotation>
+    </xs:attribute>
+    <xs:attribute type="xs:date" name="fim" use="required">
+      <xs:annotation><xs:documentation>🛑 Data oficial de término do semestre.</xs:documentation></xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="semestreInvernoType">
+    <xs:annotation>
+      <xs:documentation>❄️ Semestre focado no período outono/inverno. Inclui obrigatoriamente as férias de Natal.</xs:documentation>
+    </xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="semestreType">
+        <xs:sequence>
+          <xs:element type="feriasType" name="natal" minOccurs="1">
+            <xs:annotation><xs:documentation>🎄 Período de interrupção letiva para as festividades natalícias.</xs:documentation></xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="semestreVeraoType">
+    <xs:annotation>
+      <xs:documentation>☀️ Semestre focado no período primavera/verão. Inclui Férias de Páscoa (obrigatórias) e Carnaval (opcional).</xs:documentation>
+    </xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="semestreType">
+        <xs:sequence>
+          <xs:element type="feriasType" name="carnaval" minOccurs="0">
+            <xs:annotation><xs:documentation>🎭 Interrupção opcional dependendo do calendário civil.</xs:documentation></xs:annotation>
+          </xs:element>
+          <xs:element type="feriasType" name="pascoa" minOccurs="1">
+            <xs:annotation><xs:documentation>🐰 Período obrigatório de interrupção letiva na primavera.</xs:documentation></xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="feriasType">
+    <xs:annotation>
+      <xs:documentation>🏖️ Define um período de pausa letiva com datas de início e fim obrigatórias.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute type="xs:date" name="inicio" use="required"/>
+    <xs:attribute type="xs:date" name="fim" use="required"/>
+    <xs:attribute type="xs:string" name="descricao" use="optional">
+      <xs:annotation><xs:documentation>📝 Notas adicionais sobre a interrupção.</xs:documentation></xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="exameType">
+    <xs:annotation>
+      <xs:documentation>📝 Define as datas de uma época de exames específica via atributos.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute type="xs:date" name="inicio" use="optional"/>
+    <xs:attribute type="xs:date" name="fim" use="required"/>
+    <xs:attribute type="xs:date" name="lancar" use="required">
+      <xs:annotation><xs:documentation>📤 Data limite para o lançamento de notas.</xs:documentation></xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+</xs:schema>

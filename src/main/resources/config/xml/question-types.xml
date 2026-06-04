@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<questionTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <type code="single_choice">
+    <label>Escolha unica</label>
+  </type>
+  <type code="multiple_choice">
+    <label>Escolha multipla</label>
+  </type>
+  <type code="dropdown">
+    <label>Lista suspensa</label>
+  </type>
+  <type code="short_text">
+    <label>Texto curto</label>
+  </type>
+  <type code="paragraph">
+    <label>Paragrafo</label>
+  </type>
+  <type code="file_upload">
+    <label>Envio de ficheiro</label>
+  </type>
+  <type code="date_time">
+    <label>Data e hora</label>
+  </type>
+  <type code="rating">
+    <label>Classificacao</label>
+  </type>
+  <type code="other">
+    <label>Outro tipo de pergunta</label>
+  </type>
+</questionTypes>

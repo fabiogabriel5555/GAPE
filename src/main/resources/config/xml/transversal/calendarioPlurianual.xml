@@ -1,0 +1,1030 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type="text/xsl" href="../../xsl/transversal/calendarioPlurianual.xsl"?><calendario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../xsd/transversal/calendarioPlurianual.xsd">
+    <ano valor="2025">
+        <mes id_mes="9" nome="Setembro">
+            <dia dia_semana="Segunda" numero="1">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="2">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="3">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="4">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="5">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="6">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="7">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="8">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="9">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="10">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="11">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="12">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="13">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="14">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="15">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="16">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="17">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="18">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="19">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="20">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="21">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="22">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="23">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="24">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="25">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="26">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="27">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="28">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="29">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="30">
+                <util/>
+            </dia>
+        </mes>
+        <mes id_mes="10" nome="Outubro">
+            <dia dia_semana="Quarta" numero="1">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="2">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="3">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="4">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="5">
+                <feriado>Implantação da República</feriado>
+            </dia>
+            <dia dia_semana="Segunda" numero="6">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="7">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="8">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="9">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="10">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="11">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="12">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="13">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="14">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="15">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="16">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="17">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="18">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="19">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="20">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="21">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="22">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="23">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="24">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="25">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="26">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="27">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="28">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="29">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="30">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="31">
+                <util/>
+            </dia>
+        </mes>
+        <mes id_mes="11" nome="Novembro">
+            <dia dia_semana="Sabado" numero="1">
+                <feriado>Todos os Santos</feriado>
+            </dia>
+            <dia dia_semana="Domingo" numero="2">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="3">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="4">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="5">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="6">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="7">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="8">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="9">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="10">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="11">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="12">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="13">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="14">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="15">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="16">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="17">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="18">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="19">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="20">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="21">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="22">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="23">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="24">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="25">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="26">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="27">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="28">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="29">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="30">
+                <fim-de-semana/>
+            </dia>
+        </mes>
+        <mes id_mes="12" nome="Dezembro">
+            <dia dia_semana="Segunda" numero="1">
+                <feriado>Restauração da Independência</feriado>
+            </dia>
+            <dia dia_semana="Terca" numero="2">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="3">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="4">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="5">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="6">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="7">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="8">
+                <feriado>Imaculada Conceição</feriado>
+            </dia>
+            <dia dia_semana="Terca" numero="9">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="10">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="11">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="12">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="13">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="14">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="15">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="16">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="17">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="18">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="19">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="20">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="21">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="22">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="23">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="24">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="25">
+                <feriado>Natal</feriado>
+            </dia>
+            <dia dia_semana="Sexta" numero="26">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="27">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="28">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="29">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="30">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="31">
+                <util/>
+            </dia>
+        </mes>
+    </ano>
+    <ano valor="2026">
+        <mes id_mes="1" nome="Janeiro">
+            <dia dia_semana="Quinta" numero="1">
+                <feriado>Ano Novo</feriado>
+            </dia>
+            <dia dia_semana="Sexta" numero="2">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="3">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="4">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="5">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="6">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="7">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="8">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="9">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="10">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="11">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="12">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="13">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="14">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="15">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="16">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="17">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="18">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="19">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="20">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="21">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="22">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="23">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="24">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="25">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="26">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="27">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="28">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="29">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="30">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="31">
+                <fim-de-semana/>
+            </dia>
+        </mes>
+        <mes id_mes="2" nome="Fevereiro">
+            <dia dia_semana="Domingo" numero="1">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="2">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="3">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="4">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="5">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="6">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="7">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="8">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="9">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="10">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="11">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="12">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="13">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="14">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="15">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="16">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="17">
+                <feriado>Terça-feira Carnaval</feriado>
+            </dia>
+            <dia dia_semana="Quarta" numero="18">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="19">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="20">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="21">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="22">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="23">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="24">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="25">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="26">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="27">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="28">
+                <fim-de-semana/>
+            </dia>
+        </mes>
+        <mes id_mes="3" nome="Marco">
+            <dia dia_semana="Domingo" numero="1">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="2">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="3">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="4">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="5">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="6">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="7">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="8">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="9">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="10">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="11">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="12">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="13">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="14">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="15">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="16">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="17">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="18">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="19">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="20">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="21">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="22">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="23">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="24">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="25">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="26">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="27">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="28">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="29">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="30">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="31">
+                <util/>
+            </dia>
+        </mes>
+        <mes id_mes="4" nome="Abril">
+            <dia dia_semana="Quarta" numero="1">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="2">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="3">
+                <feriado>Sexta-feira Santa</feriado>
+            </dia>
+            <dia dia_semana="Sabado" numero="4">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="5">
+                <feriado>Páscoa</feriado>
+            </dia>
+            <dia dia_semana="Segunda" numero="6">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="7">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="8">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="9">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="10">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="11">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="12">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="13">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="14">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="15">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="16">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="17">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="18">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="19">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="20">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="21">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="22">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="23">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="24">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="25">
+                <feriado>Dia da Liberdade</feriado>
+            </dia>
+            <dia dia_semana="Domingo" numero="26">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="27">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="28">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="29">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="30">
+                <util/>
+            </dia>
+        </mes>
+        <mes id_mes="5" nome="Maio">
+            <dia dia_semana="Sexta" numero="1">
+                <feriado>Dia do Trabalhador</feriado>
+            </dia>
+            <dia dia_semana="Sabado" numero="2">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="3">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="4">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="5">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="6">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="7">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="8">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="9">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="10">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="11">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="12">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="13">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="14">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="15">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="16">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="17">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="18">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="19">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="20">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="21">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="22">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="23">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="24">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="25">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="26">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="27">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="28">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="29">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="30">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="31">
+                <fim-de-semana/>
+            </dia>
+        </mes>
+        <mes id_mes="6" nome="Junho">
+            <dia dia_semana="Segunda" numero="1">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="2">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="3">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="4">
+                <feriado>Corpo de Deus</feriado>
+            </dia>
+            <dia dia_semana="Sexta" numero="5">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="6">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="7">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="8">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="9">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="10">
+                <feriado>Dia de Portugal</feriado>
+            </dia>
+            <dia dia_semana="Quinta" numero="11">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="12">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="13">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="14">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="15">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="16">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="17">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="18">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="19">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="20">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="21">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="22">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="23">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="24">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="25">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="26">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="27">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="28">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="29">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="30">
+                <util/>
+            </dia>
+        </mes>
+        <mes id_mes="7" nome="Julho">
+            <dia dia_semana="Quarta" numero="1">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="2">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="3">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="4">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="5">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="6">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="7">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="8">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="9">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="10">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="11">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="12">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="13">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="14">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="15">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="16">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="17">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="18">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="19">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="20">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="21">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="22">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="23">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="24">
+                <util/>
+            </dia>
+            <dia dia_semana="Sabado" numero="25">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Domingo" numero="26">
+                <fim-de-semana/>
+            </dia>
+            <dia dia_semana="Segunda" numero="27">
+                <util/>
+            </dia>
+            <dia dia_semana="Terca" numero="28">
+                <util/>
+            </dia>
+            <dia dia_semana="Quarta" numero="29">
+                <util/>
+            </dia>
+            <dia dia_semana="Quinta" numero="30">
+                <util/>
+            </dia>
+            <dia dia_semana="Sexta" numero="31">
+                <util/>
+            </dia>
+        </mes>
+    </ano>
+</calendario>

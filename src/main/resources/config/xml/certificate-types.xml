@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<certificateTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <type code="completion">
+    <label>Conclusao</label>
+  </type>
+  <type code="attendance">
+    <label>Participacao</label>
+  </type>
+  <type code="qualification">
+    <label>Qualificacao</label>
+  </type>
+  <type code="other">
+    <label>Outro</label>
+  </type>
+</certificateTypes>

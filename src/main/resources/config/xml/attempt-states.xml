@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<attemptStates xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <state code="in_progress">
+    <label>Em curso</label>
+  </state>
+  <state code="submitted">
+    <label>Submetida</label>
+  </state>
+  <state code="corrected">
+    <label>Corrigida</label>
+  </state>
+  <state code="expired">
+    <label>Expirada</label>
+  </state>
+  <state code="cancelled">
+    <label>Cancelada</label>
+  </state>
+</attemptStates>
