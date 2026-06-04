@@ -1,0 +1,16 @@
+<%-- Reusable EduAll base head assets for future JSP consolidation. --%>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="shortcut icon" href="${pageContext.request.contextPath}/assets/images/logo/favicon.png">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/bootstrap.min.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/select2.min.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/slick.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/magnific-popup.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/jquery-ui.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/plyr.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/editor-quill.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/animate.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/dataTables.dataTables.min.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/aos.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/main.css">
