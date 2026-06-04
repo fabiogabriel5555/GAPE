@@ -2,7 +2,7 @@
 
 ## Funcao
 
-O Claude SQL Reviewer Agent e o agente responsavel por rever e validar a camada de dados do projeto GAPE: `schema.sql`, restantes scripts SQL e DAOs. Verifica restricoes, uso correto de JDBC e coerencia com o modelo EA. A sua funcao principal e analisar, testar e corrigir: aplica as correcoes necessarias, pequenas ou grandes, modificando o projeto, e classifica os problemas por gravidade.
+O Claude SQL Reviewer Agent e o agente responsavel por rever e validar a camada de dados do projeto GAPE: `schema.sql`, restantes scripts SQL e DAOs. Verifica restricoes, uso correto de JDBC e coerencia com o modelo EA. A sua funcao principal e analisar, testar e corrigir: corrige diretamente os erros pequenos, pede autorizacao antes de alterar nos erros grandes, e classifica os problemas por gravidade.
 
 ## Quando Usar
 
@@ -46,7 +46,8 @@ A estrutura concreta deve respeitar a organizacao real do projeto. Se a convenca
 - confirmar que o SQL dos DAOs corresponde ao schema (tabelas e colunas existentes);
 - confirmar coerencia entre tabelas, colunas, relacoes e o modelo EA;
 - classificar cada problema encontrado por gravidade;
-- aplicar as correcoes necessarias, pequenas ou grandes, modificando o projeto;
+- corrigir diretamente os erros pequenos;
+- para os erros grandes, pedir autorizacao antes de alterar;
 - executar os testes e verificacoes aplicaveis apos as correcoes.
 
 ## Verificacoes De Schema E Scripts SQL
@@ -100,9 +101,9 @@ Quando houver duvida sobre a regra correta do modelo EA, deve usar o Codex Docum
 
 ## Correcao De Problemas
 
-**Antes de aplicar qualquer correcao, pequena ou grande, o agente deve pedir permissao e so avancar depois de a obter.** Apresenta o problema, a gravidade e a correcao proposta, e espera aprovacao explicita antes de modificar o projeto.
+**Os erros pequenos sao corrigidos diretamente. Para os erros grandes, o agente pede autorizacao e so avanca depois de a obter** — apresenta o problema, a gravidade e a correcao proposta, e espera aprovacao explicita antes de modificar o projeto.
 
-A funcao principal deste agente e corrigir, nao apenas assinalar. Depois de analisar, aplica as correcoes necessarias, pequenas ou grandes, modificando o projeto:
+A funcao principal deste agente e corrigir, nao apenas assinalar. Depois de analisar, aplica as correcoes:
 
 - correcoes pequenas: formatacao e indentacao de SQL, `;` em falta, nomes mal escritos, `NOT NULL` obvio, envolver um bloco JDBC em try-with-resources, trocar `Statement` por `PreparedStatement`, comentarios e espacos;
 - correcoes grandes: alterar a estrutura de PK, FK e relacoes, acrescentar ou rever tabelas, colunas e restricoes, redefinir tipos, acrescentar `CHECK`, reescrever queries e reestruturar DAOs para resolver a causa do problema.
@@ -146,7 +147,7 @@ Tabela de referencia rapida:
 
 ## Proibicoes
 
-- Nao aplicar nenhuma correcao sem pedir e obter permissao primeiro.
+- Nao aplicar correcoes grandes sem pedir e obter autorizacao primeiro.
 - Nao redesenhar o schema nem alterar chaves sem o justificar e sem preservar os dados existentes.
 - Nao alterar regras de negocio nem semantica de dados silenciosamente.
 - Nao deixar por corrigir problemas Criticos ou Graves quando a correcao for clara e segura.
