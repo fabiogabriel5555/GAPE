@@ -1,4 +1,4 @@
-﻿# Analise do template EduAll para integracao no GAPE
+# Analise do template EduAll para integracao no GAPE
 
 ## Objetivo
 Integrar o template EduAll no GAPE com uma abordagem de copia quase literal `1:1`, convertendo quase todo o vendor HTML para JSP e limitando as alteracoes a `paths`, remapeamento de links, branding minimo para GAPE e correcoes obrigatorias do proprio template.
@@ -169,20 +169,20 @@ Foram criadas JSP com o mesmo basename para quase todos os HTML em `docs/templat
 - institucional: `about.jsp`, `about-two.jsp`, `about-three.jsp`, `about-four.jsp`, `faq.jsp`, `contact.jsp`, `privacy-policy.jsp`, `pricing-plan.jsp`, `gallery.jsp`
 - eventos e processos: `events.jsp`, `event-details.jsp`, `apply-admission.jsp`, `tuition-jobs.jsp`
 - cursos e conteudos: `course.jsp`, `course-list-view.jsp`, `course-details.jsp`, `lesson-details.jsp`, `favorite-course.jsp`, `book-online-class.jsp`
-- tutores e instrutores: `instructor.jsp`, `instructor-two.jsp`, `instructor-details.jsp`, `tutor.jsp`, `tutor-details.jsp`, `find-tutors.jsp`
-- autenticacao e perfil: `sign-in.jsp`, `sign-up.jsp`, `my-profile.jsp`, `my-propyl.jsp`, `instructor-my-profile.jsp`
-- dashboards e administracao: `admin-dashbord.jsp`, `dashbord.jsp`, `dashbord-message.jsp`, `dashbord-courses.jsp`, `dashbord-wishlist.jsp`, `deshbord-reviews.jsp`, `dashbord-quiz-attempts.jsp`, `dashbord-settings.jsp`, `student-dashbord*.jsp`, `instructor-dashboard*.jsp`, `instructor-ashboard.jsp`
+- tutores e instrutores: `instructor/instructor.jsp`, `instructor-two.jsp`, `instructor/instructor-details.jsp`, `tutor.jsp`, `tutor-details.jsp`, `find-tutors.jsp`
+- autenticacao e perfil: `sign-in.jsp`, `sign-up.jsp`, `admin/admin-dashbord-my-profile.jsp`, `my-propyl.jsp`, `instructor/instructor-my-profile.jsp`
+- dashboards e administracao: `admin/admin-dashbord.jsp`, `dashbord.jsp`, `admin/admin-dashbord-message.jsp`, `admin/admin-dashbord-courses.jsp`, `admin/admin-dashbord-wishlist.jsp`, `admin/admin-dashbord-reviews.jsp`, `admin/admin-dashbord-quiz-attempts.jsp`, `admin/admin-dashbord-settings.jsp`, `student-dashbord*.jsp`, `instructor-dashboard*.jsp`, `instructor/instructor-ashboard.jsp`
 - blog e ecommerce: convertidos na fase inicial, mas removidos depois do runtime do GAPE
 
 ### Aliases adicionais mantidas no GAPE
 - `login.jsp` <- copia de `sign-in.jsp`
-- `dashboard.jsp` <- copia de `admin-dashbord.jsp`
-- `profile.jsp` <- copia de `my-profile.jsp`
+- `admin/dashboard.jsp` <- copia de `admin/admin-dashbord.jsp`
+- `profile.jsp` <- copia de `admin/admin-dashbord-my-profile.jsp`
 - `courses.jsp` <- copia de `course.jsp`
 - `content.jsp` <- copia de `lesson-details.jsp`
-- `messages.jsp` <- copia de `dashbord-message.jsp`
-- `forms.jsp` <- copia de `dashbord-settings.jsp`
-- `tables.jsp` <- copia de `dashbord-quiz-attempts.jsp`
+- `messages.jsp` <- copia de `admin/admin-dashbord-message.jsp`
+- `forms.jsp` <- copia de `admin/admin-dashbord-settings.jsp`
+- `tables.jsp` <- copia de `admin/admin-dashbord-quiz-attempts.jsp`
 
 ### Paginas de erro
 - `error-404.jsp`
@@ -248,7 +248,7 @@ Estas duas paginas existem no vendor com `0` bytes. As correspondentes JSP foram
 ### Links internos convertidos para JSP
 - Todos os links `.html` do vendor foram convertidos para `.jsp` com o mesmo basename quando a pagina existe no espelho.
 - `courses.html` foi remapeado para `courses.jsp`.
-- `dashboard.html` foi remapeado para `dashboard.jsp`.
+- `dashboard.html` foi remapeado para `admin/dashboard.jsp`.
 - `faqs.html` foi remapeado para `faq.jsp`.
 
 ### Correcao de assets partidos

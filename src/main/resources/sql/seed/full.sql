@@ -5,10 +5,10 @@ START TRANSACTION;
 
 -- Utilizadores adicionais
 INSERT INTO user_account (
-    id_user, name, email, state, language, created_at, credential_hash, credential_salt, document_type, document_number
+    id_user, name, email, state, language, photo, created_at, credential_hash, credential_salt, document_type, document_number
 ) VALUES
-    (6, 'Teacher Two', 'teacher2@gape.local', 'active', 'en-GB', '2026-01-02 09:00:00', 'h_t2', 's_t2', NULL, NULL),
-    (7, 'Student Two', 'student2@gape.local', 'active', 'pt-PT', '2026-01-02 09:05:00', 'h_s2', 's_s2', 'residence_permit', 'RP-778899');
+    (6, 'Teacher Two', 'teacher2@gape.local', 'active', 'en-GB', 'users/6/profile.webp', '2026-01-02 09:00:00', 'tuRaTV4DOE/Pwph2t8arh4vVHBQfvyHC2vfx4C7u3WM=', 'nNPHYRNVfnUJwJJf1xHP4Q==', NULL, NULL),
+    (7, 'Student Two', 'student2@gape.local', 'active', 'pt-PT', 'users/7/profile.webp', '2026-01-02 09:05:00', 'ELOXjF01xl3ZiUslNj30kUZdreo8BYaEit34GOz/z64=', 'ckGB7Z5+GO9rxxuSycfE7Q==', 'residence_permit', 'RP-778899');
 
 INSERT INTO teacher_profile (id_user, cod_teacher) VALUES (6, 'TCH-002');
 INSERT INTO student_profile (id_user, cod_student) VALUES (7, 'STD-007');

@@ -15,27 +15,27 @@ import java.util.Locale;
 import pt.isel.gape.common.config.DatabaseConfig;
 import pt.isel.gape.common.sql.SqlScriptExecutor;
 
-final class DatabaseTestSupport {
+public final class DatabaseTestSupport {
 
-    static final Path SQL_DIR = Path.of("src/main/resources/sql");
-    static final Path SQL_SEED_DIR = SQL_DIR.resolve("seed");
-    static final Path SQL_TEST_DIR = SQL_DIR.resolve("test");
+    public static final Path SQL_DIR = Path.of("src/main/resources/sql");
+    public static final Path SQL_SEED_DIR = SQL_DIR.resolve("seed");
+    public static final Path SQL_TEST_DIR = SQL_DIR.resolve("test");
 
     private DatabaseTestSupport() {
     }
 
-    static Connection openConnection() throws SQLException {
+    public static Connection openConnection() throws SQLException {
         Connection connection = DatabaseConfig.getConnection();
         setStrictSqlMode(connection);
         return connection;
     }
 
-    static void resetDatabase(Connection connection) throws Exception {
+    public static void resetDatabase(Connection connection) throws Exception {
         executeScript(connection, SQL_DIR.resolve("drop.sql"));
         executeScript(connection, SQL_DIR.resolve("schema.sql"));
     }
 
-    static void executeScript(Connection connection, Path scriptPath) throws Exception {
+    public static void executeScript(Connection connection, Path scriptPath) throws Exception {
         List<String> statements = parseSqlStatements(scriptPath);
         try (Statement statement = connection.createStatement()) {
             for (String sql : statements) {
@@ -44,11 +44,11 @@ final class DatabaseTestSupport {
         }
     }
 
-    static List<String> parseSqlStatements(Path scriptPath) throws IOException {
+    public static List<String> parseSqlStatements(Path scriptPath) throws IOException {
         return SqlScriptExecutor.parseStatements(Files.readString(scriptPath, StandardCharsets.UTF_8));
     }
 
-    static String currentSchema(Connection connection) throws SQLException {
+    public static String currentSchema(Connection connection) throws SQLException {
         String catalog = connection.getCatalog();
         if (catalog != null && !catalog.isBlank()) {
             return catalog;
@@ -62,7 +62,7 @@ final class DatabaseTestSupport {
         throw new SQLException("Could not resolve current schema/database");
     }
 
-    static int countRows(Connection connection, String tableName) throws SQLException {
+    public static int countRows(Connection connection, String tableName) throws SQLException {
         String sql = "SELECT COUNT(*) FROM " + tableName;
         try (Statement statement = connection.createStatement();
              ResultSet resultSet = statement.executeQuery(sql)) {
@@ -71,7 +71,7 @@ final class DatabaseTestSupport {
         }
     }
 
-    static boolean existsConstraint(Connection connection, String tableName, String constraintName, String type)
+    public static boolean existsConstraint(Connection connection, String tableName, String constraintName, String type)
             throws SQLException {
         String sql = """
                 SELECT COUNT(*)
@@ -93,7 +93,7 @@ final class DatabaseTestSupport {
         }
     }
 
-    static boolean isNotNullColumn(Connection connection, String tableName, String columnName) throws SQLException {
+    public static boolean isNotNullColumn(Connection connection, String tableName, String columnName) throws SQLException {
         String sql = """
                 SELECT is_nullable
                 FROM information_schema.columns
@@ -114,7 +114,7 @@ final class DatabaseTestSupport {
         }
     }
 
-    static boolean isUniqueIndex(Connection connection, String tableName, String indexName) throws SQLException {
+    public static boolean isUniqueIndex(Connection connection, String tableName, String indexName) throws SQLException {
         String sql = """
                 SELECT COUNT(*)
                 FROM information_schema.statistics
@@ -134,7 +134,7 @@ final class DatabaseTestSupport {
         }
     }
 
-    static boolean existsTrigger(Connection connection, String triggerName) throws SQLException {
+    public static boolean existsTrigger(Connection connection, String triggerName) throws SQLException {
         String sql = """
                 SELECT COUNT(*)
                 FROM information_schema.triggers
@@ -151,7 +151,7 @@ final class DatabaseTestSupport {
         }
     }
 
-    static void assertIntegrityException(SQLException exception) {
+    public static void assertIntegrityException(SQLException exception) {
         String sqlState = exception.getSQLState();
         int errorCode = exception.getErrorCode();
 

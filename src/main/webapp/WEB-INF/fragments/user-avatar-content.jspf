@@ -1,0 +1,9 @@
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<c:choose>
+    <c:when test="${not empty sessionScope['gape.auth.userPhoto']}">
+        <img class="gape-user-avatar-img" src="${pageContext.request.contextPath}/media/${sessionScope['gape.auth.userPhoto']}" alt="${sessionScope['gape.auth.userName']}">
+    </c:when>
+    <c:otherwise>
+        <i class="ph ph-user-circle"></i>
+    </c:otherwise>
+</c:choose>

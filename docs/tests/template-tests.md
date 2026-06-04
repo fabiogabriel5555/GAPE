@@ -43,7 +43,7 @@ Verificacao manual no browser (complementa os testes automaticos):
 2. Iniciar o Tomcat e fazer deploy do WAR.
 3. Abrir a pagina inicial (`index.jsp`).
 4. Abrir o login (`login.jsp` / `sign-in.jsp`).
-5. Abrir o dashboard (`dashboard.jsp` / `admin-dashbord.jsp`).
+5. Abrir o dashboard (`admin/dashboard.jsp` / `admin/admin-dashbord.jsp`).
 6. Abrir as restantes paginas base (cursos, conteudos, mensagens, perfil, eventos, erro).
 7. Abrir o DevTools do browser na aba `Network`.
 8. Recarregar a pagina.
@@ -58,3 +58,4 @@ Verificacao manual no browser (complementa os testes automaticos):
 ## Notas
 - As JSP publicas atuais nao usam `<%@ include %>` nem `<jsp:include>`, mas o teste cobre esses casos para futuras extracoes em fragments.
 - Os dois fragments criados sao uma base reutilizavel para consolidacao futura do head e do bundle de scripts sem alterar ainda o runtime 1:1 das paginas.
+- O teste de paths locais foi ajustado para aceitar endpoints aplicacionais como `auth/login` e `auth/logout`, para nao marcar servlets reais como links partidos.

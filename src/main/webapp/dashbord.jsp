@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -90,10 +90,10 @@
                 <a href="about-four.jsp" class="nav-submenu__link hover-bg-neutral-30"> About Four</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
+                <a href="instructor/instructor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
+                <a href="instructor/instructor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Premium Tutors</a>
@@ -157,17 +157,17 @@
                 <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome Henry,</span>
                 <ul>
                     <li class="mb-8">
-                        <a href="dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
+                        <a href="admin/dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
                         <span class="text-20 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
                         Dashboard</a>
                     </li>
                     <li class="mb-8">
-                        <a href="dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
+                        <a href="admin/dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
                         <span class="text-20 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
                         My Profile</a>
                     </li>
                     <li class="mb-8">
-                        <a href="dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
+                        <a href="admin/dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
                         <span class="text-20 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
                         Dashboard</a>
                     </li>
@@ -212,6 +212,7 @@
 
 </body>
 </html>
+
 
 
 

@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -93,10 +93,10 @@
                 <a href="about-four.jsp" class="nav-submenu__link hover-bg-neutral-30"> About Four</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
+                <a href="instructor/instructor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
+                <a href="instructor/instructor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Premium Tutors</a>
@@ -118,98 +118,98 @@
             </li>
         </ul>
     </li>
-    <li class="nav-menu__item has-submenu">
+        <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Dashboard</a>
          <ul class="nav-submenu scroll-sm">
             <li class="nav-submenu__item">
-                <a href="admin-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
+                <a href="admin/admin-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
+                <a href="admin/admin-dashbord-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="dashbord-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Message</a>
+                <a href="admin/admin-dashbord-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Message</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="dashbord-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
+                <a href="admin/admin-dashbord-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="dashbord-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Wishlist</a>
+                <a href="admin/admin-dashbord-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Wishlist</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="deshbord-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
+                <a href="admin/admin-dashbord-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="dashbord-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="admin/admin-dashbord-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="dashbord-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Settings</a>
+                <a href="admin/admin-dashbord-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
+                <a href="student/student-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student-dashbord-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Profile</a>
+                <a href="student/student-dashbord-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student-dashbord-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Message</a>
+                <a href="student/student-dashbord-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Message</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student-dashbord-enrolled-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Enrolled Courses</a>
+                <a href="student/student-dashbord-enrolled-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Enrolled Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student-dashbord-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Wishlist</a>
+                <a href="student/student-dashbord-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Wishlist</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student-dashbord-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
+                <a href="student/student-dashbord-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student-dashbord-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="student/student-dashbord-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student-dashbord-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
+                <a href="student/student-dashbord-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student-dashbord-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Settings</a>
+                <a href="student/student-dashbord-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
+                <a href="instructor/instructor-dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Profile</a>
+                <a href="instructor/instructor-dashboard-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Message</a>
+                <a href="instructor/instructor-dashboard-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Message</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard-enrolled-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Enrolled Courses</a>
+                <a href="instructor/instructor-dashboard-enrolled-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Enrolled Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Wishlist</a>
+                <a href="instructor/instructor-dashboard-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Wishlist</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
+                <a href="instructor/instructor-dashboard-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="instructor/instructor-dashboard-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard-order-history.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
+                <a href="instructor/instructor-dashboard-order-history.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard-my-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Courses</a>
+                <a href="instructor/instructor-dashboard-my-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard-announcements.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Announcements</a>
+                <a href="instructor/instructor-dashboard-announcements.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Announcements</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
+                <a href="instructor/instructor-dashboard-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="instructor/instructor-dashboard-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor-dashboard-account-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
+                <a href="instructor/instructor-dashboard-account-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
             </li>
         </ul>
     </li>
@@ -260,37 +260,37 @@
             <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome Henry,</span>
                <ul>
                    <li class="mb-8">
-                       <a href="admin-dashbord.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="admin/admin-dashbord.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
                        Dashboard</a>
                    </li>
                    <li class="mb-8">
-                       <a href="my-profile.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="admin/admin-dashbord-my-profile.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-circle"></i></span>
                        My Profile</a>
                    </li>
                    <li class="mb-8">
-                       <a href="dashbord-message.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="admin/admin-dashbord-message.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-chat-dots"></i></span>
                        Message</a>
                    </li>
                    <li class="mb-8">
-                       <a href="dashbord-courses.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="admin/admin-dashbord-courses.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-watch"></i></span>
                        Courses</a>
                    </li>
                    <li class="mb-8">
-                       <a href="dashbord-wishlist.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="admin/admin-dashbord-wishlist.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-bookmark-simple"></i></span>
                        Wishlist</a>
                    </li>
                    <li class="mb-8">
-                       <a href="deshbord-reviews.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="admin/admin-dashbord-reviews.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sparkle"></i></span>
                        Reviews</a>
                    </li>
                    <li class="mb-8">
-                       <a href="dashbord-quiz-attempts.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="admin/admin-dashbord-quiz-attempts.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-seal-question"></i></span>
                        Quiz Attempts</a>
                    </li>
@@ -298,7 +298,7 @@
                        <span class="fw-normal text-14 text-neutral-500">Admin</span>
                    </li>
                    <li class="mb-8">
-                       <a href="dashbord-settings.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="admin/admin-dashbord-settings.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-gear"></i></span>
                        Settings</a>
                    </li>
@@ -307,7 +307,7 @@
      </div>
 
      <div class="position-absolute inset-block-end-0 inset-inline-start-0 pb-16 px-16 w-100">
-         <a href="sign-in.jsp" class=" text-14 fw-medium text-neutral-500 d-flex align-items-center gap-8  hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap bg-white">
+         <a href="auth/logout" class=" text-14 fw-medium text-neutral-500 d-flex align-items-center gap-8  hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap bg-white">
              <span class="text-16 text-main-600 item-hover__text transition-03">
                  <i class="ph ph-sign-out"></i>
              </span>
@@ -410,25 +410,25 @@
                 </button>
             </div>
 
-            <div class="dropdown">
-                <button class="dropdown-toggle w-36 h-36 border-neutral-50 border rounded-pill" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <img src="assets/images/thumbs/testimonials-three-img1.png" alt="">
+            <div class="dropdown d-flex align-items-center gap-12">
+                <button class="dropdown-toggle gape-user-avatar-trigger w-36 h-36 border-neutral-50 border rounded-pill" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="${sessionScope['gape.auth.userEmail']}">
+                    <%@ include file="/WEB-INF/fragments/user-avatar-content.jspf" %>
                 </button>
                 <ul class="dropdown-menu rounded-12">
                     <li>
-                        <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="my-profile.jsp">
+                        <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="admin/admin-dashbord-my-profile.jsp">
                         <span><i class="ph ph-user-circle"></i></span>
                         <span>My Profile</span>
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="dashbord-settings.jsp">
+                        <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="admin/admin-dashbord-settings.jsp">
                         <span><i class="ph ph-gear"></i></span>
                         <span>Settings</span>
                         </a>
                     </li>
                     <li>
-                        <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="sign-in.jsp">
+                        <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="auth/logout">
                         <span><i class="ph ph-power"></i></span>
                         <span>Log Out</span>
                         </a>
@@ -587,7 +587,7 @@
                                     <div class="d-flex align-items-center gap-12 flex-wrap">
                                         <img src="assets/images/thumbs/dashbord-message-img5.png" alt="">
                                         <div>
-                                            <h6 class="text-14 fw-medium text-neutral-500 mb-0">KovÃ¡cs TÃ­mea</h6>
+                                            <h6 class="text-14 fw-medium text-neutral-500 mb-0">KovÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡cs TÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­mea</h6>
                                             <span class="text-12 fw-normal text-neutral-100">Hello? interested in this loads?</span>
                                         </div>
                                     </div>
@@ -817,13 +817,13 @@
 <div class="bg-neutral-20 border-neutral-40 border-top px-24 py-16 mt-auto">
     <div class="d-flex align-items-center gap-24 justify-content-between flex-wrap">
         <p class="fw-medium text-14 text-neutral-500">
-            Copyright Â©2025 
-            <a href="admin-dashbord.jsp" class="text-main-600 fw-medium">GAPE</a>.
+            Copyright &copy; 2025 
+            <a href="admin/admin-dashbord.jsp" class="text-main-600 fw-medium">GAPE</a>.
             All Rights Reserved
         </p>
         <div class="d-flex align-items-center gap-24">
-            <a href="#" class="fw-medium text-14 text-neutral-500 hover-text-main-600">Privacy policy</a>
-            <a href="#" class="fw-medium text-14 text-neutral-500 hover-text-main-600">Privacy policy</a>
+            <a href="privacy-policy.jsp" class="fw-medium text-14 text-neutral-500 hover-text-main-600">Privacy Policy</a>
+            <a href="#" class="fw-medium text-14 text-neutral-500 hover-text-main-600">Terms & Conditions</a>
         </div>
     </div>
 </div>
@@ -879,6 +879,9 @@
 
 </body>
 </html>
+
+
+
 
 
 

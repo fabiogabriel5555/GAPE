@@ -65,10 +65,31 @@ public final class SqlScriptExecutor {
 
     private static void executeStatements(Connection connection, List<String> statements) throws SQLException {
         try (Statement statement = connection.createStatement()) {
-            for (String sql : statements) {
-                statement.execute(sql);
+            for (int index = 0; index < statements.size(); index++) {
+                String sql = statements.get(index);
+                try {
+                    statement.execute(sql);
+                } catch (SQLException exception) {
+                    throw withStatementContext(exception, index, sql);
+                }
             }
         }
+    }
+
+    private static SQLException withStatementContext(SQLException exception, int index, String sql) {
+        String preview = sql.replaceAll("\\s+", " ").trim();
+        if (preview.length() > 180) {
+            preview = preview.substring(0, 180) + "...";
+        }
+
+        SQLException contextual = new SQLException(
+                "Failed SQL statement #" + (index + 1) + ": " + preview,
+                exception.getSQLState(),
+                exception.getErrorCode(),
+                exception
+        );
+        contextual.setNextException(exception);
+        return contextual;
     }
 
     private static String readResource(String resourcePath) throws IOException {

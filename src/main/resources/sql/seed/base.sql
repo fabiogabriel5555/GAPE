@@ -1,13 +1,13 @@
 -- Dados validos para testes de integridade e regras aplicacionais em SQL
 
 INSERT INTO user_account (
-    id_user, name, email, state, language, created_at, credential_hash, credential_salt
+    id_user, name, email, state, language, photo, created_at, credential_hash, credential_salt
 ) VALUES
-    (1, 'Admin User', 'admin@gape.local', 'active', 'pt-PT', '2026-01-01 09:00:00', 'h_admin', 's_admin'),
-    (2, 'Coordinator User', 'coord@gape.local', 'active', 'pt-PT', '2026-01-01 09:05:00', 'h_coord', 's_coord'),
-    (3, 'Teacher User', 'teacher@gape.local', 'active', 'pt-PT', '2026-01-01 09:10:00', 'h_teacher', 's_teacher'),
-    (4, 'Student User', 'student@gape.local', 'active', 'pt-PT', '2026-01-01 09:15:00', 'h_student', 's_student'),
-    (5, 'Inactive User', 'inactive@gape.local', 'inactive', 'pt-PT', '2026-01-01 09:20:00', 'h_inactive', 's_inactive');
+    (1, 'Admin User', 'admin@gape.local', 'active', 'pt-PT', 'users/1/profile.webp', '2026-01-01 09:00:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw=='),
+    (2, 'Coordinator User', 'coord@gape.local', 'active', 'pt-PT', 'users/2/profile.webp', '2026-01-01 09:05:00', 'jvjSnRgJRoVWPXjTD/9Z6ldwNGCWYF3ufKq7n7BSTtw=', 'PeX6EFsl+vvJMTpvQPbvOg=='),
+    (3, 'Teacher User', 'teacher@gape.local', 'active', 'pt-PT', 'users/3/profile.webp', '2026-01-01 09:10:00', 'P+iPeOLXBL7c86xAWsax6ynSRK5lF0izcOJ+xJJ/nt0=', 'NduPZR+nNoURf2lKx3e5Aw=='),
+    (4, 'Student User', 'student@gape.local', 'active', 'pt-PT', 'users/4/profile.webp', '2026-01-01 09:15:00', 'Pf6qW2Vh05dgyvwU5XUhaJpgNrWO9Jgz3ashXolzSVU=', 'x0+e4osQuVa/3kxuimgT9Q=='),
+    (5, 'Inactive User', 'inactive@gape.local', 'inactive', 'pt-PT', 'users/5/profile.webp', '2026-01-01 09:20:00', 'rIP3h7CjjJIsuECNEYC4kQZ+fsln+oZvem31yw4BnB8=', 'GcaOR1rZz14IGkuD1k5wyQ==');
 
 INSERT INTO administrator_profile (id_user, cod_administrator) VALUES (1, 'ADM-001');
 INSERT INTO coordinator_profile (id_user, cod_coordinator) VALUES (2, 'COO-001');

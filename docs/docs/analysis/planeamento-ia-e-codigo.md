@@ -1819,7 +1819,7 @@ Deves identificar autonomamente todas as páginas e componentes do template rela
 
 Tens liberdade para alterar todas as páginas, fragments e componentes necessários para que o fluxo de login/logout fique completo no template.
 
-Não te limites a `login.jsp`, `dashboard.jsp`, `header.jsp` ou `sidebar.jsp`. Esses ficheiros são apenas exemplos mínimos. Se o template tiver outras páginas mais adequadas, usa-as.
+Não te limites a `login.jsp`, `admin/dashboard.jsp`, `header.jsp` ou `sidebar.jsp`. Esses ficheiros são apenas exemplos mínimos. Se o template tiver outras páginas mais adequadas, usa-as.
 
 Implementa a integração front-end com o back-end já criado.
 

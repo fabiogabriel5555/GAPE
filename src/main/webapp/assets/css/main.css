@@ -275,6 +275,27 @@
     --font-6xxxl: 5rem;
 }
 
+.gape-user-avatar-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.gape-user-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.gape-user-avatar-img {
+  display: block;
+  object-fit: cover;
+}
+
+
 /* ========================= Variable Css End ======================== */
 /* ============================ Mixins Css Start ============================ */
 /* Media Breakpoint for Each Device Start */

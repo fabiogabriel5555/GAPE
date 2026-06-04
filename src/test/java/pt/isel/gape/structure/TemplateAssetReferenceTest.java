@@ -18,6 +18,11 @@ import org.junit.jupiter.api.Test;
 
 class TemplateAssetReferenceTest {
 
+    private static final List<String> APPLICATION_ENDPOINT_PREFIXES = List.of(
+            "auth/",
+            "/auth/"
+    );
+
     private enum ReferenceMode {
         WEBAPP_RELATIVE,
         FILE_RELATIVE
@@ -200,6 +205,9 @@ class TemplateAssetReferenceTest {
         if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
             return false;
         }
+        if (isApplicationEndpoint(normalized)) {
+            return false;
+        }
 
         return !normalized.contains("${") && !normalized.contains("<%");
     }
@@ -258,6 +266,10 @@ class TemplateAssetReferenceTest {
         }
 
         return reference.substring(0, end);
+    }
+
+    private static boolean isApplicationEndpoint(String reference) {
+        return APPLICATION_ENDPOINT_PREFIXES.stream().anyMatch(reference::startsWith);
     }
 
     private static void assertNoMissing(String heading, List<String> missing) {

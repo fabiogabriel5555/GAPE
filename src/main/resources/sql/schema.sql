@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS user_account (
     PRIMARY KEY (id_user),
     UNIQUE KEY uq_user_account_email (email),
     UNIQUE KEY uq_user_account_document (document_type, document_number),
+    KEY idx_user_account_state (state),
+    KEY idx_user_account_language (language),
     CONSTRAINT ck_user_account_state
         CHECK (state IN ('active', 'inactive', 'blocked')),
     CONSTRAINT ck_user_account_document_pair
@@ -32,9 +34,6 @@ CREATE TABLE IF NOT EXISTS user_account (
             OR (document_type IS NOT NULL AND document_number IS NOT NULL)
         )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-CREATE INDEX idx_user_account_state ON user_account (state);
-CREATE INDEX idx_user_account_language ON user_account (language);
 
 CREATE TABLE IF NOT EXISTS administrator_profile (
     id_user BIGINT UNSIGNED NOT NULL,

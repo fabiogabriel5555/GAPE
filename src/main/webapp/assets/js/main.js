@@ -128,6 +128,65 @@
   });
   // ========================== Course List filter bar btn End ================================
 
+  function normalizeSidebarFileName(value) {
+    if (!value) {
+      return "";
+    }
+
+    return value
+      .split("?")[0]
+      .split("#")[0]
+      .split(";")[0]
+      .replace(/\\/g, "/")
+      .split("/")
+      .filter(Boolean)
+      .pop()
+      .toLowerCase();
+  }
+
+  function isActiveSidebarFile(currentFileName, hrefFileName) {
+    if (!currentFileName || !hrefFileName) {
+      return false;
+    }
+
+    if (currentFileName === hrefFileName) {
+      return true;
+    }
+
+    var aliasFiles = {
+      "dashboard.jsp": "admin-dashbord.jsp",
+      "admin-dashbord.jsp": "dashboard.jsp",
+      "instructor-ashboard.jsp": "instructor-dashboard.jsp",
+      "instructor-dashboard.jsp": "instructor-ashboard.jsp",
+      "coordinator-ashboard.jsp": "coordinator-dashboard.jsp",
+      "coordinator-dashboard.jsp": "coordinator-ashboard.jsp"
+    };
+
+    return aliasFiles[currentFileName] === hrefFileName || aliasFiles[hrefFileName] === currentFileName;
+  }
+
+  function dynamicActiveSidebarClass(selector) {
+    var currentFileName = normalizeSidebarFileName(window.location.pathname);
+
+    selector.each(function () {
+      var $list = $(this);
+
+      $list.find("li").removeClass("activePage");
+
+      $list.find("li").each(function () {
+        var $item = $(this);
+        var $anchor = $item.children("a.item-hover[href]").first();
+        var hrefFileName = normalizeSidebarFileName($anchor.attr("href"));
+
+        if (isActiveSidebarFile(currentFileName, hrefFileName)) {
+          $item.addClass("activePage");
+        }
+      });
+    });
+  }
+
+  dynamicActiveSidebarClass($('.dashboard-sidebar ul, .student-dashboard-sidebar ul'));
+
   
 
   // ================== Password Show Hide Js Start ==========
@@ -540,35 +599,41 @@ $(".progressBar").each(function(){
 
   // ========================== add active class to ul>li top Active current page Js Start =====================
 function dynamicActiveMenuClass(selector) {
-  let FileName = window.location.pathname.split("/").reverse()[0];
+  let FileName = normalizeSidebarFileName(window.location.pathname);
 
   // If we are at the root path ("/" or no file name), keep the activePage class on the Home item
-  if (FileName === "" || FileName === "index.html") {
-    // Keep the activePage class on the Home link
-    selector.find("li.nav-menu__item.has-submenu").eq(0).addClass("activePage");
-  } else {
-    // Remove activePage class from all items first
-    selector.find("li").removeClass("activePage");
+  if (FileName === "" || FileName === "index.html" || FileName === "index.jsp") {
+    selector.each(function () {
+      $(this).find("li.nav-menu__item.has-submenu").eq(0).addClass("activePage");
+    });
+    return;
+  }
 
+  selector.each(function () {
+    var $menu = $(this);
+
+    // Remove activePage class from navigation menu items only.
+    $menu.find("li.nav-menu__item, li.nav-submenu__item").removeClass("activePage");
+    
     // Add activePage class to the correct li based on the current URL
-    selector.find("li").each(function () {
-      let anchor = $(this).find("a");
-      if ($(anchor).attr("href") == FileName) {
+    $menu.find("li.nav-menu__item, li.nav-submenu__item").each(function () {
+      let anchor = $(this).children("a[href]").first();
+      if (normalizeSidebarFileName($(anchor).attr("href")) == FileName) {
         $(this).addClass("activePage");
       }
     });
 
     // If any li has activePage element, add class to its parent li
-    selector.children("li").each(function () {
+    $menu.children("li.nav-menu__item").each(function () {
       if ($(this).find(".activePage").length) {
         $(this).addClass("activePage");
       }
     });
-  }
+  });
 }
 
-if ($('ul').length) {
-  dynamicActiveMenuClass($('ul'));
+if ($('.nav-menu').length) {
+  dynamicActiveMenuClass($('.nav-menu'));
 }
   // ========================== add active class to ul>li top Active current page Js End =====================
 

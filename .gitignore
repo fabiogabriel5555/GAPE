@@ -21,9 +21,18 @@ src/main/resources/db.local.properties
 build/
 dist/
 
+# Temporarios de analise/testes
+docs/tests/temps/**
+!docs/tests/temps/
+!docs/tests/temps/README.md
+
 # Uploads locais
-uploads/
-gape/uploads/
+uploads/**
+!uploads/
+!uploads/README.md
+!uploads/**/
+!uploads/**/.gitkeep
+gape/uploads/**
 
 # Templates originais/intactos (staging - integram-se a partir daqui; versiona-se so o que for copiado para webapp/)
 docs/templates/
