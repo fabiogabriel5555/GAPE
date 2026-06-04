@@ -24,3 +24,7 @@ dist/
 # Uploads locais
 uploads/
 gape/uploads/
+
+# Material de referencia do professor (projetos de exemplo pesados - manter apenas local)
+docs/professor/1. Agenda/
+docs/professor/2. Moradia/
