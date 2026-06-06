@@ -61,6 +61,7 @@ class AuthServiceTest {
     @Test
     void validLoginCreatesSessionAndAuditRecord() throws Exception {
         insertUserWithPassword(200, "Valid User", "valid@gape.local", "active", "Password#2026");
+        insertStudentProfile(200, "STD-200");
 
         AuthService.AuthenticatedSession authenticatedSession =
                 authService.authenticate("valid@gape.local", "Password#2026", "127.0.0.1");
@@ -68,7 +69,7 @@ class AuthServiceTest {
         assertEquals(200L, authenticatedSession.user().id());
         assertEquals(200L, authenticatedSession.session().userId());
         assertNotNull(authenticatedSession.session().token());
-        assertTrue(authenticatedSession.sessionUser().profileTypes().isEmpty());
+        assertTrue(authenticatedSession.sessionUser().profileTypes().contains(AccessProfileType.STUDENT));
 
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement(
@@ -92,6 +93,29 @@ class AuthServiceTest {
         );
 
         assertEquals(AuthenticationFailureReason.INVALID_CREDENTIALS, exception.reason());
+    }
+
+    @Test
+    void activeUserWithoutProfileIsRejectedWithoutCreatingSession() throws Exception {
+        insertUserWithPassword(204, "No Profile User", "noprofile@gape.local", "active", "Password#2026");
+
+        AuthenticationException exception = assertThrows(
+                AuthenticationException.class,
+                () -> authService.authenticate("noprofile@gape.local", "Password#2026", "127.0.0.1")
+        );
+
+        assertEquals(AuthenticationFailureReason.USER_WITHOUT_PROFILE, exception.reason());
+
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT COUNT(*) FROM user_session WHERE id_user = ?"
+             )) {
+            statement.setLong(1, 204L);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                assertEquals(0, resultSet.getInt(1));
+            }
+        }
     }
 
     @Test
@@ -164,6 +188,17 @@ class AuthServiceTest {
             statement.setString(4, state);
             statement.setString(5, passwordHash.hashBase64());
             statement.setString(6, passwordHash.saltBase64());
+            statement.executeUpdate();
+        }
+    }
+
+    private void insertStudentProfile(long userId, String code) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "INSERT INTO student_profile (id_user, cod_student) VALUES (?, ?)"
+             )) {
+            statement.setLong(1, userId);
+            statement.setString(2, code);
             statement.executeUpdate();
         }
     }

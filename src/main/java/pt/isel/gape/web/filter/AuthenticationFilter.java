@@ -15,11 +15,13 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.annotation.WebFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.access.model.Session;
 import pt.isel.gape.access.service.SessionService;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.security.session.SessionManager;
 import pt.isel.gape.security.session.SessionUser;
+import pt.isel.gape.web.navigation.DashboardNavigation;
 
 @WebFilter(filterName = "authenticationFilter", urlPatterns = "*.jsp")
 public final class AuthenticationFilter implements Filter {
@@ -118,6 +120,11 @@ public final class AuthenticationFilter implements Filter {
             return;
         }
 
+        if (!isAuthorized(sessionUser.get(), servletPath)) {
+            redirectToAllowedDashboard(httpRequest, httpResponse, sessionUser.get());
+            return;
+        }
+
         sessionManager.refreshAuthenticatedSession(httpRequest, sessionUser.get());
         sessionService.registerActivity(session);
         chain.doFilter(request, response);
@@ -136,9 +143,43 @@ public final class AuthenticationFilter implements Filter {
         return PROTECTED_PATHS.contains(servletPath);
     }
 
+    private static boolean isAuthorized(SessionUser sessionUser, String servletPath) {
+        Optional<AccessProfileType> requiredProfile = requiredProfileFor(servletPath);
+        return requiredProfile.isEmpty() || sessionUser.profileTypes().contains(requiredProfile.get());
+    }
+
+    private static Optional<AccessProfileType> requiredProfileFor(String servletPath) {
+        if (servletPath.startsWith("/admin/")) {
+            return Optional.of(AccessProfileType.ADMINISTRATOR);
+        }
+        if (servletPath.startsWith("/coordinator/")) {
+            return Optional.of(AccessProfileType.COORDINATOR);
+        }
+        if (servletPath.startsWith("/instructor/")) {
+            return Optional.of(AccessProfileType.TEACHER);
+        }
+        if (servletPath.startsWith("/student/")) {
+            return Optional.of(AccessProfileType.STUDENT);
+        }
+        return Optional.empty();
+    }
+
     private static void redirectToLogin(HttpServletRequest request, HttpServletResponse response, String reason)
             throws IOException {
         response.sendRedirect(request.getContextPath() + "/login.jsp?auth=" + reason);
+    }
+
+    private static void redirectToAllowedDashboard(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            SessionUser sessionUser
+    ) throws IOException {
+        Optional<String> landingPage = DashboardNavigation.landingPageFor(sessionUser);
+        if (landingPage.isPresent()) {
+            response.sendRedirect(request.getContextPath() + landingPage.get());
+            return;
+        }
+        response.sendError(HttpServletResponse.SC_FORBIDDEN);
     }
 
     private static String normalizePath(String servletPath) {

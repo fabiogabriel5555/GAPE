@@ -17,7 +17,7 @@ import pt.isel.gape.transversal.service.AuditService;
 
 public final class SessionService {
 
-    public static final Duration INACTIVITY_TIMEOUT = Duration.ofMinutes(3);
+    public static final Duration INACTIVITY_TIMEOUT = Duration.ofMinutes(30);
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 

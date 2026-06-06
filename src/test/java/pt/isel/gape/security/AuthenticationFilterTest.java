@@ -76,13 +76,14 @@ class AuthenticationFilterTest {
         TestFilterChain chainState = new TestFilterChain();
 
         filter.doFilter(
-                requestProxy("/admin/dashboard.jsp", httpSession),
+                requestProxy("/student/student-dashbord.jsp", httpSession),
                 responseProxy(responseState),
                 chainProxy(chainState)
         );
 
         assertTrue(chainState.called);
         assertEquals(null, responseState.redirectLocation);
+        assertEquals(null, responseState.errorStatus);
 
         Session refreshed = sessionService.findById(persisted.id()).orElseThrow();
         assertTrue(!refreshed.lastActivity().isBefore(persisted.lastActivity()));
@@ -95,6 +96,57 @@ class AuthenticationFilterTest {
 
         filter.doFilter(
                 requestProxy("/admin/dashboard.jsp", null),
+                responseProxy(responseState),
+                chainProxy(chainState)
+        );
+
+        assertFalse(chainState.called);
+        assertEquals("/ctx/login.jsp?auth=required", responseState.redirectLocation);
+    }
+
+    @Test
+    void authenticatedUserIsRedirectedFromPagesOfOtherProfilesToOwnDashboard() throws Exception {
+        assertRedirectedToAllowedDashboard(
+                "/admin/dashboard.jsp",
+                AccessProfileType.STUDENT,
+                "/ctx/student/student-dashbord.jsp"
+        );
+        assertRedirectedToAllowedDashboard(
+                "/student/student-dashbord.jsp",
+                AccessProfileType.TEACHER,
+                "/ctx/instructor/instructor-dashboard.jsp"
+        );
+        assertRedirectedToAllowedDashboard(
+                "/coordinator/coordinator-dashboard.jsp",
+                AccessProfileType.ADMINISTRATOR,
+                "/ctx/admin/admin-dashbord.jsp"
+        );
+        assertRedirectedToAllowedDashboard(
+                "/instructor/instructor-dashboard.jsp",
+                AccessProfileType.COORDINATOR,
+                "/ctx/coordinator/coordinator-dashboard.jsp"
+        );
+    }
+
+    @Test
+    void authenticatedUserCanAccessEveryPageMatchingAnyOwnedProfile() throws Exception {
+        Session persisted = sessionService.createSession(400L);
+        TestHttpSession httpSession = authenticatedHttpSession(
+                persisted,
+                Set.of(AccessProfileType.ADMINISTRATOR, AccessProfileType.STUDENT)
+        );
+
+        assertAllowed("/student/student-dashbord.jsp", httpSession);
+        assertAllowed("/admin/admin-dashbord.jsp", httpSession);
+    }
+
+    @Test
+    void protectedNonDashboardPageRequiresSession() throws Exception {
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        TestFilterChain chainState = new TestFilterChain();
+
+        filter.doFilter(
+                requestProxy("/profile.jsp", null),
                 responseProxy(responseState),
                 chainProxy(chainState)
         );
@@ -138,6 +190,54 @@ class AuthenticationFilterTest {
                 assertEquals(1, resultSet.getInt(1));
             }
         }
+    }
+
+    private void assertRedirectedToAllowedDashboard(
+            String servletPath,
+            AccessProfileType profileType,
+            String expectedLocation
+    ) throws Exception {
+        Session persisted = sessionService.createSession(400L);
+        TestHttpSession httpSession = authenticatedHttpSession(persisted, profileType);
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        TestFilterChain chainState = new TestFilterChain();
+
+        filter.doFilter(
+                requestProxy(servletPath, httpSession),
+                responseProxy(responseState),
+                chainProxy(chainState)
+        );
+
+        assertFalse(chainState.called);
+        assertEquals(expectedLocation, responseState.redirectLocation);
+        assertEquals(null, responseState.errorStatus);
+    }
+
+    private void assertAllowed(String servletPath, TestHttpSession httpSession) throws Exception {
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        TestFilterChain chainState = new TestFilterChain();
+
+        filter.doFilter(
+                requestProxy(servletPath, httpSession),
+                responseProxy(responseState),
+                chainProxy(chainState)
+        );
+
+        assertTrue(chainState.called);
+        assertEquals(null, responseState.redirectLocation);
+        assertEquals(null, responseState.errorStatus);
+    }
+
+    private TestHttpSession authenticatedHttpSession(Session persisted, AccessProfileType profileType) {
+        return authenticatedHttpSession(persisted, Set.of(profileType));
+    }
+
+    private TestHttpSession authenticatedHttpSession(Session persisted, Set<AccessProfileType> profileTypes) {
+        TestHttpSession httpSession = new TestHttpSession();
+        httpSession.setAttribute("gape.auth.user", new SessionUser(400L, "Filter User", "filter@gape.local", null, profileTypes));
+        httpSession.setAttribute("gape.auth.sessionId", persisted.id());
+        httpSession.setAttribute("gape.auth.sessionToken", persisted.token());
+        return httpSession;
     }
 
     private AuthenticationFilter instantiateFilter(SessionService service, SessionManager manager) throws Exception {
@@ -217,6 +317,10 @@ class AuthenticationFilterTest {
                         responseState.redirectLocation = (String) args[0];
                         yield null;
                     }
+                    case "sendError" -> {
+                        responseState.errorStatus = (Integer) args[0];
+                        yield null;
+                    }
                     default -> defaultValue(method.getReturnType());
                 }
         );
@@ -291,6 +395,7 @@ class AuthenticationFilterTest {
 
     private static final class TestHttpServletResponse {
         private String redirectLocation;
+        private Integer errorStatus;
     }
 
     private static final class TestFilterChain {

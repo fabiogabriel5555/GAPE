@@ -77,12 +77,13 @@ Ligar o shell visual do template EduAll ao backend de autenticacao ja existente 
 - todas as paginas listadas em `PROTECTED_PATHS`
 
 ## Fragments alterados
-- Nenhum fragment visual do EduAll foi introduzido nesta fase.
-- Os fragments existentes em `WEB-INF/fragments` nao eram usados pelo shell do template e foram mantidos sem papel central nesta integracao.
+- `WEB-INF/fragments/user-avatar-content.jspf` e usado para apresentar a imagem/icone do utilizador autenticado no shell do template.
+- Os restantes fragments existentes em `WEB-INF/fragments` foram mantidos sem papel central nesta integracao.
 
 ## Formularios ligados ao backend
 - `login.jsp` envia `POST` para `auth/login`
 - `sign-in.jsp` mantem o mesmo layout e envia `POST` para `auth/login`
+- Os controlos de logout nas paginas privadas enviam `POST` para `auth/logout` com `csrfToken` da sessao.
 
 ## Paginas protegidas
 As paginas protegidas continuam a ser as definidas em `AuthenticationFilter.PROTECTED_PATHS`, incluindo:
@@ -124,7 +125,7 @@ As paginas publicas continuam a ser as definidas em `AuthenticationFilter.PUBLIC
 - `error-500.jsp`
 
 ## Decisoes tomadas
-- O layout do EduAll foi preservado. A integracao limitou-se a formularios, redirects, protecao de paginas e links de logout.
+- O layout do EduAll foi preservado. A integracao limitou-se a formularios, redirects, protecao de paginas e controlos de logout.
 - `login.jsp` e `sign-in.jsp` ficaram visualmente equivalentes, ambos ligados ao `LoginServlet`.
 - Os erros de credenciais e as mensagens de sessao expirada continuam a aparecer no bloco visual do login, usando classes do proprio template.
 - O `LoginServlet` passou a redirecionar por perfil:
@@ -132,6 +133,8 @@ As paginas publicas continuam a ser as definidas em `AuthenticationFilter.PUBLIC
   - `COORDINATOR` -> `coordinator/coordinator-dashboard.jsp`
   - `TEACHER` -> `instructor/instructor-dashboard.jsp`
   - `STUDENT` -> `student/student-dashbord.jsp`
+- A rota `/dashboard` redireciona uma sessao valida para a landing page adequada ao perfil.
 - `coordinator/coordinator-dashboard.jsp` foi criada a partir de `instructor/instructor-dashboard.jsp`, com o mesmo layout e com o nome/landing page adaptados.
-- O `logout` continua a apontar para `auth/logout`, aproveitando o `LogoutServlet` ja existente.
-- Nao foi criada pagina dedicada de acesso negado nesta fase porque o backend atual implementa autenticacao e expiracao de sessao, mas nao autorizacao granular por permissao.
+- O `logout` usa `POST` para `auth/logout`, aproveitando o `LogoutServlet` ja existente e evitando logout por `GET`.
+- O `AuthenticationFilter` valida autenticacao, expiracao e perfil exigido por area (`admin`, `coordinator`, `instructor` e `student`).
+- Nao foi criada pagina dedicada de acesso negado nesta fase; quando um utilizador autenticado segue um link para uma area que nao pertence aos seus perfis, o sistema redireciona para o dashboard permitido.

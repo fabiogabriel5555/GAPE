@@ -1,13 +1,14 @@
 package pt.isel.gape.security.session;
 
+import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.access.model.Session;
 
 public final class SessionManager {
@@ -20,8 +21,11 @@ public final class SessionManager {
     static final String SESSION_USER_PHOTO_ATTRIBUTE = "gape.auth.userPhoto";
     static final String SESSION_USER_PROFILE_ATTRIBUTE = "gape.auth.userProfile";
     static final String SESSION_AUTHENTICATED_ATTRIBUTE = "gape.auth.authenticated";
+    static final String LOGOUT_CSRF_TOKEN_ATTRIBUTE = "gape.auth.logoutCsrfToken";
 
     private static final int HTTP_SESSION_TIMEOUT_SECONDS = (int) Duration.ofMinutes(35).toSeconds();
+    private static final int CSRF_TOKEN_BYTES = 32;
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     public void startAuthenticatedSession(HttpServletRequest request, SessionUser sessionUser, Session session) {
         Objects.requireNonNull(request, "request is required");
@@ -34,6 +38,7 @@ public final class SessionManager {
         applySessionUserAttributes(httpSession, sessionUser);
         httpSession.setAttribute(DATABASE_SESSION_ID_ATTRIBUTE, session.id());
         httpSession.setAttribute(DATABASE_SESSION_TOKEN_ATTRIBUTE, session.token());
+        httpSession.setAttribute(LOGOUT_CSRF_TOKEN_ATTRIBUTE, generateCsrfToken());
         httpSession.setMaxInactiveInterval(HTTP_SESSION_TIMEOUT_SECONDS);
     }
 
@@ -86,6 +91,20 @@ public final class SessionManager {
         return attribute instanceof String value ? Optional.of(value) : Optional.empty();
     }
 
+    public boolean isValidLogoutCsrfToken(HttpServletRequest request, String submittedToken) {
+        if (submittedToken == null || submittedToken.isBlank()) {
+            return false;
+        }
+
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            return false;
+        }
+
+        Object attribute = session.getAttribute(LOGOUT_CSRF_TOKEN_ATTRIBUTE);
+        return attribute instanceof String expectedToken && expectedToken.equals(submittedToken);
+    }
+
     public void clearSession(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session != null) {
@@ -107,16 +126,17 @@ public final class SessionManager {
     }
 
     private static String resolveProfileLabel(SessionUser sessionUser) {
-        if (sessionUser.profileTypes().isEmpty()) {
-            return "Authenticated user";
-        }
-
-        AccessProfileType firstProfile = sessionUser.profileTypes().iterator().next();
-        return switch (firstProfile) {
+        return sessionUser.primaryProfileType().map(profileType -> switch (profileType) {
             case ADMINISTRATOR -> "Administrator";
             case COORDINATOR -> "Coordinator";
             case TEACHER -> "Teacher";
             case STUDENT -> "Student";
-        };
+        }).orElse("Authenticated user");
+    }
+
+    private static String generateCsrfToken() {
+        byte[] token = new byte[CSRF_TOKEN_BYTES];
+        SECURE_RANDOM.nextBytes(token);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(token);
     }
 }

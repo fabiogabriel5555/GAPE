@@ -29,13 +29,13 @@
     <link rel="stylesheet" href="assets/css/animate.css">
     <!-- dataTables.dataTables -->
     <link rel="stylesheet" href="assets/css/dataTables.dataTables.min.css">
-    
+
     <link rel="stylesheet" href="assets/css/aos.css">
     <!-- Main css -->
     <link rel="stylesheet" href="assets/css/main.css">
-</head> 
+</head>
 <body>
-    
+
 <!--==================== Preloader Start ====================-->
   <div class="preloader">
     <img src="assets/images/icons/preloader.gif" alt="">
@@ -63,13 +63,13 @@
     <button type="button" class="close-button"><i class="ph ph-x"></i> </button>
     <div class="mobile-menu__inner">
         <a href="index.jsp" class="mobile-menu__logo">
-            <img src="assets/images/logo/logo.png" alt="Logo">
+            <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
-            
+
 <ul class="nav-menu flex-align nav-menu--mobile">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -94,10 +94,10 @@
                 <a href="about-four.jsp" class="nav-submenu__link hover-bg-neutral-30"> About Four</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="coordinator/coordinator.jsp" class="nav-submenu__link hover-bg-neutral-30"> Coordinator</a>
+                <a href="${pageContext.request.contextPath}/coordinator/coordinator.jsp" class="nav-submenu__link hover-bg-neutral-30"> Coordinator</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="coordinator/coordinator-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Coordinator Details</a>
+                <a href="${pageContext.request.contextPath}/coordinator/coordinator-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Coordinator Details</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Premium Tutors</a>
@@ -123,55 +123,55 @@
         <a href="javascript:void(0)" class="nav-menu__link">Dashboard</a>
          <ul class="nav-submenu scroll-sm">
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Message</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Message</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Wishlist</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Wishlist</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Settings</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord My Profile</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Message</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Message</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-enrolled-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Enrolled Courses</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-enrolled-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Enrolled Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Wishlist</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Wishlist</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Reviews</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord My Quiz Attempts</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Assignment</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Settings</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Settings</a>
             </li>
         </ul>
     </li>
@@ -200,7 +200,7 @@
     </select>
 </div>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -216,10 +216,10 @@
             <div class="header-content-wrapper flex-align flex-grow-1">
                 <!-- Logo Start -->
                 <a href="index.jsp" class="link">
-                    <img src="assets/images/logo/logo-white.png" alt="Logo">
+                    <img src="assets/images/logo/logo-white.svg" alt="Logo">
                 </a>
                 <!-- Logo End  -->
-    
+
                 <!-- Select Start -->
                 <div class="d-sm-block d-none">
                     <div class="student-dashboard-select border-neutral-600 border rounded-pill position-relative">
@@ -231,7 +231,7 @@
         <option value="1">Design</option>
         <option value="1">Development</option>
         <option value="1">Architecture</option>
-        <option value="1">Life Style</option> 
+        <option value="1">Life Style</option>
         <option value="1">Data Science</option>
         <option value="1">Marketing</option>
         <option value="1">Music</option>
@@ -242,13 +242,13 @@
 </div>
                 </div>
                 <!-- Select End -->
-    
+
                 <!-- Menu Start  -->
                 <div class="header-menu d-lg-block d-none">
-                    
+
 <ul class="nav-menu flex-align ">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link text-white">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link text-white">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -273,10 +273,10 @@
                 <a href="about-four.jsp" class="nav-submenu__link hover-bg-neutral-30"> About Four</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="coordinator/coordinator.jsp" class="nav-submenu__link hover-bg-neutral-30"> Coordinator</a>
+                <a href="${pageContext.request.contextPath}/coordinator/coordinator.jsp" class="nav-submenu__link hover-bg-neutral-30"> Coordinator</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="coordinator/coordinator-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Coordinator Details</a>
+                <a href="${pageContext.request.contextPath}/coordinator/coordinator-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Coordinator Details</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Premium Tutors</a>
@@ -302,55 +302,55 @@
         <a href="javascript:void(0)" class="nav-menu__link text-white">Dashboard</a>
          <ul class="nav-submenu scroll-sm">
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Message</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Message</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Wishlist</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Wishlist</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/admin-dashbord-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Settings</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord My Profile</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Message</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Message</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-enrolled-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Enrolled Courses</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-enrolled-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Enrolled Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Wishlist</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-wishlist.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Wishlist</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Reviews</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord My Quiz Attempts</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Assignment</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="student/student-dashbord-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Settings</a>
+                <a href="${pageContext.request.contextPath}/student/student-dashbord-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Dashbord Settings</a>
             </li>
         </ul>
     </li>
@@ -423,34 +423,37 @@
                         </li>
                     </ul>
                 </div>
-                
+
                 <div class="dropdown">
                     <button class="dropdown-toggle gape-user-avatar-trigger w-48 h-48" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                         <%@ include file="/WEB-INF/fragments/user-avatar-content.jspf" %>
                     </button>
                     <ul class="dropdown-menu rounded-12">
                         <li>
-                            <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="admin/admin-dashbord-my-profile.jsp">
+                            <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="${pageContext.request.contextPath}/coordinator/coordinator-dashboard-my-profile.jsp">
                             <span><i class="ph ph-user-circle"></i></span>
                             <span>My Profile</span>
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="admin/admin-dashbord-settings.jsp">
+                            <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="${pageContext.request.contextPath}/coordinator/coordinator-dashboard-account-settings.jsp">
                             <span><i class="ph ph-gear"></i></span>
                             <span>Settings</span>
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="auth/logout">
+                            <form action="${pageContext.request.contextPath}/auth/logout" method="post" class="m-0">
+                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.logoutCsrfToken']}">
+                                <button type="submit" class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03 border-0 bg-transparent w-100 text-start">
                             <span><i class="ph ph-power"></i></span>
                             <span>Log Out</span>
-                            </a>
+                                </button>
+                            </form>
                         </li>
                     </ul>
                 </div>
                 <button type="button" class="toggle-mobileMenu d-lg-none text-white flex-center">
-                    <i class="ph ph-list"></i> 
+                    <i class="ph ph-list"></i>
                 </button>
             </div>
             <!-- Header Right End  -->
@@ -471,7 +474,7 @@
     <img src="assets/images/shapes/shape4.png" alt="" class="position-absolute inset-inline-end-2-persent inset-block-end-45-persent animation-scalation">
     <img src="assets/images/shapes/shape4.png" alt="" class="position-absolute inset-block-end-30-persent inset-inline-end-45-persent animation-scalation">
     <img src="assets/images/shapes/shape4.png" alt="" class="shape nine animation-scalation">
-    
+
     <div class="container container--lg">
         <div class="d-flex align-items-center gap-16 justify-content-between flex-wrap">
             <div class="breadcrumb__wrapper">
@@ -484,18 +487,18 @@
                         <i class="text-white d-flex ph-bold ph-caret-right"></i>
                     </li>
                     <li class="breadcrumb__item">
-                        <a href="admin/admin-dashbord.jsp" class="breadcrumb__link text-white hover-text-warning-800 fw-medium">Dashboard</a> 
+                        <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="breadcrumb__link text-white hover-text-warning-800 fw-medium">Dashboard</a>
                     </li>
                     <li class="breadcrumb__item @@arrowTwoShowHide">
                         <i class="text-white d-flex ph-bold ph-caret-right"></i>
                     </li>
-                    <li class="breadcrumb__item"> 
-                        <span class="text-main-two-600">Student Dashboard</span> 
+                    <li class="breadcrumb__item">
+                        <span class="text-main-two-600">Student Dashboard</span>
                     </li>
                 </ul>
             </div>
             <div>
-                <a href="coordinator/coordinator.jsp" class="border-warning-800 border px-32 py-16 rounded-pill text-warning-800 hover-bg-warning-900 hover-text-white">Become an Coordinator</a>
+                <a href="${pageContext.request.contextPath}/coordinator/coordinator.jsp" class="border-warning-800 border px-32 py-16 rounded-pill text-warning-800 hover-bg-warning-900 hover-text-white">Become an Coordinator</a>
             </div>
         </div>
     </div>
@@ -507,7 +510,7 @@
     <div class="container container--lg">
         <div class="d-flex gap-24 mt--120 z-2 position-relative">
             <div class="student-overlay-sidebar"></div>
-            
+
 <!-- ========Dashdord Sidebar start======== -->
 <div class="student-dashboard-sidebar px-20 py-24 max-w-288-px bg-white rounded-10 w-100 position-relative">
     <div class="text-center">
@@ -517,51 +520,51 @@
     </div>
     <span class="w-100 bg-neutral-40 mb-24 mt-24 h-1"></span>
      <div class="overflow-x-auto">
-        <div class="student-dashbord-scrollbar min-w-max"> 
+        <div class="student-dashbord-scrollbar min-w-max">
             <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome Warren,</span>
                <ul>
                    <li class="mb-8">
-                       <a href="student/student-dashbord.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="${pageContext.request.contextPath}/student/student-dashbord.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
                        Dashboard</a>
                    </li>
                    <li class="mb-8">
-                       <a href="student/student-dashbord-my-profile.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="${pageContext.request.contextPath}/student/student-dashbord-my-profile.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-circle"></i></span>
                        My Profile</a>
                    </li>
                    <li class="mb-8">
-                       <a href="student/student-dashbord-message.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="${pageContext.request.contextPath}/student/student-dashbord-message.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-chat-dots"></i></span>
                         Message</a>
                    </li>
                    <li class="mb-8">
-                       <a href="student/student-dashbord-enrolled-courses.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="${pageContext.request.contextPath}/student/student-dashbord-enrolled-courses.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-watch"></i></span>
                        Enrolled Courses</a>
                    </li>
                    <li class="mb-8">
-                       <a href="student/student-dashbord-wishlist.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="${pageContext.request.contextPath}/student/student-dashbord-wishlist.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-bookmark-simple"></i></span>
                        Wishlist</a>
                    </li>
                    <li class="mb-8">
-                       <a href="student/student-dashbord-reviews.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="${pageContext.request.contextPath}/student/student-dashbord-reviews.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sparkle"></i></span>
                        Reviews</a>
                    </li>
                    <li class="mb-8">
-                       <a href="student/student-dashbord-my-quiz-attempts.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="${pageContext.request.contextPath}/student/student-dashbord-my-quiz-attempts.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-seal-question"></i></span>
                        Quiz Attempts</a>
                    </li>
                    <li class="mb-8">
-                       <a href="student/student-dashbord-assignment.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="${pageContext.request.contextPath}/student/student-dashbord-assignment.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-file-text"></i></span>
                        Assignment</a>
                    </li>
                    <li class="mb-8">
-                       <a href="student/student-dashbord-settings.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="${pageContext.request.contextPath}/student/student-dashbord-settings.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-gear"></i></span>
                        Settings</a>
                    </li>
@@ -570,19 +573,22 @@
      </div>
 
      <div class="position-absolute inset-block-end-0 inset-inline-start-0 pb-16 px-16 w-100">
-         <a href="auth/logout" class=" text-14 fw-medium text-neutral-500 d-flex align-items-center gap-8  hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap bg-white">
+         <form action="${pageContext.request.contextPath}/auth/logout" method="post" class="m-0">
+             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.logoutCsrfToken']}">
+             <button type="submit" class="text-14 fw-medium text-neutral-500 d-flex align-items-center gap-8  hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap bg-white border-0 w-100 text-start">
              <span class="text-16 text-main-600 item-hover__text transition-03">
                  <i class="ph ph-sign-out"></i>
              </span>
              Logout
-         </a>
+             </button>
+         </form>
      </div>
 </div>
 <!-- ========Dashdord Sidebar end======== -->
 
                 <!-- ============Feedbacks start============ -->
             <div class="w-100">
-        
+
                 <div class="px-24 py-24 bg-white rounded-10">
                     <div class="d-flex align-items-center justify-content-between">
                         <h6 class="mb-0 fw-medium">Reviews</h6>
@@ -591,7 +597,7 @@
                         </button>
                     </div>
                     <div class="mb-24">
-                        
+
                         <div class="overflow-x-auto">
                             <table id="example-five" class="display min-w-max w-100">
                                 <thead>
@@ -603,7 +609,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none">
                                             <span class="fw-normal text-12 text-neutral-500">Automation System</span>
@@ -628,7 +634,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none">
                                             <span class="fw-normal text-12 text-neutral-500">Laboratory Expansion</span>
@@ -652,7 +658,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none">
                                             <span class="fw-normal text-12 text-neutral-500">Cleanroom Upgrade</span>
@@ -676,7 +682,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none">
                                             <span class="fw-normal text-12 text-neutral-500">Quality Control</span>
@@ -700,7 +706,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none">
                                             <span class="fw-normal text-12 text-neutral-500">Analytical Equipment</span>
@@ -724,7 +730,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none">
                                             <span class="fw-normal text-12 text-neutral-500">Vaccine Development</span>
@@ -748,7 +754,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none">
                                             <span class="fw-normal text-12 text-neutral-500">Packaging Line</span>
@@ -772,7 +778,7 @@
                                         </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none">
                                             <span class="fw-normal text-12 text-neutral-500">IT Infrastructure</span>
@@ -796,7 +802,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none">
                                             <span class="fw-normal text-12 text-neutral-500">Clinical Trials</span>
@@ -820,7 +826,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none">
                                             <span class="fw-normal text-12 text-neutral-500">Clinical Trials</span>
@@ -844,7 +850,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none">
                                             <span class="fw-normal text-12 text-neutral-500">Cold Chain</span>
@@ -868,7 +874,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none">
                                             <span class="fw-normal text-12 text-neutral-500">IT Infrastructure</span>
@@ -892,20 +898,20 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                 </tbody>
                             </table>
                         </div>
-    
+
                     </div>
-        
+
                     <div class="d-flex align-items-center gap-24 justify-content-between flex-wrap">
                         <div class="form-check form-switch">
                             <input class="form-check-input focus-box-shadow" type="checkbox" role="switch" id="flexSwitchCheckDefault">
                             <label class="form-check-label text-14 fw-normal text-neutral-500" for="flexSwitchCheckDefault">Dense</label>
                         </div>
                         <div class="d-flex align-items-center gap-40 flex-wrap">
-        
+
                             <div class="d-flex align-items-center gap-16">
                                 <span class="fw-normal text-14 text-neutral-500">Rows per page:</span>
                                 <select class="form-select w-auto pe-32 text-14 fw-normal text-neutral-500 bg-transparent border-0">
@@ -915,7 +921,7 @@
                                     <option value="1">15</option>
                                 </select>
                             </div>
-        
+
                             <div class="d-flex align-items-center gap-16">
                                 <span class="fw-normal text-14 text-neutral-500">1-12 of 100</span>
                                 <div class="d-flex align-items-center gpa-8">
@@ -927,15 +933,15 @@
                                     </span>
                                 </div>
                             </div>
-        
+
                         </div>
-        
+
                     </div>
-        
+
                 </div>
             </div>
             <!-- ============Feedbacks end============ -->
-        </div>            
+        </div>
     </div>
 </section>
 <!-- =========== student dashbord section end ============== -->
@@ -947,7 +953,7 @@
         <div class="bottom-footer border-top border-dashed border-neutral-600 border-0 py-32">
             <div class="container container-two">
                 <div class="bottom-footer__inner flex-between gap-16 flex-wrap">
-                    <p class="text-white text-16 fw-normal">Copyright &copy; 2025 
+                    <p class="text-white text-16 fw-normal">Copyright &copy; 2025
                             <span class="text-main-600">GAPE</span>
                         All Rights Reserved.
                     </p>
@@ -995,12 +1001,12 @@
     <script src="assets/js/wow.min.js"></script>
 
     <script src="assets/js/aos.js"></script>
-    
+
     <!-- main js -->
     <script src="assets/js/main.js"></script>
 
 
-    
+
 
 
 </body>

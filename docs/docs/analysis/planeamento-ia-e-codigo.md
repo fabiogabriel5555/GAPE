@@ -125,6 +125,7 @@ O agente deve respeitar sempre:
 ## 0.3 Regra geral para prompts de front-end
 
 Todos os prompts de front-end devem dar liberdade suficiente à IA para trabalhar corretamente com o template EduAll.
+Essa liberdade serve para escolher as páginas, fragments e componentes mais adequados, mas não para alterar o design visual do template.
 
 Sempre que uma fase tiver front-end, o Codex Frontend/JSP Agent deve:
 
@@ -139,7 +140,7 @@ Sempre que uma fase tiver front-end, o Codex Frontend/JSP Agent deve:
 9. transformar as páginas necessárias em JSP dinâmicas;
 10. ligar formulários e ações aos Servlets corretos;
 11. apresentar mensagens de erro e sucesso no estilo do EduAll;
-12. manter o estilo visual original sempre que possível;
+12. preservar o estilo visual original do EduAll sempre que possível;
 13. alterar várias páginas se isso for necessário para a funcionalidade ficar completa;
 14. documentar quais páginas foram alteradas e porquê;
 15. testar a ligação ao back-end;
@@ -160,7 +161,10 @@ O agente deve respeitar sempre:
 * não duplicar segurança apenas no front-end;
 * não substituir validações do back-end por validações visuais;
 * não quebrar o estilo visual do EduAll;
-* não alterar páginas sem relação com a fase, exceto se isso for necessário para navegação, layout, menus ou integração.
+* não alterar o design visual do template EduAll;
+* se uma alteração de design for estritamente necessária, explicar o motivo, indicar o impacto e pedir autorização antes de a aplicar;
+* quando uma alteração visual for autorizada, fazê-la da forma menos impactante possível;
+* não alterar páginas sem relação com a fase, exceto se isso for necessário para navegação técnica, menus ou integração.
 
 ---
 
@@ -315,6 +319,7 @@ Função:
 * adaptar sidebar;
 * adaptar mensagens de erro e sucesso;
 * reaproveitar o estilo visual do template;
+* preservar o design visual original do template;
 * ligar formulários e tabelas JSP aos Servlets;
 * testar páginas JSP;
 * corrigir erros de caminhos, formulários, mensagens, includes, assets e ligação ao back-end;
@@ -327,6 +332,8 @@ Regra obrigatória:
 O agente não deve limitar-se a uma página indicada no prompt.
 
 Deve analisar o template EduAll completo e decidir todas as páginas, fragments, componentes e assets que precisam de alteração para a funcionalidade ficar completa.
+
+Essa decisão deve preservar o design do EduAll. Se uma alteração ao design for estritamente necessária, o agente deve explicar a necessidade, indicar o impacto previsto e pedir autorização antes de a aplicar.
 
 ---
 
@@ -544,6 +551,8 @@ Função:
 * verificar se não há regras de negócio nas JSP;
 * verificar se os formulários ligam aos Servlets corretos;
 * verificar CSS, JS, imagens e includes;
+* verificar se o design visual do EduAll foi preservado;
+* verificar se qualquer alteração de design teve autorização prévia e impacto mínimo;
 * corrigir erros pequenos;
 * para erros grandes, pedir autorização antes de alterar.
 
@@ -1421,6 +1430,7 @@ Integrar o template EduAll no projeto GAPE sem implementar funcionalidades reais
 Usa o agente `Codex Frontend/JSP Agent`.
 
 Antes de alterar qualquer ficheiro, analisa o template EduAll completo.
+Não alteres o design do template. Se alguma alteração visual for estritamente necessária para a integração, pede autorização antes de a aplicar e mantém o impacto o mais reduzido possível.
 
 Deves analisar:
 
@@ -1504,6 +1514,7 @@ Regras:
 * não colocar SQL nas JSP;
 * não colocar regras de negócio nas JSP;
 * manter o estilo visual do EduAll;
+* não alterar o design do EduAll sem autorização prévia;
 * garantir acessibilidade adequada e navegação simples;
 * corrigir caminhos quebrados;
 * testar assets;
@@ -2165,7 +2176,7 @@ Deves identificar autonomamente todas as páginas, fragments e componentes relac
 * breadcrumbs;
 * cards de dashboard.
 
-Tens liberdade para alterar todas as páginas necessárias para refletir permissões no front-end. Não te limites à sidebar. Se o template tiver menus em várias páginas, headers diferentes, dashboards diferentes ou componentes repetidos, altera todos os necessários.
+Tens liberdade para alterar todas as páginas necessárias para refletir permissões no front-end, preservando o design do EduAll. Não te limites à sidebar. Se o template tiver menus em várias páginas, headers diferentes, dashboards diferentes ou componentes repetidos, altera todos os necessários. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Implementa:
 
@@ -2421,7 +2432,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * auditoria visível, se fizer sentido;
 * dashboards administrativos.
 
-Tens liberdade para alterar todas as páginas necessárias. Não te limites a uma página de listagem. Se o template tiver páginas de perfil, páginas de utilizadores, páginas administrativas ou formulários já prontos, adapta os mais adequados.
+Tens liberdade para alterar todas as páginas necessárias, preservando o design do EduAll. Não te limites a uma página de listagem. Se o template tiver páginas de perfil, páginas de utilizadores, páginas administrativas ou formulários já prontos, adapta os mais adequados. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Cria ou adapta:
 
@@ -2650,7 +2661,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * árvores/hierarquias visuais;
 * modais de confirmação.
 
-Tens liberdade para alterar todas as páginas necessárias. Se o template tiver páginas de instituições, departamentos, categorias, organizações ou gestão administrativa, adapta as mais adequadas ao GAPE.
+Tens liberdade para alterar todas as páginas necessárias, preservando o design do EduAll. Se o template tiver páginas de instituições, departamentos, categorias, organizações ou gestão administrativa, adapta as mais adequadas ao GAPE. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Cria ou adapta:
 
@@ -2871,7 +2882,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * dashboards de curso;
 * menus de navegação.
 
-Tens liberdade para alterar todas as páginas necessárias. Se o template já tiver páginas de cursos, detalhes de cursos, instrutores, aulas ou categorias, adapta as mais adequadas ao GAPE.
+Tens liberdade para alterar todas as páginas necessárias, preservando o design do EduAll. Se o template já tiver páginas de cursos, detalhes de cursos, instrutores, aulas ou categorias, adapta as mais adequadas ao GAPE. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Cria ou adapta:
 
@@ -3095,7 +3106,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * dashboards de curso/turma;
 * menus contextuais.
 
-Tens liberdade para alterar todas as páginas necessárias. Se o template tiver páginas de turmas, cursos, aulas, grupos, estudantes, conteúdos ou gestão académica, adapta as mais adequadas.
+Tens liberdade para alterar todas as páginas necessárias, preservando o design do EduAll. Se o template tiver páginas de turmas, cursos, aulas, grupos, estudantes, conteúdos ou gestão académica, adapta as mais adequadas. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Cria ou adapta:
 
@@ -3311,7 +3322,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * filtros por curso/turma/bloco;
 * páginas de aulas ou cursos onde conteúdos aparecem.
 
-Tens liberdade para alterar todas as páginas necessárias. Se o template tiver páginas de materiais, recursos, ficheiros, cursos, aulas ou biblioteca, adapta as mais adequadas.
+Tens liberdade para alterar todas as páginas necessárias, preservando o design do EduAll. Se o template tiver páginas de materiais, recursos, ficheiros, cursos, aulas ou biblioteca, adapta as mais adequadas. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Cria ou adapta:
 
@@ -3524,7 +3535,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * gestão de salas;
 * páginas de curso/turma onde aulas aparecem.
 
-Tens liberdade para alterar todas as páginas necessárias. Se o template tiver páginas de aulas, classes, eventos, calendário, reuniões ou detalhe de curso, adapta as mais adequadas.
+Tens liberdade para alterar todas as páginas necessárias, preservando o design do EduAll. Se o template tiver páginas de aulas, classes, eventos, calendário, reuniões ou detalhe de curso, adapta as mais adequadas. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Cria ou adapta:
 
@@ -3751,7 +3762,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * cards de avaliação;
 * páginas de curso/turma onde avaliações aparecem.
 
-Tens liberdade para alterar todas as páginas necessárias. Se o template tiver páginas de quiz, exame, avaliação, aula de curso, dashboard de aluno ou dashboard de professor, adapta as mais adequadas.
+Tens liberdade para alterar todas as páginas necessárias, preservando o design do EduAll. Se o template tiver páginas de quiz, exame, avaliação, aula de curso, dashboard de aluno ou dashboard de professor, adapta as mais adequadas. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Cria ou adapta:
 
@@ -3978,7 +3989,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * páginas de processamento;
 * notificações de faltas.
 
-Tens liberdade para alterar todas as páginas necessárias. Se o template tiver páginas de calendário, eventos, assiduidade, horário, dashboard de aluno ou dashboard de professor, adapta as mais adequadas.
+Tens liberdade para alterar todas as páginas necessárias, preservando o design do EduAll. Se o template tiver páginas de calendário, eventos, assiduidade, horário, dashboard de aluno ou dashboard de professor, adapta as mais adequadas. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Cria ou adapta:
 
@@ -4192,7 +4203,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * validação;
 * consulta.
 
-Tens liberdade para alterar todas as páginas necessárias. Se o template tiver páginas de notas, resultados, certificados, conquistas, dashboard de aluno ou dashboard de professor, adapta as mais adequadas.
+Tens liberdade para alterar todas as páginas necessárias, preservando o design do EduAll. Se o template tiver páginas de notas, resultados, certificados, conquistas, dashboard de aluno ou dashboard de professor, adapta as mais adequadas. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Cria ou adapta:
 
@@ -4414,7 +4425,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * respostas;
 * páginas administrativas.
 
-Tens liberdade para alterar todas as páginas necessárias. Se o template tiver páginas de mensagens, notificações, caixa de entrada, chat, fóruns ou dashboard administrativo, adapta as mais adequadas.
+Tens liberdade para alterar todas as páginas necessárias, preservando o design do EduAll. Se o template tiver páginas de mensagens, notificações, caixa de entrada, chat, fóruns ou dashboard administrativo, adapta as mais adequadas. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Cria ou adapta:
 
@@ -4614,7 +4625,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * widgets;
 * dashboards por perfil.
 
-Tens liberdade para alterar todas as páginas necessárias. O template EduAll tem vários dashboards e widgets; usa os mais adequados a cada âmbito e perfil.
+Tens liberdade para alterar todas as páginas necessárias, preservando o design do EduAll. O template EduAll tem vários dashboards e widgets; usa os mais adequados a cada âmbito e perfil. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Cria ou adapta:
 
@@ -4801,7 +4812,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * filtros;
 * páginas administrativas.
 
-Tens liberdade para alterar todas as páginas necessárias.
+Tens liberdade para alterar todas as páginas necessárias, preservando o design do EduAll. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Cria ou adapta:
 
@@ -5213,7 +5224,7 @@ Deves verificar autonomamente:
 * mensagens de sucesso;
 * mensagens de erro.
 
-Tens liberdade para alterar todas as páginas necessárias para que a demonstração fique coerente.
+Tens liberdade para alterar todas as páginas necessárias para que a demonstração fique coerente, preservando o design do EduAll. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
 
 Podes:
 

@@ -62,7 +62,7 @@
     <button type="button" class="close-button"><i class="ph ph-x"></i> </button>
     <div class="mobile-menu__inner">
         <a href="index.jsp" class="mobile-menu__logo">
-            <img src="assets/images/logo/logo.png" alt="Logo">
+            <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
             
@@ -155,7 +155,7 @@
         <a href="javascript:void(0)" class="nav-menu__link">Dashboard</a>
          <ul class="nav-submenu scroll-sm">
             <li class="nav-submenu__item">
-                <a href="admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -179,7 +179,7 @@
                 <a href="forms.jsp" class="nav-submenu__link hover-bg-neutral-30">Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Profile</a>
@@ -206,7 +206,7 @@
                 <a href="forms.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Profile</a>
@@ -287,7 +287,7 @@
                 <!-- Logo Start -->
                 <div class="logo">
                     <a href="index.jsp" class="link">
-                        <img src="assets/images/logo/logo.png" alt="Logo">
+                        <img src="assets/images/logo/logo.svg" alt="Logo">
                     </a>
                 </div>
                 <!-- Logo End  -->
@@ -407,7 +407,7 @@
         <a href="javascript:void(0)" class="nav-menu__link">Dashboard</a>
          <ul class="nav-submenu scroll-sm">
             <li class="nav-submenu__item">
-                <a href="admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -431,7 +431,7 @@
                 <a href="forms.jsp" class="nav-submenu__link hover-bg-neutral-30">Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Profile</a>
@@ -458,7 +458,7 @@
                 <a href="forms.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Profile</a>
@@ -577,7 +577,7 @@
                         <p class="text-neutral-500 mb-32">Ocorreu um erro inesperado ao processar a pagina. Esta vista permanece apenas como base visual nesta fase.</p>
                         <div class="d-flex justify-content-center gap-16 flex-wrap">
                             <a href="index.jsp" class="btn btn-main rounded-pill">Voltar ao inicio</a>
-                            <a href="admin/dashboard.jsp" class="btn btn-outline-main rounded-pill">Abrir dashboard</a>
+                            <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="btn btn-outline-main rounded-pill">Abrir dashboard</a>
                         </div>
                     </div>
                 </div>

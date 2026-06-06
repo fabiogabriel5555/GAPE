@@ -59,7 +59,7 @@
     <button type="button" class="close-button"><i class="ph ph-x"></i> </button>
     <div class="mobile-menu__inner">
         <a href="index.jsp" class="mobile-menu__logo">
-            <img src="assets/images/logo/logo.png" alt="Logo">
+            <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
             
@@ -90,10 +90,10 @@
                 <a href="about-four.jsp" class="nav-submenu__link hover-bg-neutral-30"> About Four</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor/instructor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
+                <a href="${pageContext.request.contextPath}/instructor/instructor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="instructor/instructor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
+                <a href="${pageContext.request.contextPath}/instructor/instructor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Premium Tutors</a>
@@ -151,23 +151,23 @@
     <div>
         <!-- ========Dashdord Sidebar start======== -->
          <div class="px-20 py-24 max-w-288-px bg-white h-100">
-              <img src="assets/images/logo/logo.png" alt="" class="">
+              <img src="assets/images/logo/logo.svg" alt="" class="">
               <span class="w-100 border-main-100 border mb-24 mt-24"></span>
               <div>
                 <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome Henry,</span>
                 <ul>
                     <li class="mb-8">
-                        <a href="admin/dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
+                        <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
                         <span class="text-20 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
                         Dashboard</a>
                     </li>
                     <li class="mb-8">
-                        <a href="admin/dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
+                        <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
                         <span class="text-20 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
                         My Profile</a>
                     </li>
                     <li class="mb-8">
-                        <a href="admin/dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
+                        <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
                         <span class="text-20 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
                         Dashboard</a>
                     </li>

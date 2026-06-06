@@ -141,7 +141,8 @@ class TemplateStructureTest {
                     }
 
                     assertEquals(1, count, () -> "Expected exactly one active sidebar item in " + page);
-                    assertEquals(expectedSidebarHref(dashboardDirectory.getFileName().toString(), pageName), activeHref,
+                    assertEquals(expectedSidebarHref(dashboardDirectory.getFileName().toString(), pageName),
+                            normalizeDashboardHref(activeHref),
                             () -> "Unexpected active sidebar href in " + page);
                 }
             }
@@ -184,6 +185,14 @@ class TemplateStructureTest {
         }
 
         return role + "/" + pageName;
+    }
+
+    private static String normalizeDashboardHref(String href) {
+        String contextPrefix = "${pageContext.request.contextPath}/";
+        if (href.startsWith(contextPrefix)) {
+            return href.substring(contextPrefix.length());
+        }
+        return href;
     }
 
     private static void assertFullFooterKeepsOnlyBottomFooter(Path page, String html) {

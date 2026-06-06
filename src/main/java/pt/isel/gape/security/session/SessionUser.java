@@ -4,6 +4,7 @@ import java.io.Serial;
 import java.io.Serializable;
 import java.util.LinkedHashSet;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 import pt.isel.gape.access.model.AccessProfile;
@@ -60,6 +61,22 @@ public final class SessionUser implements Serializable {
 
     public Set<AccessProfileType> profileTypes() {
         return profileTypes;
+    }
+
+    public Optional<AccessProfileType> primaryProfileType() {
+        if (profileTypes.contains(AccessProfileType.ADMINISTRATOR)) {
+            return Optional.of(AccessProfileType.ADMINISTRATOR);
+        }
+        if (profileTypes.contains(AccessProfileType.COORDINATOR)) {
+            return Optional.of(AccessProfileType.COORDINATOR);
+        }
+        if (profileTypes.contains(AccessProfileType.TEACHER)) {
+            return Optional.of(AccessProfileType.TEACHER);
+        }
+        if (profileTypes.contains(AccessProfileType.STUDENT)) {
+            return Optional.of(AccessProfileType.STUDENT);
+        }
+        return Optional.empty();
     }
 
     private static String normalizePhoto(String photo) {

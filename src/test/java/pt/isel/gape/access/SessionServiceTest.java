@@ -10,6 +10,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -91,6 +92,15 @@ class SessionServiceTest {
     }
 
     @Test
+    void expirationBoundaryFollowsThirtyMinuteInactivityPolicy() throws Exception {
+        LocalDateTime startAt = LocalDateTime.parse("2026-06-04T09:40:00");
+
+        assertFalse(sessionService.isExpired(boundarySession(1L, startAt, "2026-06-04T09:45:31")));
+        assertTrue(sessionService.isExpired(boundarySession(2L, startAt, "2026-06-04T09:45:30")));
+        assertTrue(sessionService.isExpired(boundarySession(3L, startAt, "2026-06-04T09:45:29")));
+    }
+
+    @Test
     void logoutClosesSessionAndRegistersAudit() throws Exception {
         long sessionId = insertSession(300L, "tok-close", "2026-06-04 10:00:00", "2026-06-04 10:10:00", "active", null);
         Session session = sessionService.findById(sessionId).orElseThrow();
@@ -153,5 +163,17 @@ class SessionServiceTest {
                 return resultSet.getLong(1);
             }
         }
+    }
+
+    private Session boundarySession(long id, LocalDateTime startAt, String lastActivity) {
+        return new Session(
+                id,
+                300L,
+                "tok-boundary-" + id,
+                SessionState.ACTIVE,
+                startAt,
+                LocalDateTime.parse(lastActivity),
+                null
+        );
     }
 }

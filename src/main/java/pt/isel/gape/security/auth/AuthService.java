@@ -87,6 +87,20 @@ public final class AuthService {
             throw new AuthenticationException(AuthenticationFailureReason.INVALID_CREDENTIALS, "Invalid credentials");
         }
 
+        SessionUser sessionUser = SessionUser.fromUser(user);
+        if (sessionUser.profileTypes().isEmpty()) {
+            auditService.record(
+                    user.id(),
+                    null,
+                    "LOGIN",
+                    "user_account",
+                    String.valueOf(user.id()),
+                    "denied",
+                    sourceIp
+            );
+            throw new AuthenticationException(AuthenticationFailureReason.USER_WITHOUT_PROFILE, "User has no access profile");
+        }
+
         pt.isel.gape.access.model.Session session = sessionService.createSession(user.id());
         auditService.record(
                 user.id(),
@@ -98,7 +112,7 @@ public final class AuthService {
                 sourceIp
         );
 
-        return new AuthenticatedSession(user, session, SessionUser.fromUser(user));
+        return new AuthenticatedSession(user, session, sessionUser);
     }
 
     private AuthenticationException invalidCredentials(String email, String sourceIp) {

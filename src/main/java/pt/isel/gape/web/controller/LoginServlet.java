@@ -8,13 +8,13 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.security.auth.AuthService;
 import pt.isel.gape.security.auth.AuthenticationException;
 import pt.isel.gape.security.auth.AuthenticationFailureReason;
 import pt.isel.gape.security.session.SessionManager;
 import pt.isel.gape.security.session.SessionUser;
+import pt.isel.gape.web.navigation.DashboardNavigation;
 
 @WebServlet(name = "loginServlet", urlPatterns = "/auth/login")
 public final class LoginServlet extends HttpServlet {
@@ -60,19 +60,7 @@ public final class LoginServlet extends HttpServlet {
     }
 
     private static String resolveLandingPage(SessionUser sessionUser) {
-        if (sessionUser.profileTypes().contains(AccessProfileType.ADMINISTRATOR)) {
-            return "/admin/admin-dashbord.jsp";
-        }
-        if (sessionUser.profileTypes().contains(AccessProfileType.COORDINATOR)) {
-            return "/coordinator/coordinator-dashboard.jsp";
-        }
-        if (sessionUser.profileTypes().contains(AccessProfileType.TEACHER)) {
-            return "/instructor/instructor-dashboard.jsp";
-        }
-        if (sessionUser.profileTypes().contains(AccessProfileType.STUDENT)) {
-            return "/student/student-dashbord.jsp";
-        }
-        return "/admin/dashboard.jsp";
+        return DashboardNavigation.landingPageFor(sessionUser).orElse("/login.jsp?auth=required");
     }
 
     private static String mapFailure(AuthenticationFailureReason reason) {
@@ -80,6 +68,7 @@ public final class LoginServlet extends HttpServlet {
             case INVALID_CREDENTIALS -> "Credenciais invalidas.";
             case USER_INACTIVE -> "A conta esta inativa.";
             case USER_BLOCKED -> "A conta esta bloqueada.";
+            case USER_WITHOUT_PROFILE -> "A conta nao tem perfil de acesso associado.";
         };
     }
 }
