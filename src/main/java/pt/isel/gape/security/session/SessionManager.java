@@ -9,7 +9,9 @@ import java.util.OptionalLong;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
+import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.access.model.Session;
+import pt.isel.gape.security.authorization.AuthorizationPolicy;
 
 public final class SessionManager {
 
@@ -22,6 +24,15 @@ public final class SessionManager {
     static final String SESSION_USER_PROFILE_ATTRIBUTE = "gape.auth.userProfile";
     static final String SESSION_AUTHENTICATED_ATTRIBUTE = "gape.auth.authenticated";
     static final String LOGOUT_CSRF_TOKEN_ATTRIBUTE = "gape.auth.logoutCsrfToken";
+    static final String SESSION_PERMISSION_CODES_ATTRIBUTE = "gape.auth.permissions";
+    static final String HAS_ADMINISTRATOR_PROFILE_ATTRIBUTE = "gape.auth.hasAdministratorProfile";
+    static final String HAS_COORDINATOR_PROFILE_ATTRIBUTE = "gape.auth.hasCoordinatorProfile";
+    static final String HAS_TEACHER_PROFILE_ATTRIBUTE = "gape.auth.hasTeacherProfile";
+    static final String HAS_STUDENT_PROFILE_ATTRIBUTE = "gape.auth.hasStudentProfile";
+    static final String CAN_VIEW_REPORTS_ATTRIBUTE = "gape.auth.canViewReports";
+    static final String CAN_MANAGE_USERS_ATTRIBUTE = "gape.auth.canManageUsers";
+    static final String CAN_MANAGE_PERMISSIONS_ATTRIBUTE = "gape.auth.canManagePermissions";
+    static final String CAN_MANAGE_SETTINGS_ATTRIBUTE = "gape.auth.canManageSettings";
 
     private static final int HTTP_SESSION_TIMEOUT_SECONDS = (int) Duration.ofMinutes(35).toSeconds();
     private static final int CSRF_TOKEN_BYTES = 32;
@@ -123,6 +134,30 @@ public final class SessionManager {
         }
         httpSession.setAttribute(SESSION_USER_PROFILE_ATTRIBUTE, resolveProfileLabel(sessionUser));
         httpSession.setAttribute(SESSION_AUTHENTICATED_ATTRIBUTE, Boolean.TRUE);
+        httpSession.setAttribute(SESSION_PERMISSION_CODES_ATTRIBUTE, sessionUser.permissionCodes());
+        httpSession.setAttribute(
+                HAS_ADMINISTRATOR_PROFILE_ATTRIBUTE,
+                sessionUser.profileTypes().contains(AccessProfileType.ADMINISTRATOR)
+        );
+        httpSession.setAttribute(
+                HAS_COORDINATOR_PROFILE_ATTRIBUTE,
+                sessionUser.profileTypes().contains(AccessProfileType.COORDINATOR)
+        );
+        httpSession.setAttribute(
+                HAS_TEACHER_PROFILE_ATTRIBUTE,
+                sessionUser.profileTypes().contains(AccessProfileType.TEACHER)
+        );
+        httpSession.setAttribute(
+                HAS_STUDENT_PROFILE_ATTRIBUTE,
+                sessionUser.profileTypes().contains(AccessProfileType.STUDENT)
+        );
+        httpSession.setAttribute(CAN_VIEW_REPORTS_ATTRIBUTE, sessionUser.hasPermission(AuthorizationPolicy.VIEW_REPORTS));
+        httpSession.setAttribute(CAN_MANAGE_USERS_ATTRIBUTE, sessionUser.hasPermission(AuthorizationPolicy.MANAGE_USERS));
+        httpSession.setAttribute(
+                CAN_MANAGE_PERMISSIONS_ATTRIBUTE,
+                sessionUser.hasPermission(AuthorizationPolicy.MANAGE_PERMISSIONS)
+        );
+        httpSession.setAttribute(CAN_MANAGE_SETTINGS_ATTRIBUTE, sessionUser.hasPermission(AuthorizationPolicy.MANAGE_SETTINGS));
     }
 
     private static String resolveProfileLabel(SessionUser sessionUser) {

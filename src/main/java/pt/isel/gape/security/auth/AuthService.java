@@ -1,8 +1,14 @@
 package pt.isel.gape.security.auth;
 
 import java.time.Clock;
+import java.sql.SQLException;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
+import pt.isel.gape.access.dao.PermissionDAO;
+import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.access.model.User;
 import pt.isel.gape.access.model.UserState;
 import pt.isel.gape.access.service.SessionService;
@@ -18,6 +24,7 @@ public final class AuthService {
     private final SessionService sessionService;
     private final PasswordHasher passwordHasher;
     private final AuditService auditService;
+    private final PermissionDAO permissionDAO;
 
     public AuthService(
             UserService userService,
@@ -25,10 +32,21 @@ public final class AuthService {
             PasswordHasher passwordHasher,
             AuditService auditService
     ) {
+        this(userService, sessionService, passwordHasher, auditService, null);
+    }
+
+    public AuthService(
+            UserService userService,
+            SessionService sessionService,
+            PasswordHasher passwordHasher,
+            AuditService auditService,
+            PermissionDAO permissionDAO
+    ) {
         this.userService = Objects.requireNonNull(userService, "userService is required");
         this.sessionService = Objects.requireNonNull(sessionService, "sessionService is required");
         this.passwordHasher = Objects.requireNonNull(passwordHasher, "passwordHasher is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
+        this.permissionDAO = permissionDAO;
     }
 
     public AuthService(ConnectionProvider connectionProvider, Clock clock) {
@@ -36,7 +54,8 @@ public final class AuthService {
                 new UserService(connectionProvider),
                 new SessionService(connectionProvider, clock),
                 new PasswordHasher(),
-                new AuditService(connectionProvider, clock)
+                new AuditService(connectionProvider, clock),
+                new PermissionDAO(connectionProvider)
         );
     }
 
@@ -87,7 +106,7 @@ public final class AuthService {
             throw new AuthenticationException(AuthenticationFailureReason.INVALID_CREDENTIALS, "Invalid credentials");
         }
 
-        SessionUser sessionUser = SessionUser.fromUser(user);
+        SessionUser sessionUser = buildSessionUser(user);
         if (sessionUser.profileTypes().isEmpty()) {
             auditService.record(
                     user.id(),
@@ -113,6 +132,37 @@ public final class AuthService {
         );
 
         return new AuthenticatedSession(user, session, sessionUser);
+    }
+
+    private SessionUser buildSessionUser(User user) {
+        SessionUser baseSessionUser = SessionUser.fromUser(user);
+        if (permissionDAO == null || baseSessionUser.profileTypes().isEmpty()) {
+            return baseSessionUser;
+        }
+
+        Map<AccessProfileType, Set<String>> permissionCodesByProfile = new EnumMap<>(AccessProfileType.class);
+        try {
+            for (AccessProfileType profileType : baseSessionUser.profileTypes()) {
+                permissionCodesByProfile.put(
+                        profileType,
+                        permissionDAO.findActivePermissionCodes(user.id(), profileType)
+                );
+            }
+        } catch (SQLException exception) {
+            throw new AuthenticationException(
+                    AuthenticationFailureReason.INVALID_CREDENTIALS,
+                    "Could not load user permissions",
+                    exception
+            );
+        }
+        return new SessionUser(
+                user.id(),
+                user.name(),
+                user.email(),
+                user.photo(),
+                baseSessionUser.profileTypes(),
+                permissionCodesByProfile
+        );
     }
 
     private AuthenticationException invalidCredentials(String email, String sourceIp) {

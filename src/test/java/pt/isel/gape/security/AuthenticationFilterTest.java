@@ -105,27 +105,14 @@ class AuthenticationFilterTest {
     }
 
     @Test
-    void authenticatedUserIsRedirectedFromPagesOfOtherProfilesToOwnDashboard() throws Exception {
-        assertRedirectedToAllowedDashboard(
-                "/admin/dashboard.jsp",
-                AccessProfileType.STUDENT,
-                "/ctx/student/student-dashbord.jsp"
-        );
-        assertRedirectedToAllowedDashboard(
-                "/student/student-dashbord.jsp",
-                AccessProfileType.TEACHER,
-                "/ctx/instructor/instructor-dashboard.jsp"
-        );
-        assertRedirectedToAllowedDashboard(
-                "/coordinator/coordinator-dashboard.jsp",
-                AccessProfileType.ADMINISTRATOR,
-                "/ctx/admin/admin-dashbord.jsp"
-        );
-        assertRedirectedToAllowedDashboard(
-                "/instructor/instructor-dashboard.jsp",
-                AccessProfileType.COORDINATOR,
-                "/ctx/coordinator/coordinator-dashboard.jsp"
-        );
+    void authenticationFilterDoesNotMakeAuthorizationDecisions() throws Exception {
+        Session persisted = sessionService.createSession(400L);
+        TestHttpSession httpSession = authenticatedHttpSession(persisted, AccessProfileType.STUDENT);
+
+        assertAllowed("/admin/dashboard.jsp", httpSession);
+        assertAllowed("/coordinator/coordinator-dashboard.jsp", httpSession);
+        assertAllowed("/instructor/instructor-dashboard.jsp", httpSession);
+        assertAllowed("/student/student-dashbord.jsp", httpSession);
     }
 
     @Test

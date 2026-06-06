@@ -11,20 +11,20 @@ import java.util.List;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletContext;
-import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import pt.isel.gape.common.config.DatabaseConfig;
 
-@WebServlet(name = "mediaServlet", urlPatterns = "/media/*")
 public final class MediaServlet extends HttpServlet {
 
     private static final int CACHE_SECONDS = 3600;
+    private static final String ASSETS_PREFIX = "assets/";
     private static final List<String> IMAGE_EXTENSIONS = List.of("png", "jpg", "jpeg", "webp", "gif");
 
     private final String configuredUploadDir;
     private Path uploadRoot;
+    private Path webappRoot;
 
     public MediaServlet() {
         this(DatabaseConfig.getProperty("gape.upload.dir", "uploads"));
@@ -35,14 +35,22 @@ public final class MediaServlet extends HttpServlet {
     }
 
     MediaServlet(Path uploadRoot) {
+        this(uploadRoot, null);
+    }
+
+    MediaServlet(Path uploadRoot, Path webappRoot) {
         this.configuredUploadDir = null;
         this.uploadRoot = uploadRoot.toAbsolutePath().normalize();
+        this.webappRoot = webappRoot == null ? null : webappRoot.toAbsolutePath().normalize();
     }
 
     @Override
     public void init() throws ServletException {
         if (uploadRoot == null) {
             uploadRoot = resolveUploadRoot(configuredUploadDir, getServletContext());
+        }
+        if (webappRoot == null) {
+            webappRoot = resolveWebappRoot(getServletContext());
         }
     }
 
@@ -70,26 +78,67 @@ public final class MediaServlet extends HttpServlet {
 
     private Path resolveMediaPath(String rawRelativePath) {
         try {
-            Path relativePath = Path.of(rawRelativePath).normalize();
+            String normalizedRelativePath = normalizeMediaRelativePath(rawRelativePath);
+            if (normalizedRelativePath.isBlank()) {
+                return null;
+            }
+
+            Path uploadedFile = resolveFromRoot(uploadRoot, normalizedRelativePath);
+            if (uploadedFile != null) {
+                return uploadedFile;
+            }
+
+            if (isWebappAssetReference(normalizedRelativePath)) {
+                return resolveFromRoot(webappRoot, normalizedRelativePath);
+            }
+
+            return null;
+        } catch (InvalidPathException exception) {
+            return null;
+        }
+    }
+
+    private Path resolveFromRoot(Path root, String normalizedRelativePath) {
+        if (root == null) {
+            return null;
+        }
+
+        try {
+            Path relativePath = Path.of(normalizedRelativePath).normalize();
             if (relativePath.isAbsolute() || relativePath.startsWith("..")) {
                 return null;
             }
 
-            Path resolved = uploadRoot.resolve(relativePath).normalize();
-            if (!resolved.startsWith(uploadRoot)) {
+            Path resolved = root.resolve(relativePath).normalize();
+            if (!resolved.startsWith(root)) {
                 return null;
             }
             if (Files.isRegularFile(resolved)) {
                 return resolved;
             }
 
-            return resolveImagePathWithAvailableExtension(resolved);
+            Path resolvedWithAvailableExtension = resolveImagePathWithAvailableExtension(resolved, root);
+            return Files.isRegularFile(resolvedWithAvailableExtension) ? resolvedWithAvailableExtension : null;
         } catch (InvalidPathException exception) {
             return null;
         }
     }
 
-    private Path resolveImagePathWithAvailableExtension(Path requestedPath) {
+    private static String normalizeMediaRelativePath(String rawRelativePath) {
+        String normalized = rawRelativePath == null ? "" : rawRelativePath.trim().replace('\\', '/');
+        normalized = stripAfter(normalized, '?');
+        normalized = stripAfter(normalized, '#');
+        normalized = stripBeforeKnownDirectory(normalized, "/media/");
+        normalized = stripToKnownDirectory(normalized, "assets");
+        normalized = stripBeforeKnownDirectory(normalized, "/uploads/");
+        normalized = stripLeadingPathMarkers(normalized);
+        normalized = stripKnownPrefix(normalized, "media/");
+        normalized = stripKnownPrefix(normalized, "uploads/");
+        normalized = stripToKnownDirectory(normalized, "assets");
+        return stripLeadingPathMarkers(normalized);
+    }
+
+    private Path resolveImagePathWithAvailableExtension(Path requestedPath, Path allowedRoot) {
         Path parent = requestedPath.getParent();
         String requestedFileName = requestedPath.getFileName().toString();
         String requestedBaseName = baseName(requestedFileName);
@@ -104,7 +153,7 @@ public final class MediaServlet extends HttpServlet {
 
         for (String imageExtension : IMAGE_EXTENSIONS) {
             Path candidate = parent.resolve(requestedBaseName + "." + imageExtension).normalize();
-            if (candidate.startsWith(uploadRoot) && Files.isRegularFile(candidate)) {
+            if (candidate.startsWith(allowedRoot) && Files.isRegularFile(candidate)) {
                 return candidate;
             }
         }
@@ -115,7 +164,7 @@ public final class MediaServlet extends HttpServlet {
                 String candidateExtension = extension(candidateFileName);
                 if (IMAGE_EXTENSIONS.contains(candidateExtension)
                         && baseName(candidateFileName).equalsIgnoreCase(requestedBaseName)
-                        && candidate.normalize().startsWith(uploadRoot)
+                        && candidate.normalize().startsWith(allowedRoot)
                         && Files.isRegularFile(candidate)) {
                     return candidate;
                 }
@@ -125,6 +174,10 @@ public final class MediaServlet extends HttpServlet {
         }
 
         return requestedPath;
+    }
+
+    private static boolean isWebappAssetReference(String relativePath) {
+        return relativePath.toLowerCase(Locale.ROOT).startsWith(ASSETS_PREFIX);
     }
 
     private static String baseName(String fileName) {
@@ -138,6 +191,46 @@ public final class MediaServlet extends HttpServlet {
             return "";
         }
         return fileName.substring(extensionIndex + 1).toLowerCase(Locale.ROOT);
+    }
+
+    private static String stripAfter(String value, char marker) {
+        int markerIndex = value.indexOf(marker);
+        return markerIndex < 0 ? value : value.substring(0, markerIndex);
+    }
+
+    private static String stripBeforeKnownDirectory(String value, String directory) {
+        String lowerCaseValue = value.toLowerCase(Locale.ROOT);
+        int directoryIndex = lowerCaseValue.indexOf(directory);
+        if (directoryIndex < 0) {
+            return value;
+        }
+        return value.substring(directoryIndex + directory.length());
+    }
+
+    private static String stripToKnownDirectory(String value, String directory) {
+        String marker = "/" + directory + "/";
+        String lowerCaseValue = value.toLowerCase(Locale.ROOT);
+        int directoryIndex = lowerCaseValue.indexOf(marker);
+        if (directoryIndex < 0) {
+            return value;
+        }
+        return value.substring(directoryIndex + 1);
+    }
+
+    private static String stripLeadingPathMarkers(String value) {
+        String normalized = value;
+        while (normalized.startsWith("/") || normalized.startsWith("./")) {
+            normalized = normalized.startsWith("/") ? normalized.substring(1) : normalized.substring(2);
+        }
+        return normalized;
+    }
+
+    private static String stripKnownPrefix(String value, String prefix) {
+        String normalized = value;
+        while (normalized.toLowerCase(Locale.ROOT).startsWith(prefix)) {
+            normalized = normalized.substring(prefix.length());
+        }
+        return normalized;
     }
 
     private static Path resolveUploadRoot(String configuredPath, ServletContext servletContext) {
@@ -166,5 +259,13 @@ public final class MediaServlet extends HttpServlet {
         }
 
         return candidates.getFirst().toAbsolutePath().normalize();
+    }
+
+    private static Path resolveWebappRoot(ServletContext servletContext) {
+        String realPath = servletContext.getRealPath("/");
+        if (realPath == null || realPath.isBlank()) {
+            return null;
+        }
+        return Path.of(realPath).toAbsolutePath().normalize();
     }
 }

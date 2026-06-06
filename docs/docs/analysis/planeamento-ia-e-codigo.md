@@ -2156,6 +2156,26 @@ Se falhar, corrigir Service, filtro, DAO, dados ou teste e repetir.
 
 Usa o agente `Codex Frontend/JSP Agent`.
 
+Antes de alterar, analisa o template EduAll completo e analisa também a implementação atual de autenticação, autorização e navegação do projeto, incluindo:
+
+* `AuthenticationFilter`;
+* `AuthorizationFilter`;
+* `AuthorizationPolicy`;
+* `PermissionChecker`;
+* `DashboardNavigation`;
+* `LoginServlet`;
+* `DashboardServlet`;
+* `web.xml`;
+* testes existentes de autenticação/autorização.
+
+Deves preservar a lógica atual em que utilizadores sem sessão, com sessão inválida ou com sessão expirada são redirecionados para `login.jsp` com o parâmetro `auth` adequado, por
+exemplo:
+
+* `login.jsp?auth=required`;
+* `login.jsp?auth=missing`;
+* `login.jsp?auth=invalid`;
+* `login.jsp?auth=expired`.
+
 Antes de alterar, analisa o template EduAll completo.
 
 Deves identificar autonomamente todas as páginas, fragments e componentes relacionados com:
@@ -2170,27 +2190,35 @@ Deves identificar autonomamente todas as páginas, fragments e componentes relac
 * links de professor;
 * links de coordenador;
 * links de administrador;
-* páginas de acesso negado;
 * páginas protegidas;
-* mensagens de erro;
+* comportamento de redirecionamento para dashboards/páginas autorizadas;
+* situações em que é necessária uma página ou mensagem específica de acesso negado;
+* mensagens de erro já existentes;
 * breadcrumbs;
 * cards de dashboard.
 
-Tens liberdade para alterar todas as páginas necessárias para refletir permissões no front-end, preservando o design do EduAll. Não te limites à sidebar. Se o template tiver menus em várias páginas, headers diferentes, dashboards diferentes ou componentes repetidos, altera todos os necessários. Alterações de design só devem ser feitas se forem estritamente necessárias e autorizadas.
+Tens liberdade para alterar todas as páginas necessárias para refletir permissões no front-end, preservando o design do EduAll. Não te limites à sidebar. Se o template tiver
+menus em várias páginas, headers diferentes, dashboards diferentes ou componentes repetidos, altera todos os necessários. Alterações de design só devem ser feitas se forem
+estritamente necessárias e autorizadas.
 
 Implementa:
 
 * menus dinâmicos por perfil;
 * botões visíveis/invisíveis por permissão;
 * links protegidos;
-* página de acesso negado no estilo EduAll;
-* mensagens de acesso negado;
 * adaptação visual para perfis diferentes;
-* navegação simples, com as funcionalidades de cada perfil acessíveis em poucos níveis.
+* navegação simples, com as funcionalidades de cada perfil acessíveis em poucos níveis;
+* redirecionamento para dashboard/página autorizada quando o utilizador autenticado tenta aceder a uma área de outro perfil e existe uma alternativa segura;
+* página ou mensagem específica de acesso negado apenas nos casos em que o redirecionamento esconda informação importante, crie confusão, ou quando a operação concreta exige
+  rejeição explícita por falta de permissão/contexto.
 
-Importante:
+Regras importantes:
 
-O front-end apenas melhora a experiência do utilizador. A segurança real deve continuar no back-end. Não esconder menus como substituto de validação no back-end.
+* Não substituir a segurança do back-end por menus escondidos.
+* Não criar páginas de acesso negado desnecessárias para casos simples em que o utilizador pode ser encaminhado para uma área válida.
+* Não alterar o design do EduAll, salvo necessidade estrita e autorizada.
+* Acesso direto por URL continua a ser responsabilidade do back-end.
+* O front-end deve acompanhar a política real do back-end: login para falta de sessão, redirecionamento útil quando aplicável, e acesso negado explícito quando necessário.
 
 Cria ou atualiza:
 
@@ -2203,7 +2231,10 @@ Esse ficheiro deve indicar:
 * menus alterados;
 * componentes alterados;
 * como cada perfil é representado visualmente;
-* quais permissões afetam o front-end.
+* quais permissões afetam o front-end;
+* quais casos usam redirecionamento para dashboard/página autorizada;
+* quais casos exigem página ou mensagem específica de acesso negado;
+* como o front-end preserva a separação entre experiência visual e segurança real no back-end.
 
 Depois:
 
@@ -2212,7 +2243,11 @@ Depois:
 3. testar menus como professor;
 4. testar menus como aluno;
 5. corrigir páginas ou menus incoerentes;
-6. garantir que acesso direto continua bloqueado pelo back-end.
+6. confirmar que utilizador sem sessão ao abrir página protegida vai para `login.jsp?auth=required`;
+7. confirmar que sessão expirada vai para `login.jsp?auth=expired`;
+8. confirmar que utilizador autenticado sem acesso a uma área de outro perfil é encaminhado para dashboard/página autorizada quando aplicável;
+9. confirmar que operações concretas sem permissão/contexto mostram rejeição adequada quando o redirecionamento não for suficiente;
+10. garantir que acesso direto continua protegido pelo back-end.
 
 ---
 

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,6 +22,12 @@ class TemplateAssetReferenceTest {
     private static final List<String> APPLICATION_ENDPOINT_PREFIXES = List.of(
             "auth/",
             "/auth/"
+    );
+    private static final Set<String> APPLICATION_ENDPOINTS = Set.of(
+            "dashboard",
+            "/dashboard",
+            "profile",
+            "/profile"
     );
 
     private enum ReferenceMode {
@@ -37,6 +44,12 @@ class TemplateAssetReferenceTest {
             Pattern.compile("<jsp:include\\b[^>]*\\bpage\\s*=\\s*['\"]([^'\"]+)['\"][^>]*>", Pattern.CASE_INSENSITIVE);
     private static final Pattern CSS_URL_PATTERN =
             Pattern.compile("url\\((['\"]?)([^)'\"\\s]+)\\1\\)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern PUBLIC_AVATAR_LINK_PATTERN = Pattern.compile(
+            "<a\\s+href\\s*=\\s*\"([^\"]+)\"\\s+class\\s*=\\s*\"info-action gape-user-avatar-trigger\\b",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final String PUBLIC_AVATAR_LINK_TARGET =
+            "${pageContext.request.contextPath}${sessionScope['gape.auth.authenticated'] eq true ? '/profile' : '/login.jsp'}";
 
     @Test
     void cssReferencesResolve() throws IOException {
@@ -128,6 +141,43 @@ class TemplateAssetReferenceTest {
         }
 
         assertNoMissing("Found broken local template paths", missing);
+    }
+
+    @Test
+    void mediaServletIsExplicitlyMappedForUserImages() throws IOException {
+        String webXml = Files.readString(WEBAPP_DIR.resolve("WEB-INF/web.xml"));
+
+        assertTrue(webXml.contains("pt.isel.gape.web.controller.MediaServlet"));
+        assertTrue(webXml.contains("<url-pattern>/media/*</url-pattern>"));
+    }
+
+    @Test
+    void profileServletIsExplicitlyMappedForAvatarNavigation() throws IOException {
+        String webXml = Files.readString(WEBAPP_DIR.resolve("WEB-INF/web.xml"));
+
+        assertTrue(webXml.contains("pt.isel.gape.web.controller.ProfileServlet"));
+        assertTrue(webXml.contains("<url-pattern>/profile</url-pattern>"));
+    }
+
+    @Test
+    void publicAvatarLinksGoToLoginUntilSessionExists() throws IOException {
+        List<String> unexpected = new ArrayList<>();
+        int linkCount = 0;
+
+        for (Path file : markupFiles()) {
+            String content = Files.readString(file);
+            Matcher matcher = PUBLIC_AVATAR_LINK_PATTERN.matcher(content);
+            while (matcher.find()) {
+                linkCount++;
+                String href = matcher.group(1);
+                if (!PUBLIC_AVATAR_LINK_TARGET.equals(href)) {
+                    unexpected.add(WEBAPP_DIR.relativize(file) + " -> " + href);
+                }
+            }
+        }
+
+        assertTrue(linkCount > 0, "No public avatar links were found");
+        assertNoMissing("Public avatar links with unexpected targets", unexpected);
     }
 
     private static List<Path> markupFiles() throws IOException {
@@ -269,7 +319,8 @@ class TemplateAssetReferenceTest {
     }
 
     private static boolean isApplicationEndpoint(String reference) {
-        return APPLICATION_ENDPOINT_PREFIXES.stream().anyMatch(reference::startsWith);
+        return APPLICATION_ENDPOINTS.contains(reference)
+                || APPLICATION_ENDPOINT_PREFIXES.stream().anyMatch(reference::startsWith);
     }
 
     private static void assertNoMissing(String heading, List<String> missing) {

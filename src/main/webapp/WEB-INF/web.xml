@@ -18,11 +18,53 @@
     </error-page>
 
     <error-page>
+        <error-code>403</error-code>
+        <location>/error-403.jsp</location>
+    </error-page>
+
+    <error-page>
         <error-code>500</error-code>
         <location>/error-500.jsp</location>
     </error-page>
 
-    <!-- TODO Fase 1+: registar Servlets, Filters e Listeners (web/controller,
-         web/filter, web/listener). Por agora a aplicacao so serve JSPs. -->
+    <servlet>
+        <servlet-name>mediaServlet</servlet-name>
+        <servlet-class>pt.isel.gape.web.controller.MediaServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>profileServlet</servlet-name>
+        <servlet-class>pt.isel.gape.web.controller.ProfileServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>mediaServlet</servlet-name>
+        <url-pattern>/media/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>profileServlet</servlet-name>
+        <url-pattern>/profile</url-pattern>
+    </servlet-mapping>
+
+    <filter>
+        <filter-name>authenticationFilter</filter-name>
+        <filter-class>pt.isel.gape.web.filter.AuthenticationFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>authenticationFilter</filter-name>
+        <url-pattern>*.jsp</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>authorizationFilter</filter-name>
+        <filter-class>pt.isel.gape.web.filter.AuthorizationFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>authorizationFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
 
 </web-app>

@@ -24,27 +24,19 @@ import jakarta.servlet.http.HttpServletResponse;
 class MediaServletTest {
 
     private Path uploadRoot;
+    private Path webappRoot;
 
     @BeforeEach
     void setUp() throws Exception {
         Path testRoot = Files.createDirectories(Path.of("target", "media-servlet-test"));
         uploadRoot = Files.createTempDirectory(testRoot, "uploads-");
+        webappRoot = Files.createTempDirectory(testRoot, "webapp-");
     }
 
     @AfterEach
     void tearDown() throws Exception {
-        if (uploadRoot != null && Files.exists(uploadRoot)) {
-            try (var paths = Files.walk(uploadRoot)) {
-                paths.sorted(Comparator.reverseOrder())
-                        .forEach(path -> {
-                            try {
-                                Files.deleteIfExists(path);
-                            } catch (IOException exception) {
-                                throw new IllegalStateException("Failed to delete " + path, exception);
-                            }
-                        });
-            }
-        }
+        deleteDirectory(uploadRoot);
+        deleteDirectory(webappRoot);
     }
 
     @Test
@@ -53,7 +45,7 @@ class MediaServletTest {
         byte[] imageBytes = new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
         Files.write(userDirectory.resolve("profile.jpg"), imageBytes);
 
-        MediaServlet servlet = new MediaServlet(uploadRoot);
+        MediaServlet servlet = new MediaServlet(uploadRoot, webappRoot);
         servlet.init(servletConfig());
 
         TestHttpServletResponse responseState = new TestHttpServletResponse();
@@ -69,8 +61,88 @@ class MediaServletTest {
     }
 
     @Test
+    void servesImageWhenRequestStillContainsUploadsPrefix() throws Exception {
+        Path userDirectory = Files.createDirectories(uploadRoot.resolve("users/4"));
+        byte[] imageBytes = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47};
+        Files.write(userDirectory.resolve("profile.png"), imageBytes);
+
+        MediaServlet servlet = new MediaServlet(uploadRoot, webappRoot);
+        servlet.init(servletConfig());
+
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        servlet.doGet(
+                requestProxy("/uploads/users/4/profile.webp"),
+                responseProxy(responseState)
+        );
+
+        assertEquals(0, responseState.errorStatus);
+        assertEquals("image/png", responseState.contentType);
+        assertArrayEquals(imageBytes, responseState.body.toByteArray());
+    }
+
+    @Test
+    void servesImageWhenRequestStillContainsMediaPrefix() throws Exception {
+        Path userDirectory = Files.createDirectories(uploadRoot.resolve("users/4"));
+        byte[] imageBytes = new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
+        Files.write(userDirectory.resolve("profile.jpeg"), imageBytes);
+
+        MediaServlet servlet = new MediaServlet(uploadRoot, webappRoot);
+        servlet.init(servletConfig());
+
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        servlet.doGet(
+                requestProxy("//media/users/4/profile.webp"),
+                responseProxy(responseState)
+        );
+
+        assertEquals(0, responseState.errorStatus);
+        assertEquals("image/jpeg", responseState.contentType);
+        assertArrayEquals(imageBytes, responseState.body.toByteArray());
+    }
+
+    @Test
+    void servesTemplateAssetImageWhenPhotoUsesOriginalEduallPath() throws Exception {
+        Path assetDirectory = Files.createDirectories(webappRoot.resolve("assets/images/thumbs"));
+        byte[] imageBytes = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47};
+        Files.write(assetDirectory.resolve("testimonials-three-img1.png"), imageBytes);
+
+        MediaServlet servlet = new MediaServlet(uploadRoot, webappRoot);
+        servlet.init(servletConfig());
+
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        servlet.doGet(
+                requestProxy("/assets/images/thumbs/testimonials-three-img1.webp"),
+                responseProxy(responseState)
+        );
+
+        assertEquals(0, responseState.errorStatus);
+        assertEquals("image/png", responseState.contentType);
+        assertArrayEquals(imageBytes, responseState.body.toByteArray());
+    }
+
+    @Test
+    void servesTemplateAssetImageWhenRequestContainsAbsoluteWebappPrefix() throws Exception {
+        Path assetDirectory = Files.createDirectories(webappRoot.resolve("assets/images/thumbs"));
+        byte[] imageBytes = new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47};
+        Files.write(assetDirectory.resolve("testimonials-three-img1.png"), imageBytes);
+
+        MediaServlet servlet = new MediaServlet(uploadRoot, webappRoot);
+        servlet.init(servletConfig());
+
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        servlet.doGet(
+                requestProxy("/C:/project/GAPE/src/main/webapp/assets/images/thumbs/testimonials-three-img1.webp"),
+                responseProxy(responseState)
+        );
+
+        assertEquals(0, responseState.errorStatus);
+        assertEquals("image/png", responseState.contentType);
+        assertArrayEquals(imageBytes, responseState.body.toByteArray());
+    }
+
+    @Test
     void keepsReturningNotFoundWhenNoEquivalentImageExists() throws Exception {
-        MediaServlet servlet = new MediaServlet(uploadRoot);
+        MediaServlet servlet = new MediaServlet(uploadRoot, webappRoot);
         servlet.init(servletConfig());
 
         TestHttpServletResponse responseState = new TestHttpServletResponse();
@@ -80,6 +152,21 @@ class MediaServletTest {
         );
 
         assertEquals(HttpServletResponse.SC_NOT_FOUND, responseState.errorStatus);
+    }
+
+    private void deleteDirectory(Path directory) throws IOException {
+        if (directory != null && Files.exists(directory)) {
+            try (var paths = Files.walk(directory)) {
+                paths.sorted(Comparator.reverseOrder())
+                        .forEach(path -> {
+                            try {
+                                Files.deleteIfExists(path);
+                            } catch (IOException exception) {
+                                throw new IllegalStateException("Failed to delete " + path, exception);
+                            }
+                        });
+            }
+        }
     }
 
     private ServletConfig servletConfig() {
@@ -100,6 +187,7 @@ class MediaServletTest {
                 new Class<?>[]{ServletContext.class},
                 (proxy, method, args) -> switch (method.getName()) {
                     case "getMimeType" -> mimeType((String) args[0]);
+                    case "getRealPath" -> webappRoot.toString();
                     default -> null;
                 }
         );

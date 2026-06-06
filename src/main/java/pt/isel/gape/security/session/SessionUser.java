@@ -2,10 +2,14 @@ package pt.isel.gape.security.session;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.EnumMap;
 import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 
 import pt.isel.gape.access.model.AccessProfile;
 import pt.isel.gape.access.model.AccessProfileType;
@@ -21,13 +25,28 @@ public final class SessionUser implements Serializable {
     private final String email;
     private final String photo;
     private final Set<AccessProfileType> profileTypes;
+    private final Map<AccessProfileType, Set<String>> permissionCodesByProfile;
+    private final Set<String> permissionCodes;
 
     public SessionUser(long userId, String name, String email, String photo, Set<AccessProfileType> profileTypes) {
+        this(userId, name, email, photo, profileTypes, Map.of());
+    }
+
+    public SessionUser(
+            long userId,
+            String name,
+            String email,
+            String photo,
+            Set<AccessProfileType> profileTypes,
+            Map<AccessProfileType, Set<String>> permissionCodesByProfile
+    ) {
         this.userId = userId;
         this.name = Objects.requireNonNull(name, "name is required");
         this.email = Objects.requireNonNull(email, "email is required");
         this.photo = normalizePhoto(photo);
         this.profileTypes = Set.copyOf(new LinkedHashSet<>(Objects.requireNonNull(profileTypes, "profileTypes are required")));
+        this.permissionCodesByProfile = copyPermissionCodes(permissionCodesByProfile);
+        this.permissionCodes = flattenPermissionCodes(this.permissionCodesByProfile);
     }
 
     public static SessionUser fromUser(User user) {
@@ -63,6 +82,18 @@ public final class SessionUser implements Serializable {
         return profileTypes;
     }
 
+    public Set<String> permissionCodes() {
+        return permissionCodes;
+    }
+
+    public Set<String> permissionCodesFor(AccessProfileType profileType) {
+        return permissionCodesByProfile.getOrDefault(profileType, Set.of());
+    }
+
+    public boolean hasPermission(String permissionCode) {
+        return permissionCode != null && permissionCodes.contains(permissionCode);
+    }
+
     public Optional<AccessProfileType> primaryProfileType() {
         if (profileTypes.contains(AccessProfileType.ADMINISTRATOR)) {
             return Optional.of(AccessProfileType.ADMINISTRATOR);
@@ -83,6 +114,88 @@ public final class SessionUser implements Serializable {
         if (photo == null || photo.isBlank()) {
             return null;
         }
-        return photo.trim().replace('\\', '/');
+        String normalized = photo.trim().replace('\\', '/');
+        normalized = stripAfter(normalized, '?');
+        normalized = stripAfter(normalized, '#');
+
+        String lowerCasePhoto = normalized.toLowerCase(Locale.ROOT);
+        if (lowerCasePhoto.startsWith("http://")
+                || lowerCasePhoto.startsWith("https://")
+                || lowerCasePhoto.startsWith("data:")) {
+            return null;
+        }
+
+        normalized = stripBeforeKnownDirectory(normalized, "/media/");
+        normalized = stripToKnownDirectory(normalized, "assets");
+        normalized = stripBeforeKnownDirectory(normalized, "/uploads/");
+        normalized = stripLeadingPathMarkers(normalized);
+        normalized = stripKnownPrefix(normalized, "media/");
+        normalized = stripKnownPrefix(normalized, "uploads/");
+        normalized = stripToKnownDirectory(normalized, "assets");
+        normalized = stripLeadingPathMarkers(normalized);
+
+        if (normalized.isBlank() || normalized.contains("..")) {
+            return null;
+        }
+        return normalized;
+    }
+
+    private static String stripAfter(String value, char marker) {
+        int markerIndex = value.indexOf(marker);
+        return markerIndex < 0 ? value : value.substring(0, markerIndex);
+    }
+
+    private static String stripBeforeKnownDirectory(String value, String directory) {
+        String lowerCaseValue = value.toLowerCase(Locale.ROOT);
+        int directoryIndex = lowerCaseValue.indexOf(directory);
+        if (directoryIndex < 0) {
+            return value;
+        }
+        return value.substring(directoryIndex + directory.length());
+    }
+
+    private static String stripToKnownDirectory(String value, String directory) {
+        String marker = "/" + directory + "/";
+        String lowerCaseValue = value.toLowerCase(Locale.ROOT);
+        int directoryIndex = lowerCaseValue.indexOf(marker);
+        if (directoryIndex < 0) {
+            return value;
+        }
+        return value.substring(directoryIndex + 1);
+    }
+
+    private static String stripLeadingPathMarkers(String value) {
+        String normalized = value;
+        while (normalized.startsWith("/") || normalized.startsWith("./")) {
+            normalized = normalized.startsWith("/") ? normalized.substring(1) : normalized.substring(2);
+        }
+        return normalized;
+    }
+
+    private static String stripKnownPrefix(String value, String prefix) {
+        String normalized = value;
+        while (normalized.toLowerCase(Locale.ROOT).startsWith(prefix)) {
+            normalized = normalized.substring(prefix.length());
+        }
+        return normalized;
+    }
+
+    private static Map<AccessProfileType, Set<String>> copyPermissionCodes(
+            Map<AccessProfileType, Set<String>> permissionCodesByProfile
+    ) {
+        Objects.requireNonNull(permissionCodesByProfile, "permissionCodesByProfile is required");
+        Map<AccessProfileType, Set<String>> copy = new EnumMap<>(AccessProfileType.class);
+        for (Map.Entry<AccessProfileType, Set<String>> entry : permissionCodesByProfile.entrySet()) {
+            copy.put(entry.getKey(), Set.copyOf(new TreeSet<>(entry.getValue())));
+        }
+        return Map.copyOf(copy);
+    }
+
+    private static Set<String> flattenPermissionCodes(Map<AccessProfileType, Set<String>> permissionCodesByProfile) {
+        Set<String> permissions = new TreeSet<>();
+        for (Set<String> profilePermissions : permissionCodesByProfile.values()) {
+            permissions.addAll(profilePermissions);
+        }
+        return Set.copyOf(permissions);
     }
 }

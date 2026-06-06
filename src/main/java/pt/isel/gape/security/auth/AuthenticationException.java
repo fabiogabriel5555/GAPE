@@ -9,6 +9,11 @@ public final class AuthenticationException extends RuntimeException {
         this.reason = reason;
     }
 
+    public AuthenticationException(AuthenticationFailureReason reason, String message, Throwable cause) {
+        super(message, cause);
+        this.reason = reason;
+    }
+
     public AuthenticationFailureReason reason() {
         return reason;
     }

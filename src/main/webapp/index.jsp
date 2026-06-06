@@ -446,7 +446,7 @@
                         <i class="ph-bold ph-magnifying-glass"></i>
                     </button>
                 </form>
-                                <a href="sign-in.jsp" class="info-action gape-user-avatar-trigger w-52 h-52 bg-main-25 hover-bg-main-600 border border-neutral-30 rounded-circle flex-center text-2xl text-neutral-500 hover-text-white hover-border-main-600">
+                                <a href="${pageContext.request.contextPath}${sessionScope['gape.auth.authenticated'] eq true ? '/profile' : '/login.jsp'}" class="info-action gape-user-avatar-trigger w-52 h-52 bg-main-25 hover-bg-main-600 border border-neutral-30 rounded-circle flex-center text-2xl text-neutral-500 hover-text-white hover-border-main-600">
                     <%@ include file="/WEB-INF/fragments/user-avatar-content.jspf" %>
                 </a>
                 <button type="button" class="toggle-mobileMenu d-lg-none text-neutral-200 flex-center">

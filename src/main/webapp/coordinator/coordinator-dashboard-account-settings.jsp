@@ -507,7 +507,7 @@
                     </button>
                     <ul class="dropdown-menu rounded-12">
                         <li>
-                            <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="${pageContext.request.contextPath}/coordinator/coordinator-dashboard-my-profile.jsp">
+                            <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="${pageContext.request.contextPath}/profile">
                             <span><i class="ph ph-user-circle"></i></span>
                             <span>My Profile</span>
                             </a>
