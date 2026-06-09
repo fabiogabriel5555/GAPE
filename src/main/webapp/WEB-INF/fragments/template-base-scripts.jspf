@@ -16,3 +16,4 @@
 <script src="${pageContext.request.contextPath}/assets/js/wow.min.js"></script>
 <script src="${pageContext.request.contextPath}/assets/js/aos.js"></script>
 <script src="${pageContext.request.contextPath}/assets/js/main.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-document-validation.js"></script>

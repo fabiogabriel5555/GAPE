@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -32,8 +32,8 @@ public final class SessionDAO {
             statement.setLong(1, userId);
             statement.setString(2, token);
             statement.setString(3, SessionState.ACTIVE.toDatabaseValue());
-            statement.setTimestamp(4, Timestamp.valueOf(startAt));
-            statement.setTimestamp(5, Timestamp.valueOf(lastActivity));
+            statement.setObject(4, startAt);
+            statement.setObject(5, lastActivity);
             statement.executeUpdate();
 
             try (ResultSet keys = statement.getGeneratedKeys()) {
@@ -100,7 +100,7 @@ public final class SessionDAO {
 
         try (Connection connection = connectionProvider.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setTimestamp(1, Timestamp.valueOf(lastActivity));
+            statement.setObject(1, lastActivity);
             statement.setLong(2, sessionId);
             statement.setString(3, SessionState.ACTIVE.toDatabaseValue());
             statement.executeUpdate();
@@ -119,13 +119,13 @@ public final class SessionDAO {
                 """;
 
         try (Connection connection = connectionProvider.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+            PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, state.toDatabaseValue());
-            statement.setTimestamp(2, Timestamp.valueOf(lastActivity));
+            statement.setObject(2, lastActivity);
             if (endAt == null) {
-                statement.setNull(3, java.sql.Types.TIMESTAMP);
+                statement.setNull(3, Types.TIMESTAMP);
             } else {
-                statement.setTimestamp(3, Timestamp.valueOf(endAt));
+                statement.setObject(3, endAt);
             }
             statement.setLong(4, sessionId);
             statement.executeUpdate();
@@ -136,15 +136,15 @@ public final class SessionDAO {
     }
 
     private Session mapSession(ResultSet resultSet) throws SQLException {
-        Timestamp endAt = resultSet.getTimestamp("end_at");
+        LocalDateTime endAt = resultSet.getObject("end_at", LocalDateTime.class);
         return new Session(
                 resultSet.getLong("id_session"),
                 resultSet.getLong("id_user"),
                 resultSet.getString("token"),
                 SessionState.fromDatabaseValue(resultSet.getString("state")),
-                resultSet.getTimestamp("start_at").toLocalDateTime(),
-                resultSet.getTimestamp("last_activity").toLocalDateTime(),
-                endAt == null ? null : endAt.toLocalDateTime()
+                resultSet.getObject("start_at", LocalDateTime.class),
+                resultSet.getObject("last_activity", LocalDateTime.class),
+                endAt
         );
     }
 }

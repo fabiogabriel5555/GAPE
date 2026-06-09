@@ -1,7 +1,6 @@
 package pt.isel.gape.web.controller;
 
 import java.io.IOException;
-import java.time.Clock;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -9,6 +8,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.common.time.ApplicationClock;
 import pt.isel.gape.security.auth.AuthService;
 import pt.isel.gape.security.auth.AuthenticationException;
 import pt.isel.gape.security.auth.AuthenticationFailureReason;
@@ -24,7 +24,7 @@ public final class LoginServlet extends HttpServlet {
 
     public LoginServlet() {
         this(
-                new AuthService(ConnectionProvider.defaultProvider(), Clock.systemUTC()),
+                new AuthService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new SessionManager()
         );
     }
@@ -65,10 +65,10 @@ public final class LoginServlet extends HttpServlet {
 
     private static String mapFailure(AuthenticationFailureReason reason) {
         return switch (reason) {
-            case INVALID_CREDENTIALS -> "Credenciais invalidas.";
-            case USER_INACTIVE -> "A conta esta inativa.";
-            case USER_BLOCKED -> "A conta esta bloqueada.";
-            case USER_WITHOUT_PROFILE -> "A conta nao tem perfil de acesso associado.";
+            case INVALID_CREDENTIALS -> "Invalid credentials.";
+            case USER_INACTIVE -> "The account is inactive.";
+            case USER_BLOCKED -> "The account is blocked.";
+            case USER_WITHOUT_PROFILE -> "The account has no access profile assigned.";
         };
     }
 }

@@ -61,7 +61,7 @@ class AuthorizationFilterTest {
         TestFilterChain chainState = new TestFilterChain();
 
         filter.doFilter(
-                requestProxy("/admin/dashboard.jsp", null),
+                requestProxy("/admin/admin-dashbord.jsp", null),
                 responseProxy(responseState),
                 chainProxy(chainState)
         );
@@ -190,13 +190,13 @@ class AuthorizationFilterTest {
         TestFilterChain chainState = new TestFilterChain();
 
         filter.doFilter(
-                requestProxy("/admin/dashboard.jsp", httpSession),
+                requestProxy("/admin/admin-dashbord.jsp", httpSession),
                 responseProxy(responseState),
                 chainProxy(chainState)
         );
 
         assertFalse(chainState.called);
-        assertEquals("/ctx/student/student-dashbord.jsp", responseState.redirectLocation);
+        assertEquals("/ctx/student/student-home.jsp", responseState.redirectLocation);
         assertEquals(null, responseState.errorStatus);
         assertEquals(1, countAuthorizationRedirectedAudits());
     }

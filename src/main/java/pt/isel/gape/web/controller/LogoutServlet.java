@@ -1,7 +1,6 @@
 package pt.isel.gape.web.controller;
 
 import java.io.IOException;
-import java.time.Clock;
 import java.util.Optional;
 import java.util.OptionalLong;
 
@@ -12,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import pt.isel.gape.access.model.Session;
 import pt.isel.gape.access.service.SessionService;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.common.time.ApplicationClock;
 import pt.isel.gape.security.session.SessionManager;
 
 @WebServlet(name = "logoutServlet", urlPatterns = "/auth/logout")
@@ -22,7 +22,7 @@ public final class LogoutServlet extends HttpServlet {
 
     public LogoutServlet() {
         this(
-                new SessionService(ConnectionProvider.defaultProvider(), Clock.systemUTC()),
+                new SessionService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new SessionManager()
         );
     }

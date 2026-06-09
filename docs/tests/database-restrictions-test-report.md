@@ -25,7 +25,7 @@ Scripts negativos em `src/main/resources/sql/test/`:
 - `check.sql` — domínios de estado/estado inválido, pares condicionais (datas, min/max alunos, bloco scheduled, capacidade, processamento de eliminação/justificação, certificado emitido, mensagem agendada/anexo, delivery_mode).
 - `application.sql` — regras cruzadas garantidas por triggers: coerência de organização entre unidade orgânica/curso/sala, subject integrada na turma, aula online/presencial e sala/sobreposição, coerência avaliação/bloco/subject, limite e elegibilidade de tentativas, coerência resposta/opção, eventos de horário, assiduidade e justificação, pautas e pesos, certificados, mensagens e participação em canal, e activity_log.
 
-Tabelas cobertas (lista do planeamento 2.8): `user_account`, `user_session`, `user_privacy`, `deletion_request`, `organization`, `organic_unit`, `course`, `subject`, `integrate_subject`, `class_group`, `enroll_class_group`, `content_block`, `content_item`, `lesson`, `physical_room`, `assessment`, `question`, `question_option`, `attempt`, `response`, `certificate`, `message`.
+Tabelas cobertas (lista do planeamento 2.8): `user_account`, `user_session`, `deletion_request`, `organization`, `organic_unit`, `course`, `subject`, `integrate_subject`, `class_group`, `enroll_class_group`, `content_block`, `content_item`, `lesson`, `physical_room`, `assessment`, `question`, `question_option`, `attempt`, `response`, `certificate`, `message`.
 
 ## Restrições deixadas para fases futuras
 

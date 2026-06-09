@@ -14,19 +14,19 @@ class DashboardNavigationTest {
     @Test
     void profilePageMatchesPrimaryUserProfile() {
         assertEquals(
-                "/admin/admin-dashbord-my-profile.jsp",
+                "/admin/admin-my-profile.jsp",
                 DashboardNavigation.profilePageFor(sessionUserWith(AccessProfileType.ADMINISTRATOR)).orElseThrow()
         );
         assertEquals(
-                "/coordinator/coordinator-dashboard-my-profile.jsp",
+                "/coordinator/coordinator-my-profile.jsp",
                 DashboardNavigation.profilePageFor(sessionUserWith(AccessProfileType.COORDINATOR)).orElseThrow()
         );
         assertEquals(
-                "/instructor/instructor-dashboard-my-profile.jsp",
+                "/instructor/instructor-my-profile.jsp",
                 DashboardNavigation.profilePageFor(sessionUserWith(AccessProfileType.TEACHER)).orElseThrow()
         );
         assertEquals(
-                "/student/student-dashbord-my-profile.jsp",
+                "/student/student-my-profile.jsp",
                 DashboardNavigation.profilePageFor(sessionUserWith(AccessProfileType.STUDENT)).orElseThrow()
         );
     }
@@ -42,7 +42,7 @@ class DashboardNavigationTest {
         );
 
         assertEquals(
-                "/admin/admin-dashbord-my-profile.jsp",
+                "/admin/admin-my-profile.jsp",
                 DashboardNavigation.profilePageFor(sessionUser).orElseThrow()
         );
     }

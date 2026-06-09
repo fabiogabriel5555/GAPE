@@ -21,9 +21,19 @@ class TemplateAssetReferenceTest {
 
     private static final List<String> APPLICATION_ENDPOINT_PREFIXES = List.of(
             "auth/",
-            "/auth/"
+            "/auth/",
+            "admin/users/",
+            "/admin/users/"
     );
     private static final Set<String> APPLICATION_ENDPOINTS = Set.of(
+            "account/deletion-requests",
+            "/account/deletion-requests",
+            "admin/activity-log",
+            "/admin/activity-log",
+            "admin/deletion-requests",
+            "/admin/deletion-requests",
+            "admin/users",
+            "/admin/users",
             "dashboard",
             "/dashboard",
             "profile",

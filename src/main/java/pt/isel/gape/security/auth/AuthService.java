@@ -171,7 +171,7 @@ public final class AuthService {
                 null,
                 "LOGIN",
                 "user_account",
-                email == null || email.isBlank() ? "unknown" : email.trim(),
+                "unknown",
                 "denied",
                 sourceIp
         );

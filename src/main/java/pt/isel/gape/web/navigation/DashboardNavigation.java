@@ -21,18 +21,18 @@ public final class DashboardNavigation {
     private static String landingPageFor(AccessProfileType profileType) {
         return switch (profileType) {
             case ADMINISTRATOR -> "/admin/admin-dashbord.jsp";
-            case COORDINATOR -> "/coordinator/coordinator-dashboard.jsp";
-            case TEACHER -> "/instructor/instructor-dashboard.jsp";
-            case STUDENT -> "/student/student-dashbord.jsp";
+            case COORDINATOR -> "/coordinator/coordinator-home.jsp";
+            case TEACHER -> "/instructor/instructor-home.jsp";
+            case STUDENT -> "/student/student-home.jsp";
         };
     }
 
     private static String profilePageFor(AccessProfileType profileType) {
         return switch (profileType) {
-            case ADMINISTRATOR -> "/admin/admin-dashbord-my-profile.jsp";
-            case COORDINATOR -> "/coordinator/coordinator-dashboard-my-profile.jsp";
-            case TEACHER -> "/instructor/instructor-dashboard-my-profile.jsp";
-            case STUDENT -> "/student/student-dashbord-my-profile.jsp";
+            case ADMINISTRATOR -> "/admin/admin-my-profile.jsp";
+            case COORDINATOR -> "/coordinator/coordinator-my-profile.jsp";
+            case TEACHER -> "/instructor/instructor-my-profile.jsp";
+            case STUDENT -> "/student/student-my-profile.jsp";
         };
     }
 }

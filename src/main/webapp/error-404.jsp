@@ -138,9 +138,6 @@
                 <a href="error-404.jsp" class="nav-submenu__link hover-bg-neutral-30">Gallery</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="error-404.jsp" class="nav-submenu__link hover-bg-neutral-30">Privacy Policy</a>
-            </li>
-            <li class="nav-submenu__item">
                 <a href="courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Favorite Course</a>
             </li>
             <li class="nav-submenu__item">
@@ -155,7 +152,7 @@
         <a href="javascript:void(0)" class="nav-menu__link">Dashboard</a>
          <ul class="nav-submenu scroll-sm">
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -179,7 +176,7 @@
                 <a href="forms.jsp" class="nav-submenu__link hover-bg-neutral-30">Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Profile</a>
@@ -206,7 +203,7 @@
                 <a href="forms.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Profile</a>
@@ -390,9 +387,6 @@
                 <a href="error-404.jsp" class="nav-submenu__link hover-bg-neutral-30">Gallery</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="error-404.jsp" class="nav-submenu__link hover-bg-neutral-30">Privacy Policy</a>
-            </li>
-            <li class="nav-submenu__item">
                 <a href="courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Favorite Course</a>
             </li>
             <li class="nav-submenu__item">
@@ -407,7 +401,7 @@
         <a href="javascript:void(0)" class="nav-menu__link">Dashboard</a>
          <ul class="nav-submenu scroll-sm">
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30"> Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -431,7 +425,7 @@
                 <a href="forms.jsp" class="nav-submenu__link hover-bg-neutral-30">Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Profile</a>
@@ -458,7 +452,7 @@
                 <a href="forms.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Profile</a>
@@ -577,7 +571,7 @@
                         <p class="text-neutral-500 mb-32">A vista pedida ainda nao existe no GAPE ou o link foi temporariamente remapeado durante a integracao do template.</p>
                         <div class="d-flex justify-content-center gap-16 flex-wrap">
                             <a href="index.jsp" class="btn btn-main rounded-pill">Voltar ao inicio</a>
-                            <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="btn btn-outline-main rounded-pill">Abrir dashboard</a>
+                            <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="btn btn-outline-main rounded-pill">Abrir dashboard</a>
                         </div>
                     </div>
                 </div>
@@ -594,9 +588,8 @@
         <div class="bottom-footer bg-main-25 border-top border-dashed border-main-100 border-0 py-32">
             <div class="container container-two">
                 <div class="bottom-footer__inner flex-between gap-3 flex-wrap">
-                    <p class="bottom-footer__text"> Copyright &copy; 2024 <span class="fw-semibold">GAPE</span> All Rights Reserved.</p>
+                    <p class="bottom-footer__text"> Copyright &copy; 2026 <span class="fw-semibold">GAPE</span> All Rights Reserved.</p>
                     <div class="footer-links">
-                        <a href="privacy-policy.jsp" class="text-neutral-500 hover-text-main-600 hover-text-decoration-underline">Privacy Policy</a>
                         <a href="#" class="text-neutral-500 hover-text-main-600 hover-text-decoration-underline">Terms & Conditions</a>
                     </div>
                 </div>

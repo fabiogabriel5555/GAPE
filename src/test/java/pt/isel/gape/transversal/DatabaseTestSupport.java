@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -31,8 +32,63 @@ public final class DatabaseTestSupport {
     }
 
     public static void resetDatabase(Connection connection) throws Exception {
-        executeScript(connection, SQL_DIR.resolve("drop.sql"));
+        dropCurrentSchemaObjects(connection);
         executeScript(connection, SQL_DIR.resolve("schema.sql"));
+    }
+
+    public static void dropCurrentSchemaObjects(Connection connection) throws SQLException {
+        dropCurrentSchemaTriggers(connection);
+        dropCurrentSchemaTables(connection);
+    }
+
+    public static void dropCurrentSchemaTriggers(Connection connection) throws SQLException {
+        List<String> triggerNames = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT trigger_name
+                FROM information_schema.triggers
+                WHERE trigger_schema = ?
+                """)) {
+            statement.setString(1, currentSchema(connection));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    triggerNames.add(resultSet.getString(1));
+                }
+            }
+        }
+
+        try (Statement statement = connection.createStatement()) {
+            for (String triggerName : triggerNames) {
+                statement.execute("DROP TRIGGER IF EXISTS " + quoteIdentifier(triggerName));
+            }
+        }
+    }
+
+    public static void dropCurrentSchemaTables(Connection connection) throws SQLException {
+        List<String> tableNames = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = ?
+                  AND table_type = 'BASE TABLE'
+                """)) {
+            statement.setString(1, currentSchema(connection));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    tableNames.add(resultSet.getString(1));
+                }
+            }
+        }
+
+        try (Statement statement = connection.createStatement()) {
+            statement.execute("SET FOREIGN_KEY_CHECKS = 0");
+            try {
+                for (String tableName : tableNames) {
+                    statement.execute("DROP TABLE IF EXISTS " + quoteIdentifier(tableName));
+                }
+            } finally {
+                statement.execute("SET FOREIGN_KEY_CHECKS = 1");
+            }
+        }
     }
 
     public static void executeScript(Connection connection, Path scriptPath) throws Exception {
@@ -180,5 +236,9 @@ public final class DatabaseTestSupport {
                     'STRICT_TRANS_TABLES,ONLY_FULL_GROUP_BY,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'
                     """);
         }
+    }
+
+    private static String quoteIdentifier(String identifier) {
+        return "`" + identifier.replace("`", "``") + "`";
     }
 }

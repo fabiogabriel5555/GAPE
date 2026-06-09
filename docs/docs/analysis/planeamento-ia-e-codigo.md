@@ -1107,7 +1107,7 @@ O teste deve criar cenários positivos e negativos para:
 
 * `users`;
 * `user_sessions`;
-* `privacy_settings`;
+* `removed_preferences`;
 * `deletion_requests`;
 * `organizations`;
 * `organic_units`;
@@ -2346,20 +2346,20 @@ git commit -m "Implementa permissoes e atribuicao contextual de perfis"
 
 ---
 
-# 6. Fase 5 — Utilizadores, privacidade e direito ao esquecimento
+# 6. Fase 5 — Utilizadores, preferencias-removidas e direito ao esquecimento
 
 ## Objetivo da fase
 
-Implementar a gestão de utilizadores, a gestão do perfil pessoal, as preferências de privacidade, os pedidos de eliminação e a base do registo de auditoria. Cobre o RF02, o RF03 na parte de gestão de utilizadores e os UC02 e UC03.
+Implementar a gestão de utilizadores, a gestão do perfil pessoal, as preferências de preferencias-removidas, os pedidos de eliminação e a base do registo de auditoria. Cobre o RF02, o RF03 na parte de gestão de utilizadores e os UC02 e UC03.
 
 ## Resultado esperado
 
 * Models, DAOs e Services de utilizadores e perfis;
-* Models, DAOs e Services de privacidade;
+* Models, DAOs e Services de preferencias-removidas;
 * Models, DAOs e Services de pedidos de eliminação;
 * Model, DAO e Service do registo de atividades para auditoria;
 * Servlets das operações;
-* front-end EduAll de utilizadores, perfil, privacidade e eliminação;
+* front-end EduAll de utilizadores, perfil, preferencias-removidas e eliminação;
 * testes e correções.
 
 ## Critérios de conclusão
@@ -2368,7 +2368,7 @@ Implementar a gestão de utilizadores, a gestão do perfil pessoal, as preferên
 * email duplicado rejeitado;
 * documento duplicado rejeitado;
 * bloqueio de utilizador;
-* gestão de privacidade sem preferências duplicadas;
+* gestão de preferencias-removidas sem preferências duplicadas;
 * submissão de pedido de eliminação;
 * processamento do pedido apenas pelo administrador com permissão e com datas e estado coerentes;
 * operações sobre dados pessoais registadas em auditoria;
@@ -2376,7 +2376,7 @@ Implementar a gestão de utilizadores, a gestão do perfil pessoal, as preferên
 
 ---
 
-## 6.1 Prompt para Codex — back-end de utilizadores, privacidade e eliminação
+## 6.1 Prompt para Codex — back-end de utilizadores, preferencias-removidas e eliminação
 
 Usa os agentes:
 
@@ -2393,11 +2393,11 @@ Cria, no mínimo, Models, DAOs e Services para:
 
 * utilizadores;
 * perfis;
-* privacidade;
+* preferencias-removidas;
 * pedidos de eliminação;
 * registo de atividades para auditoria.
 
-Tens liberdade para criar mais Models, DAOs, Services, Servlets ou validadores se o modelo de utilizadores, privacidade, eliminação e auditoria exigir. Não te limites à lista acima.
+Tens liberdade para criar mais Models, DAOs, Services, Servlets ou validadores se o modelo de utilizadores, preferencias-removidas, eliminação e auditoria exigir. Não te limites à lista acima.
 
 Implementa:
 
@@ -2407,10 +2407,10 @@ Implementa:
 * exigência conjunta do tipo e do número de documento, quando o documento for preenchido;
 * bloqueio e desbloqueio de utilizador;
 * edição do perfil pessoal;
-* gestão de preferências de privacidade sem permitir preferências duplicadas para o mesmo utilizador;
+* gestão de preferências de preferencias-removidas sem permitir preferências duplicadas para o mesmo utilizador;
 * submissão de pedido de eliminação;
 * processamento do pedido apenas pelo administrador com permissão, garantindo que a data de processamento não é anterior à data de submissão e que um estado final tem data de processamento;
-* registo de auditoria de todas as operações críticas sobre dados pessoais, privacidade e eliminação;
+* registo de auditoria de todas as operações críticas sobre dados pessoais, preferencias-removidas e eliminação;
 * restrição de leitura e alteração de dados pessoais a perfis autorizados.
 
 Executa testes e corrige erros encontrados.
@@ -2424,27 +2424,27 @@ Usa o agente `Codex Test Agent`.
 Cria:
 
 * `UserServiceTest.java`;
-* `PrivacyServiceTest.java`;
+* `RemovedPreferenceServiceTest.java`;
 * `DeletionRequestServiceTest.java`;
 * `ActivityLogServiceTest.java`;
-* `docs/tests/users-privacy-deletion-tests.md`.
+* `docs/tests/users-deletion-audit-tests.md`.
 
 Executa:
 
 ```bash
 mvn test -Dtest=UserServiceTest
-mvn test -Dtest=PrivacyServiceTest
+mvn test -Dtest=RemovedPreferenceServiceTest
 mvn test -Dtest=DeletionRequestServiceTest
 mvn test -Dtest=ActivityLogServiceTest
 ```
 
-Testa criação válida, email duplicado, documento duplicado, campos obrigatórios em falta, bloqueio, privacidade duplicada, submissão de pedido de eliminação, processamento sem permissão, processamento com datas incoerentes, registo de auditoria e leitura de dados pessoais por perfil não autorizado.
+Testa criação válida, email duplicado, documento duplicado, campos obrigatórios em falta, bloqueio, preferencias-removidas duplicada, submissão de pedido de eliminação, processamento sem permissão, processamento com datas incoerentes, registo de auditoria e leitura de dados pessoais por perfil não autorizado.
 
 Se falhar, corrigir código, teste ou dados e repetir.
 
 ---
 
-## 6.3 Prompt para Codex — front-end EduAll de utilizadores, privacidade e eliminação
+## 6.3 Prompt para Codex — front-end EduAll de utilizadores, preferencias-removidas e eliminação
 
 Usa o agente `Codex Frontend/JSP Agent`.
 
@@ -2458,7 +2458,7 @@ Deves identificar autonomamente todas as páginas e componentes relacionados com
 * tabelas administrativas;
 * páginas de detalhes;
 * formulários;
-* privacidade;
+* preferencias-removidas;
 * preferências;
 * pedidos de eliminação;
 * modais de confirmação;
@@ -2475,7 +2475,7 @@ Cria ou adapta:
 * páginas de detalhe;
 * páginas de criação;
 * páginas de edição;
-* páginas de privacidade;
+* páginas de preferencias-removidas;
 * páginas de pedidos de eliminação;
 * modais de confirmação;
 * mensagens de erro/sucesso;
@@ -2501,7 +2501,7 @@ Depois:
 1. testar criação visual de utilizador;
 2. testar edição;
 3. testar bloqueio;
-4. testar privacidade;
+4. testar preferencias-removidas;
 5. testar pedido de eliminação;
 6. corrigir erros visuais e de integração.
 
@@ -2516,7 +2516,7 @@ Depois:
 5. Editar utilizador.
 6. Bloquear utilizador.
 7. Testar login bloqueado.
-8. Alterar privacidade.
+8. Alterar preferencias-removidas.
 9. Submeter pedido de eliminação.
 10. Processar como admin.
 11. Confirmar auditoria.
@@ -2534,7 +2534,7 @@ Usa os agentes:
 
 Objetivo da revisão:
 
-Verificar se a Fase 5 implementou corretamente a gestão de utilizadores, perfis, privacidade, pedidos de eliminação, auditoria e integração EduAll.
+Verificar se a Fase 5 implementou corretamente a gestão de utilizadores, perfis, preferencias-removidas, pedidos de eliminação, auditoria e integração EduAll.
 
 Antes de rever, analisa:
 
@@ -2542,16 +2542,16 @@ Antes de rever, analisa:
 * `7. Relatorio - 49862 - 7`;
 * `0. GAPE - ALL - V3`;
 * Models, DAOs e Services de utilizadores;
-* Models, DAOs e Services de privacidade;
+* Models, DAOs e Services de preferencias-removidas;
 * Models, DAOs e Services de pedidos de eliminação;
 * Model, DAO e Service de auditoria;
 * JSPs da fase;
 * `docs/docs/analysis/eduall-users-integration.md`;
 * `UserServiceTest.java`;
-* `PrivacyServiceTest.java`;
+* `RemovedPreferenceServiceTest.java`;
 * `DeletionRequestServiceTest.java`;
 * `ActivityLogServiceTest.java`;
-* `docs/tests/users-privacy-deletion-tests.md`.
+* `docs/tests/users-deletion-audit-tests.md`.
 
 Verifica:
 
@@ -2559,7 +2559,7 @@ Verifica:
 * validação de email duplicado;
 * validação de documento duplicado;
 * bloqueio de utilizador;
-* gestão de privacidade;
+* gestão de preferencias-removidas;
 * submissão de pedido de eliminação;
 * processamento de pedido apenas por administrador com permissão e com datas coerentes;
 * auditoria das operações sobre dados pessoais;
@@ -2575,7 +2575,7 @@ Executa:
 
 ```bash
 mvn test -Dtest=UserServiceTest
-mvn test -Dtest=PrivacyServiceTest
+mvn test -Dtest=RemovedPreferenceServiceTest
 mvn test -Dtest=DeletionRequestServiceTest
 mvn test -Dtest=ActivityLogServiceTest
 ```
@@ -2590,7 +2590,7 @@ Produz relatório final.
 
 ```bash
 git add .
-git commit -m "Implementa utilizadores privacidade e direito ao esquecimento"
+git commit -m "Implementa utilizadores preferencias-removidas e direito ao esquecimento"
 ```
 
 ---
@@ -4991,7 +4991,7 @@ Verifica:
 * autenticação;
 * sessão;
 * permissões e atribuição contextual;
-* utilizadores, privacidade e eliminação;
+* utilizadores, preferencias-removidas e eliminação;
 * organizações;
 * cursos e disciplinas;
 * turmas e blocos;

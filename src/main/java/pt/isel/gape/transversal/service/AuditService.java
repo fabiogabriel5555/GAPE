@@ -1,5 +1,6 @@
 package pt.isel.gape.transversal.service;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -45,5 +46,28 @@ public final class AuditService {
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to record audit event " + operationType, exception);
         }
+    }
+
+    public void record(
+            Connection connection,
+            Long userId,
+            Long sessionId,
+            String operationType,
+            String affectedEntityType,
+            String affectedEntityIdentifier,
+            String outcome,
+            String sourceIp
+    ) throws SQLException {
+        activityLogDAO.insert(
+                connection,
+                userId,
+                sessionId,
+                operationType,
+                affectedEntityType,
+                affectedEntityIdentifier,
+                LocalDateTime.now(clock),
+                outcome,
+                sourceIp
+        );
     }
 }

@@ -154,12 +154,10 @@
     }
 
     var aliasFiles = {
-      "dashboard.jsp": "admin-dashbord.jsp",
-      "admin-dashbord.jsp": "dashboard.jsp",
-      "instructor-ashboard.jsp": "instructor-dashboard.jsp",
-      "instructor-dashboard.jsp": "instructor-ashboard.jsp",
-      "coordinator-ashboard.jsp": "coordinator-dashboard.jsp",
-      "coordinator-dashboard.jsp": "coordinator-ashboard.jsp"
+      "instructor-alt-home.jsp": "instructor-home.jsp",
+      "instructor-home.jsp": "instructor-alt-home.jsp",
+      "coordinator-alt-home.jsp": "coordinator-home.jsp",
+      "coordinator-home.jsp": "coordinator-alt-home.jsp"
     };
 
     return aliasFiles[currentFileName] === hrefFileName || aliasFiles[hrefFileName] === currentFileName;
@@ -179,6 +177,13 @@
         var hrefFileName = normalizeSidebarFileName($anchor.attr("href"));
 
         if (isActiveSidebarFile(currentFileName, hrefFileName)) {
+          $item.addClass("activePage");
+        }
+      });
+
+      $list.children("li").each(function () {
+        var $item = $(this);
+        if ($item.find("li.activePage").length) {
           $item.addClass("activePage");
         }
       });
@@ -567,34 +572,36 @@ $(".progressBar").each(function(){
     
   // ===================== Scroll Back to Top Js Start ======================
   var progressPath = document.querySelector('.progress-wrap path');
-  var pathLength = progressPath.getTotalLength();
-  progressPath.style.transition = progressPath.style.WebkitTransition = 'none';
-  progressPath.style.strokeDasharray = pathLength + ' ' + pathLength;
-  progressPath.style.strokeDashoffset = pathLength;
-  progressPath.getBoundingClientRect();
-  progressPath.style.transition = progressPath.style.WebkitTransition = 'stroke-dashoffset 10ms linear';
-  var updateProgress = function () {
-    var scroll = $(window).scrollTop();
-    var height = $(document).height() - $(window).height();
-    var progress = pathLength - (scroll * pathLength / height);
-    progressPath.style.strokeDashoffset = progress;
-  }
-  updateProgress();
-  $(window).scroll(updateProgress);
-  var offset = 50;
-  var duration = 550;
-  jQuery(window).on('scroll', function() {
-    if (jQuery(this).scrollTop() > offset) {
-      jQuery('.progress-wrap').addClass('active-progress');
-    } else {
-      jQuery('.progress-wrap').removeClass('active-progress');
+  if (progressPath) {
+    var pathLength = progressPath.getTotalLength();
+    progressPath.style.transition = progressPath.style.WebkitTransition = 'none';
+    progressPath.style.strokeDasharray = pathLength + ' ' + pathLength;
+    progressPath.style.strokeDashoffset = pathLength;
+    progressPath.getBoundingClientRect();
+    progressPath.style.transition = progressPath.style.WebkitTransition = 'stroke-dashoffset 10ms linear';
+    var updateProgress = function () {
+      var scroll = $(window).scrollTop();
+      var height = $(document).height() - $(window).height();
+      var progress = pathLength - (scroll * pathLength / height);
+      progressPath.style.strokeDashoffset = progress;
     }
-  });
-  jQuery('.progress-wrap').on('click', function(event) {
-    event.preventDefault();
-    jQuery('html, body').animate({scrollTop: 0}, duration);
-    return false;
-  })
+    updateProgress();
+    $(window).scroll(updateProgress);
+    var offset = 50;
+    var duration = 550;
+    jQuery(window).on('scroll', function() {
+      if (jQuery(this).scrollTop() > offset) {
+        jQuery('.progress-wrap').addClass('active-progress');
+      } else {
+        jQuery('.progress-wrap').removeClass('active-progress');
+      }
+    });
+    jQuery('.progress-wrap').on('click', function(event) {
+      event.preventDefault();
+      jQuery('html, body').animate({scrollTop: 0}, duration);
+      return false;
+    })
+  }
   // ===================== Scroll Back to Top Js End ======================
 
   // ========================== add active class to ul>li top Active current page Js Start =====================
@@ -640,7 +647,18 @@ if ($('.nav-menu').length) {
     
   // ========================== Select2 Js Start =================================
   $(document).ready(function() {
-    $('.js-example-basic-single').select2();
+    $('.js-example-basic-single').each(function() {
+      var $select = $(this);
+      if ($select.hasClass('gape-eduall-select')) {
+        $select.select2({
+          width: '100%',
+          selectionCssClass: 'gape-eduall-selection',
+          dropdownCssClass: 'gape-eduall-select-dropdown'
+        });
+        return;
+      }
+      $select.select2();
+    });
   });
   // ========================== Select2 Js End =================================
   

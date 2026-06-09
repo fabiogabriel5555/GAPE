@@ -27,6 +27,22 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <xs:simpleType name="languageCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="en-US"/>
+      <xs:enumeration value="pt-PT"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="documentTypeCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="CITIZEN_CARD"/>
+      <xs:enumeration value="TAX_IDENTIFICATION_NUMBER"/>
+      <xs:enumeration value="PASSPORT"/>
+      <xs:enumeration value="RESIDENCE_PERMIT"/>
+    </xs:restriction>
+  </xs:simpleType>
+
   <xs:simpleType name="sessionStateCodeType">
     <xs:restriction base="xs:token">
       <xs:enumeration value="active"/>
@@ -259,6 +275,16 @@
     <xs:attribute name="code" type="userStateCodeType" use="required"/>
   </xs:complexType>
 
+  <xs:complexType name="languageType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="languageCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="documentTypeEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="documentTypeCodeType" use="required"/>
+  </xs:complexType>
+
   <xs:complexType name="sessionStateType">
     <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
     <xs:attribute name="code" type="sessionStateCodeType" use="required"/>
@@ -377,6 +403,21 @@
   <xs:element name="userStates">
     <xs:complexType><xs:sequence><xs:element name="state" type="userStateType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
     <xs:unique name="uniqueUserStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="languages">
+    <xs:complexType>
+      <xs:sequence><xs:element name="language" type="languageType" minOccurs="2" maxOccurs="2"/></xs:sequence>
+      <xs:attribute name="default" type="languageCodeType" use="required"/>
+    </xs:complexType>
+    <xs:unique name="uniqueLanguageCode"><xs:selector xpath="language"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="documentTypes">
+    <xs:complexType>
+      <xs:sequence><xs:element name="documentType" type="documentTypeEntryType" minOccurs="4" maxOccurs="4"/></xs:sequence>
+    </xs:complexType>
+    <xs:unique name="uniqueDocumentTypeCode"><xs:selector xpath="documentType"/><xs:field xpath="@code"/></xs:unique>
   </xs:element>
 
   <xs:element name="sessionStates">

@@ -13110,4 +13110,104 @@ table.dataTable.display > tbody > tr > * {
 }
 
 /* ================================ RTL Css End ============================== */
+.gape-select-field .gape-eduall-select {
+  width: 100%;
+}
+
+.gape-select-field label {
+  display: block;
+}
+
+.gape-select-field .select2-container {
+  display: block;
+  height: auto !important;
+  width: 100% !important;
+}
+
+.gape-select-field .select2-container .selection {
+  display: block;
+  height: auto !important;
+  width: 100%;
+}
+
+.gape-select-field .select2-container--default .select2-selection--single,
+.gape-select-field .select2-selection.gape-eduall-selection,
+.gape-select-field .select2-selection.gape-eduall-select {
+  align-items: center !important;
+  background-color: var(--neutral-20) !important;
+  background-image: none !important;
+  border: 1px solid var(--neutral-30) !important;
+  border-radius: 14px !important;
+  color: var(--neutral-700) !important;
+  display: flex !important;
+  height: auto !important;
+  justify-content: flex-start !important;
+  min-height: 58px !important;
+  width: 100% !important;
+}
+
+.gape-select-field .select2-container--default.select2-container--focus .select2-selection--single,
+.gape-select-field .select2-container--default.select2-container--open .select2-selection--single,
+.gape-select-field .select2-container--default.select2-container--focus .select2-selection.gape-eduall-selection,
+.gape-select-field .select2-container--default.select2-container--open .select2-selection.gape-eduall-selection,
+.gape-select-field .select2-container--default.select2-container--focus .select2-selection.gape-eduall-select,
+.gape-select-field .select2-container--default.select2-container--open .select2-selection.gape-eduall-select {
+  border-color: var(--main-600) !important;
+}
+
+.gape-select-field .select2-container--default .select2-selection--single .select2-selection__rendered {
+  color: var(--neutral-700);
+  flex: 1 1 auto;
+  line-height: 1.5;
+  padding: 16px 56px 16px 32px !important;
+  padding-block: 16px !important;
+  padding-inline-end: 56px !important;
+  padding-inline-start: 32px !important;
+  text-align: left;
+}
+
+.gape-select-field .select2-container--default.select2-container--open .select2-selection--single .select2-selection__rendered {
+  color: var(--neutral-700) !important;
+}
+
+.gape-select-field .select2-container--default .select2-selection--single .select2-selection__arrow {
+  height: 100%;
+  right: 24px;
+  top: 0;
+}
+
+.select2-dropdown.gape-eduall-select-dropdown {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, .14);
+  overflow: hidden;
+  padding: 6px;
+}
+
+.gape-eduall-select-dropdown .select2-results__option {
+  border-radius: 10px;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.35;
+  margin-bottom: 2px;
+  padding: 10px 14px;
+}
+
+.gape-eduall-select-dropdown .select2-results__option--highlighted.select2-results__option--selectable,
+.gape-eduall-select-dropdown .select2-results__option--selected {
+  background-color: #e8f5ef;
+  color: #065f46;
+}
+
+.gape-document-field-error,
+.select2-selection.gape-document-field-error {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 .2rem rgba(220, 38, 38, .08) !important;
+}
+
+.gape-document-validation-message {
+  line-height: 1.45;
+}
+
 /*# sourceMappingURL=main.css.map */

@@ -1,0 +1,529 @@
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<c:set var="profilePhotoUrl" value="${pageContext.request.contextPath}/assets/images/thumbs/student-dashbord-profile-photo-img1.png"/>
+<c:if test="${not empty user.photo}">
+    <c:set var="profilePhotoUrl" value="${pageContext.request.contextPath}/media/${user.photo}"/>
+</c:if>
+<c:choose>
+    <c:when test="${user.state == 'ACTIVE'}">
+        <c:set var="stateToneClass" value="gape-state-active"/>
+        <c:set var="stateDisplayLabel" value="Active"/>
+    </c:when>
+    <c:when test="${user.state == 'INACTIVE'}">
+        <c:set var="stateToneClass" value="gape-state-suspended"/>
+        <c:set var="stateDisplayLabel" value="Suspended"/>
+    </c:when>
+    <c:when test="${user.state == 'BLOCKED'}">
+        <c:set var="stateToneClass" value="gape-state-blocked"/>
+        <c:set var="stateDisplayLabel" value="Blocked"/>
+    </c:when>
+    <c:otherwise>
+        <c:set var="stateToneClass" value="gape-state-default"/>
+        <c:set var="stateDisplayLabel" value="${user.stateLabelEnglish}"/>
+    </c:otherwise>
+</c:choose>
+
+<style>
+    .gape-readonly-input {
+        cursor: default;
+        border-style: dashed !important;
+        box-shadow: inset 4px 0 0 #94a3b8;
+        background-color: #f8fafc !important;
+        color: #475569 !important;
+    }
+
+    .gape-profile-select-field label {
+        display: block;
+    }
+
+    .gape-profile-select-field .select2-container {
+        display: block;
+        width: 100% !important;
+    }
+
+    .gape-profile-select-field .select2-container .selection {
+        display: block;
+        width: 100%;
+    }
+
+    .gape-profile-select-field .select2-container--default .select2-selection--single {
+        align-items: center !important;
+        background-color: var(--neutral-20) !important;
+        background-image: none !important;
+        border: 1px solid var(--neutral-30) !important;
+        border-radius: 14px !important;
+        color: var(--neutral-700) !important;
+        display: flex !important;
+        height: auto !important;
+        justify-content: flex-start !important;
+        min-height: 58px !important;
+        width: 100% !important;
+    }
+
+    .gape-profile-select-field .select2-container--default.select2-container--focus .select2-selection--single,
+    .gape-profile-select-field .select2-container--default.select2-container--open .select2-selection--single {
+        border-color: var(--main-600) !important;
+    }
+
+    .gape-profile-select-field .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: var(--neutral-700) !important;
+        flex: 1 1 auto;
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.5;
+        padding: 16px 56px 16px 32px !important;
+        text-align: left;
+    }
+
+    .gape-profile-select-field .select2-container--default .select2-selection--single .select2-selection__arrow {
+        align-items: center !important;
+        display: inline-flex !important;
+        height: 100% !important;
+        inset-block-start: 0 !important;
+        inset-inline-end: 24px !important;
+        justify-content: center !important;
+        transform: none !important;
+    }
+
+    .gape-profile-select-field .select2-container--default .select2-selection--single .select2-selection__arrow b {
+        align-items: center !important;
+        display: inline-flex !important;
+        height: 100% !important;
+        line-height: 1 !important;
+        position: static !important;
+    }
+
+    .gape-profile-select-field .select2-container--default .select2-selection--single .select2-selection__arrow b::before {
+        line-height: 1 !important;
+        position: static !important;
+    }
+
+    .gape-state-active {
+        background-color: #ecfdf3 !important;
+        border-color: #86efac !important;
+        box-shadow: inset 4px 0 0 #16a34a;
+        color: #15803d !important;
+        font-weight: 600 !important;
+    }
+
+    .gape-state-suspended {
+        background-color: #fff7ed !important;
+        border-color: #fdba74 !important;
+        box-shadow: inset 4px 0 0 #f97316;
+        color: #c2410c !important;
+        font-weight: 600 !important;
+    }
+
+    .gape-state-blocked {
+        background-color: #fef2f2 !important;
+        border-color: #fca5a5 !important;
+        box-shadow: inset 4px 0 0 #dc2626;
+        color: #b91c1c !important;
+        font-weight: 600 !important;
+    }
+
+    .gape-readonly-check:disabled {
+        opacity: 1;
+        cursor: default;
+        filter: saturate(.75);
+    }
+
+    .gape-readonly-check:disabled + label {
+        cursor: default;
+        color: #475569;
+    }
+
+    .gape-password-rule .rule-indicator {
+        background-color: #94a3b8;
+    }
+
+    .gape-password-rule.is-valid .rule-indicator {
+        background-color: #16a34a;
+    }
+
+    .gape-password-rule.is-valid .rule-text {
+        color: #15803d !important;
+    }
+
+    .gape-password-rule.is-invalid .rule-indicator {
+        background-color: #dc2626;
+    }
+
+    .gape-password-rule.is-invalid .rule-text {
+        color: #b91c1c !important;
+    }
+
+    #savePasswordButton:disabled {
+        opacity: .55;
+        cursor: not-allowed;
+    }
+</style>
+
+<div class="px-24 py-24">
+    <c:if test="${not empty successMessage}">
+        <div class="alert alert-success border-0 rounded-10 mb-24" role="alert">
+            <c:out value="${successMessage}"/>
+        </div>
+    </c:if>
+    <c:if test="${not empty errorMessage}">
+        <div class="alert alert-danger border-0 rounded-10 mb-24" role="alert">
+            <c:out value="${errorMessage}"/>
+        </div>
+    </c:if>
+
+    <div class="px-40 py-40 bg-white rounded-10 mb-24">
+        <h4 class="text-16 fw-medium text-neutral-700 mb-0 border-bottom-dashed pb-24">Account Settings</h4>
+        <div class="mt-24">
+<form id="accountSettingsForm" action="${pageContext.request.contextPath}/account/profile" method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                <input type="hidden" name="returnTo" value="${returnTo}">
+                <div class="border-bottom-dashed pb-24 mb-24">
+                    <h4 class="text-18 fw-normal text-neutral-700 mb-16">Profile Photo</h4>
+                    <div class="avatar-upload">
+                        <div class="d-flex align-items-center gap-40 flex-wrap">
+                            <div class="avatar-preview flex-shrink-0">
+                                <div id="imagePreview"
+                                     data-current-image="${profilePhotoUrl}"
+                                     style="background-image: url('${profilePhotoUrl}'); width: 88px; height: 88px; border-radius: 50%; background-size: cover; background-position: center center; background-repeat: no-repeat;">
+                                </div>
+                            </div>
+                            <div class="avatar-edit">
+                                <input type="file" id="imageUpload" name="profileImage" accept="image/*">
+                            </div>
+                            <div class="d-flex align-items-center gap-16 flex-wrap">
+                                <label for="imageUpload" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-16 text-white transition-04 hover-bg-main-700">Upload Image</label>
+                                <button type="reset" id="cancelAccountSettings" class="border-main-600 border px-24 py-12 rounded-12 fw-semibold text-16 text-main-600 hover-bg-main-50 transition-04">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row gy-4 mb-24">
+                    <div class="col-lg-6">
+                        <label for="name" class="fw-medium text-base text-neutral-800 mb-16">Name</label>
+                        <input id="name" name="name" type="text" value="<c:out value='${form.name}'/>" required class="form-control px-32 py-16 fw-normal text-14 text-neutral-700 w-100 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                    </div>
+                    <div class="col-lg-6">
+                        <label for="email" class="fw-medium text-base text-neutral-800 mb-16">Email</label>
+                        <input id="email" name="email" type="email" value="<c:out value='${form.email}'/>" required class="form-control px-32 py-16 fw-normal text-14 text-neutral-700 w-100 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                    </div>
+                    <div class="col-lg-6">
+                        <label for="accountState" class="fw-medium text-base text-neutral-800 mb-16">State</label>
+                        <input id="accountState" type="text" value="<c:out value='${stateDisplayLabel}'/>" readonly aria-readonly="true" class="form-control px-32 py-16 fw-normal text-14 w-100 border rounded-14 focus-visible-outline gape-readonly-input ${stateToneClass}">
+                    </div>
+                    <div class="col-lg-6 gape-select-field gape-profile-select-field">
+                        <label for="language" class="d-block fw-medium text-base text-neutral-800 mb-16">Language</label>
+                        <select id="language" name="language" required class="form-select px-32 py-16 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
+                            <c:forEach var="languageOption" items="${languageOptions}">
+                                <option value="${languageOption.code}" ${form.language == languageOption.code ? 'selected' : ''}>
+                                    <c:out value="${languageOption.label}"/>
+                                </option>
+                            </c:forEach>
+                        </select>
+                    </div>
+                    <div class="col-lg-6 gape-select-field gape-profile-select-field">
+                        <label for="documentType" class="d-block fw-medium text-base text-neutral-800 mb-16">Document Type <span class="text-neutral-100">(Optional)</span></label>
+                        <select id="documentType" name="documentType" class="form-select px-32 py-16 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
+                            <option value="" ${empty form.documentType ? 'selected' : ''}>Select document type</option>
+                            <c:forEach var="documentTypeOption" items="${documentTypeOptions}">
+                                <option value="${documentTypeOption.code}" ${form.documentType == documentTypeOption.code ? 'selected' : ''}>
+                                    <c:out value="${documentTypeOption.label}"/>
+                                </option>
+                            </c:forEach>
+                        </select>
+                    </div>
+                    <div class="col-lg-6">
+                        <label for="documentNumber" class="fw-medium text-base text-neutral-800 mb-16">Document Number <span class="text-neutral-100">(Optional)</span></label>
+                        <input id="documentNumber" name="documentNumber" type="text" value="<c:out value='${form.documentNumber}'/>" class="form-control px-32 py-16 fw-normal text-14 text-neutral-700 w-100 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-16 flex-wrap">
+                    <button type="submit" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
+                        Save Change
+                    </button>
+                    <button type="reset" class="border-main-600 border px-24 py-12 fw-semibold rounded-12 hover-bg-main-50 transition-03">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="px-40 py-40 bg-white rounded-10 mb-24">
+        <h4 class="text-16 fw-medium text-neutral-700 mb-0 border-bottom-dashed pb-24">Access Profiles</h4>
+        <div class="mt-24 d-flex align-items-center gap-24 flex-wrap">
+            <div class="form-check common-check mb-0">
+                <input class="form-check-input gape-readonly-check" type="checkbox" id="administratorProfile" disabled ${form.administratorProfile ? 'checked' : ''}>
+                <label class="form-check-label fw-normal flex-grow-1" for="administratorProfile">Administrator</label>
+            </div>
+            <div class="form-check common-check mb-0">
+                <input class="form-check-input gape-readonly-check" type="checkbox" id="coordinatorProfile" disabled ${form.coordinatorProfile ? 'checked' : ''}>
+                <label class="form-check-label fw-normal flex-grow-1" for="coordinatorProfile">Coordinator</label>
+            </div>
+            <div class="form-check common-check mb-0">
+                <input class="form-check-input gape-readonly-check" type="checkbox" id="teacherProfile" disabled ${form.teacherProfile ? 'checked' : ''}>
+                <label class="form-check-label fw-normal flex-grow-1" for="teacherProfile">Teacher</label>
+            </div>
+            <div class="form-check common-check mb-0">
+                <input class="form-check-input gape-readonly-check" type="checkbox" id="studentProfile" disabled ${form.studentProfile ? 'checked' : ''}>
+                <label class="form-check-label fw-normal flex-grow-1" for="studentProfile">Student</label>
+            </div>
+        </div>
+    </div>
+
+    <div class="ps-40 pe-60 py-40 bg-white rounded-10 mb-24">
+        <h4 class="text-16 fw-medium text-neutral-700 mb-0 border-bottom-dashed pb-24">Password</h4>
+<form id="passwordForm" action="${pageContext.request.contextPath}/account/password" method="post" class="mt-24" novalidate>
+    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+            <input type="hidden" name="returnTo" value="${returnTo}">
+            <div class="mb-40">
+                <div class="row gy-4 align-items-center mb-24 flex-wrap">
+                    <div class="col-sm-6 col-xs-6">
+                        <label for="oldPassword" class="fw-medium text-base text-neutral-800 mb-16">Old Password</label>
+                        <input type="text" class="form-control px-32 py-16 fw-normal text-14 w-100 border rounded-14 focus-visible-outline gape-readonly-input" id="oldPassword" value="***********" readonly aria-readonly="true" autocomplete="off">
+                    </div>
+                    <div class="col-sm-6 col-xs-6">
+                        <label for="newPassword" class="fw-medium text-base text-neutral-800 mb-16">New Password</label>
+                        <div class="position-relative">
+                            <input type="password" class="form-control ps-32 pe-60 py-16 fw-normal text-14 text-neutral-700 w-100 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600" id="newPassword" name="newPassword" placeholder="***********" autocomplete="new-password" aria-describedby="passwordValidationMessage">
+                            <span class="toggle-password text-16 position-absolute inset-inline-end-3-percent inset-block-start-18-px ph-bold ph-eye-closed" id="#newPassword"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-12">
+                    <label for="confirmPassword" class="fw-medium text-base text-neutral-800 mb-16">Confirm Password</label>
+                    <div class="position-relative">
+                        <input type="password" class="form-control ps-32 pe-60 py-16 fw-normal text-14 text-neutral-700 w-100 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600" id="confirmPassword" name="confirmPassword" placeholder="***********" autocomplete="new-password" aria-describedby="passwordValidationMessage">
+                        <span class="toggle-password text-16 position-absolute inset-inline-end-3-percent inset-block-start-18-px ph-bold ph-eye-closed" id="#confirmPassword"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-40">
+                <h4 class="fw-medium text-18 text-neutral-700 mb-16">New password must contain :</h4>
+                <ul id="passwordRules">
+                <li class="gape-password-rule d-flex align-items-center gap-12 mb-12" data-rule="length">
+                    <span class="rule-indicator w-6 h-6 rounded-circle"></span>
+                    <span class="rule-text fw-normal text-14 text-neutral-700">At least 8 characters</span>
+                </li>
+                <li class="gape-password-rule d-flex align-items-center gap-12 mb-12" data-rule="lower">
+                    <span class="rule-indicator w-6 h-6 rounded-circle"></span>
+                    <span class="rule-text fw-normal text-14 text-neutral-700">At least 1 lower letter (a-z)</span>
+                </li>
+                <li class="gape-password-rule d-flex align-items-center gap-12 mb-12" data-rule="upper">
+                    <span class="rule-indicator w-6 h-6 rounded-circle"></span>
+                    <span class="rule-text fw-normal text-14 text-neutral-700">At least 1 uppercase letter (A-Z)</span>
+                </li>
+                <li class="gape-password-rule d-flex align-items-center gap-12 mb-12" data-rule="number">
+                    <span class="rule-indicator w-6 h-6 rounded-circle"></span>
+                    <span class="rule-text fw-normal text-14 text-neutral-700">At least 1 number (0-9)</span>
+                </li>
+                <li class="gape-password-rule d-flex align-items-center gap-12 mb-12" data-rule="special">
+                    <span class="rule-indicator w-6 h-6 rounded-circle"></span>
+                    <span class="rule-text fw-normal text-14 text-neutral-700">At least 1 special character</span>
+                </li>
+            </ul>
+            <p id="passwordValidationMessage" class="text-14 text-danger-600 mt-16 mb-0 d-none"></p>
+        </div>
+        <div class="d-flex align-items-center gap-16 flex-wrap">
+            <button type="submit" id="savePasswordButton" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03" disabled>
+                Save Change
+            </button>
+            <button type="reset" class="border-main-600 border px-24 py-12 fw-semibold rounded-12 hover-bg-main-50 transition-03">
+                Cancel
+            </button>
+        </div>
+        </form>
+    </div>
+
+    <div class="px-40 py-40 bg-white rounded-10">
+        <h4 class="text-16 fw-medium text-neutral-700 mb-0 border-bottom-dashed pb-24">Account Deletion Request</h4>
+<form action="${pageContext.request.contextPath}/account/deletion-requests" method="post">
+    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+            <input type="hidden" name="returnTo" value="${returnTo}">
+            <div class="mt-24">
+            <c:if test="${hasDeletionRequests}">
+                <div class="bg-neutral-20 border border-neutral-30 rounded-12 px-20 py-16 mb-24">
+                    <span class="text-14 text-neutral-500">Latest request</span>
+                    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mt-8">
+                        <span class="${latestDeletionRequest.stateBadgeClass} px-16 py-8 rounded-pill text-14">
+                            <c:out value="${latestDeletionRequest.stateLabelEnglish}"/>
+                        </span>
+                        <span class="text-14 text-neutral-600">Submitted at <c:out value="${latestDeletionRequest.submittedAt}"/></span>
+                    </div>
+                </div>
+            </c:if>
+            <div class="mb-24">
+                <label for="deletionReason" class="fw-medium text-base text-neutral-800 mb-16">Reason <span class="text-neutral-100">(Optional)</span></label>
+                <textarea id="deletionReason" name="reason" rows="4" class="form-control px-32 py-16 fw-normal text-14 text-neutral-700 w-100 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600"></textarea>
+            </div>
+            <div class="form-check common-check mb-24">
+                <input class="form-check-input rounded-circle" type="checkbox" name="confirmDeletionRequest" id="confirmDeletionRequest">
+                <label class="form-check-label fw-normal flex-grow-1" for="confirmDeletionRequest">Confirm that I want to submit an account deletion request.</label>
+            </div>
+            <button type="submit" class="border-main-600 border px-24 py-12 fw-semibold rounded-12 hover-bg-main-50 transition-03">
+                Submit Request
+            </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="${pageContext.request.contextPath}/assets/js/gape-document-validation.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const preview = document.getElementById('imagePreview');
+    const upload = document.getElementById('imageUpload');
+    const form = document.getElementById('accountSettingsForm');
+    const documentType = document.getElementById('documentType');
+    const documentNumber = document.getElementById('documentNumber');
+    const passwordForm = document.getElementById('passwordForm');
+    const newPassword = document.getElementById('newPassword');
+    const confirmPassword = document.getElementById('confirmPassword');
+    const savePasswordButton = document.getElementById('savePasswordButton');
+    const passwordValidationMessage = document.getElementById('passwordValidationMessage');
+    const passwordRules = document.querySelectorAll('#passwordRules [data-rule]');
+
+    function restoreCurrentPhoto() {
+        if (preview) {
+            preview.style.backgroundImage = "url('" + preview.dataset.currentImage + "')";
+        }
+    }
+
+    function syncDocumentRequired() {
+        if (!documentType || !documentNumber) {
+            return;
+        }
+        if (window.GapeDocumentValidation) {
+            window.GapeDocumentValidation.init(form || document);
+        }
+        const documentStarted = documentType.value.trim() !== '' || documentNumber.value.trim() !== '';
+        documentType.required = documentStarted;
+        documentNumber.required = documentStarted;
+    }
+
+    function passwordChecks(value) {
+        return {
+            length: value.length >= 8,
+            lower: /[a-z]/.test(value),
+            upper: /[A-Z]/.test(value),
+            number: /[0-9]/.test(value),
+            special: /[^A-Za-z0-9]/.test(value)
+        };
+    }
+
+    function setPasswordMessage(message) {
+        if (!passwordValidationMessage) {
+            return;
+        }
+        passwordValidationMessage.textContent = message || '';
+        passwordValidationMessage.classList.toggle('d-none', !message);
+    }
+
+    function syncPasswordValidation() {
+        if (!newPassword || !confirmPassword || !savePasswordButton) {
+            return;
+        }
+        const value = newPassword.value;
+        const confirmation = confirmPassword.value;
+        const started = value.length > 0;
+        const checks = passwordChecks(value);
+        const rulesValid = Object.keys(checks).every(function (rule) {
+            return checks[rule];
+        });
+        const confirmationFilled = confirmation.length > 0;
+        const confirmationMatches = confirmation === value;
+
+        confirmPassword.required = started;
+        passwordRules.forEach(function (item) {
+            const valid = checks[item.dataset.rule] === true;
+            item.classList.toggle('is-valid', started && valid);
+            item.classList.toggle('is-invalid', started && !valid);
+        });
+
+        if (!started) {
+            newPassword.setCustomValidity('');
+            confirmPassword.setCustomValidity('');
+            setPasswordMessage('');
+            savePasswordButton.disabled = true;
+            return;
+        }
+
+        if (!rulesValid) {
+            newPassword.setCustomValidity('The new password does not meet all requirements.');
+            confirmPassword.setCustomValidity('');
+            setPasswordMessage('The new password does not meet all requirements.');
+            savePasswordButton.disabled = true;
+            return;
+        }
+
+        newPassword.setCustomValidity('');
+        if (!confirmationFilled) {
+            confirmPassword.setCustomValidity('Confirm password is required.');
+            setPasswordMessage('Confirm password is required.');
+            savePasswordButton.disabled = true;
+            return;
+        }
+        if (!confirmationMatches) {
+            confirmPassword.setCustomValidity('Confirm password must match the new password.');
+            setPasswordMessage('Confirm password must match the new password.');
+            savePasswordButton.disabled = true;
+            return;
+        }
+
+        confirmPassword.setCustomValidity('');
+        setPasswordMessage('');
+        savePasswordButton.disabled = false;
+    }
+
+    if (upload && preview) {
+        upload.addEventListener('change', function () {
+            const file = upload.files && upload.files[0];
+            if (!file) {
+                restoreCurrentPhoto();
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                preview.style.backgroundImage = "url('" + event.target.result + "')";
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    if (form) {
+        form.addEventListener('reset', function () {
+            window.setTimeout(function () {
+                restoreCurrentPhoto();
+                syncDocumentRequired();
+            }, 0);
+        });
+    }
+
+    if (documentType && documentNumber) {
+        documentType.addEventListener('input', syncDocumentRequired);
+        documentType.addEventListener('change', syncDocumentRequired);
+        documentNumber.addEventListener('input', syncDocumentRequired);
+        syncDocumentRequired();
+    }
+
+    if (newPassword && confirmPassword) {
+        newPassword.addEventListener('input', syncPasswordValidation);
+        confirmPassword.addEventListener('input', syncPasswordValidation);
+        syncPasswordValidation();
+    }
+
+    if (passwordForm) {
+        passwordForm.addEventListener('submit', function (event) {
+            syncPasswordValidation();
+            if (!passwordForm.checkValidity() || (savePasswordButton && savePasswordButton.disabled)) {
+                event.preventDefault();
+                passwordForm.reportValidity();
+            }
+        });
+        passwordForm.addEventListener('reset', function () {
+            window.setTimeout(syncPasswordValidation, 0);
+        });
+    }
+
+});
+</script>

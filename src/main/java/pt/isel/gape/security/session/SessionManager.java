@@ -23,6 +23,7 @@ public final class SessionManager {
     static final String SESSION_USER_PHOTO_ATTRIBUTE = "gape.auth.userPhoto";
     static final String SESSION_USER_PROFILE_ATTRIBUTE = "gape.auth.userProfile";
     static final String SESSION_AUTHENTICATED_ATTRIBUTE = "gape.auth.authenticated";
+    static final String CSRF_TOKEN_ATTRIBUTE = "gape.auth.csrfToken";
     static final String LOGOUT_CSRF_TOKEN_ATTRIBUTE = "gape.auth.logoutCsrfToken";
     static final String SESSION_PERMISSION_CODES_ATTRIBUTE = "gape.auth.permissions";
     static final String HAS_ADMINISTRATOR_PROFILE_ATTRIBUTE = "gape.auth.hasAdministratorProfile";
@@ -33,6 +34,9 @@ public final class SessionManager {
     static final String CAN_MANAGE_USERS_ATTRIBUTE = "gape.auth.canManageUsers";
     static final String CAN_MANAGE_PERMISSIONS_ATTRIBUTE = "gape.auth.canManagePermissions";
     static final String CAN_MANAGE_SETTINGS_ATTRIBUTE = "gape.auth.canManageSettings";
+    static final String CAN_VIEW_PERSONAL_DATA_ATTRIBUTE = "gape.auth.canViewPersonalData";
+    static final String CAN_MANAGE_PERSONAL_DATA_ATTRIBUTE = "gape.auth.canManagePersonalData";
+    static final String CAN_PROCESS_DELETION_REQUESTS_ATTRIBUTE = "gape.auth.canProcessDeletionRequests";
 
     private static final int HTTP_SESSION_TIMEOUT_SECONDS = (int) Duration.ofMinutes(35).toSeconds();
     private static final int CSRF_TOKEN_BYTES = 32;
@@ -49,7 +53,9 @@ public final class SessionManager {
         applySessionUserAttributes(httpSession, sessionUser);
         httpSession.setAttribute(DATABASE_SESSION_ID_ATTRIBUTE, session.id());
         httpSession.setAttribute(DATABASE_SESSION_TOKEN_ATTRIBUTE, session.token());
-        httpSession.setAttribute(LOGOUT_CSRF_TOKEN_ATTRIBUTE, generateCsrfToken());
+        String csrfToken = generateCsrfToken();
+        httpSession.setAttribute(CSRF_TOKEN_ATTRIBUTE, csrfToken);
+        httpSession.setAttribute(LOGOUT_CSRF_TOKEN_ATTRIBUTE, csrfToken);
         httpSession.setMaxInactiveInterval(HTTP_SESSION_TIMEOUT_SECONDS);
     }
 
@@ -103,6 +109,10 @@ public final class SessionManager {
     }
 
     public boolean isValidLogoutCsrfToken(HttpServletRequest request, String submittedToken) {
+        return isValidCsrfToken(request, submittedToken);
+    }
+
+    public boolean isValidCsrfToken(HttpServletRequest request, String submittedToken) {
         if (submittedToken == null || submittedToken.isBlank()) {
             return false;
         }
@@ -112,7 +122,10 @@ public final class SessionManager {
             return false;
         }
 
-        Object attribute = session.getAttribute(LOGOUT_CSRF_TOKEN_ATTRIBUTE);
+        Object attribute = session.getAttribute(CSRF_TOKEN_ATTRIBUTE);
+        if (!(attribute instanceof String)) {
+            attribute = session.getAttribute(LOGOUT_CSRF_TOKEN_ATTRIBUTE);
+        }
         return attribute instanceof String expectedToken && expectedToken.equals(submittedToken);
     }
 
@@ -158,6 +171,18 @@ public final class SessionManager {
                 sessionUser.hasPermission(AuthorizationPolicy.MANAGE_PERMISSIONS)
         );
         httpSession.setAttribute(CAN_MANAGE_SETTINGS_ATTRIBUTE, sessionUser.hasPermission(AuthorizationPolicy.MANAGE_SETTINGS));
+        httpSession.setAttribute(
+                CAN_VIEW_PERSONAL_DATA_ATTRIBUTE,
+                sessionUser.hasPermission(AuthorizationPolicy.VIEW_PERSONAL_DATA)
+        );
+        httpSession.setAttribute(
+                CAN_MANAGE_PERSONAL_DATA_ATTRIBUTE,
+                sessionUser.hasPermission(AuthorizationPolicy.MANAGE_PERSONAL_DATA)
+        );
+        httpSession.setAttribute(
+                CAN_PROCESS_DELETION_REQUESTS_ATTRIBUTE,
+                sessionUser.hasPermission(AuthorizationPolicy.PROCESS_DELETION_REQUESTS)
+        );
     }
 
     private static String resolveProfileLabel(SessionUser sessionUser) {

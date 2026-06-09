@@ -110,9 +110,6 @@
             <li class="nav-submenu__item">
                 <a href="apply-admission.jsp" class="nav-submenu__link hover-bg-neutral-30">Apply Admission</a>
             </li>
-            <li class="nav-submenu__item">
-                <a href="privacy-policy.jsp" class="nav-submenu__link hover-bg-neutral-30">Privacy Policy</a>
-            </li>
         </ul>
     </li>
     <li class="nav-menu__item">
@@ -157,17 +154,17 @@
                 <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome Henry,</span>
                 <ul>
                     <li class="mb-8">
-                        <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
+                        <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
                         <span class="text-20 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
                         Dashboard</a>
                     </li>
                     <li class="mb-8">
-                        <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
+                        <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
                         <span class="text-20 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
                         My Profile</a>
                     </li>
                     <li class="mb-8">
-                        <a href="${pageContext.request.contextPath}/admin/dashboard.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
+                        <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="fw-medium d-flex align-items-center gap-8 text-neutral-500 hover-bg-main-600 px-24 py-12 hover-text-white rounded-12 item-hover">
                         <span class="text-20 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
                         Dashboard</a>
                     </li>

@@ -20,7 +20,7 @@ Tambem foram revistos os documentos `docs/docs/0. GAPE - ALL - V3.docx` e `docs/
 
 Foram analisadas as familias principais de JSP:
 
-- paginas publicas da raiz, incluindo `index.jsp`, `login.jsp`, `sign-in.jsp`, `sign-up.jsp`, `course*.jsp`, `events*.jsp`, `contact.jsp`, `about-four.jsp`, `privacy-policy.jsp`;
+- paginas publicas da raiz, incluindo `index.jsp`, `login.jsp`, `sign-in.jsp`, `sign-up.jsp`, `course*.jsp`, `events*.jsp`, `contact.jsp`, `about-four.jsp`, `policy-page-removed.jsp`;
 - paginas de dashboard em `admin/*.jsp`;
 - paginas de dashboard em `student/*.jsp`;
 - paginas de dashboard em `instructor/*.jsp`;

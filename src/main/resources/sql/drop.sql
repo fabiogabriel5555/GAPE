@@ -62,7 +62,6 @@ DROP TABLE IF EXISTS grant_coordinator;
 DROP TABLE IF EXISTS grant_administrator;
 DROP TABLE IF EXISTS permission;
 DROP TABLE IF EXISTS deletion_request;
-DROP TABLE IF EXISTS user_privacy;
 DROP TABLE IF EXISTS user_session;
 DROP TABLE IF EXISTS student_profile;
 DROP TABLE IF EXISTS teacher_profile;

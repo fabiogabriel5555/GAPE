@@ -1,7 +1,6 @@
 package pt.isel.gape.web.filter;
 
 import java.io.IOException;
-import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -15,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.common.time.ApplicationClock;
 import pt.isel.gape.security.authorization.AccessContext;
 import pt.isel.gape.security.authorization.AuthorizationDecision;
 import pt.isel.gape.security.authorization.AuthorizationPolicy;
@@ -35,7 +35,7 @@ public final class AuthorizationFilter implements Filter {
         this(
                 new PermissionChecker(ConnectionProvider.defaultProvider()),
                 new SessionManager(),
-                new AuditService(ConnectionProvider.defaultProvider(), Clock.systemUTC())
+                new AuditService(ConnectionProvider.defaultProvider(), ApplicationClock.system())
         );
     }
 

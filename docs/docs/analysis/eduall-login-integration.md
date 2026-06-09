@@ -23,7 +23,7 @@ Ligar o shell visual do template EduAll ao backend de autenticacao ja existente 
 - `event-details.jsp`
 - `instructor/instructor.jsp`
 - `instructor/instructor-details.jsp`
-- `privacy-policy.jsp`
+- `policy-page-removed.jsp`
 - `tutor.jsp`
 - `tutor-details.jsp`
 - `error-404.jsp`
@@ -120,7 +120,7 @@ As paginas publicas continuam a ser as definidas em `AuthenticationFilter.PUBLIC
 - `events.jsp`
 - `event-details.jsp`
 - `apply-admission.jsp`
-- `privacy-policy.jsp`
+- `policy-page-removed.jsp`
 - `error-404.jsp`
 - `error-500.jsp`
 

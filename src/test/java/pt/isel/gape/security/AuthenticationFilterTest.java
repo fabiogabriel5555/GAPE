@@ -76,7 +76,7 @@ class AuthenticationFilterTest {
         TestFilterChain chainState = new TestFilterChain();
 
         filter.doFilter(
-                requestProxy("/student/student-dashbord.jsp", httpSession),
+                requestProxy("/student/student-home.jsp", httpSession),
                 responseProxy(responseState),
                 chainProxy(chainState)
         );
@@ -95,7 +95,7 @@ class AuthenticationFilterTest {
         TestFilterChain chainState = new TestFilterChain();
 
         filter.doFilter(
-                requestProxy("/admin/dashboard.jsp", null),
+                requestProxy("/admin/admin-dashbord.jsp", null),
                 responseProxy(responseState),
                 chainProxy(chainState)
         );
@@ -109,10 +109,10 @@ class AuthenticationFilterTest {
         Session persisted = sessionService.createSession(400L);
         TestHttpSession httpSession = authenticatedHttpSession(persisted, AccessProfileType.STUDENT);
 
-        assertAllowed("/admin/dashboard.jsp", httpSession);
-        assertAllowed("/coordinator/coordinator-dashboard.jsp", httpSession);
-        assertAllowed("/instructor/instructor-dashboard.jsp", httpSession);
-        assertAllowed("/student/student-dashbord.jsp", httpSession);
+        assertAllowed("/admin/admin-dashbord.jsp", httpSession);
+        assertAllowed("/coordinator/coordinator-home.jsp", httpSession);
+        assertAllowed("/instructor/instructor-home.jsp", httpSession);
+        assertAllowed("/student/student-home.jsp", httpSession);
     }
 
     @Test
@@ -123,7 +123,7 @@ class AuthenticationFilterTest {
                 Set.of(AccessProfileType.ADMINISTRATOR, AccessProfileType.STUDENT)
         );
 
-        assertAllowed("/student/student-dashbord.jsp", httpSession);
+        assertAllowed("/student/student-home.jsp", httpSession);
         assertAllowed("/admin/admin-dashbord.jsp", httpSession);
     }
 
@@ -156,7 +156,7 @@ class AuthenticationFilterTest {
         TestFilterChain chainState = new TestFilterChain();
 
         filter.doFilter(
-                requestProxy("/admin/dashboard.jsp", httpSession),
+                requestProxy("/admin/admin-dashbord.jsp", httpSession),
                 responseProxy(responseState),
                 chainProxy(chainState)
         );

@@ -30,7 +30,7 @@ Total analisado no ramo principal `eduall`: `75` HTML.
 - `about-four.html`
 - `faq.html`
 - `contact.html`
-- `privacy-policy.html`
+- `policy-page-removed.html`
 - `pricing-plan.html`
 - `gallery.html`
 
@@ -158,7 +158,7 @@ Total analisado no ramo principal `eduall`: `75` HTML.
 ### Estrategia adotada
 - O vendor foi espelhado em JSP quase por completo, mas as variantes de homepage `index-2` a `index-6` foram removidas do runtime do GAPE por decisao funcional.
 - As areas de `blog` e `ecommerce` (`product`, `product-details`, `cart`, `checkout`) foram inicialmente convertidas para permitir avaliacao funcional, mas depois removidas do runtime por nao fazerem sentido para a base atual do GAPE.
-- O submenu `Pages` foi reduzido para manter apenas `about-four`, `instructor`, `instructor-details`, `tutor`, `tutor-details`, `events`, `event-details`, `apply-admission` e `privacy-policy`.
+- O submenu `Pages` foi reduzido para manter apenas `about-four`, `instructor`, `instructor-details`, `tutor`, `tutor-details`, `events`, `event-details`, `apply-admission` e `removed-preferences-policy`.
 - Para manter compatibilidade com a estrutura ja usada no GAPE, foram mantidas aliases JSP adicionais para as paginas base mais importantes.
 - As paginas de erro `404` e `500` foram criadas manualmente porque nao existem no template.
 
@@ -166,7 +166,7 @@ Total analisado no ramo principal `eduall`: `75` HTML.
 ### Espelho direto do vendor
 Foram criadas JSP com o mesmo basename para quase todos os HTML em `docs/templates/Eduall/eduall`, incluindo:
 - homes: `index.jsp`
-- institucional: `about.jsp`, `about-two.jsp`, `about-three.jsp`, `about-four.jsp`, `faq.jsp`, `contact.jsp`, `privacy-policy.jsp`, `pricing-plan.jsp`, `gallery.jsp`
+- institucional: `about.jsp`, `about-two.jsp`, `about-three.jsp`, `about-four.jsp`, `faq.jsp`, `contact.jsp`, `policy-page-removed.jsp`, `pricing-plan.jsp`, `gallery.jsp`
 - eventos e processos: `events.jsp`, `event-details.jsp`, `apply-admission.jsp`, `tuition-jobs.jsp`
 - cursos e conteudos: `course.jsp`, `course-list-view.jsp`, `course-details.jsp`, `lesson-details.jsp`, `favorite-course.jsp`, `book-online-class.jsp`
 - tutores e instrutores: `instructor/instructor.jsp`, `instructor-two.jsp`, `instructor/instructor-details.jsp`, `tutor.jsp`, `tutor-details.jsp`, `find-tutors.jsp`

@@ -79,7 +79,7 @@ class ProfileServletTest {
 
         servlet.doGet(requestProxy(requestState), responseProxy(responseState));
 
-        assertEquals("/ctx/student/student-dashbord-my-profile.jsp", responseState.redirectLocation);
+        assertEquals("/ctx/student/student-my-profile.jsp", responseState.redirectLocation);
     }
 
     @Test
@@ -93,7 +93,7 @@ class ProfileServletTest {
 
         servlet.doGet(requestProxy(requestState), responseProxy(responseState));
 
-        assertEquals("/ctx/admin/admin-dashbord-my-profile.jsp", responseState.redirectLocation);
+        assertEquals("/ctx/admin/admin-my-profile.jsp", responseState.redirectLocation);
     }
 
     @Test

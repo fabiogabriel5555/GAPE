@@ -25,7 +25,7 @@ class SchemaIntegrityTest {
     void shouldCreateExpectedTables() throws Exception {
         Set<String> expectedTables = Set.of(
                 "user_account", "administrator_profile", "coordinator_profile", "teacher_profile", "student_profile",
-                "user_session", "user_privacy", "deletion_request", "permission", "grant_administrator",
+                "user_session", "deletion_request", "permission", "grant_administrator",
                 "grant_coordinator", "grant_teacher", "grant_student",
                 "organization", "organic_unit", "course", "subject", "class_group", "content_block",
                 "integrate_subject", "manage_organization", "coordinate_subject", "teach_class_group",

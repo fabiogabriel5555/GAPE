@@ -100,18 +100,6 @@ CREATE TABLE IF NOT EXISTS user_session (
         CHECK (end_at IS NULL OR end_at >= start_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS user_privacy (
-    id_user BIGINT UNSIGNED NOT NULL,
-    cod_privacy VARCHAR(80) NOT NULL,
-    value_flag BOOLEAN NOT NULL,
-    updated_at DATETIME NOT NULL,
-    PRIMARY KEY (id_user, cod_privacy),
-    KEY idx_user_privacy_code (cod_privacy),
-    CONSTRAINT fk_user_privacy_user
-        FOREIGN KEY (id_user) REFERENCES user_account (id_user)
-        ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
 CREATE TABLE IF NOT EXISTS deletion_request (
     id_deletion BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     submitter_user_id BIGINT UNSIGNED NOT NULL,

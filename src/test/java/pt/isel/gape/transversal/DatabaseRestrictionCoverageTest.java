@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
  * aplicacionais em trigger) e rejeitado por uma excecao de integridade.
  *
  * As tabelas do modelo cobertas correspondem a lista do planeamento:
- * user_account, user_session, user_privacy, deletion_request, organization, organic_unit,
+ * user_account, user_session, deletion_request, organization, organic_unit,
  * course, subject, integrate_subject, class_group, enroll_class_group, content_block,
  * content_item, lesson, physical_room, assessment, question, question_option, attempt,
  * response, certificate, message.

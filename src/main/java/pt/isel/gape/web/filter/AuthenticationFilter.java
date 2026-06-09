@@ -1,7 +1,6 @@
 package pt.isel.gape.web.filter;
 
 import java.io.IOException;
-import java.time.Clock;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -16,6 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import pt.isel.gape.access.model.Session;
 import pt.isel.gape.access.service.SessionService;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.common.time.ApplicationClock;
 import pt.isel.gape.security.session.SessionManager;
 import pt.isel.gape.security.session.SessionUser;
 import pt.isel.gape.security.authorization.AuthorizationPolicy;
@@ -27,7 +27,7 @@ public final class AuthenticationFilter implements Filter {
 
     public AuthenticationFilter() {
         this(
-                new SessionService(ConnectionProvider.defaultProvider(), Clock.systemUTC()),
+                new SessionService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new SessionManager()
         );
     }

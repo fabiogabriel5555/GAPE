@@ -1,0 +1,12 @@
+<div class="bg-neutral-20 border-neutral-40 border-top px-24 py-16 mt-auto">
+    <div class="d-flex align-items-center gap-24 justify-content-between flex-wrap">
+        <p class="fw-medium text-14 text-neutral-500">
+            Copyright &copy; 2026
+            <a href="${pageContext.request.contextPath}/dashboard" class="text-main-600 fw-medium">GAPE</a>.
+            All Rights Reserved
+        </p>
+        <div class="d-flex align-items-center gap-24">
+            <a href="#" class="fw-medium text-14 text-neutral-500 hover-text-main-600">Terms & Conditions</a>
+        </div>
+    </div>
+</div>

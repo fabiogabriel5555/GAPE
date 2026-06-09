@@ -17,8 +17,8 @@ INSERT INTO user_session (
 INSERT INTO user_account (
     id_user, name, email, state, language, created_at, credential_hash, credential_salt, document_type, document_number
 ) VALUES
-    (9020, 'Doc A', 'doc-a@gape.local', 'active', 'pt-PT', '2026-03-01 14:00:00', 'h_doc_a', 's_doc_a', 'passport', 'AA123456'),
-    (9021, 'Doc B', 'doc-b@gape.local', 'active', 'pt-PT', '2026-03-01 14:01:00', 'h_doc_b', 's_doc_b', 'passport', 'AA123456');
+    (9020, 'Doc A', 'doc-a@gape.local', 'active', 'pt-PT', '2026-03-01 14:00:00', 'h_doc_a', 's_doc_a', 'PASSPORT', 'AA123456'),
+    (9021, 'Doc B', 'doc-b@gape.local', 'active', 'pt-PT', '2026-03-01 14:01:00', 'h_doc_b', 's_doc_b', 'PASSPORT', 'AA123456');
 
 -- Ordem do bloco unica na mesma turma
 INSERT INTO content_block (

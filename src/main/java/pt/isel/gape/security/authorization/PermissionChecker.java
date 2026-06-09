@@ -16,7 +16,10 @@ public final class PermissionChecker {
     private static final Set<String> GLOBAL_MANAGEMENT_PERMISSIONS = Set.of(
             AuthorizationPolicy.MANAGE_USERS,
             AuthorizationPolicy.MANAGE_PERMISSIONS,
-            AuthorizationPolicy.MANAGE_SETTINGS
+            AuthorizationPolicy.MANAGE_SETTINGS,
+            AuthorizationPolicy.VIEW_PERSONAL_DATA,
+            AuthorizationPolicy.MANAGE_PERSONAL_DATA,
+            AuthorizationPolicy.PROCESS_DELETION_REQUESTS
     );
 
     private final PermissionDAO permissionDAO;

@@ -1,0 +1,442 @@
+package pt.isel.gape.access;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
+
+import pt.isel.gape.access.dao.ProfileDAO;
+import pt.isel.gape.access.dao.UserDAO;
+import pt.isel.gape.access.model.AccessProfile;
+import pt.isel.gape.access.model.AccessProfileType;
+import pt.isel.gape.access.model.User;
+import pt.isel.gape.access.model.UserCreateCommand;
+import pt.isel.gape.access.model.UserPersonalProfileUpdate;
+import pt.isel.gape.access.model.UserState;
+import pt.isel.gape.access.model.UserUpdateCommand;
+import pt.isel.gape.access.service.UserService;
+import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.security.authorization.PermissionChecker;
+import pt.isel.gape.transversal.DatabaseTestSupport;
+import pt.isel.gape.transversal.dao.ActivityLogDAO;
+import pt.isel.gape.transversal.service.AuditService;
+
+@Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock("gape-db")
+class UserServiceTest {
+
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-06-04T10:15:30Z"), ZoneOffset.UTC);
+    private static final String SOURCE_IP = "127.0.0.1";
+
+    private ConnectionProvider connectionProvider;
+    private UserService userService;
+
+    @BeforeEach
+    void setUp() throws Exception {
+        connectionProvider = DatabaseTestSupport::openConnection;
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            resetSchema(connection);
+            DatabaseTestSupport.executeScript(connection, DatabaseTestSupport.SQL_SEED_DIR.resolve("base.sql"));
+        }
+
+        userService = new UserService(
+                new UserDAO(connectionProvider),
+                new ProfileDAO(connectionProvider),
+                new PermissionChecker(connectionProvider),
+                new AuditService(new ActivityLogDAO(connectionProvider), FIXED_CLOCK),
+                FIXED_CLOCK
+        );
+    }
+
+    @Test
+    void administratorCreatesValidUserAndAuditRecord() throws Exception {
+        User created = userService.createUser(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                newUserCommand("Valid User", "valid.user@gape.local", "CITIZEN_CARD", "000000000ZZ4", "STD-F5-001"),
+                SOURCE_IP
+        );
+
+        assertNotNull(created);
+        assertTrue(created.id() > 5L);
+        assertEquals("Valid User", created.name());
+        assertEquals("valid.user@gape.local", created.email());
+        assertEquals(UserState.ACTIVE, created.state());
+        assertEquals("CITIZEN_CARD", created.documentType());
+        assertEquals("000000000ZZ4", created.documentNumber());
+        assertTrue(created.accessProfiles().contains(new AccessProfile(AccessProfileType.STUDENT, "STD-F5-001")));
+        assertEquals(1, countAudit("USER_CREATE", "success"));
+    }
+
+    @Test
+    void administratorCreatesUserWithGeneratedProfileCodeWhenCodeIsNotSubmitted() throws Exception {
+        User created = userService.createUser(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new UserCreateCommand(
+                        "Generated Profile Code",
+                        "generated.profile@gape.local",
+                        UserState.ACTIVE,
+                        "pt-PT",
+                        null,
+                        "test-hash",
+                        "test-salt",
+                        null,
+                        null,
+                        Set.of(new AccessProfile(AccessProfileType.STUDENT, ""))
+                ),
+                SOURCE_IP
+        );
+
+        assertTrue(created.accessProfiles().contains(new AccessProfile(AccessProfileType.STUDENT, "STD-%06d".formatted(created.id()))));
+    }
+
+    @Test
+    void duplicateEmailIsRejectedBeforeInsertAndAudited() throws Exception {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.createUser(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        newUserCommand("Duplicate Email", "admin@gape.local", "PASSPORT", "AA123456", "STD-F5-002"),
+                        SOURCE_IP
+                )
+        );
+
+        assertEquals(1, countAudit("USER_CREATE", "failure"));
+        assertEquals(1, countUsersByEmail("admin@gape.local"));
+    }
+
+    @Test
+    void duplicateDocumentIsRejectedBeforeInsertAndAudited() throws Exception {
+        userService.createUser(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                newUserCommand("Document Owner", "document.owner@gape.local", "PASSPORT", "AB123456", "STD-F5-003"),
+                SOURCE_IP
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.createUser(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        newUserCommand("Document Duplicate", "document.duplicate@gape.local", "PASSPORT", "AB123456", "STD-F5-004"),
+                        SOURCE_IP
+                )
+        );
+
+        assertEquals(1, countAudit("USER_CREATE", "failure"));
+        assertEquals(1, countUsersByDocument("PASSPORT", "AB123456"));
+    }
+
+    @Test
+    void missingRequiredFieldsAndPartialDocumentAreRejectedAndAudited() throws Exception {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.createUser(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        new UserCreateCommand(
+                                " ",
+                                "missing-name@gape.local",
+                                UserState.ACTIVE,
+                                "pt-PT",
+                                null,
+                                "hash",
+                                "salt",
+                                "PASSPORT",
+                                "AC123456",
+                                Set.of(new AccessProfile(AccessProfileType.STUDENT, "STD-F5-005"))
+                        ),
+                        SOURCE_IP
+                )
+        );
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.createUser(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        newUserCommand("Partial Document", "partial.document@gape.local", "CITIZEN_CARD", null, "STD-F5-006"),
+                        SOURCE_IP
+                )
+        );
+
+        assertEquals(2, countAudit("USER_CREATE", "failure"));
+    }
+
+    @Test
+    void unsupportedLanguageIsRejectedAndAudited() throws Exception {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.createUser(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        new UserCreateCommand(
+                                "Unsupported Language",
+                                "unsupported.language@gape.local",
+                                UserState.ACTIVE,
+                                "en-GB",
+                                null,
+                                "hash",
+                                "salt",
+                                null,
+                                null,
+                                Set.of(new AccessProfile(AccessProfileType.STUDENT, "STD-F5-009"))
+                        ),
+                        SOURCE_IP
+                )
+        );
+
+        assertEquals(1, countAudit("USER_CREATE", "failure"));
+    }
+
+    @Test
+    void unsupportedDocumentTypeIsRejectedAndAudited() throws Exception {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.createUser(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        newUserCommand("Unsupported Document", "unsupported.document@gape.local", "CUSTOM_DOC", "DOC-9010", "STD-F5-010"),
+                        SOURCE_IP
+                )
+        );
+
+        assertEquals(1, countAudit("USER_CREATE", "failure"));
+    }
+
+    @Test
+    void invalidDocumentNumberIsRejectedAndAudited() throws Exception {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.createUser(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        newUserCommand("Invalid Document", "invalid.document@gape.local", "PASSPORT", "P12345!", "STD-F5-011"),
+                        SOURCE_IP
+                )
+        );
+
+        assertTrue(exception.getMessage().contains("Invalid document number"));
+        assertEquals(1, countAudit("USER_CREATE", "failure"));
+    }
+
+    @Test
+    void administratorBlocksAndUnblocksUserWithAuditRecords() throws Exception {
+        User created = userService.createUser(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                newUserCommand("Block Target", "block.target@gape.local", null, null, "STD-F5-007"),
+                SOURCE_IP
+        );
+
+        User blocked = userService.blockUser(1L, null, AccessProfileType.ADMINISTRATOR, created.id(), SOURCE_IP);
+        User unblocked = userService.unblockUser(1L, null, AccessProfileType.ADMINISTRATOR, created.id(), SOURCE_IP);
+
+        assertEquals(UserState.BLOCKED, blocked.state());
+        assertEquals(UserState.ACTIVE, unblocked.state());
+        assertEquals(1, countAudit("USER_BLOCK", "success"));
+        assertEquals(1, countAudit("USER_UNBLOCK", "success"));
+    }
+
+    @Test
+    void replacingProfileCreatesDashboardGrantForNewProfile() throws Exception {
+        User updated = userService.updateUser(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                1L,
+                new UserUpdateCommand(
+                        "Admin As Student",
+                        "admin@gape.local",
+                        UserState.ACTIVE,
+                        "pt-PT",
+                        "users/1/profile.webp",
+                        null,
+                        null,
+                        Set.of(new AccessProfile(AccessProfileType.STUDENT, "STD-ADM-SWITCH"))
+                ),
+                SOURCE_IP
+        );
+
+        assertTrue(updated.accessProfiles().contains(new AccessProfile(AccessProfileType.STUDENT, "STD-ADM-SWITCH")));
+        assertEquals(1, countGrant("grant_student", "id_student_user", 1L, "VIEW_REPORTS"));
+        assertEquals(0, countGrant("grant_administrator", "id_admin_user", 1L, "VIEW_REPORTS"));
+    }
+
+    @Test
+    void userEditsOwnPersonalProfileWithoutGlobalPersonalDataPermission() throws Exception {
+        User created = userService.createUser(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                newUserCommand("Profile Owner", "profile.owner@gape.local", "TAX_IDENTIFICATION_NUMBER", "503504564", "STD-F5-008"),
+                SOURCE_IP
+        );
+
+        User updated = userService.editPersonalProfile(
+                created.id(),
+                null,
+                AccessProfileType.STUDENT,
+                created.id(),
+                new UserPersonalProfileUpdate(
+                        "Profile Owner Updated",
+                        "profile.owner.updated@gape.local",
+                        "en-US",
+                        "users/test/profile.webp",
+                        "TAX_IDENTIFICATION_NUMBER",
+                        "503504564"
+                ),
+                SOURCE_IP
+        );
+
+        assertEquals("Profile Owner Updated", updated.name());
+        assertEquals("profile.owner.updated@gape.local", updated.email());
+        assertEquals("en-US", updated.language());
+        assertEquals(1, countAudit("USER_PROFILE_UPDATE", "success"));
+    }
+
+    @Test
+    void unauthorizedProfileCannotReadAnotherUsersPersonalDataAndDenialIsAudited() throws Exception {
+        assertThrows(
+                SecurityException.class,
+                () -> userService.readPersonalData(3L, null, AccessProfileType.TEACHER, 4L, SOURCE_IP)
+        );
+
+        assertEquals(1, countAudit("USER_PERSONAL_READ", "failure"));
+    }
+
+    private static UserCreateCommand newUserCommand(
+            String name,
+            String email,
+            String documentType,
+            String documentNumber,
+            String studentCode
+    ) {
+        return new UserCreateCommand(
+                name,
+                email,
+                UserState.ACTIVE,
+                "pt-PT",
+                null,
+                "test-hash",
+                "test-salt",
+                documentType,
+                documentNumber,
+                Set.of(new AccessProfile(AccessProfileType.STUDENT, studentCode))
+        );
+    }
+
+    private static void resetSchema(Connection connection) throws Exception {
+        DatabaseTestSupport.dropCurrentSchemaObjects(connection);
+        executeServiceTestSchema(connection);
+    }
+
+    private static void executeServiceTestSchema(Connection connection) throws Exception {
+        List<String> statements = DatabaseTestSupport.parseSqlStatements(DatabaseTestSupport.SQL_DIR.resolve("schema.sql"));
+        try (Statement statement = connection.createStatement()) {
+            for (String sql : statements) {
+                if (!isSkippedTrigger(sql)) {
+                    statement.execute(sql);
+                }
+            }
+        }
+    }
+
+    private static boolean isSkippedTrigger(String sql) {
+        String normalized = sql.stripLeading().toUpperCase(Locale.ROOT);
+        if (!normalized.startsWith("CREATE TRIGGER ")) {
+            return false;
+        }
+        return !(normalized.startsWith("CREATE TRIGGER BI_ACTIVITY_LOG_VALIDATE ")
+                || normalized.startsWith("CREATE TRIGGER BI_DELETION_REQUEST_VALIDATE ")
+                || normalized.startsWith("CREATE TRIGGER BU_DELETION_REQUEST_VALIDATE "));
+    }
+
+    private int countAudit(String operationType, String outcome) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT COUNT(*) FROM activity_log WHERE operation_type = ? AND outcome = ?"
+             )) {
+            statement.setString(1, operationType);
+            statement.setString(2, outcome);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1);
+            }
+        }
+    }
+
+    private int countUsersByEmail(String email) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT COUNT(*) FROM user_account WHERE email = ?"
+             )) {
+            statement.setString(1, email);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1);
+            }
+        }
+    }
+
+    private int countUsersByDocument(String documentType, String documentNumber) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT COUNT(*)
+                     FROM user_account
+                     WHERE document_type = ? AND document_number = ?
+                     """)) {
+            statement.setString(1, documentType);
+            statement.setString(2, documentNumber);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1);
+            }
+        }
+    }
+
+    private int countGrant(String tableName, String userColumn, long userId, String permission) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT COUNT(*) FROM " + tableName + " WHERE " + userColumn + " = ? AND cod_permission = ?"
+             )) {
+            statement.setLong(1, userId);
+            statement.setString(2, permission);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1);
+            }
+        }
+    }
+}

@@ -119,13 +119,25 @@ class AuthServiceTest {
     }
 
     @Test
-    void missingEmailIsRejected() {
+    void missingEmailIsRejectedAndDoesNotAuditSubmittedEmail() throws Exception {
         AuthenticationException exception = assertThrows(
                 AuthenticationException.class,
                 () -> authService.authenticate("missing@gape.local", "Any#2026", "127.0.0.1")
         );
 
         assertEquals(AuthenticationFailureReason.INVALID_CREDENTIALS, exception.reason());
+
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT affected_entity_identifier
+                     FROM activity_log
+                     WHERE operation_type = 'LOGIN' AND outcome = 'denied'
+                     """)) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                assertEquals("unknown", resultSet.getString(1));
+            }
+        }
     }
 
     @Test

@@ -11,6 +11,9 @@ public final class AuthorizationPolicy {
     public static final String MANAGE_USERS = "MANAGE_USERS";
     public static final String MANAGE_PERMISSIONS = "MANAGE_PERMISSIONS";
     public static final String MANAGE_SETTINGS = "MANAGE_SETTINGS";
+    public static final String VIEW_PERSONAL_DATA = "VIEW_PERSONAL_DATA";
+    public static final String MANAGE_PERSONAL_DATA = "MANAGE_PERSONAL_DATA";
+    public static final String PROCESS_DELETION_REQUESTS = "PROCESS_DELETION_REQUESTS";
 
     private AuthorizationPolicy() {
     }
@@ -56,6 +59,14 @@ public final class AuthorizationPolicy {
                     AccessEntityType.GLOBAL
             ));
         }
+        if (path.startsWith("/account/")) {
+            return Optional.of(new AuthorizationRule(
+                    Set.of(AccessProfileType.ADMINISTRATOR, AccessProfileType.COORDINATOR,
+                            AccessProfileType.TEACHER, AccessProfileType.STUDENT),
+                    VIEW_REPORTS,
+                    AccessEntityType.SELF
+            ));
+        }
         if (isProtectedRootPage(path)) {
             return Optional.of(new AuthorizationRule(
                     Set.of(AccessProfileType.ADMINISTRATOR, AccessProfileType.COORDINATOR,
@@ -73,6 +84,15 @@ public final class AuthorizationPolicy {
         }
         if (containsAny(path, "settings", "config", "configuration")) {
             return MANAGE_SETTINGS;
+        }
+        if (containsAny(path, "deletion", "delete-request", "right-to-be-forgotten")) {
+            return PROCESS_DELETION_REQUESTS;
+        }
+        if (containsAny(path, "audit", "activity-log")) {
+            return VIEW_REPORTS;
+        }
+        if (containsAny(path, "personal-data", "profile")) {
+            return MANAGE_PERSONAL_DATA;
         }
         if (containsAny(path, "users", "user-management", "accounts", "roles", "assignments")) {
             return MANAGE_USERS;
@@ -104,7 +124,6 @@ public final class AuthorizationPolicy {
                 || path.equals("/events.jsp")
                 || path.equals("/event-details.jsp")
                 || path.equals("/apply-admission.jsp")
-                || path.equals("/privacy-policy.jsp")
                 || path.equals("/error-403.jsp")
                 || path.equals("/error-404.jsp")
                 || path.equals("/error-500.jsp")

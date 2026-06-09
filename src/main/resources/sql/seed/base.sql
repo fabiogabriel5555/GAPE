@@ -24,12 +24,18 @@ INSERT INTO permission (cod_permission, name, state) VALUES
     ('MANAGE_USERS', 'Manage Users', 'active'),
     ('MANAGE_PERMISSIONS', 'Manage Permissions', 'active'),
     ('MANAGE_SETTINGS', 'Manage Critical Settings', 'active'),
+    ('VIEW_PERSONAL_DATA', 'View Personal Data', 'active'),
+    ('MANAGE_PERSONAL_DATA', 'Manage Personal Data', 'active'),
+    ('PROCESS_DELETION_REQUESTS', 'Process Deletion Requests', 'active'),
     ('VIEW_REPORTS', 'View Reports', 'active');
 
 INSERT INTO grant_administrator (id_admin_user, cod_permission) VALUES
     (1, 'MANAGE_USERS'),
     (1, 'MANAGE_PERMISSIONS'),
     (1, 'MANAGE_SETTINGS'),
+    (1, 'VIEW_PERSONAL_DATA'),
+    (1, 'MANAGE_PERSONAL_DATA'),
+    (1, 'PROCESS_DELETION_REQUESTS'),
     (1, 'VIEW_REPORTS');
 
 INSERT INTO grant_coordinator (id_coordinator_user, cod_permission) VALUES

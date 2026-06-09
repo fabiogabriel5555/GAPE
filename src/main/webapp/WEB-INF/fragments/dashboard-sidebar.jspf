@@ -1,0 +1,110 @@
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<c:set var="isAdminDashboard" value="${sessionScope['gape.auth.hasAdministratorProfile']}" />
+<c:set var="dashboardHref" value="${isAdminDashboard ? '/admin/admin-dashbord.jsp' : '/dashboard'}" />
+<c:set var="siteHomeHref" value="/index.jsp" />
+<c:set var="profileHref" value="${isAdminDashboard ? '/admin/admin-my-profile.jsp' : '/profile'}" />
+<c:set var="isProfileActive" value="${activeMenu == 'profile' or activeMenu == 'my-profile'}" />
+<c:set var="isQuizAttemptsActive" value="${activeMenu == 'quiz-attempts' or activeMenu == 'quiz'}" />
+<div class="dashboard-sidebar px-20 py-24 max-w-288-px bg-white w-100 border-end border-neutral-40 position-relative">
+    <a href="${pageContext.request.contextPath}${siteHomeHref}" class="dashboard-sidebar__site-logo">
+        <img src="${pageContext.request.contextPath}/assets/images/logo/logo.svg" alt="GAPE">
+    </a>
+    <span class="w-100 bg-neutral-40 mb-24 mt-24 h-1"></span>
+    <div class="overflow-x-auto">
+        <div class="scrollbar min-w-max">
+            <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome<c:if test="${not empty sessionScope['gape.auth.userName']}"> <c:out value="${sessionScope['gape.auth.userName']}"/></c:if>,</span>
+            <ul>
+                <li class="mb-8 ${activeMenu == 'dashboard' ? 'activePage' : ''}">
+                    <a href="${pageContext.request.contextPath}${dashboardHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="mb-8 ${isProfileActive ? 'activePage' : ''}">
+                    <a href="${pageContext.request.contextPath}${profileHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-circle"></i></span>
+                        My Profile
+                    </a>
+                </li>
+                <li class="mb-8 ${activeMenu == 'message' ? 'activePage' : ''}">
+                    <a href="${pageContext.request.contextPath}/admin/admin-message.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-chat-dots"></i></span>
+                        Message
+                    </a>
+                </li>
+                <li class="mb-8 ${activeMenu == 'courses' ? 'activePage' : ''}">
+                    <a href="${pageContext.request.contextPath}/admin/admin-courses.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-watch"></i></span>
+                        Courses
+                    </a>
+                </li>
+                <li class="mb-8 ${activeMenu == 'reviews' ? 'activePage' : ''}">
+                    <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sparkle"></i></span>
+                        Reviews
+                    </a>
+                </li>
+                <li class="mb-8 ${isQuizAttemptsActive ? 'activePage' : ''}">
+                    <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-seal-question"></i></span>
+                        Quiz Attempts
+                    </a>
+                </li>
+                <c:if test="${sessionScope['gape.auth.hasAdministratorProfile']}">
+                    <li class="mb-8">
+                        <span class="fw-normal text-14 text-neutral-500">Admin</span>
+                    </li>
+                    <c:if test="${sessionScope['gape.auth.canManageUsers']}">
+                        <li class="mb-8 ${activeMenu == 'users' ? 'activePage' : ''}">
+                            <a href="${pageContext.request.contextPath}/admin/users" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-users-three"></i></span>
+                                Users
+                            </a>
+                            <c:if test="${not empty adminUserContextId}">
+                                <ul class="mt-8 ps-24">
+                                    <li class="mb-6 ${adminUserActiveChild == 'detail' ? 'activePage' : ''}">
+                                        <a href="${pageContext.request.contextPath}/admin/users/${adminUserContextId}" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-eye"></i></span>
+                                            Detail
+                                        </a>
+                                    </li>
+                                    <li class="mb-6 ${adminUserActiveChild == 'edit' ? 'activePage' : ''}">
+                                        <a href="${pageContext.request.contextPath}/admin/users/${adminUserContextId}/edit" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-pencil-simple-line"></i></span>
+                                            Edit
+                                        </a>
+                                    </li>
+                                    <c:if test="${sessionScope['gape.auth.canProcessDeletionRequests']}">
+                                        <li class="mb-6 ${adminUserActiveChild == 'deletion' ? 'activePage' : ''}">
+                                            <a href="${pageContext.request.contextPath}/admin/deletion-requests?userId=${adminUserContextId}" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                                <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-archive-box"></i></span>
+                                                Deletion
+                                            </a>
+                                        </li>
+                                    </c:if>
+                                    <c:if test="${sessionScope['gape.auth.canViewReports']}">
+                                        <li class="mb-6 ${adminUserActiveChild == 'audit' ? 'activePage' : ''}">
+                                            <a href="${pageContext.request.contextPath}/admin/activity-log?userId=${adminUserContextId}" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                                <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-list-checks"></i></span>
+                                                Audit
+                                            </a>
+                                        </li>
+                                    </c:if>
+                                </ul>
+                            </c:if>
+                        </li>
+                    </c:if>
+                </c:if>
+            </ul>
+        </div>
+    </div>
+    <div class="position-absolute inset-block-end-0 inset-inline-start-0 pb-16 px-16 w-100">
+        <form action="${pageContext.request.contextPath}/auth/logout" method="post" class="m-0">
+            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.logoutCsrfToken']}">
+            <button type="submit" class="text-14 fw-medium text-neutral-500 d-flex align-items-center gap-8 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap bg-white border-0 w-100 text-start">
+                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sign-out"></i></span>
+                Logout
+            </button>
+        </form>
+    </div>
+</div>
