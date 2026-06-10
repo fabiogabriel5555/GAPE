@@ -22,8 +22,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
-import pt.isel.gape.access.dao.ProfileDAO;
-import pt.isel.gape.access.dao.UserDAO;
 import pt.isel.gape.access.model.AccessProfile;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.access.model.User;
@@ -33,10 +31,7 @@ import pt.isel.gape.access.model.UserState;
 import pt.isel.gape.access.model.UserUpdateCommand;
 import pt.isel.gape.access.service.UserService;
 import pt.isel.gape.common.config.ConnectionProvider;
-import pt.isel.gape.security.authorization.PermissionChecker;
 import pt.isel.gape.transversal.DatabaseTestSupport;
-import pt.isel.gape.transversal.dao.ActivityLogDAO;
-import pt.isel.gape.transversal.service.AuditService;
 
 @Execution(ExecutionMode.SAME_THREAD)
 @ResourceLock("gape-db")
@@ -56,13 +51,7 @@ class UserServiceTest {
             DatabaseTestSupport.executeScript(connection, DatabaseTestSupport.SQL_SEED_DIR.resolve("base.sql"));
         }
 
-        userService = new UserService(
-                new UserDAO(connectionProvider),
-                new ProfileDAO(connectionProvider),
-                new PermissionChecker(connectionProvider),
-                new AuditService(new ActivityLogDAO(connectionProvider), FIXED_CLOCK),
-                FIXED_CLOCK
-        );
+        userService = new UserService(connectionProvider, FIXED_CLOCK);
     }
 
     @Test
@@ -271,6 +260,8 @@ class UserServiceTest {
 
     @Test
     void replacingProfileCreatesDashboardGrantForNewProfile() throws Exception {
+        addSpareAdministratorForOrganizations(6L, 10L, 11L);
+
         User updated = userService.updateUser(
                 1L,
                 null,
@@ -292,6 +283,30 @@ class UserServiceTest {
         assertTrue(updated.accessProfiles().contains(new AccessProfile(AccessProfileType.STUDENT, "STD-ADM-SWITCH")));
         assertEquals(1, countGrant("grant_student", "id_student_user", 1L, "VIEW_REPORTS"));
         assertEquals(0, countGrant("grant_administrator", "id_admin_user", 1L, "VIEW_REPORTS"));
+    }
+
+    @Test
+    void removingLastActiveOrganizationAdministratorIsRejected() {
+        assertThrows(
+                RuntimeException.class,
+                () -> userService.updateUser(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        1L,
+                        new UserUpdateCommand(
+                                "Admin As Student",
+                                "admin@gape.local",
+                                UserState.ACTIVE,
+                                "pt-PT",
+                                "users/1/profile.webp",
+                                null,
+                                null,
+                                Set.of(new AccessProfile(AccessProfileType.STUDENT, "STD-ADM-SWITCH"))
+                        ),
+                        SOURCE_IP
+                )
+        );
     }
 
     @Test
@@ -436,6 +451,38 @@ class UserServiceTest {
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 return resultSet.getInt(1);
+            }
+        }
+    }
+
+    private void addSpareAdministratorForOrganizations(long userId, long... organizationIds) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            try (PreparedStatement user = connection.prepareStatement("""
+                    INSERT INTO user_account (
+                        id_user, name, email, state, language, photo, created_at, credential_hash, credential_salt
+                    ) VALUES (?, 'Spare Admin', 'spare.admin@gape.local', 'active', 'pt-PT', NULL,
+                              '2026-01-01 10:00:00', 'hash', 'salt')
+                    """)) {
+                user.setLong(1, userId);
+                user.executeUpdate();
+            }
+            try (PreparedStatement profile = connection.prepareStatement("""
+                    INSERT INTO administrator_profile (id_user, cod_administrator)
+                    VALUES (?, ?)
+                    """)) {
+                profile.setLong(1, userId);
+                profile.setString(2, "ADM-SPARE-" + userId);
+                profile.executeUpdate();
+            }
+            try (PreparedStatement assignment = connection.prepareStatement("""
+                    INSERT INTO manage_organization (id_admin_user, id_organization, state, start_date, end_date)
+                    VALUES (?, ?, 'active', '2026-01-01', NULL)
+                    """)) {
+                for (long organizationId : organizationIds) {
+                    assignment.setLong(1, userId);
+                    assignment.setLong(2, organizationId);
+                    assignment.executeUpdate();
+                }
             }
         }
     }

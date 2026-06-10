@@ -76,25 +76,47 @@
 
     .gape-profile-select-field .select2-container--default .select2-selection--single .select2-selection__arrow {
         align-items: center !important;
-        display: inline-flex !important;
+        display: flex !important;
         height: 100% !important;
         inset-block-start: 0 !important;
         inset-inline-end: 24px !important;
         justify-content: center !important;
         transform: none !important;
+        width: 20px !important;
     }
 
     .gape-profile-select-field .select2-container--default .select2-selection--single .select2-selection__arrow b {
-        align-items: center !important;
-        display: inline-flex !important;
-        height: 100% !important;
-        line-height: 1 !important;
-        position: static !important;
+        border: 0 !important;
+        display: block !important;
+        height: 18px !important;
+        inset-block-start: 50% !important;
+        inset-inline-start: 50% !important;
+        margin: 0 !important;
+        position: absolute !important;
+        transform: translate(-50%, -50%) !important;
+        width: 18px !important;
     }
 
     .gape-profile-select-field .select2-container--default .select2-selection--single .select2-selection__arrow b::before {
+        border-color: hsl(var(--heading-color)/0.55) !important;
+        border-style: solid !important;
+        border-width: 0 2px 2px 0 !important;
+        content: "" !important;
+        display: block !important;
+        height: 8px !important;
+        inset-block-start: 50% !important;
+        inset-inline-start: 50% !important;
         line-height: 1 !important;
-        position: static !important;
+        position: absolute !important;
+        transform: translate(-50%, -55%) rotate(45deg) !important;
+        transform-origin: center center !important;
+        transition: 0.2s linear !important;
+        width: 8px !important;
+    }
+
+    .gape-profile-select-field .select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b::before {
+        content: "" !important;
+        transform: translate(-50%, -45%) rotate(-135deg) !important;
     }
 
     .gape-state-active {

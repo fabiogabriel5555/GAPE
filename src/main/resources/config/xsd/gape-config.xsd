@@ -80,7 +80,11 @@
   <xs:simpleType name="organicUnitTypeCodeType">
     <xs:restriction base="xs:token">
       <xs:enumeration value="school"/>
+      <xs:enumeration value="faculty"/>
       <xs:enumeration value="department"/>
+      <xs:enumeration value="center"/>
+      <xs:enumeration value="office"/>
+      <xs:enumeration value="service"/>
       <xs:enumeration value="section"/>
       <xs:enumeration value="direction"/>
       <xs:enumeration value="other"/>
@@ -446,7 +450,7 @@
   </xs:element>
 
   <xs:element name="organicUnitTypes">
-    <xs:complexType><xs:sequence><xs:element name="type" type="organicUnitTypeEntryType" minOccurs="5" maxOccurs="5"/></xs:sequence></xs:complexType>
+    <xs:complexType><xs:sequence><xs:element name="type" type="organicUnitTypeEntryType" minOccurs="9" maxOccurs="9"/></xs:sequence></xs:complexType>
     <xs:unique name="uniqueOrganicUnitTypeCode"><xs:selector xpath="type"/><xs:field xpath="@code"/></xs:unique>
   </xs:element>
 

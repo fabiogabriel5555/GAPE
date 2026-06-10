@@ -69,11 +69,20 @@ public final class MediaServlet extends HttpServlet {
             return;
         }
 
-        String contentType = getServletContext().getMimeType(mediaPath.getFileName().toString());
-        response.setContentType(contentType == null ? "application/octet-stream" : contentType);
+        response.setContentType(contentTypeFor(mediaPath));
         response.setHeader("Cache-Control", "public, max-age=" + CACHE_SECONDS);
         response.setContentLengthLong(Files.size(mediaPath));
         Files.copy(mediaPath, response.getOutputStream());
+    }
+
+    private String contentTypeFor(Path mediaPath) {
+        String fileName = mediaPath.getFileName().toString();
+        if ("webp".equals(extension(fileName))) {
+            return "image/webp";
+        }
+
+        String contentType = getServletContext().getMimeType(fileName);
+        return contentType == null ? "application/octet-stream" : contentType;
     }
 
     private Path resolveMediaPath(String rawRelativePath) {
@@ -240,8 +249,6 @@ public final class MediaServlet extends HttpServlet {
         }
 
         List<Path> candidates = new ArrayList<>();
-        candidates.add(Path.of(System.getProperty("user.dir")).resolve(path));
-
         String realPath = servletContext.getRealPath("/");
         if (realPath != null && !realPath.isBlank()) {
             Path current = Path.of(realPath).toAbsolutePath().normalize();
@@ -250,6 +257,7 @@ public final class MediaServlet extends HttpServlet {
                 current = current.getParent();
             }
         }
+        candidates.add(Path.of(System.getProperty("user.dir")).resolve(path));
 
         for (Path candidate : candidates) {
             Path normalized = candidate.toAbsolutePath().normalize();

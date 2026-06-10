@@ -36,9 +36,9 @@ import pt.isel.gape.web.view.UserView;
 @MultipartConfig(maxFileSize = 10 * 1024 * 1024, maxRequestSize = 12 * 1024 * 1024)
 public final class UserManagementServlet extends DashboardServletSupport {
 
-    private static final String USERS_LIST_JSP = "/admin/admin/admin-users.jsp";
-    private static final String USER_FORM_JSP = "/admin/admin/admin-user-form.jsp";
-    private static final String USER_DETAIL_JSP = "/admin/admin/admin-user-detail.jsp";
+    private static final String USERS_LIST_JSP = "/admin/admin/user/admin-users.jsp";
+    private static final String USER_FORM_JSP = "/admin/admin/user/admin-user-form.jsp";
+    private static final String USER_DETAIL_JSP = "/admin/admin/user/admin-user-detail.jsp";
 
     private final UserService userService;
     private final PermissionDAO permissionDAO;
@@ -239,11 +239,22 @@ public final class UserManagementServlet extends DashboardServletSupport {
                     userId,
                     request.getRemoteAddr()
             );
-            String uploadedPhoto = profilePhotoStorage.saveProfilePhoto(
-                    userId,
-                    profileImagePart(request),
-                    getServletContext()
-            );
+            String uploadedPhoto;
+            try {
+                uploadedPhoto = profilePhotoStorage.saveProfilePhoto(
+                        userId,
+                        profileImagePart(request),
+                        getServletContext()
+                );
+            } catch (IOException exception) {
+                showEditForm(
+                        request,
+                        response,
+                        userId,
+                        "The uploaded file could not be processed. Please try again."
+                );
+                return;
+            }
             String submittedPhoto = text(request, "photo");
             String photo = uploadedPhoto != null ? uploadedPhoto : (submittedPhoto != null ? submittedPhoto : existing.photo());
             User updated = userService.updateUser(

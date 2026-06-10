@@ -73,6 +73,7 @@ abstract class DashboardServletSupport extends HttpServlet {
         request.setAttribute("pageTitle", pageTitle);
         request.setAttribute("topActionHref", topActionHref);
         request.setAttribute("topActionLabel", topActionLabel);
+        request.setAttribute("mediaCacheVersion", Long.toString(System.currentTimeMillis()));
         consumeFlash(request);
     }
 
@@ -181,8 +182,11 @@ abstract class DashboardServletSupport extends HttpServlet {
         if (message.contains("not a supported image")) {
             return "The uploaded file is not a supported image.";
         }
-        if (message.contains("WebP image writer")) {
+        if (message.contains("WebP native") || message.contains("native WebP")) {
             return "The server cannot convert the uploaded image to WebP.";
+        }
+        if (message.contains("image writer")) {
+            return "The server cannot process the uploaded image.";
         }
         if (message.contains("processedAt cannot be before submittedAt")) {
             return "The processing date cannot be before the submission date.";

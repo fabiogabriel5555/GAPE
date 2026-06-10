@@ -15,7 +15,7 @@ import pt.isel.gape.web.view.ActivityLogView;
 @WebServlet(name = "adminActivityLogServlet", urlPatterns = "/admin/activity-log")
 public final class AdminActivityLogServlet extends DashboardServletSupport {
 
-    private static final String ACTIVITY_LOG_JSP = "/admin/admin/admin-audit.jsp";
+    private static final String ACTIVITY_LOG_JSP = "/admin/admin/user/admin-audit.jsp";
 
     private final ActivityLogService activityLogService;
 

@@ -11,6 +11,7 @@ public final class AuthorizationPolicy {
     public static final String MANAGE_USERS = "MANAGE_USERS";
     public static final String MANAGE_PERMISSIONS = "MANAGE_PERMISSIONS";
     public static final String MANAGE_SETTINGS = "MANAGE_SETTINGS";
+    public static final String MANAGE_ORGANIZATIONS = "MANAGE_ORGANIZATIONS";
     public static final String VIEW_PERSONAL_DATA = "VIEW_PERSONAL_DATA";
     public static final String MANAGE_PERSONAL_DATA = "MANAGE_PERSONAL_DATA";
     public static final String PROCESS_DELETION_REQUESTS = "PROCESS_DELETION_REQUESTS";
@@ -81,6 +82,9 @@ public final class AuthorizationPolicy {
     private static String adminPermissionFor(String path) {
         if (containsAny(path, "permission", "permissions", "grant", "grants")) {
             return MANAGE_PERMISSIONS;
+        }
+        if (containsAny(path, "organization", "organizations", "organic-unit", "organic-units")) {
+            return MANAGE_ORGANIZATIONS;
         }
         if (containsAny(path, "settings", "config", "configuration")) {
             return MANAGE_SETTINGS;

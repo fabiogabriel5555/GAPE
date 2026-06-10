@@ -123,6 +123,9 @@ public final class AccountProfileServlet extends DashboardServletSupport {
         if (message.contains("not a supported image")) {
             return "The uploaded file is not a supported image.";
         }
+        if (message.contains("WebP native") || message.contains("native WebP")) {
+            return "The server cannot convert the uploaded image to WebP.";
+        }
         if (message.contains("WebP image writer")) {
             return "The server cannot convert the uploaded image to WebP.";
         }

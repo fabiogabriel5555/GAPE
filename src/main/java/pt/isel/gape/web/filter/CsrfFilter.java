@@ -18,6 +18,7 @@ public final class CsrfFilter implements Filter {
     private static final Set<String> PROTECTED_MUTATING_PREFIXES = Set.of(
             "/account",
             "/admin/users",
+            "/admin/organizations",
             "/admin/deletion-requests",
             "/auth/logout"
     );

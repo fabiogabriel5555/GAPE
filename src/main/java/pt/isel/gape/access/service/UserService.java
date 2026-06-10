@@ -26,6 +26,7 @@ import pt.isel.gape.common.time.ApplicationClock;
 import pt.isel.gape.common.validation.PortugueseDocumentNumberValidator;
 import pt.isel.gape.security.authorization.AuthorizationPolicy;
 import pt.isel.gape.security.authorization.PermissionChecker;
+import pt.isel.gape.structure.dao.ManageOrganizationDAO;
 import pt.isel.gape.transversal.dao.ActivityLogDAO;
 import pt.isel.gape.transversal.service.AuditService;
 
@@ -35,6 +36,7 @@ public final class UserService {
     private final ProfileDAO profileDAO;
     private final PermissionChecker permissionChecker;
     private final AuditService auditService;
+    private final ManageOrganizationDAO manageOrganizationDAO;
     private final Clock clock;
     private final ConnectionProvider connectionProvider;
 
@@ -49,7 +51,7 @@ public final class UserService {
             AuditService auditService,
             Clock clock
     ) {
-        this(null, userDAO, profileDAO, permissionChecker, auditService, clock);
+        this(null, userDAO, profileDAO, permissionChecker, auditService, null, clock);
     }
 
     private UserService(
@@ -58,6 +60,7 @@ public final class UserService {
             ProfileDAO profileDAO,
             PermissionChecker permissionChecker,
             AuditService auditService,
+            ManageOrganizationDAO manageOrganizationDAO,
             Clock clock
     ) {
         this.connectionProvider = connectionProvider;
@@ -65,17 +68,23 @@ public final class UserService {
         this.profileDAO = profileDAO;
         this.permissionChecker = permissionChecker;
         this.auditService = auditService;
+        this.manageOrganizationDAO = manageOrganizationDAO;
         this.clock = Objects.requireNonNull(clock, "clock is required");
     }
 
     public UserService(ConnectionProvider connectionProvider) {
+        this(connectionProvider, ApplicationClock.system());
+    }
+
+    public UserService(ConnectionProvider connectionProvider, Clock clock) {
         this(
                 connectionProvider,
                 new UserDAO(connectionProvider),
                 new ProfileDAO(connectionProvider),
                 new PermissionChecker(connectionProvider),
-                new AuditService(new ActivityLogDAO(connectionProvider), ApplicationClock.system()),
-                ApplicationClock.system()
+                new AuditService(new ActivityLogDAO(connectionProvider), clock),
+                new ManageOrganizationDAO(connectionProvider),
+                clock
         );
     }
 
@@ -191,6 +200,7 @@ public final class UserService {
                             targetUserId,
                             profileCodesForSave(targetUserId, existingUser.accessProfiles(), normalizedCommand.accessProfiles())
                     );
+                    ensureAllActiveOrganizationsHaveAdministrators(connection);
                     record(connection, actorUserId, sessionId, "USER_UPDATE", "user_account", Long.toString(targetUserId), "success", sourceIp);
                     return requireUser(connection, targetUserId);
                 });
@@ -341,6 +351,7 @@ public final class UserService {
                     if (!userDAO.delete(connection, targetUserId)) {
                         throw new IllegalArgumentException("Unknown user: " + targetUserId);
                     }
+                    ensureAllActiveOrganizationsHaveAdministrators(connection);
                     record(connection, actorUserId, sessionId, "USER_DELETE", "user_account", Long.toString(targetUserId), "success", sourceIp);
                     return null;
                 });
@@ -378,6 +389,7 @@ public final class UserService {
                     if (!userDAO.updateState(connection, targetUserId, state)) {
                         throw new IllegalArgumentException("Unknown user: " + targetUserId);
                     }
+                    ensureAllActiveOrganizationsHaveAdministrators(connection);
                     record(connection, actorUserId, sessionId, operationType, "user_account", Long.toString(targetUserId), "success", sourceIp);
                     return requireUser(connection, targetUserId);
                 });
@@ -575,6 +587,17 @@ public final class UserService {
     private void requireCrudDependencies() {
         if (profileDAO == null || permissionChecker == null || auditService == null) {
             throw new IllegalStateException("UserService was created without CRUD dependencies");
+        }
+    }
+
+    private void ensureAllActiveOrganizationsHaveAdministrators(Connection connection) throws SQLException {
+        if (manageOrganizationDAO == null) {
+            return;
+        }
+        List<Long> organizationIds = manageOrganizationDAO.findActiveOrganizationsWithoutActiveAdministrator(connection);
+        if (!organizationIds.isEmpty()) {
+            throw new IllegalStateException("Active organizations require at least one active administrator: "
+                    + organizationIds);
         }
     }
 

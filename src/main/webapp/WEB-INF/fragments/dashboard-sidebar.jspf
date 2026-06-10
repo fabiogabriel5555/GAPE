@@ -94,6 +94,36 @@
                             </c:if>
                         </li>
                     </c:if>
+                    <c:if test="${sessionScope['gape.auth.canManageOrganizations']}">
+                        <li class="mb-8 ${activeMenu == 'organizations' ? 'activePage' : ''}">
+                            <a href="${pageContext.request.contextPath}/admin/organizations" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-buildings"></i></span>
+                                Organizations
+                            </a>
+                            <c:if test="${not empty adminOrganizationContextId}">
+                                <ul class="mt-8 ps-24">
+                                    <li class="mb-6 ${adminOrganizationActiveChild == 'detail' ? 'activePage' : ''}">
+                                        <a href="${pageContext.request.contextPath}/admin/organizations/${adminOrganizationContextId}" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-eye"></i></span>
+                                            Detail
+                                        </a>
+                                    </li>
+                                    <li class="mb-6 ${adminOrganizationActiveChild == 'edit' ? 'activePage' : ''}">
+                                        <a href="${pageContext.request.contextPath}/admin/organizations/${adminOrganizationContextId}/edit" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-pencil-simple-line"></i></span>
+                                            Edit
+                                        </a>
+                                    </li>
+                                    <li class="mb-6 ${adminOrganizationActiveChild == 'unit-new' ? 'activePage' : ''}">
+                                        <a href="${pageContext.request.contextPath}/admin/organizations/${adminOrganizationContextId}/units/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-tree-structure"></i></span>
+                                            New Unit
+                                        </a>
+                                    </li>
+                                </ul>
+                            </c:if>
+                        </li>
+                    </c:if>
                 </c:if>
             </ul>
         </div>

@@ -5,6 +5,10 @@ public enum RoleAssignmentState {
     INACTIVE,
     ARCHIVED;
 
+    public static RoleAssignmentState fromDatabaseValue(String value) {
+        return RoleAssignmentState.valueOf(value.toUpperCase());
+    }
+
     public String toDatabaseValue() {
         return name().toLowerCase();
     }

@@ -4,8 +4,20 @@
   <type code="school">
     <label>Escola</label>
   </type>
+  <type code="faculty">
+    <label>Faculdade</label>
+  </type>
   <type code="department">
     <label>Departamento</label>
+  </type>
+  <type code="center">
+    <label>Centro</label>
+  </type>
+  <type code="office">
+    <label>Gabinete</label>
+  </type>
+  <type code="service">
+    <label>Servico</label>
   </type>
   <type code="section">
     <label>Seccao</label>

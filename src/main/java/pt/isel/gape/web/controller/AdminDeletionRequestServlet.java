@@ -17,7 +17,7 @@ import pt.isel.gape.web.view.DeletionRequestView;
 @WebServlet(name = "adminDeletionRequestServlet", urlPatterns = {"/admin/deletion-requests", "/admin/deletion-requests/*"})
 public final class AdminDeletionRequestServlet extends DashboardServletSupport {
 
-    private static final String ADMIN_DELETION_JSP = "/admin/admin/admin-deletion-requests.jsp";
+    private static final String ADMIN_DELETION_JSP = "/admin/admin/user/admin-deletion-requests.jsp";
 
     private final DeletionRequestService deletionRequestService;
 

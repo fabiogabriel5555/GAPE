@@ -4,12 +4,14 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.Part;
@@ -19,6 +21,17 @@ public final class ProfilePhotoStorage {
 
     private static final int PROFILE_SIZE = 200;
     private static final String UPLOAD_DIR_PROPERTY = "gape.upload.dir";
+    private static final String WEBP_NATIVE_DIR_PROPERTY = "gape.webp.native.dir";
+    private static final String STORED_PROFILE_FILE_NAME = "profile.webp";
+    private static final List<String> PROFILE_IMAGE_FILE_NAMES = List.of(
+            "profile.webp",
+            "profile.png",
+            "profile.jpg",
+            "profile.jpeg",
+            "profile.gif"
+    );
+    private static final Object IMAGE_IO_CONFIGURATION_LOCK = new Object();
+    private static boolean imageIoPluginsScanned;
 
     private final String configuredUploadDir;
 
@@ -31,30 +44,88 @@ public final class ProfilePhotoStorage {
     }
 
     public String saveProfilePhoto(long userId, Part imagePart, ServletContext servletContext) throws IOException {
+        return savePhoto("users", userId, imagePart, servletContext);
+    }
+
+    public String saveOrganizationPhoto(long organizationId, Part imagePart, ServletContext servletContext) throws IOException {
+        return savePhoto("organizations", organizationId, imagePart, servletContext);
+    }
+
+    private String savePhoto(String entityDirectoryName, long entityId, Part imagePart, ServletContext servletContext)
+            throws IOException {
         if (imagePart == null || imagePart.getSize() <= 0) {
             return null;
         }
 
-        BufferedImage uploadedImage = ImageIO.read(imagePart.getInputStream());
+        Path uploadRoot = resolveUploadRoot(servletContext);
+        configureImageIoForUploadRoot(uploadRoot);
+        BufferedImage uploadedImage = readUploadedImage(imagePart);
         if (uploadedImage == null) {
             throw new IllegalArgumentException("The uploaded file is not a supported image.");
         }
 
         BufferedImage resizedImage = resizeToSquare(uploadedImage);
-        Path uploadRoot = resolveUploadRoot(servletContext);
-        Path userDirectory = uploadRoot.resolve("users").resolve(Long.toString(userId)).normalize();
-        if (!userDirectory.startsWith(uploadRoot)) {
+        Path entityDirectory = uploadRoot.resolve(entityDirectoryName).resolve(Long.toString(entityId)).normalize();
+        if (!entityDirectory.startsWith(uploadRoot)) {
             throw new IOException("Invalid upload target");
         }
 
-        Files.createDirectories(userDirectory);
-        Path target = userDirectory.resolve("profile.webp");
-        ImageIO.scanForPlugins();
+        Files.createDirectories(entityDirectory);
+        deleteExistingProfileImages(entityDirectory);
+        Path target = entityDirectory.resolve(STORED_PROFILE_FILE_NAME);
         boolean written = ImageIO.write(resizedImage, "webp", target.toFile());
         if (!written) {
             throw new IllegalStateException("WebP image writer is not available.");
         }
-        return "users/" + userId + "/profile.webp";
+        return entityDirectoryName + "/" + entityId + "/" + STORED_PROFILE_FILE_NAME;
+    }
+
+    private static void configureImageIoForUploadRoot(Path uploadRoot) throws IOException {
+        Path nativeDirectory = resolveWebpNativeDirectory(uploadRoot);
+        Files.createDirectories(nativeDirectory);
+
+        synchronized (IMAGE_IO_CONFIGURATION_LOCK) {
+            System.setProperty(WEBP_NATIVE_DIR_PROPERTY, nativeDirectory.toAbsolutePath().toString());
+            ImageIO.setUseCache(false);
+            if (!imageIoPluginsScanned) {
+                ImageIO.scanForPlugins();
+                imageIoPluginsScanned = true;
+            }
+        }
+    }
+
+    private static Path resolveWebpNativeDirectory(Path uploadRoot) {
+        Path normalizedUploadRoot = uploadRoot.toAbsolutePath().normalize();
+        Path parentDirectory = normalizedUploadRoot.getParent();
+        Path baseDirectory = parentDirectory == null ? normalizedUploadRoot : parentDirectory;
+        return baseDirectory.resolve(".gape-webp-native").normalize();
+    }
+
+    private static BufferedImage readUploadedImage(Part imagePart) throws IOException {
+        try (InputStream inputStream = imagePart.getInputStream()) {
+            MemoryCacheImageInputStream imageInputStream = new MemoryCacheImageInputStream(inputStream);
+            try {
+                return ImageIO.read(imageInputStream);
+            } finally {
+                closeImageInputStream(imageInputStream);
+            }
+        }
+    }
+
+    private static void closeImageInputStream(MemoryCacheImageInputStream imageInputStream) throws IOException {
+        try {
+            imageInputStream.close();
+        } catch (IOException exception) {
+            if (!"closed".equalsIgnoreCase(exception.getMessage())) {
+                throw exception;
+            }
+        }
+    }
+
+    private static void deleteExistingProfileImages(Path entityDirectory) throws IOException {
+        for (String fileName : PROFILE_IMAGE_FILE_NAMES) {
+            Files.deleteIfExists(entityDirectory.resolve(fileName));
+        }
     }
 
     private static BufferedImage resizeToSquare(BufferedImage source) {
@@ -95,9 +166,7 @@ public final class ProfilePhotoStorage {
         }
 
         List<Path> candidates = new ArrayList<>();
-        candidates.add(Path.of(System.getProperty("user.dir")).resolve(configuredPath));
-
-        String realPath = servletContext.getRealPath("/");
+        String realPath = servletContext == null ? null : servletContext.getRealPath("/");
         if (realPath != null && !realPath.isBlank()) {
             Path current = Path.of(realPath).toAbsolutePath().normalize();
             for (int depth = 0; depth < 8 && current != null; depth++) {
@@ -105,6 +174,7 @@ public final class ProfilePhotoStorage {
                 current = current.getParent();
             }
         }
+        candidates.add(Path.of(System.getProperty("user.dir")).resolve(configuredPath));
 
         for (Path candidate : candidates) {
             Path normalized = candidate.toAbsolutePath().normalize();

@@ -1,6 +1,37 @@
 -- Testes de restricoes aplicacionais refletidas em triggers SQL
 -- Cada statement deve falhar.
 
+-- Organization ativa nao pode ser inserida diretamente sem atribuicao previa de administrador
+INSERT INTO organization (id_organization, name, acronym, type, state)
+VALUES (9200, 'Organizacao Ativa Sem Admin', 'OASA', 'company', 'active');
+
+-- Organization inativa sem administrador nao pode ser ativada
+UPDATE organization
+SET state = 'active'
+WHERE id_organization = 11;
+
+-- Manage_Organization aceita apenas estados controlados
+INSERT INTO manage_organization (id_admin_user, id_organization, state, start_date, end_date)
+VALUES (1, 11, 'invalid', '2026-01-01', NULL);
+
+-- Ultima atribuicao ativa nao pode ser removida de Organization ativa
+DELETE FROM manage_organization
+WHERE id_admin_user = 1
+  AND id_organization = 10;
+
+-- Organic_Unit nao pode criar ciclo longo na hierarquia
+UPDATE organic_unit
+SET parent_organic_unit_id = 22
+WHERE id_organic_unit = 20;
+
+-- Organization com dependencias nao pode ser removida por SQL direto
+DELETE FROM organization
+WHERE id_organization = 10;
+
+-- Organic_Unit com dependencias nao pode ser removida por SQL direto
+DELETE FROM organic_unit
+WHERE id_organic_unit = 20;
+
 -- Organic_Unit pai tem de pertencer a mesma Organization
 INSERT INTO organic_unit (
     id_organic_unit, id_organization, cod_organic_unit, name, acronym, type, state, parent_organic_unit_id

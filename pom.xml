@@ -24,8 +24,8 @@
         <jakarta.jstl.api.version>3.0.0</jakarta.jstl.api.version>
         <glassfish.jstl.version>3.0.1</glassfish.jstl.version>
         <mysql.connector.version>9.1.0</mysql.connector.version>
-        <junit.version>5.11.3</junit.version>
         <webp.imageio.version>0.1.6</webp.imageio.version>
+        <junit.version>5.11.3</junit.version>
     </properties>
 
     <dependencies>
@@ -64,6 +64,7 @@
             <version>${mysql.connector.version}</version>
         </dependency>
 
+        <!-- Escrita/leitura de WebP para uploads de imagens -->
         <dependency>
             <groupId>org.sejda.imageio</groupId>
             <artifactId>webp-imageio</artifactId>

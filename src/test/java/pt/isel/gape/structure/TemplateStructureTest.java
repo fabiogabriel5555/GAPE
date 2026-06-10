@@ -38,11 +38,15 @@ class TemplateStructureTest {
             "sign-up.jsp",
             "admin/admin-dashbord.jsp",
             "admin/admin-courses.jsp",
-            "admin/admin/admin-users.jsp",
-            "admin/admin/admin-user-form.jsp",
-            "admin/admin/admin-user-detail.jsp",
-            "admin/admin/admin-deletion-requests.jsp",
-            "admin/admin/admin-audit.jsp",
+            "admin/admin/user/admin-users.jsp",
+            "admin/admin/user/admin-user-form.jsp",
+            "admin/admin/user/admin-user-detail.jsp",
+            "admin/admin/user/admin-deletion-requests.jsp",
+            "admin/admin/user/admin-audit.jsp",
+            "admin/admin/organization/admin-organizations.jsp",
+            "admin/admin/organization/admin-organization-form.jsp",
+            "admin/admin/organization/admin-organization-detail.jsp",
+            "admin/admin/organization/admin-organic-unit-form.jsp",
             "admin/admin-message.jsp",
             "admin/admin-my-profile.jsp",
             "admin/admin-quiz-attempts.jsp",
@@ -257,7 +261,7 @@ class TemplateStructureTest {
 
     @Test
     void adminUsersPageIncludesInactiveCardAndUserScopedActions() throws IOException {
-        String users = Files.readString(WEBAPP_DIR.resolve("admin/admin/admin-users.jsp"));
+        String users = Files.readString(WEBAPP_DIR.resolve("admin/admin/user/admin-users.jsp"));
 
         assertTrue(users.contains("Inactive"),
                 "Users page must expose the inactive count card");
@@ -280,7 +284,7 @@ class TemplateStructureTest {
 
     @Test
     void adminUserDetailRendersPhotoAndCriticalActions() throws IOException {
-        String detail = Files.readString(WEBAPP_DIR.resolve("admin/admin/admin-user-detail.jsp"));
+        String detail = Files.readString(WEBAPP_DIR.resolve("admin/admin/user/admin-user-detail.jsp"));
 
         assertTrue(detail.contains("gape-user-detail-photo"),
                 "User Detail must render the user photo as an image");
@@ -298,6 +302,46 @@ class TemplateStructureTest {
                 "Edit critical action must be green");
         assertTrue(detail.contains("gape-action-audit") && detail.contains(">View Audit</a>"),
                 "View Audit critical action must be blue");
+    }
+
+    @Test
+    void organizationPagesRenderPhotoAndManagedUnitCode() throws IOException {
+        String organizationForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/organization/admin-organization-form.jsp"));
+        String organizationList = Files.readString(WEBAPP_DIR.resolve("admin/admin/organization/admin-organizations.jsp"));
+        String organizationDetail = Files.readString(WEBAPP_DIR.resolve("admin/admin/organization/admin-organization-detail.jsp"));
+        String unitForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/organization/admin-organic-unit-form.jsp"));
+
+        assertTrue(organizationForm.contains("enctype=\"multipart/form-data\""),
+                "Organization form must support photo uploads");
+        assertTrue(organizationForm.contains("name=\"organizationImage\""),
+                "Organization form must submit the uploaded organization photo");
+        assertTrue(organizationForm.contains("accept=\"image/jpeg,image/png,image/gif,image/bmp,image/webp\""),
+                "Organization form must limit the chooser to server-supported image formats");
+        int organizationPhotoHeading = organizationForm.indexOf("Organization Photo");
+        assertTrue(organizationPhotoHeading > 0,
+                "Organization form must render the organization photo upload section");
+        String beforeOrganizationPhoto = organizationForm.substring(Math.max(0, organizationPhotoHeading - 160), organizationPhotoHeading);
+        assertFalse(beforeOrganizationPhoto.contains("not creating"),
+                "Organization photo upload must be visible when creating a new organization");
+        assertTrue(organizationList.contains("gape-organization-table-photo"),
+                "Organization list must render organization photos");
+        assertTrue(organizationDetail.contains("gape-organization-detail-photo"),
+                "Organization detail must render organization photos");
+        assertTrue(organizationDetail.contains("Current Administrators"),
+                "Organization detail must show assigned administrators and assignment metadata");
+        assertTrue(organizationDetail.contains("not unit.archived"),
+                "Organization detail must hide unit edit/archive/delete actions for archived units");
+        assertFalse(organizationForm.contains("value=\"ARCHIVED\""),
+                "Organization edit form must not archive through the normal update flow");
+        assertFalse(unitForm.contains("value=\"ARCHIVED\""),
+                "Organic unit edit form must not archive through the normal update flow");
+        assertFalse(unitForm.contains("name=\"code\""),
+                "Organic unit forms must not ask users to manage codes");
+        assertTrue(unitForm.contains("Generated Code"),
+                "Organic unit edit form must show the application-managed code as read-only information");
+        assertTrue(unitForm.contains("value=\"FACULTY\"") && unitForm.contains("value=\"CENTER\"")
+                        && unitForm.contains("value=\"OFFICE\"") && unitForm.contains("value=\"SERVICE\""),
+                "Organic unit form must expose the expanded project unit types");
     }
 
     @Test

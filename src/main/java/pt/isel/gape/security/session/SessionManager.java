@@ -33,6 +33,7 @@ public final class SessionManager {
     static final String CAN_VIEW_REPORTS_ATTRIBUTE = "gape.auth.canViewReports";
     static final String CAN_MANAGE_USERS_ATTRIBUTE = "gape.auth.canManageUsers";
     static final String CAN_MANAGE_PERMISSIONS_ATTRIBUTE = "gape.auth.canManagePermissions";
+    static final String CAN_MANAGE_ORGANIZATIONS_ATTRIBUTE = "gape.auth.canManageOrganizations";
     static final String CAN_MANAGE_SETTINGS_ATTRIBUTE = "gape.auth.canManageSettings";
     static final String CAN_VIEW_PERSONAL_DATA_ATTRIBUTE = "gape.auth.canViewPersonalData";
     static final String CAN_MANAGE_PERSONAL_DATA_ATTRIBUTE = "gape.auth.canManagePersonalData";
@@ -169,6 +170,10 @@ public final class SessionManager {
         httpSession.setAttribute(
                 CAN_MANAGE_PERMISSIONS_ATTRIBUTE,
                 sessionUser.hasPermission(AuthorizationPolicy.MANAGE_PERMISSIONS)
+        );
+        httpSession.setAttribute(
+                CAN_MANAGE_ORGANIZATIONS_ATTRIBUTE,
+                sessionUser.hasPermission(AuthorizationPolicy.MANAGE_ORGANIZATIONS)
         );
         httpSession.setAttribute(CAN_MANAGE_SETTINGS_ATTRIBUTE, sessionUser.hasPermission(AuthorizationPolicy.MANAGE_SETTINGS));
         httpSession.setAttribute(

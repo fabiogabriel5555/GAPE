@@ -24,6 +24,7 @@ INSERT INTO permission (cod_permission, name, state) VALUES
     ('MANAGE_USERS', 'Manage Users', 'active'),
     ('MANAGE_PERMISSIONS', 'Manage Permissions', 'active'),
     ('MANAGE_SETTINGS', 'Manage Critical Settings', 'active'),
+    ('MANAGE_ORGANIZATIONS', 'Manage Organizations', 'active'),
     ('VIEW_PERSONAL_DATA', 'View Personal Data', 'active'),
     ('MANAGE_PERSONAL_DATA', 'Manage Personal Data', 'active'),
     ('PROCESS_DELETION_REQUESTS', 'Process Deletion Requests', 'active'),
@@ -33,6 +34,7 @@ INSERT INTO grant_administrator (id_admin_user, cod_permission) VALUES
     (1, 'MANAGE_USERS'),
     (1, 'MANAGE_PERMISSIONS'),
     (1, 'MANAGE_SETTINGS'),
+    (1, 'MANAGE_ORGANIZATIONS'),
     (1, 'VIEW_PERSONAL_DATA'),
     (1, 'MANAGE_PERSONAL_DATA'),
     (1, 'PROCESS_DELETION_REQUESTS'),
@@ -47,9 +49,9 @@ INSERT INTO grant_teacher (id_teacher_user, cod_permission) VALUES
 INSERT INTO grant_student (id_student_user, cod_permission) VALUES
     (4, 'VIEW_REPORTS');
 
-INSERT INTO organization (id_organization, name, acronym, type, state) VALUES
-    (10, 'Instituto Superior GAPE', 'ISG', 'educational_institution', 'active'),
-    (11, 'Organizacao Externa', 'ORGX', 'training_company', 'active');
+INSERT INTO organization (id_organization, name, acronym, photo, type, state) VALUES
+    (10, 'Instituto Superior GAPE', 'ISG', 'organizations/10/profile.webp', 'educational_institution', 'inactive'),
+    (11, 'Organizacao Externa', 'ORGX', 'organizations/11/profile.webp', 'training_company', 'inactive');
 
 INSERT INTO organic_unit (
     id_organic_unit, id_organization, cod_organic_unit, name, acronym, type, state, parent_organic_unit_id
@@ -79,6 +81,10 @@ INSERT INTO integrate_subject (
 
 INSERT INTO manage_organization (id_admin_user, id_organization, state, start_date, end_date) VALUES
     (1, 10, 'active', '2026-01-01', NULL);
+
+UPDATE organization
+SET state = 'active'
+WHERE id_organization = 10;
 
 INSERT INTO coordinate_subject (id_coordinator_user, id_subject, state, start_date, end_date) VALUES
     (2, 40, 'active', '2026-01-15', NULL);

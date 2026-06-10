@@ -196,6 +196,7 @@ CREATE TABLE IF NOT EXISTS organization (
     id_organization BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(160) NOT NULL,
     acronym VARCHAR(30) NULL,
+    photo VARCHAR(255) NULL,
     type VARCHAR(40) NOT NULL,
     state VARCHAR(20) NOT NULL,
     PRIMARY KEY (id_organization),
@@ -203,7 +204,7 @@ CREATE TABLE IF NOT EXISTS organization (
     CONSTRAINT ck_organization_type
         CHECK (type IN ('educational_institution', 'training_company', 'company', 'other')),
     CONSTRAINT ck_organization_state
-        CHECK (state IN ('active', 'inactive'))
+        CHECK (state IN ('active', 'inactive', 'archived'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS organic_unit (
@@ -221,14 +222,14 @@ CREATE TABLE IF NOT EXISTS organic_unit (
     KEY idx_organic_unit_parent (parent_organic_unit_id),
     CONSTRAINT fk_organic_unit_org
         FOREIGN KEY (id_organization) REFERENCES organization (id_organization)
-        ON UPDATE CASCADE ON DELETE CASCADE,
+        ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_organic_unit_parent
         FOREIGN KEY (parent_organic_unit_id) REFERENCES organic_unit (id_organic_unit)
-        ON UPDATE CASCADE ON DELETE SET NULL,
+        ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT ck_organic_unit_type
-        CHECK (type IN ('school', 'department', 'section', 'direction', 'other')),
+        CHECK (type IN ('school', 'faculty', 'department', 'center', 'office', 'service', 'section', 'direction', 'other')),
     CONSTRAINT ck_organic_unit_state
-        CHECK (state IN ('active', 'inactive'))
+        CHECK (state IN ('active', 'inactive', 'archived'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS course (
@@ -251,7 +252,7 @@ CREATE TABLE IF NOT EXISTS course (
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_course_organic_unit
         FOREIGN KEY (id_organic_unit) REFERENCES organic_unit (id_organic_unit)
-        ON UPDATE CASCADE ON DELETE SET NULL,
+        ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT ck_course_type
         CHECK (type IN ('degree', 'master', 'short_course', 'professional_training', 'other')),
     CONSTRAINT ck_course_state
@@ -400,7 +401,9 @@ CREATE TABLE IF NOT EXISTS manage_organization (
         FOREIGN KEY (id_organization) REFERENCES organization (id_organization)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT ck_manage_organization_dates
-        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date)
+        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
+    CONSTRAINT ck_manage_organization_state
+        CHECK (state IN ('active', 'inactive', 'archived'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS coordinate_subject (
@@ -540,7 +543,7 @@ CREATE TABLE IF NOT EXISTS physical_room (
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_physical_room_organic_unit
         FOREIGN KEY (id_organic_unit) REFERENCES organic_unit (id_organic_unit)
-        ON UPDATE CASCADE ON DELETE SET NULL,
+        ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT ck_physical_room_capacity
         CHECK (capacity IS NULL OR capacity > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -739,7 +742,7 @@ CREATE TABLE IF NOT EXISTS associate_organization_content (
     KEY idx_aoc_content_item (id_content_item),
     CONSTRAINT fk_aoc_organization
         FOREIGN KEY (id_organization) REFERENCES organization (id_organization)
-        ON UPDATE CASCADE ON DELETE CASCADE,
+        ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_aoc_content_item
         FOREIGN KEY (id_content_item) REFERENCES content_item (id_content_item)
         ON UPDATE CASCADE ON DELETE CASCADE
@@ -753,7 +756,7 @@ CREATE TABLE IF NOT EXISTS associate_organic_unit_content (
     KEY idx_aouc_content_item (id_content_item),
     CONSTRAINT fk_aouc_organic_unit
         FOREIGN KEY (id_organic_unit) REFERENCES organic_unit (id_organic_unit)
-        ON UPDATE CASCADE ON DELETE CASCADE,
+        ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT fk_aouc_content_item
         FOREIGN KEY (id_content_item) REFERENCES content_item (id_content_item)
         ON UPDATE CASCADE ON DELETE CASCADE
@@ -1278,6 +1281,234 @@ CREATE TABLE IF NOT EXISTS activity_log (
 
 DELIMITER $$
 
+DROP TRIGGER IF EXISTS bi_organization_active_admin$$
+CREATE TRIGGER bi_organization_active_admin
+BEFORE INSERT ON organization
+FOR EACH ROW
+BEGIN
+    IF NEW.state = 'active' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Organization must be activated after administrator assignment';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_organization_active_admin$$
+CREATE TRIGGER bu_organization_active_admin
+BEFORE UPDATE ON organization
+FOR EACH ROW
+BEGIN
+    DECLARE v_active_admins INT DEFAULT 0;
+
+    IF NEW.state = 'active' THEN
+        SELECT COUNT(*)
+        INTO v_active_admins
+        FROM manage_organization mo
+        JOIN administrator_profile ap ON ap.id_user = mo.id_admin_user
+        JOIN user_account u ON u.id_user = ap.id_user
+        WHERE mo.id_organization = NEW.id_organization
+          AND mo.state = 'active'
+          AND u.state = 'active'
+          AND (mo.start_date IS NULL OR mo.start_date <= CURRENT_DATE)
+          AND (mo.end_date IS NULL OR mo.end_date >= CURRENT_DATE);
+
+        IF v_active_admins = 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Organization requires at least one active Administrator';
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_user_account_organization_admin_guard$$
+CREATE TRIGGER bu_user_account_organization_admin_guard
+BEFORE UPDATE ON user_account
+FOR EACH ROW
+BEGIN
+    DECLARE v_invalid_organizations INT DEFAULT 0;
+
+    IF OLD.state = 'active' AND NEW.state <> 'active' THEN
+        SELECT COUNT(*)
+        INTO v_invalid_organizations
+        FROM organization o
+        JOIN manage_organization mo_old ON mo_old.id_organization = o.id_organization
+        WHERE o.state = 'active'
+          AND mo_old.id_admin_user = OLD.id_user
+          AND mo_old.state = 'active'
+          AND (mo_old.start_date IS NULL OR mo_old.start_date <= CURRENT_DATE)
+          AND (mo_old.end_date IS NULL OR mo_old.end_date >= CURRENT_DATE)
+          AND NOT EXISTS (
+              SELECT 1
+              FROM manage_organization mo
+              JOIN administrator_profile ap ON ap.id_user = mo.id_admin_user
+              JOIN user_account u ON u.id_user = ap.id_user
+              WHERE mo.id_organization = o.id_organization
+                AND mo.id_admin_user <> OLD.id_user
+                AND mo.state = 'active'
+                AND u.state = 'active'
+                AND (mo.start_date IS NULL OR mo.start_date <= CURRENT_DATE)
+                AND (mo.end_date IS NULL OR mo.end_date >= CURRENT_DATE)
+          );
+
+        IF v_invalid_organizations > 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'User state change would leave active Organization without active Administrator';
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bd_user_account_organization_admin_guard$$
+CREATE TRIGGER bd_user_account_organization_admin_guard
+BEFORE DELETE ON user_account
+FOR EACH ROW
+BEGIN
+    DECLARE v_invalid_organizations INT DEFAULT 0;
+
+    IF OLD.state = 'active' THEN
+        SELECT COUNT(*)
+        INTO v_invalid_organizations
+        FROM organization o
+        JOIN manage_organization mo_old ON mo_old.id_organization = o.id_organization
+        WHERE o.state = 'active'
+          AND mo_old.id_admin_user = OLD.id_user
+          AND mo_old.state = 'active'
+          AND (mo_old.start_date IS NULL OR mo_old.start_date <= CURRENT_DATE)
+          AND (mo_old.end_date IS NULL OR mo_old.end_date >= CURRENT_DATE)
+          AND NOT EXISTS (
+              SELECT 1
+              FROM manage_organization mo
+              JOIN administrator_profile ap ON ap.id_user = mo.id_admin_user
+              JOIN user_account u ON u.id_user = ap.id_user
+              WHERE mo.id_organization = o.id_organization
+                AND mo.id_admin_user <> OLD.id_user
+                AND mo.state = 'active'
+                AND u.state = 'active'
+                AND (mo.start_date IS NULL OR mo.start_date <= CURRENT_DATE)
+                AND (mo.end_date IS NULL OR mo.end_date >= CURRENT_DATE)
+          );
+
+        IF v_invalid_organizations > 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'User deletion would leave active Organization without active Administrator';
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bd_administrator_profile_organization_admin_guard$$
+CREATE TRIGGER bd_administrator_profile_organization_admin_guard
+BEFORE DELETE ON administrator_profile
+FOR EACH ROW
+BEGIN
+    DECLARE v_user_state VARCHAR(20);
+    DECLARE v_invalid_organizations INT DEFAULT 0;
+
+    SELECT state
+    INTO v_user_state
+    FROM user_account
+    WHERE id_user = OLD.id_user;
+
+    IF v_user_state = 'active' THEN
+        SELECT COUNT(*)
+        INTO v_invalid_organizations
+        FROM organization o
+        JOIN manage_organization mo_old ON mo_old.id_organization = o.id_organization
+        WHERE o.state = 'active'
+          AND mo_old.id_admin_user = OLD.id_user
+          AND mo_old.state = 'active'
+          AND (mo_old.start_date IS NULL OR mo_old.start_date <= CURRENT_DATE)
+          AND (mo_old.end_date IS NULL OR mo_old.end_date >= CURRENT_DATE)
+          AND NOT EXISTS (
+              SELECT 1
+              FROM manage_organization mo
+              JOIN administrator_profile ap ON ap.id_user = mo.id_admin_user
+              JOIN user_account u ON u.id_user = ap.id_user
+              WHERE mo.id_organization = o.id_organization
+                AND mo.id_admin_user <> OLD.id_user
+                AND mo.state = 'active'
+                AND u.state = 'active'
+                AND (mo.start_date IS NULL OR mo.start_date <= CURRENT_DATE)
+                AND (mo.end_date IS NULL OR mo.end_date >= CURRENT_DATE)
+          );
+
+        IF v_invalid_organizations > 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Administrator profile deletion would leave active Organization without active Administrator';
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_manage_organization_active_admin$$
+CREATE TRIGGER bu_manage_organization_active_admin
+BEFORE UPDATE ON manage_organization
+FOR EACH ROW
+BEGIN
+    DECLARE v_org_state VARCHAR(20);
+    DECLARE v_active_admins INT DEFAULT 0;
+
+    SELECT state
+    INTO v_org_state
+    FROM organization
+    WHERE id_organization = OLD.id_organization;
+
+    IF v_org_state = 'active' THEN
+        SELECT COUNT(*)
+        INTO v_active_admins
+        FROM manage_organization mo
+        JOIN administrator_profile ap ON ap.id_user = mo.id_admin_user
+        JOIN user_account u ON u.id_user = ap.id_user
+        WHERE mo.id_organization = OLD.id_organization
+          AND NOT (mo.id_admin_user = OLD.id_admin_user AND mo.id_organization = OLD.id_organization)
+          AND mo.state = 'active'
+          AND u.state = 'active'
+          AND (mo.start_date IS NULL OR mo.start_date <= CURRENT_DATE)
+          AND (mo.end_date IS NULL OR mo.end_date >= CURRENT_DATE);
+
+        IF NEW.id_organization = OLD.id_organization
+           AND NEW.state = 'active'
+           AND (NEW.start_date IS NULL OR NEW.start_date <= CURRENT_DATE)
+           AND (NEW.end_date IS NULL OR NEW.end_date >= CURRENT_DATE)
+           AND EXISTS (
+               SELECT 1
+               FROM administrator_profile ap
+               JOIN user_account u ON u.id_user = ap.id_user
+               WHERE ap.id_user = NEW.id_admin_user
+                 AND u.state = 'active'
+           ) THEN
+            SET v_active_admins = v_active_admins + 1;
+        END IF;
+
+        IF v_active_admins = 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Assignment update would leave active Organization without active Administrator';
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bd_manage_organization_active_admin$$
+CREATE TRIGGER bd_manage_organization_active_admin
+BEFORE DELETE ON manage_organization
+FOR EACH ROW
+BEGIN
+    DECLARE v_org_state VARCHAR(20);
+    DECLARE v_active_admins INT DEFAULT 0;
+
+    SELECT state
+    INTO v_org_state
+    FROM organization
+    WHERE id_organization = OLD.id_organization;
+
+    IF v_org_state = 'active' THEN
+        SELECT COUNT(*)
+        INTO v_active_admins
+        FROM manage_organization mo
+        JOIN administrator_profile ap ON ap.id_user = mo.id_admin_user
+        JOIN user_account u ON u.id_user = ap.id_user
+        WHERE mo.id_organization = OLD.id_organization
+          AND NOT (mo.id_admin_user = OLD.id_admin_user AND mo.id_organization = OLD.id_organization)
+          AND mo.state = 'active'
+          AND u.state = 'active'
+          AND (mo.start_date IS NULL OR mo.start_date <= CURRENT_DATE)
+          AND (mo.end_date IS NULL OR mo.end_date >= CURRENT_DATE);
+
+        IF v_active_admins = 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Assignment deletion would leave active Organization without active Administrator';
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bi_organic_unit_validate$$
 CREATE TRIGGER bi_organic_unit_validate
 BEFORE INSERT ON organic_unit
 FOR EACH ROW
@@ -1300,11 +1531,13 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_organic_unit_validate$$
 CREATE TRIGGER bu_organic_unit_validate
 BEFORE UPDATE ON organic_unit
 FOR EACH ROW
 BEGIN
     DECLARE v_parent_org BIGINT UNSIGNED;
+    DECLARE v_cycle_count INT DEFAULT 0;
 
     IF NEW.parent_organic_unit_id IS NOT NULL THEN
         IF NEW.parent_organic_unit_id = NEW.id_organic_unit THEN
@@ -1319,9 +1552,28 @@ BEGIN
         IF v_parent_org IS NULL OR v_parent_org <> NEW.id_organization THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Organic_Unit parent must belong to the same Organization';
         END IF;
+
+        WITH RECURSIVE parent_chain (id_organic_unit, parent_organic_unit_id) AS (
+            SELECT id_organic_unit, parent_organic_unit_id
+            FROM organic_unit
+            WHERE id_organic_unit = NEW.parent_organic_unit_id
+            UNION ALL
+            SELECT ou.id_organic_unit, ou.parent_organic_unit_id
+            FROM organic_unit ou
+            JOIN parent_chain pc ON ou.id_organic_unit = pc.parent_organic_unit_id
+        )
+        SELECT COUNT(*)
+        INTO v_cycle_count
+        FROM parent_chain
+        WHERE id_organic_unit = NEW.id_organic_unit;
+
+        IF v_cycle_count > 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Organic_Unit hierarchy cannot contain cycles';
+        END IF;
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_course_validate$$
 CREATE TRIGGER bi_course_validate
 BEFORE INSERT ON course
 FOR EACH ROW
@@ -1340,6 +1592,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_course_validate$$
 CREATE TRIGGER bu_course_validate
 BEFORE UPDATE ON course
 FOR EACH ROW
@@ -1358,6 +1611,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_class_group_validate$$
 CREATE TRIGGER bi_class_group_validate
 BEFORE INSERT ON class_group
 FOR EACH ROW
@@ -1376,6 +1630,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_class_group_validate$$
 CREATE TRIGGER bu_class_group_validate
 BEFORE UPDATE ON class_group
 FOR EACH ROW
@@ -1394,6 +1649,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_physical_room_validate$$
 CREATE TRIGGER bi_physical_room_validate
 BEFORE INSERT ON physical_room
 FOR EACH ROW
@@ -1412,6 +1668,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_physical_room_validate$$
 CREATE TRIGGER bu_physical_room_validate
 BEFORE UPDATE ON physical_room
 FOR EACH ROW
@@ -1430,6 +1687,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_content_item_validate$$
 CREATE TRIGGER bi_content_item_validate
 BEFORE INSERT ON content_item
 FOR EACH ROW
@@ -1440,6 +1698,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_content_item_validate$$
 CREATE TRIGGER bu_content_item_validate
 BEFORE UPDATE ON content_item
 FOR EACH ROW
@@ -1450,6 +1709,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_lesson_validate$$
 CREATE TRIGGER bi_lesson_validate
 BEFORE INSERT ON lesson
 FOR EACH ROW
@@ -1517,6 +1777,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_lesson_validate$$
 CREATE TRIGGER bu_lesson_validate
 BEFORE UPDATE ON lesson
 FOR EACH ROW
@@ -1585,6 +1846,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_assessment_validate$$
 CREATE TRIGGER bi_assessment_validate
 BEFORE INSERT ON assessment
 FOR EACH ROW
@@ -1612,6 +1874,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_assessment_validate$$
 CREATE TRIGGER bu_assessment_validate
 BEFORE UPDATE ON assessment
 FOR EACH ROW
@@ -1639,6 +1902,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_attempt_validate$$
 CREATE TRIGGER bi_attempt_validate
 BEFORE INSERT ON attempt
 FOR EACH ROW
@@ -1683,6 +1947,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_attempt_validate$$
 CREATE TRIGGER bu_attempt_validate
 BEFORE UPDATE ON attempt
 FOR EACH ROW
@@ -1727,6 +1992,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_response_validate$$
 CREATE TRIGGER bi_response_validate
 BEFORE INSERT ON response
 FOR EACH ROW
@@ -1747,6 +2013,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_response_option_validate$$
 CREATE TRIGGER bi_response_option_validate
 BEFORE INSERT ON response_option
 FOR EACH ROW
@@ -1784,6 +2051,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_schedule_event_validate$$
 CREATE TRIGGER bi_schedule_event_validate
 BEFORE INSERT ON schedule_event
 FOR EACH ROW
@@ -1828,6 +2096,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_schedule_event_validate$$
 CREATE TRIGGER bu_schedule_event_validate
 BEFORE UPDATE ON schedule_event
 FOR EACH ROW
@@ -1872,6 +2141,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_attendance_record_validate$$
 CREATE TRIGGER bi_attendance_record_validate
 BEFORE INSERT ON attendance_record
 FOR EACH ROW
@@ -1896,6 +2166,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_attendance_record_validate$$
 CREATE TRIGGER bu_attendance_record_validate
 BEFORE UPDATE ON attendance_record
 FOR EACH ROW
@@ -1920,6 +2191,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_absence_justification_validate$$
 CREATE TRIGGER bi_absence_justification_validate
 BEFORE INSERT ON absence_justification
 FOR EACH ROW
@@ -1946,6 +2218,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_absence_justification_validate$$
 CREATE TRIGGER bu_absence_justification_validate
 BEFORE UPDATE ON absence_justification
 FOR EACH ROW
@@ -1972,6 +2245,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_associate_grade_sheet_class_group_validate$$
 CREATE TRIGGER bi_associate_grade_sheet_class_group_validate
 BEFORE INSERT ON associate_grade_sheet_class_group
 FOR EACH ROW
@@ -1992,6 +2266,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_based_on_assessment_validate$$
 CREATE TRIGGER bi_based_on_assessment_validate
 BEFORE INSERT ON based_on_assessment
 FOR EACH ROW
@@ -2032,6 +2307,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_based_on_assessment_validate$$
 CREATE TRIGGER bu_based_on_assessment_validate
 BEFORE UPDATE ON based_on_assessment
 FOR EACH ROW
@@ -2073,6 +2349,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_grade_record_validate$$
 CREATE TRIGGER bi_grade_record_validate
 BEFORE INSERT ON grade_record
 FOR EACH ROW
@@ -2125,6 +2402,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_grade_record_validate$$
 CREATE TRIGGER bu_grade_record_validate
 BEFORE UPDATE ON grade_record
 FOR EACH ROW
@@ -2178,6 +2456,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_bgsc_validate$$
 CREATE TRIGGER bi_bgsc_validate
 BEFORE INSERT ON based_on_grade_sheet_certificate
 FOR EACH ROW
@@ -2204,6 +2483,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_message_validate$$
 CREATE TRIGGER bi_message_validate
 BEFORE INSERT ON message
 FOR EACH ROW
@@ -2236,6 +2516,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_message_validate$$
 CREATE TRIGGER bu_message_validate
 BEFORE UPDATE ON message
 FOR EACH ROW
@@ -2268,6 +2549,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_receive_message_validate$$
 CREATE TRIGGER bi_receive_message_validate
 BEFORE INSERT ON receive_message
 FOR EACH ROW
@@ -2295,6 +2577,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_activity_log_validate$$
 CREATE TRIGGER bi_activity_log_validate
 BEFORE INSERT ON activity_log
 FOR EACH ROW
@@ -2313,6 +2596,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_deletion_request_validate$$
 CREATE TRIGGER bi_deletion_request_validate
 BEFORE INSERT ON deletion_request
 FOR EACH ROW
@@ -2327,6 +2611,7 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_deletion_request_validate$$
 CREATE TRIGGER bu_deletion_request_validate
 BEFORE UPDATE ON deletion_request
 FOR EACH ROW

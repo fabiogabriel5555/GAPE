@@ -22,6 +22,8 @@ class TemplateAssetReferenceTest {
     private static final List<String> APPLICATION_ENDPOINT_PREFIXES = List.of(
             "auth/",
             "/auth/",
+            "admin/organizations/",
+            "/admin/organizations/",
             "admin/users/",
             "/admin/users/"
     );
@@ -32,6 +34,8 @@ class TemplateAssetReferenceTest {
             "/admin/activity-log",
             "admin/deletion-requests",
             "/admin/deletion-requests",
+            "admin/organizations",
+            "/admin/organizations",
             "admin/users",
             "/admin/users",
             "dashboard",
