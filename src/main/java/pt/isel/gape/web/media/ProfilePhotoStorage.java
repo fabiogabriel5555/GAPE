@@ -51,6 +51,14 @@ public final class ProfilePhotoStorage {
         return savePhoto("organizations", organizationId, imagePart, servletContext);
     }
 
+    public String saveCoursePhoto(long courseId, Part imagePart, ServletContext servletContext) throws IOException {
+        return savePhoto("courses", courseId, imagePart, servletContext);
+    }
+
+    public String saveSubjectPhoto(long subjectId, Part imagePart, ServletContext servletContext) throws IOException {
+        return savePhoto("subjects", subjectId, imagePart, servletContext);
+    }
+
     private String savePhoto(String entityDirectoryName, long entityId, Part imagePart, ServletContext servletContext)
             throws IOException {
         if (imagePart == null || imagePart.getSize() <= 0) {

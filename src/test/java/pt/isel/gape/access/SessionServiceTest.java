@@ -7,12 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,20 +35,29 @@ class SessionServiceTest {
     private ConnectionProvider connectionProvider;
     private SessionService sessionService;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        connectionProvider = DatabaseTestSupport::openConnection;
-
+    @BeforeAll
+    static void initializeDatabase() throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection()) {
             DatabaseTestSupport.resetDatabase(connection);
             insertUser(connection, 300L, "session-user@gape.local");
         }
+    }
+
+    @BeforeEach
+    void setUp() throws SQLException {
+        DatabaseTestSupport.beginTestTransaction();
+        connectionProvider = DatabaseTestSupport::openConnection;
 
         sessionService = new SessionService(
                 new SessionDAO(connectionProvider),
                 new AuditService(new ActivityLogDAO(connectionProvider), FIXED_CLOCK),
                 FIXED_CLOCK
         );
+    }
+
+    @AfterEach
+    void tearDown() throws SQLException {
+        DatabaseTestSupport.rollbackTestTransaction();
     }
 
     @Test
@@ -122,7 +134,7 @@ class SessionServiceTest {
         }
     }
 
-    private void insertUser(Connection connection, long userId, String email) throws Exception {
+    private static void insertUser(Connection connection, long userId, String email) throws Exception {
         try (PreparedStatement statement = connection.prepareStatement("""
                 INSERT INTO user_account (
                     id_user, name, email, state, language, created_at, credential_hash, credential_salt

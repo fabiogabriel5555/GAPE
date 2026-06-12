@@ -34,6 +34,9 @@ public final class SessionManager {
     static final String CAN_MANAGE_USERS_ATTRIBUTE = "gape.auth.canManageUsers";
     static final String CAN_MANAGE_PERMISSIONS_ATTRIBUTE = "gape.auth.canManagePermissions";
     static final String CAN_MANAGE_ORGANIZATIONS_ATTRIBUTE = "gape.auth.canManageOrganizations";
+    static final String CAN_MANAGE_COURSES_ATTRIBUTE = "gape.auth.canManageCourses";
+    static final String CAN_MANAGE_SUBJECTS_ATTRIBUTE = "gape.auth.canManageSubjects";
+    static final String CAN_MANAGE_ENROLLMENTS_ATTRIBUTE = "gape.auth.canManageEnrollments";
     static final String CAN_MANAGE_SETTINGS_ATTRIBUTE = "gape.auth.canManageSettings";
     static final String CAN_VIEW_PERSONAL_DATA_ATTRIBUTE = "gape.auth.canViewPersonalData";
     static final String CAN_MANAGE_PERSONAL_DATA_ATTRIBUTE = "gape.auth.canManagePersonalData";
@@ -165,28 +168,43 @@ public final class SessionManager {
                 HAS_STUDENT_PROFILE_ATTRIBUTE,
                 sessionUser.profileTypes().contains(AccessProfileType.STUDENT)
         );
-        httpSession.setAttribute(CAN_VIEW_REPORTS_ATTRIBUTE, sessionUser.hasPermission(AuthorizationPolicy.VIEW_REPORTS));
-        httpSession.setAttribute(CAN_MANAGE_USERS_ATTRIBUTE, sessionUser.hasPermission(AuthorizationPolicy.MANAGE_USERS));
+        boolean hasAdministratorProfile = sessionUser.profileTypes().contains(AccessProfileType.ADMINISTRATOR);
+        boolean canManageAll = sessionUser.hasPermission(AuthorizationPolicy.MANAGE_ALL);
+        boolean canManageOrganizationStructure = canManageAll
+                || sessionUser.hasPermission(AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE);
+        boolean canManageLearning = canManageOrganizationStructure
+                || sessionUser.hasPermission(AuthorizationPolicy.MANAGE_LEARNING);
+        boolean canManageEnrollments = canManageLearning
+                || sessionUser.hasPermission(AuthorizationPolicy.MANAGE_ENROLLMENTS);
+
+        httpSession.setAttribute(CAN_VIEW_REPORTS_ATTRIBUTE, Boolean.TRUE);
+        httpSession.setAttribute(CAN_MANAGE_USERS_ATTRIBUTE, canManageAll);
         httpSession.setAttribute(
                 CAN_MANAGE_PERMISSIONS_ATTRIBUTE,
-                sessionUser.hasPermission(AuthorizationPolicy.MANAGE_PERMISSIONS)
+                canManageAll
         );
         httpSession.setAttribute(
                 CAN_MANAGE_ORGANIZATIONS_ATTRIBUTE,
-                sessionUser.hasPermission(AuthorizationPolicy.MANAGE_ORGANIZATIONS)
+                canManageOrganizationStructure
         );
-        httpSession.setAttribute(CAN_MANAGE_SETTINGS_ATTRIBUTE, sessionUser.hasPermission(AuthorizationPolicy.MANAGE_SETTINGS));
+        httpSession.setAttribute(CAN_MANAGE_COURSES_ATTRIBUTE, canManageLearning);
+        httpSession.setAttribute(CAN_MANAGE_SUBJECTS_ATTRIBUTE, canManageLearning);
+        httpSession.setAttribute(
+                CAN_MANAGE_ENROLLMENTS_ATTRIBUTE,
+                canManageEnrollments
+        );
+        httpSession.setAttribute(CAN_MANAGE_SETTINGS_ATTRIBUTE, canManageAll);
         httpSession.setAttribute(
                 CAN_VIEW_PERSONAL_DATA_ATTRIBUTE,
-                sessionUser.hasPermission(AuthorizationPolicy.VIEW_PERSONAL_DATA)
+                canManageAll
         );
         httpSession.setAttribute(
                 CAN_MANAGE_PERSONAL_DATA_ATTRIBUTE,
-                sessionUser.hasPermission(AuthorizationPolicy.MANAGE_PERSONAL_DATA)
+                canManageAll || hasAdministratorProfile
         );
         httpSession.setAttribute(
                 CAN_PROCESS_DELETION_REQUESTS_ATTRIBUTE,
-                sessionUser.hasPermission(AuthorizationPolicy.PROCESS_DELETION_REQUESTS)
+                canManageAll
         );
     }
 

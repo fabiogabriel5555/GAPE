@@ -22,10 +22,18 @@ class TemplateAssetReferenceTest {
     private static final List<String> APPLICATION_ENDPOINT_PREFIXES = List.of(
             "auth/",
             "/auth/",
+            "admin/courses/",
+            "/admin/courses/",
             "admin/organizations/",
             "/admin/organizations/",
+            "admin/subjects/",
+            "/admin/subjects/",
             "admin/users/",
-            "/admin/users/"
+            "/admin/users/",
+            "courses/",
+            "/courses/",
+            "student/enrollments/",
+            "/student/enrollments/"
     );
     private static final Set<String> APPLICATION_ENDPOINTS = Set.of(
             "account/deletion-requests",
@@ -34,14 +42,22 @@ class TemplateAssetReferenceTest {
             "/admin/activity-log",
             "admin/deletion-requests",
             "/admin/deletion-requests",
+            "admin/courses",
+            "/admin/courses",
             "admin/organizations",
             "/admin/organizations",
+            "admin/subjects",
+            "/admin/subjects",
             "admin/users",
             "/admin/users",
+            "courses",
+            "/courses",
             "dashboard",
             "/dashboard",
             "profile",
-            "/profile"
+            "/profile",
+            "student/enrollments",
+            "/student/enrollments"
     );
 
     private enum ReferenceMode {

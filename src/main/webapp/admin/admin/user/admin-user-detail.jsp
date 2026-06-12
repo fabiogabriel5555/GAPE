@@ -5,8 +5,9 @@
         request.setAttribute("activeMenu", "users");
     }
 %>
-<c:set var="detailPhotoUrl" value="${pageContext.request.contextPath}/assets/images/thumbs/student-dashbord-profile-photo-img1.png"/>
-<c:if test="${not empty user.photo}">
+<c:set var="userHasPhoto" value="${not empty user.photo}"/>
+<c:set var="detailPhotoUrl" value=""/>
+<c:if test="${userHasPhoto}">
     <c:set var="detailPhotoUrl" value="${pageContext.request.contextPath}/media/${user.photo}"/>
 </c:if>
 <!DOCTYPE html>
@@ -142,6 +143,10 @@
             background-color: var(--main-800) !important;
             border-color: var(--main-800) !important;
         }
+
+        .gape-user-assignment-card {
+            min-height: 96px;
+        }
     </style>
 </head>
 <body>
@@ -206,11 +211,90 @@
                             <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
                                 <span class="text-14 text-neutral-500">Photo</span>
                                 <div class="mt-8">
-                                    <img src="${detailPhotoUrl}" alt="Profile photo" class="gape-user-detail-photo">
+                                    <c:choose>
+                                        <c:when test="${userHasPhoto}">
+                                            <img src="${detailPhotoUrl}"
+                                                 alt="Profile photo"
+                                                 class="gape-user-detail-photo"
+                                                 onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
+                                            <span class="gape-photo-placeholder gape-photo-placeholder--user gape-photo-placeholder--user-detail d-none" aria-label="No profile photo">
+                                                <i class="ph ph-user-circle"></i>
+                                            </span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span class="gape-photo-placeholder gape-photo-placeholder--user gape-photo-placeholder--user-detail" aria-label="No profile photo">
+                                                <i class="ph ph-user-circle"></i>
+                                            </span>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <div class="bg-white rounded-10 px-24 py-24 mb-24">
+                    <div class="border-bottom-dashed pb-20 mb-20">
+                        <h3 class="text-16 fw-medium text-neutral-700 mb-4">Access and Permissions</h3>
+                        <span class="text-14 text-neutral-500">Profiles, administrator permissions and profile contexts assigned to this user.</span>
+                    </div>
+
+                    <c:if test="${not empty accessProfileDetails}">
+                        <h4 class="text-16 fw-medium text-neutral-700 mb-12">Access Profiles</h4>
+                        <div class="row gy-4 mb-24">
+                            <c:forEach var="item" items="${accessProfileDetails}">
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="gape-user-assignment-card border border-neutral-30 rounded-12 px-20 py-18 h-100">
+                                        <span class="fw-medium text-14 text-neutral-700"><c:out value="${item.label}"/></span>
+                                        <span class="d-block text-12 text-neutral-500 mt-6">
+                                            <c:choose>
+                                                <c:when test="${item.hasDetailHtml}"><c:out value="${item.detailHtml}" escapeXml="false"/></c:when>
+                                                <c:otherwise><c:out value="${item.detail}"/></c:otherwise>
+                                            </c:choose>
+                                        </span>
+                                    </div>
+                                </div>
+                            </c:forEach>
+                        </div>
+                    </c:if>
+
+                    <c:if test="${not empty administratorPermissionDetails}">
+                        <h4 class="text-16 fw-medium text-neutral-700 mb-12">Administrator Permissions</h4>
+                        <div class="row gy-4 mb-24">
+                            <c:forEach var="item" items="${administratorPermissionDetails}">
+                                <div class="col-lg-3 col-md-6">
+                                    <div class="gape-user-assignment-card border border-neutral-30 rounded-12 px-20 py-18 h-100">
+                                        <span class="fw-medium text-14 text-neutral-700"><c:out value="${item.label}"/></span>
+                                        <span class="d-block text-12 text-neutral-500 mt-6">
+                                            <c:choose>
+                                                <c:when test="${item.hasDetailHtml}"><c:out value="${item.detailHtml}" escapeXml="false"/></c:when>
+                                                <c:otherwise><c:out value="${item.detail}"/></c:otherwise>
+                                            </c:choose>
+                                        </span>
+                                    </div>
+                                </div>
+                            </c:forEach>
+                        </div>
+                    </c:if>
+
+                    <c:if test="${not empty profileContextDetails}">
+                        <h4 class="text-16 fw-medium text-neutral-700 mb-12">Profile Contexts</h4>
+                        <div class="row gy-4">
+                            <c:forEach var="item" items="${profileContextDetails}">
+                                <div class="col-lg-4 col-md-6">
+                                    <div class="gape-user-assignment-card border border-neutral-30 rounded-12 px-20 py-18 h-100">
+                                        <span class="fw-medium text-14 text-neutral-700"><c:out value="${item.label}"/></span>
+                                        <span class="d-block text-12 text-neutral-500 mt-6">
+                                            <c:choose>
+                                                <c:when test="${item.hasDetailHtml}"><c:out value="${item.detailHtml}" escapeXml="false"/></c:when>
+                                                <c:otherwise><c:out value="${item.detail}"/></c:otherwise>
+                                            </c:choose>
+                                        </span>
+                                    </div>
+                                </div>
+                            </c:forEach>
+                        </div>
+                    </c:if>
                 </div>
 
                 <div class="bg-white rounded-10 px-24 py-24">

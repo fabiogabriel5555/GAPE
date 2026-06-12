@@ -161,6 +161,26 @@ public final class UserDAO {
         }
     }
 
+    public boolean updatePhoto(long userId, String photo) throws SQLException {
+        try (Connection connection = connectionProvider.getConnection()) {
+            return updatePhoto(connection, userId, photo);
+        }
+    }
+
+    public boolean updatePhoto(Connection connection, long userId, String photo) throws SQLException {
+        String sql = """
+                UPDATE user_account
+                SET photo = ?
+                WHERE id_user = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            setNullableString(statement, 1, photo);
+            statement.setLong(2, userId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
     public boolean updatePersonalProfile(
             long userId,
             String name,
@@ -388,5 +408,13 @@ public final class UserDAO {
                 resultSet.getString("document_number"),
                 profiles
         );
+    }
+
+    private static void setNullableString(PreparedStatement statement, int index, String value) throws SQLException {
+        if (value == null || value.isBlank()) {
+            statement.setNull(index, java.sql.Types.VARCHAR);
+        } else {
+            statement.setString(index, value.trim());
+        }
     }
 }

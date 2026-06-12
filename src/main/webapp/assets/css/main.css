@@ -374,6 +374,93 @@ body {
     background-position: center;
 }
 
+.gape-photo-placeholder {
+    align-items: center;
+    background-color: var(--neutral-20);
+    border: 1px solid var(--neutral-30);
+    color: var(--neutral-500);
+    display: inline-flex;
+    flex-shrink: 0;
+    justify-content: center;
+    line-height: 1;
+    overflow: hidden;
+}
+
+.gape-photo-placeholder.is-image {
+    background-color: transparent;
+    border-color: transparent;
+}
+
+.gape-photo-placeholder i {
+    line-height: 1;
+}
+
+.gape-photo-placeholder--user {
+    border-radius: 50%;
+}
+
+.gape-photo-placeholder--image {
+    border-radius: 12px;
+}
+
+.gape-photo-placeholder--table {
+    font-size: 24px;
+    height: 44px;
+    width: 44px;
+}
+
+.gape-photo-placeholder--user-form,
+.gape-photo-placeholder--user-detail {
+    font-size: 44px;
+    height: 88px;
+    width: 88px;
+}
+
+.gape-photo-placeholder--image-form {
+    border-radius: 16px;
+    font-size: 48px;
+    height: 132px;
+    width: 176px;
+}
+
+.gape-photo-placeholder--organization-form {
+    border-radius: 16px;
+    font-size: 40px;
+    height: 88px;
+    width: 88px;
+}
+
+.gape-photo-placeholder--organization-detail {
+    border-radius: 16px;
+    font-size: 34px;
+    height: 72px;
+    width: 72px;
+}
+
+.gape-photo-placeholder--learning-detail {
+    border-radius: 16px;
+    font-size: 34px;
+    height: 72px;
+    width: 96px;
+}
+
+.gape-photo-placeholder--course-card {
+    aspect-ratio: 4 / 3;
+    border-radius: 12px;
+    display: flex;
+    font-size: 52px;
+    min-height: 180px;
+    width: 100%;
+}
+
+.gape-photo-placeholder--course-hero {
+    border-radius: 0;
+    display: flex;
+    font-size: 72px;
+    min-height: 260px;
+    width: 100%;
+}
+
 /***********
 dashbord settimgs end
 ***********/
@@ -13246,6 +13333,31 @@ table.dataTable.display > tbody > tr > * {
 
 .gape-document-validation-message {
   line-height: 1.45;
+}
+
+.dashbord .btn,
+.dashbord button,
+.dashbord a[class*="px-20"],
+.dashbord a[class*="px-24"] {
+  white-space: nowrap !important;
+}
+
+.dashbord .table th:nth-child(5),
+.dashbord .table td:nth-child(5) {
+  min-width: 112px;
+}
+
+.dashbord .table span[class*="rounded-pill"][class*="text-14"],
+.dashbord .table span[class*="rounded-pill"][class*="text-13"] {
+  display: inline-flex;
+  justify-content: center;
+  line-height: 1.25;
+  min-width: 86px;
+  white-space: nowrap !important;
+}
+
+.min-w-86-px {
+  min-width: 86px !important;
 }
 
 /*# sourceMappingURL=main.css.map */

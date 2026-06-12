@@ -11,6 +11,7 @@ import java.util.Set;
 import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.common.validation.AcademicTextValidator;
 import pt.isel.gape.security.authorization.AccessContext;
 import pt.isel.gape.security.authorization.AccessEntityType;
 import pt.isel.gape.security.authorization.AuthorizationDecision;
@@ -81,7 +82,7 @@ public final class OrganizationService {
             String sourceIp
     ) {
         try {
-            requireGlobalOrganizationPermission(actorUserId, sessionId, actorProfileType, sourceIp);
+            requireOrganizationRootManager(actorUserId, sessionId, actorProfileType, sourceIp);
             validateCreateCommand(command);
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
@@ -147,8 +148,14 @@ public final class OrganizationService {
             String sourceIp
     ) {
         try {
+            if (canManageOrganizationRoots(actorUserId, sessionId, actorProfileType, sourceIp)) {
+                return organizationDAO.findActive();
+            }
             requireGlobalOrganizationPermission(actorUserId, sessionId, actorProfileType, sourceIp);
-            return organizationDAO.findByAdministrator(actorUserId);
+            return organizationDAO.findByAdministratorPermissionContexts(
+                    actorUserId,
+                    AuthorizationPolicy.MANAGE_ORGANIZATIONS
+            );
         } catch (RuntimeException | SQLException exception) {
             throw wrap(exception, "Failed to list managed organizations");
         }
@@ -178,7 +185,7 @@ public final class OrganizationService {
             String sourceIp
     ) {
         try {
-            requireOrganizationManager(actorUserId, sessionId, actorProfileType, organizationId, sourceIp);
+            requireOrganizationRootManager(actorUserId, sessionId, actorProfileType, sourceIp);
             validateUpdateCommand(command);
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
@@ -215,7 +222,7 @@ public final class OrganizationService {
             String sourceIp
     ) {
         try {
-            requireGlobalOrganizationPermission(actorUserId, sessionId, actorProfileType, sourceIp);
+            requireOrganizationRootManager(actorUserId, sessionId, actorProfileType, sourceIp);
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
@@ -252,7 +259,7 @@ public final class OrganizationService {
             String sourceIp
     ) {
         try {
-            requireAssignmentPermission(actorUserId, sessionId, actorProfileType, organizationId, sourceIp);
+            requireOrganizationRootManager(actorUserId, sessionId, actorProfileType, sourceIp);
             requireValidDates(startDate, endDate);
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
@@ -288,7 +295,7 @@ public final class OrganizationService {
             String sourceIp
     ) {
         try {
-            requireOrganizationManager(actorUserId, sessionId, actorProfileType, organizationId, sourceIp);
+            requireOrganizationRootManager(actorUserId, sessionId, actorProfileType, sourceIp);
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
@@ -320,7 +327,7 @@ public final class OrganizationService {
             String sourceIp
     ) {
         try {
-            requireOrganizationManager(actorUserId, sessionId, actorProfileType, organizationId, sourceIp);
+            requireOrganizationRootManager(actorUserId, sessionId, actorProfileType, sourceIp);
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
@@ -386,32 +393,40 @@ public final class OrganizationService {
         }
     }
 
-    private void requireAssignmentPermission(
+    private void requireOrganizationRootManager(
             long actorUserId,
             Long sessionId,
             AccessProfileType actorProfileType,
-            long organizationId,
             String sourceIp
-    ) throws SQLException {
-        AuthorizationDecision contextualDecision = permissionChecker.check(new AccessContext(
+    ) {
+        AuthorizationDecision decision = checkOrganizationRootManager(actorUserId, sessionId, actorProfileType, sourceIp);
+        if (!decision.allowed()) {
+            throw new SecurityException("Missing permission to manage organization roots: " + decision.reason());
+        }
+    }
+
+    private boolean canManageOrganizationRoots(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            String sourceIp
+    ) {
+        return checkOrganizationRootManager(actorUserId, sessionId, actorProfileType, sourceIp).allowed();
+    }
+
+    private AuthorizationDecision checkOrganizationRootManager(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            String sourceIp
+    ) {
+        return permissionChecker.check(AccessContext.global(
                 actorUserId,
                 sessionId,
                 actorProfileType,
-                AuthorizationPolicy.MANAGE_ORGANIZATIONS,
-                AccessEntityType.ORGANIZATION,
-                organizationId,
+                AuthorizationPolicy.MANAGE_ALL,
                 sourceIp
         ));
-        if (contextualDecision.allowed()) {
-            return;
-        }
-        if (actorProfileType == AccessProfileType.ADMINISTRATOR
-                && permissionDAO.activeProfileExists(actorUserId, AccessProfileType.ADMINISTRATOR)
-                && permissionDAO.hasActiveGrant(actorUserId, AccessProfileType.ADMINISTRATOR, AuthorizationPolicy.MANAGE_USERS)) {
-            return;
-        }
-        throw new SecurityException("Missing permission to assign organization administrators: "
-                + contextualDecision.reason());
     }
 
     private Organization requireOrganization(Connection connection, long organizationId) throws SQLException {
@@ -439,7 +454,8 @@ public final class OrganizationService {
 
     private static void validateCreateCommand(OrganizationCreateCommand command) {
         Objects.requireNonNull(command, "command is required");
-        requireText(command.name(), "Organization name is required");
+        AcademicTextValidator.requireName(command.name(), "Organization name is required");
+        AcademicTextValidator.requireAcronym(command.acronym(), "Organization acronym is required");
         Objects.requireNonNull(command.type(), "organization type is required");
         Objects.requireNonNull(command.state(), "organization state is required");
         if (command.state() == OrganizationState.ACTIVE && safeAdministrators(command.administratorUserIds()).isEmpty()) {
@@ -449,7 +465,8 @@ public final class OrganizationService {
 
     private static void validateUpdateCommand(OrganizationUpdateCommand command) {
         Objects.requireNonNull(command, "command is required");
-        requireText(command.name(), "Organization name is required");
+        AcademicTextValidator.requireName(command.name(), "Organization name is required");
+        AcademicTextValidator.requireAcronym(command.acronym(), "Organization acronym is required");
         Objects.requireNonNull(command.type(), "organization type is required");
         Objects.requireNonNull(command.state(), "organization state is required");
         if (command.state() == OrganizationState.ARCHIVED) {

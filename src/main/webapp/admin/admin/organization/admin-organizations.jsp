@@ -88,9 +88,11 @@
                             <h2 class="text-18 fw-medium text-neutral-700 mb-4">Organization Management</h2>
                             <span class="text-14 text-neutral-500">Organizations, institutions, hierarchy and administrator context.</span>
                         </div>
-                        <a href="${pageContext.request.contextPath}/admin/organizations/new" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
-                            <i class="ph ph-plus-circle me-8"></i>New Organization
-                        </a>
+                        <c:if test="${canCreateOrganizations}">
+                            <a href="${pageContext.request.contextPath}/admin/organizations/new" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
+                                <i class="ph ph-plus-circle me-8"></i>New Organization
+                            </a>
+                        </c:if>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="table mb-0">
@@ -105,22 +107,36 @@
                             </thead>
                             <tbody>
                             <c:forEach var="organization" items="${organizations}">
-                                <c:set var="organizationPhotoUrl" value="${pageContext.request.contextPath}/assets/images/thumbs/student-dashbord-profile-photo-img1.png"/>
+                                <c:set var="organizationPhotoUrl" value=""/>
                                 <c:if test="${organization.hasPhoto}">
                                     <c:set var="organizationPhotoUrl" value="${pageContext.request.contextPath}/media/${organization.photo}?v=${mediaCacheVersion}"/>
                                 </c:if>
                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                     <td class="py-20 px-20">
                                         <div class="d-flex align-items-center gap-12">
-                                            <img src="${organizationPhotoUrl}"
-                                                 alt=""
-                                                 class="gape-organization-table-photo flex-shrink-0"
-                                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}/assets/images/thumbs/student-dashbord-profile-photo-img1.png';">
+                                            <c:choose>
+                                                <c:when test="${organization.hasPhoto}">
+                                                    <img src="${organizationPhotoUrl}"
+                                                         alt=""
+                                                         class="gape-organization-table-photo flex-shrink-0"
+                                                         onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
+                                                    <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--table d-none" aria-label="No organization photo">
+                                                        <i class="ph ph-image"></i>
+                                                    </span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--table" aria-label="No organization photo">
+                                                        <i class="ph ph-image"></i>
+                                                    </span>
+                                                </c:otherwise>
+                                            </c:choose>
                                             <div>
                                                 <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
                                                     <c:out value="${organization.name}"/>
                                                 </a>
-                                                <span class="d-block text-12 text-neutral-500"><c:out value="${organization.acronym}"/></span>
+                                                <span class="d-block text-12 text-neutral-500">
+                                                    <span class="gape-acronym-token" tabindex="0" title="<c:out value='${organization.name}'/>"><c:out value="${organization.acronym}"/></span>
+                                                </span>
                                             </div>
                                         </div>
                                     </td>
@@ -136,37 +152,43 @@
                                             <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}" class="text-22 text-neutral-500 hover-text-main-600" title="Detail">
                                                 <i class="ph ph-eye"></i>
                                             </a>
-                                            <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/edit" class="text-22 text-neutral-500 hover-text-main-600" title="Edit">
-                                                <i class="ph ph-pencil-simple-line"></i>
-                                            </a>
-                                            <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/new" class="text-22 text-neutral-500 hover-text-main-600" title="New unit">
+                                            <c:if test="${canModifyOrganizations}">
+                                                <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/edit" class="text-22 text-neutral-500 hover-text-main-600" title="Edit">
+                                                    <i class="ph ph-pencil-simple-line"></i>
+                                                </a>
+                                            </c:if>
+                                            <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units" class="text-22 text-neutral-500 hover-text-main-600" title="Organic units">
                                                 <i class="ph ph-tree-structure"></i>
                                             </a>
-                                            <button type="button" class="text-22 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteOrganization${organization.id}">
-                                                <i class="ph ph-trash"></i>
-                                            </button>
+                                            <c:if test="${canModifyOrganizations}">
+                                                <button type="button" class="text-22 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteOrganization${organization.id}">
+                                                    <i class="ph ph-trash"></i>
+                                                </button>
+                                            </c:if>
                                         </div>
 
-                                        <div class="modal fade" id="deleteOrganization${organization.id}" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog modal-dialog-centered">
-                                                <div class="modal-content rounded-12 border-0">
-                                                    <div class="modal-header border-neutral-30">
-                                                        <h5 class="modal-title text-18 fw-semibold">Delete Organization</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <p class="text-14 text-neutral-600 mb-0">This action removes <strong><c:out value="${organization.name}"/></strong> if it has no dependencies.</p>
-                                                    </div>
-                                                    <div class="modal-footer border-neutral-30">
-                                                        <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
-                                                        <form action="${pageContext.request.contextPath}/admin/organizations/${organization.id}/delete" method="post" class="m-0">
-                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                            <button type="submit" class="gape-action-button gape-action-delete px-20 py-10 rounded-12 fw-semibold transition-03">Delete</button>
-                                                        </form>
+                                        <c:if test="${canModifyOrganizations}">
+                                            <div class="modal fade" id="deleteOrganization${organization.id}" tabindex="-1" aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content rounded-12 border-0">
+                                                        <div class="modal-header border-neutral-30">
+                                                            <h5 class="modal-title text-18 fw-semibold">Delete Organization</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p class="text-14 text-neutral-600 mb-0">This action removes <strong><c:out value="${organization.name}"/></strong> if it has no dependencies.</p>
+                                                        </div>
+                                                        <div class="modal-footer border-neutral-30">
+                                                            <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
+                                                            <form action="${pageContext.request.contextPath}/admin/organizations/${organization.id}/delete" method="post" class="m-0">
+                                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                                <button type="submit" class="gape-action-button gape-action-delete px-20 py-10 rounded-12 fw-semibold transition-03">Delete</button>
+                                                            </form>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        </c:if>
                                     </td>
                                 </tr>
                             </c:forEach>

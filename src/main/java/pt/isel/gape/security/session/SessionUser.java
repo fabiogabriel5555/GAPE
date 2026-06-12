@@ -14,6 +14,7 @@ import java.util.TreeSet;
 import pt.isel.gape.access.model.AccessProfile;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.access.model.User;
+import pt.isel.gape.security.authorization.AuthorizationPolicy;
 
 public final class SessionUser implements Serializable {
 
@@ -91,7 +92,14 @@ public final class SessionUser implements Serializable {
     }
 
     public boolean hasPermission(String permissionCode) {
-        return permissionCode != null && permissionCodes.contains(permissionCode);
+        if (permissionCode == null) {
+            return false;
+        }
+        if (permissionCodes.contains(permissionCode)) {
+            return true;
+        }
+        String canonicalPermissionCode = AuthorizationPolicy.canonicalAdminPermission(permissionCode);
+        return !canonicalPermissionCode.equals(permissionCode) && permissionCodes.contains(canonicalPermissionCode);
     }
 
     public Optional<AccessProfileType> primaryProfileType() {

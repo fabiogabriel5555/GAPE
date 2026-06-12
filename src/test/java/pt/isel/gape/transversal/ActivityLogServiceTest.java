@@ -12,6 +12,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -33,18 +35,28 @@ class ActivityLogServiceTest {
 
     private ActivityLogService activityLogService;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        ConnectionProvider connectionProvider = DatabaseTestSupport::openConnection;
+    @BeforeAll
+    static void initializeDatabase() throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection()) {
             resetSchema(connection);
         }
+    }
+
+    @BeforeEach
+    void setUp() throws Exception {
+        DatabaseTestSupport.beginTestTransaction();
+        ConnectionProvider connectionProvider = DatabaseTestSupport::openConnection;
 
         activityLogService = new ActivityLogService(
                 new ActivityLogDAO(connectionProvider),
                 new PermissionChecker(connectionProvider),
                 FIXED_CLOCK
         );
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        DatabaseTestSupport.rollbackTestTransaction();
     }
 
     @Test
@@ -231,13 +243,19 @@ class ActivityLogServiceTest {
                 CREATE TABLE grant_administrator (
                     id_admin_user BIGINT UNSIGNED NOT NULL,
                     cod_permission VARCHAR(80) NOT NULL,
-                    PRIMARY KEY (id_admin_user, cod_permission),
+                    context_type VARCHAR(30) NOT NULL DEFAULT 'GLOBAL',
+                    context_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+                    PRIMARY KEY (id_admin_user, cod_permission, context_type, context_id),
+                    KEY idx_grant_administrator_permission (cod_permission),
+                    KEY idx_grant_administrator_context (context_type, context_id),
                     CONSTRAINT fk_grant_administrator_admin
                         FOREIGN KEY (id_admin_user) REFERENCES administrator_profile (id_user)
                         ON UPDATE CASCADE ON DELETE CASCADE,
                     CONSTRAINT fk_grant_administrator_permission
                         FOREIGN KEY (cod_permission) REFERENCES permission (cod_permission)
-                        ON UPDATE CASCADE ON DELETE CASCADE
+                        ON UPDATE CASCADE ON DELETE CASCADE,
+                    CONSTRAINT ck_grant_administrator_context_type
+                        CHECK (context_type IN ('GLOBAL', 'ORGANIZATION', 'ORGANIC_UNIT', 'COURSE', 'SUBJECT', 'CLASS_GROUP'))
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """,
                 """
@@ -331,9 +349,8 @@ class ActivityLogServiceTest {
                 "INSERT INTO administrator_profile (id_user, cod_administrator) VALUES (1, 'ADM-001')",
                 "INSERT INTO student_profile (id_user, cod_student) VALUES (4, 'STD-001')",
                 "INSERT INTO user_session (id_session, id_user, token, state, start_at, last_activity, end_at) VALUES (100, 1, 'tok-admin-100', 'active', '2026-01-10 10:00:00', '2026-01-10 10:30:00', NULL)",
-                "INSERT INTO permission (cod_permission, name, state) VALUES ('VIEW_REPORTS', 'View Reports', 'active')",
-                "INSERT INTO grant_administrator (id_admin_user, cod_permission) VALUES (1, 'VIEW_REPORTS')",
-                "INSERT INTO grant_student (id_student_user, cod_permission) VALUES (4, 'VIEW_REPORTS')",
+                "INSERT INTO permission (cod_permission, name, state) VALUES ('MANAGE_ALL', 'Manage All', 'active')",
+                "INSERT INTO grant_administrator (id_admin_user, cod_permission) VALUES (1, 'MANAGE_ALL')",
                 """
                 INSERT INTO activity_log (
                     id_activity_log, id_user, id_session, operation_type, affected_entity_type,

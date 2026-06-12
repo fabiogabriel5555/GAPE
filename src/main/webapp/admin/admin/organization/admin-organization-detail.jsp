@@ -5,7 +5,7 @@
         request.setAttribute("activeMenu", "organizations");
     }
 %>
-<c:set var="organizationPhotoUrl" value="${pageContext.request.contextPath}/assets/images/thumbs/student-dashbord-profile-photo-img1.png"/>
+<c:set var="organizationPhotoUrl" value=""/>
 <c:if test="${organization.hasPhoto}">
     <c:set var="organizationPhotoUrl" value="${pageContext.request.contextPath}/media/${organization.photo}?v=${mediaCacheVersion}"/>
 </c:if>
@@ -80,18 +80,35 @@
                 <div class="bg-white rounded-10 px-24 py-24 mb-24">
                     <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap border-bottom-dashed pb-24 mb-24">
                         <div class="d-flex align-items-center gap-16">
-                            <img src="${organizationPhotoUrl}"
-                                 alt=""
-                                 class="gape-organization-detail-photo flex-shrink-0"
-                                 onerror="this.onerror=null;this.src='${pageContext.request.contextPath}/assets/images/thumbs/student-dashbord-profile-photo-img1.png';">
+                            <c:choose>
+                                <c:when test="${organization.hasPhoto}">
+                                    <img src="${organizationPhotoUrl}"
+                                         alt=""
+                                         class="gape-organization-detail-photo flex-shrink-0"
+                                         onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
+                                    <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--organization-detail d-none" aria-label="No organization photo">
+                                        <i class="ph ph-image"></i>
+                                    </span>
+                                </c:when>
+                                <c:otherwise>
+                                    <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--organization-detail" aria-label="No organization photo">
+                                        <i class="ph ph-image"></i>
+                                    </span>
+                                </c:otherwise>
+                            </c:choose>
                             <div>
                                 <h2 class="text-20 fw-semibold text-neutral-700 mb-4"><c:out value="${organization.name}"/></h2>
-                                <span class="text-14 text-neutral-500"><c:out value="${organization.typeLabel}"/> | <c:out value="${organization.acronym}"/></span>
+                                <span class="text-14 text-neutral-500">
+                                    <c:out value="${organization.typeLabel}"/> |
+                                    <span class="gape-acronym-token" tabindex="0" title="<c:out value='${organization.name}'/>"><c:out value="${organization.acronym}"/></span>
+                                </span>
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-12 flex-wrap">
                             <a href="${pageContext.request.contextPath}/admin/organizations" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03">Back</a>
-                            <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/edit" class="gape-action-button gape-action-edit px-20 py-10 rounded-12 fw-semibold transition-03">Edit</a>
+                            <c:if test="${canModifyOrganization}">
+                                <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/edit" class="gape-action-button gape-action-edit px-20 py-10 rounded-12 fw-semibold transition-03">Edit</a>
+                            </c:if>
                         </div>
                     </div>
                     <div class="row gy-4">
@@ -128,19 +145,22 @@
                                     <h3 class="text-18 fw-medium text-neutral-700 mb-4">Organic Unit Hierarchy</h3>
                                     <span class="text-14 text-neutral-500">Departments, schools, directions and sections.</span>
                                 </div>
-                                <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/new" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
-                                    <i class="ph ph-plus-circle me-8"></i>New Unit
-                                </a>
+                                <c:if test="${canCreateOrganicUnits}">
+                                    <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/new" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
+                                        <i class="ph ph-plus-circle me-8"></i>New Unit
+                                    </a>
+                                </c:if>
                             </div>
                             <div class="d-flex flex-column gap-12">
                                 <c:forEach var="unit" items="${organicUnits}">
+                                    <c:set var="canModifyUnit" value="${canModifyOrganicUnitById[unit.id]}" />
                                     <div class="gape-hierarchy-node border border-neutral-30 rounded-12 px-20 py-16 bg-neutral-10" style="margin-left: ${unit.hierarchyIndent}px;">
                                         <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap">
                                             <div class="d-flex align-items-start gap-12">
                                                 <span class="text-22 text-main-600 line-height-1"><i class="ph ph-tree-structure"></i></span>
                                                 <div>
                                                     <c:choose>
-                                                        <c:when test="${unit.archived}">
+                                                        <c:when test="${unit.archived or not canModifyUnit}">
                                                             <span class="fw-medium text-14 text-neutral-700">
                                                                 <c:out value="${unit.code}"/> - <c:out value="${unit.name}"/>
                                                             </span>
@@ -159,13 +179,10 @@
                                                 <span class="${unit.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
                                                     <c:out value="${unit.stateLabel}"/>
                                                 </span>
-                                                <c:if test="${not unit.archived}">
+                                                <c:if test="${not unit.archived and canModifyUnit}">
                                                     <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/${unit.id}/edit" class="text-21 text-neutral-500 hover-text-main-600" title="Edit">
                                                         <i class="ph ph-pencil-simple-line"></i>
                                                     </a>
-                                                    <button type="button" class="text-21 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveUnit${unit.id}">
-                                                        <i class="ph ph-archive-box"></i>
-                                                    </button>
                                                     <button type="button" class="text-21 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteUnit${unit.id}">
                                                         <i class="ph ph-trash"></i>
                                                     </button>
@@ -174,28 +191,7 @@
                                         </div>
                                     </div>
 
-                                    <c:if test="${not unit.archived}">
-                                        <div class="modal fade" id="archiveUnit${unit.id}" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog modal-dialog-centered">
-                                                <div class="modal-content rounded-12 border-0">
-                                                    <div class="modal-header border-neutral-30">
-                                                        <h5 class="modal-title text-18 fw-semibold">Archive Organic Unit</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <p class="text-14 text-neutral-600 mb-0">Confirm archiving <strong><c:out value="${unit.name}"/></strong>?</p>
-                                                    </div>
-                                                    <div class="modal-footer border-neutral-30">
-                                                        <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
-                                                        <form action="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/${unit.id}/archive" method="post" class="m-0">
-                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                            <button type="submit" class="gape-action-button gape-action-archive px-20 py-10 rounded-12 fw-semibold transition-03">Archive</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
+                                    <c:if test="${not unit.archived and canModifyUnit}">
                                         <div class="modal fade" id="deleteUnit${unit.id}" tabindex="-1" aria-hidden="true">
                                             <div class="modal-dialog modal-dialog-centered">
                                                 <div class="modal-content rounded-12 border-0">
@@ -225,6 +221,7 @@
                         </div>
                     </div>
 
+                    <c:if test="${canAssignOrganizationAdministrators}">
                     <div class="col-xl-5">
                         <div class="bg-white rounded-10 px-24 py-24 h-100">
                             <h3 class="text-18 fw-medium text-neutral-700 mb-4">Administrator Assignment</h3>
@@ -284,21 +281,25 @@
                             </div>
                         </div>
                     </div>
+                    </c:if>
                 </div>
 
-                <div class="bg-white rounded-10 px-24 py-24">
-                    <h3 class="text-16 fw-medium text-neutral-700 mb-16">Critical Actions</h3>
-                    <div class="d-flex align-items-center gap-16 flex-wrap">
-                        <button type="button" class="gape-action-button gape-action-archive px-24 py-12 rounded-12 fw-semibold transition-03" data-bs-toggle="modal" data-bs-target="#archiveOrganization">Archive</button>
-                        <button type="button" class="gape-action-button gape-action-delete px-24 py-12 rounded-12 fw-semibold transition-03" data-bs-toggle="modal" data-bs-target="#deleteOrganization">Delete</button>
+                <c:if test="${canModifyOrganization}">
+                    <div class="bg-white rounded-10 px-24 py-24">
+                        <h3 class="text-16 fw-medium text-neutral-700 mb-16">Critical Actions</h3>
+                        <div class="d-flex align-items-center gap-16 flex-wrap">
+                            <button type="button" class="gape-action-button gape-action-archive px-24 py-12 rounded-12 fw-semibold transition-03" data-bs-toggle="modal" data-bs-target="#archiveOrganization">Archive</button>
+                            <button type="button" class="gape-action-button gape-action-delete px-24 py-12 rounded-12 fw-semibold transition-03" data-bs-toggle="modal" data-bs-target="#deleteOrganization">Delete</button>
+                        </div>
                     </div>
-                </div>
+                </c:if>
             </div>
             <%@ include file="/WEB-INF/fragments/dashboard-footer.jspf" %>
         </div>
     </div>
 </div>
 
+<c:if test="${canModifyOrganization}">
 <div class="modal fade" id="archiveOrganization" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-12 border-0">
@@ -340,6 +341,7 @@
         </div>
     </div>
 </div>
+</c:if>
 
 <%@ include file="/WEB-INF/fragments/template-base-scripts.jspf" %>
 </body>

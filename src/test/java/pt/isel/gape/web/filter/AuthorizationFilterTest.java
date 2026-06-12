@@ -8,6 +8,7 @@ import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -15,6 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,15 +40,19 @@ class AuthorizationFilterTest {
 
     private AuthorizationFilter filter;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        ConnectionProvider connectionProvider = DatabaseTestSupport::openConnection;
+    @BeforeAll
+    static void initializeDatabase() throws Exception {
+        DatabaseTestSupport.resetDatabaseWithBaseSeed();
         try (Connection connection = DatabaseTestSupport.openConnection()) {
-            DatabaseTestSupport.resetDatabase(connection);
-            DatabaseTestSupport.executeScript(connection, DatabaseTestSupport.SQL_SEED_DIR.resolve("base.sql"));
             insertAdminWithoutGrants(connection);
-            insertAdminWithViewGrantOnly(connection);
+            insertAdminWithDashboardOnlyAccess(connection);
         }
+    }
+
+    @BeforeEach
+    void setUp() throws SQLException {
+        DatabaseTestSupport.beginTestTransaction();
+        ConnectionProvider connectionProvider = DatabaseTestSupport::openConnection;
 
         AuditService auditService = new AuditService(new ActivityLogDAO(connectionProvider), FIXED_CLOCK);
         filter = new AuthorizationFilter(
@@ -53,6 +60,11 @@ class AuthorizationFilterTest {
                 new SessionManager(),
                 auditService
         );
+    }
+
+    @AfterEach
+    void tearDown() throws SQLException {
+        DatabaseTestSupport.rollbackTestTransaction();
     }
 
     @Test
@@ -184,6 +196,22 @@ class AuthorizationFilterTest {
     }
 
     @Test
+    void administratorWithBaseGrantCanAccessOwnProfilePage() throws Exception {
+        TestHttpSession httpSession = authenticatedHttpSession(601L, Set.of(AccessProfileType.ADMINISTRATOR));
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        TestFilterChain chainState = new TestFilterChain();
+
+        filter.doFilter(
+                requestProxy("/admin/admin-my-profile.jsp", httpSession),
+                responseProxy(responseState),
+                chainProxy(chainState)
+        );
+
+        assertTrue(chainState.called);
+        assertEquals(null, responseState.errorStatus);
+    }
+
+    @Test
     void directAdminUrlRedirectsStudentToAuthorizedDashboard() throws Exception {
         TestHttpSession httpSession = authenticatedHttpSession(4L, Set.of(AccessProfileType.STUDENT));
         TestHttpServletResponse responseState = new TestHttpServletResponse();
@@ -202,7 +230,7 @@ class AuthorizationFilterTest {
     }
 
     @Test
-    void profileWithoutRequiredGrantIsForbidden() throws Exception {
+    void administratorWithoutManagementGrantCanAccessOwnDashboard() throws Exception {
         TestHttpSession httpSession = authenticatedHttpSession(600L, Set.of(AccessProfileType.ADMINISTRATOR));
         TestHttpServletResponse responseState = new TestHttpServletResponse();
         TestFilterChain chainState = new TestFilterChain();
@@ -213,8 +241,8 @@ class AuthorizationFilterTest {
                 chainProxy(chainState)
         );
 
-        assertFalse(chainState.called);
-        assertEquals(HttpServletResponse.SC_FORBIDDEN, responseState.errorStatus);
+        assertTrue(chainState.called);
+        assertEquals(null, responseState.errorStatus);
     }
 
     private static void insertAdminWithoutGrants(Connection connection) throws Exception {
@@ -232,7 +260,7 @@ class AuthorizationFilterTest {
         }
     }
 
-    private static void insertAdminWithViewGrantOnly(Connection connection) throws Exception {
+    private static void insertAdminWithDashboardOnlyAccess(Connection connection) throws Exception {
         try (PreparedStatement user = connection.prepareStatement("""
                 INSERT INTO user_account (
                     id_user, name, email, state, language, created_at, credential_hash, credential_salt
@@ -241,13 +269,9 @@ class AuthorizationFilterTest {
                 """);
              PreparedStatement profile = connection.prepareStatement(
                      "INSERT INTO administrator_profile (id_user, cod_administrator) VALUES (601, 'ADM-VIEW')"
-             );
-             PreparedStatement grant = connection.prepareStatement(
-                     "INSERT INTO grant_administrator (id_admin_user, cod_permission) VALUES (601, 'VIEW_REPORTS')"
              )) {
             user.executeUpdate();
             profile.executeUpdate();
-            grant.executeUpdate();
         }
     }
 

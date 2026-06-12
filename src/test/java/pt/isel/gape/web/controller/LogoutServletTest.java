@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -14,6 +15,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,14 +43,18 @@ class LogoutServletTest {
     private SessionManager sessionManager;
     private LogoutServlet servlet;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        ConnectionProvider connectionProvider = DatabaseTestSupport::openConnection;
-
+    @BeforeAll
+    static void initializeDatabase() throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection()) {
             DatabaseTestSupport.resetDatabase(connection);
             insertUser(connection);
         }
+    }
+
+    @BeforeEach
+    void setUp() throws SQLException {
+        DatabaseTestSupport.beginTestTransaction();
+        ConnectionProvider connectionProvider = DatabaseTestSupport::openConnection;
 
         sessionService = new SessionService(
                 new SessionDAO(connectionProvider),
@@ -56,6 +63,11 @@ class LogoutServletTest {
         );
         sessionManager = new SessionManager();
         servlet = new LogoutServlet(sessionService, sessionManager);
+    }
+
+    @AfterEach
+    void tearDown() throws SQLException {
+        DatabaseTestSupport.rollbackTestTransaction();
     }
 
     @Test
@@ -112,7 +124,7 @@ class LogoutServletTest {
         return requestState;
     }
 
-    private void insertUser(Connection connection) throws Exception {
+    private static void insertUser(Connection connection) throws Exception {
         try (PreparedStatement statement = connection.prepareStatement("""
                 INSERT INTO user_account (
                     id_user, name, email, state, language, created_at, credential_hash, credential_salt

@@ -96,6 +96,92 @@ public final class OrganizationDAO {
         }
     }
 
+    public List<Organization> findByAdministratorPermissionContexts(long adminUserId, String permissionCode)
+            throws SQLException {
+        String sql = """
+                SELECT DISTINCT o.id_organization, o.name, o.acronym, o.photo, o.type, o.state
+                FROM grant_administrator ga
+                JOIN permission p ON p.cod_permission = ga.cod_permission
+                JOIN organization o ON (
+                    (ga.context_type = 'ORGANIZATION' AND o.id_organization = ga.context_id)
+                    OR (
+                        ga.context_type = 'ORGANIC_UNIT'
+                        AND EXISTS (
+                            SELECT 1
+                            FROM organic_unit ou
+                            WHERE ou.id_organic_unit = ga.context_id
+                              AND ou.id_organization = o.id_organization
+                        )
+                    )
+                    OR (
+                        ga.context_type = 'COURSE'
+                        AND EXISTS (
+                            SELECT 1
+                            FROM course c
+                            WHERE c.id_course = ga.context_id
+                              AND c.id_organization = o.id_organization
+                        )
+                    )
+                    OR (
+                        ga.context_type = 'SUBJECT'
+                        AND EXISTS (
+                            SELECT 1
+                            FROM subject s
+                            WHERE s.id_subject = ga.context_id
+                              AND s.id_organization = o.id_organization
+                        )
+                    )
+                    OR (
+                        ga.context_type = 'CLASS_GROUP'
+                        AND EXISTS (
+                            SELECT 1
+                            FROM class_group cg
+                            JOIN course c ON c.id_course = cg.id_course
+                            WHERE cg.id_class_group = ga.context_id
+                              AND c.id_organization = o.id_organization
+                        )
+                    )
+                )
+                WHERE ga.id_admin_user = ?
+                  AND ga.cod_permission = ?
+                  AND p.state = 'active'
+                  AND o.state <> 'archived'
+                ORDER BY o.name
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, adminUserId);
+            statement.setString(2, permissionCode);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<Organization> organizations = new ArrayList<>();
+                while (resultSet.next()) {
+                    organizations.add(mapOrganization(resultSet));
+                }
+                return organizations;
+            }
+        }
+    }
+
+    public List<Organization> findActive() throws SQLException {
+        String sql = """
+                SELECT id_organization, name, acronym, photo, type, state
+                FROM organization
+                WHERE state = 'active'
+                ORDER BY name
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            List<Organization> organizations = new ArrayList<>();
+            while (resultSet.next()) {
+                organizations.add(mapOrganization(resultSet));
+            }
+            return organizations;
+        }
+    }
+
     public void update(Connection connection, long organizationId, OrganizationUpdateCommand command) throws SQLException {
         String sql = """
                 UPDATE organization

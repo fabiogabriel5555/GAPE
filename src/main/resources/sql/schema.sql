@@ -139,14 +139,19 @@ CREATE TABLE IF NOT EXISTS permission (
 CREATE TABLE IF NOT EXISTS grant_administrator (
     id_admin_user BIGINT UNSIGNED NOT NULL,
     cod_permission VARCHAR(80) NOT NULL,
-    PRIMARY KEY (id_admin_user, cod_permission),
+    context_type VARCHAR(30) NOT NULL DEFAULT 'GLOBAL',
+    context_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (id_admin_user, cod_permission, context_type, context_id),
     KEY idx_grant_administrator_permission (cod_permission),
+    KEY idx_grant_administrator_context (context_type, context_id),
     CONSTRAINT fk_grant_administrator_admin
         FOREIGN KEY (id_admin_user) REFERENCES administrator_profile (id_user)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_grant_administrator_permission
         FOREIGN KEY (cod_permission) REFERENCES permission (cod_permission)
-        ON UPDATE CASCADE ON DELETE RESTRICT
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT ck_grant_administrator_context_type
+        CHECK (context_type IN ('GLOBAL', 'ORGANIZATION', 'ORGANIC_UNIT', 'COURSE', 'SUBJECT', 'CLASS_GROUP'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS grant_coordinator (
@@ -195,16 +200,21 @@ CREATE TABLE IF NOT EXISTS grant_student (
 CREATE TABLE IF NOT EXISTS organization (
     id_organization BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(160) NOT NULL,
-    acronym VARCHAR(30) NULL,
+    acronym VARCHAR(30) NOT NULL,
     photo VARCHAR(255) NULL,
     type VARCHAR(40) NOT NULL,
     state VARCHAR(20) NOT NULL,
     PRIMARY KEY (id_organization),
     UNIQUE KEY uq_organization_name (name),
+    UNIQUE KEY uq_organization_acronym (acronym),
     CONSTRAINT ck_organization_type
         CHECK (type IN ('educational_institution', 'training_company', 'company', 'other')),
     CONSTRAINT ck_organization_state
-        CHECK (state IN ('active', 'inactive', 'archived'))
+        CHECK (state IN ('active', 'inactive', 'archived')),
+    CONSTRAINT ck_organization_name_separator
+        CHECK (LOCATE('|', name) = 0),
+    CONSTRAINT ck_organization_acronym_separator
+        CHECK (LOCATE('|', acronym) = 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS organic_unit (
@@ -212,12 +222,13 @@ CREATE TABLE IF NOT EXISTS organic_unit (
     id_organization BIGINT UNSIGNED NOT NULL,
     cod_organic_unit VARCHAR(30) NOT NULL,
     name VARCHAR(160) NOT NULL,
-    acronym VARCHAR(30) NULL,
+    acronym VARCHAR(30) NOT NULL,
     type VARCHAR(40) NOT NULL,
     state VARCHAR(20) NOT NULL,
     parent_organic_unit_id BIGINT UNSIGNED NULL,
     PRIMARY KEY (id_organic_unit),
     UNIQUE KEY uq_organic_unit_org_code (id_organization, cod_organic_unit),
+    UNIQUE KEY uq_organic_unit_org_acronym (id_organization, acronym),
     KEY idx_organic_unit_org (id_organization),
     KEY idx_organic_unit_parent (parent_organic_unit_id),
     CONSTRAINT fk_organic_unit_org
@@ -229,7 +240,11 @@ CREATE TABLE IF NOT EXISTS organic_unit (
     CONSTRAINT ck_organic_unit_type
         CHECK (type IN ('school', 'faculty', 'department', 'center', 'office', 'service', 'section', 'direction', 'other')),
     CONSTRAINT ck_organic_unit_state
-        CHECK (state IN ('active', 'inactive', 'archived'))
+        CHECK (state IN ('active', 'inactive', 'archived')),
+    CONSTRAINT ck_organic_unit_name_separator
+        CHECK (LOCATE('|', name) = 0),
+    CONSTRAINT ck_organic_unit_acronym_separator
+        CHECK (LOCATE('|', acronym) = 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS course (
@@ -237,13 +252,15 @@ CREATE TABLE IF NOT EXISTS course (
     id_organization BIGINT UNSIGNED NOT NULL,
     id_organic_unit BIGINT UNSIGNED NULL,
     name VARCHAR(160) NOT NULL,
-    acronym VARCHAR(30) NULL,
+    acronym VARCHAR(30) NOT NULL,
+    photo VARCHAR(255) NULL,
     description VARCHAR(500) NULL,
     ects DECIMAL(7,2) NULL,
     duration VARCHAR(40) NULL,
     type VARCHAR(40) NOT NULL,
     state VARCHAR(20) NOT NULL,
     PRIMARY KEY (id_course),
+    UNIQUE KEY uq_course_org_acronym (id_organization, acronym),
     KEY idx_course_org (id_organization),
     KEY idx_course_organic_unit (id_organic_unit),
     KEY idx_course_state (state),
@@ -258,22 +275,41 @@ CREATE TABLE IF NOT EXISTS course (
     CONSTRAINT ck_course_state
         CHECK (state IN ('active', 'inactive', 'archived')),
     CONSTRAINT ck_course_ects
-        CHECK (ects IS NULL OR ects >= 0)
+        CHECK (ects IS NULL OR ects >= 0),
+    CONSTRAINT ck_course_name_separator
+        CHECK (LOCATE('|', name) = 0),
+    CONSTRAINT ck_course_acronym_separator
+        CHECK (LOCATE('|', acronym) = 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS subject (
     id_subject BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    id_organization BIGINT UNSIGNED NOT NULL,
     name VARCHAR(160) NOT NULL,
-    acronym VARCHAR(30) NULL,
+    acronym VARCHAR(30) NOT NULL,
+    photo VARCHAR(255) NULL,
     description VARCHAR(500) NULL,
     ects DECIMAL(7,2) NULL,
     workload_hours INT NULL,
+    state VARCHAR(20) NOT NULL,
     PRIMARY KEY (id_subject),
-    UNIQUE KEY uq_subject_name (name),
+    UNIQUE KEY uq_subject_org_name (id_organization, name),
+    UNIQUE KEY uq_subject_org_acronym (id_organization, acronym),
+    KEY idx_subject_org (id_organization),
+    KEY idx_subject_state (state),
+    CONSTRAINT fk_subject_org
+        FOREIGN KEY (id_organization) REFERENCES organization (id_organization)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT ck_subject_ects
         CHECK (ects IS NULL OR ects >= 0),
     CONSTRAINT ck_subject_workload_hours
-        CHECK (workload_hours IS NULL OR workload_hours >= 0)
+        CHECK (workload_hours IS NULL OR workload_hours >= 0),
+    CONSTRAINT ck_subject_state
+        CHECK (state IN ('active', 'inactive', 'archived')),
+    CONSTRAINT ck_subject_name_separator
+        CHECK (LOCATE('|', name) = 0),
+    CONSTRAINT ck_subject_acronym_separator
+        CHECK (LOCATE('|', acronym) = 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS class_group (
@@ -421,7 +457,9 @@ CREATE TABLE IF NOT EXISTS coordinate_subject (
         FOREIGN KEY (id_subject) REFERENCES subject (id_subject)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT ck_coordinate_subject_dates
-        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date)
+        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
+    CONSTRAINT ck_coordinate_subject_state
+        CHECK (state IN ('active', 'inactive', 'archived'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS teach_class_group (
@@ -457,25 +495,40 @@ CREATE TABLE IF NOT EXISTS enroll_course (
         FOREIGN KEY (id_course) REFERENCES course (id_course)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT ck_enroll_course_dates
-        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date)
+        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
+    CONSTRAINT ck_enroll_course_state
+        CHECK (state IN ('active', 'inactive', 'completed', 'withdrawn', 'archived'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS enroll_subject (
     id_student_user BIGINT UNSIGNED NOT NULL,
+    id_course BIGINT UNSIGNED NOT NULL,
     id_subject BIGINT UNSIGNED NOT NULL,
     state VARCHAR(20) NOT NULL,
     start_date DATE NULL,
     end_date DATE NULL,
-    PRIMARY KEY (id_student_user, id_subject),
+    PRIMARY KEY (id_student_user, id_course, id_subject),
+    KEY idx_enroll_subject_course_subject (id_course, id_subject),
     KEY idx_enroll_subject_subject (id_subject),
     CONSTRAINT fk_enroll_subject_student
         FOREIGN KEY (id_student_user) REFERENCES student_profile (id_user)
         ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_enroll_subject_course
+        FOREIGN KEY (id_course) REFERENCES course (id_course)
+        ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT fk_enroll_subject_subject
         FOREIGN KEY (id_subject) REFERENCES subject (id_subject)
         ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_enroll_subject_integrate
+        FOREIGN KEY (id_course, id_subject) REFERENCES integrate_subject (id_course, id_subject)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_enroll_subject_course_enrollment
+        FOREIGN KEY (id_student_user, id_course) REFERENCES enroll_course (id_student_user, id_course)
+        ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT ck_enroll_subject_dates
-        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date)
+        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
+    CONSTRAINT ck_enroll_subject_state
+        CHECK (state IN ('active', 'inactive', 'completed', 'withdrawn', 'archived'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS enroll_class_group (
@@ -1430,6 +1483,226 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_user_account_manage_all_guard$$
+CREATE TRIGGER bu_user_account_manage_all_guard
+BEFORE UPDATE ON user_account
+FOR EACH ROW
+BEGIN
+    DECLARE v_is_global_manage_all INT DEFAULT 0;
+    DECLARE v_other_global_manage_all INT DEFAULT 0;
+
+    IF OLD.state = 'active' AND NEW.state <> 'active' THEN
+        SELECT COUNT(*)
+        INTO v_is_global_manage_all
+        FROM grant_administrator ga
+        JOIN permission p ON p.cod_permission = ga.cod_permission
+        WHERE ga.id_admin_user = OLD.id_user
+          AND ga.cod_permission = 'MANAGE_ALL'
+          AND ga.context_type = 'GLOBAL'
+          AND ga.context_id = 0
+          AND p.state = 'active';
+
+        IF v_is_global_manage_all > 0 THEN
+            SELECT COUNT(*)
+            INTO v_other_global_manage_all
+            FROM grant_administrator ga
+            JOIN administrator_profile ap ON ap.id_user = ga.id_admin_user
+            JOIN user_account u ON u.id_user = ap.id_user
+            JOIN permission p ON p.cod_permission = ga.cod_permission
+            WHERE ga.id_admin_user <> OLD.id_user
+              AND ga.cod_permission = 'MANAGE_ALL'
+              AND ga.context_type = 'GLOBAL'
+              AND ga.context_id = 0
+              AND u.state = 'active'
+              AND p.state = 'active';
+
+            IF v_other_global_manage_all = 0 THEN
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'User state change would remove the last MANAGE_ALL Administrator';
+            END IF;
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bd_user_account_manage_all_guard$$
+CREATE TRIGGER bd_user_account_manage_all_guard
+BEFORE DELETE ON user_account
+FOR EACH ROW
+BEGIN
+    DECLARE v_is_global_manage_all INT DEFAULT 0;
+    DECLARE v_other_global_manage_all INT DEFAULT 0;
+
+    IF OLD.state = 'active' THEN
+        SELECT COUNT(*)
+        INTO v_is_global_manage_all
+        FROM grant_administrator ga
+        JOIN permission p ON p.cod_permission = ga.cod_permission
+        WHERE ga.id_admin_user = OLD.id_user
+          AND ga.cod_permission = 'MANAGE_ALL'
+          AND ga.context_type = 'GLOBAL'
+          AND ga.context_id = 0
+          AND p.state = 'active';
+
+        IF v_is_global_manage_all > 0 THEN
+            SELECT COUNT(*)
+            INTO v_other_global_manage_all
+            FROM grant_administrator ga
+            JOIN administrator_profile ap ON ap.id_user = ga.id_admin_user
+            JOIN user_account u ON u.id_user = ap.id_user
+            JOIN permission p ON p.cod_permission = ga.cod_permission
+            WHERE ga.id_admin_user <> OLD.id_user
+              AND ga.cod_permission = 'MANAGE_ALL'
+              AND ga.context_type = 'GLOBAL'
+              AND ga.context_id = 0
+              AND u.state = 'active'
+              AND p.state = 'active';
+
+            IF v_other_global_manage_all = 0 THEN
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'User deletion would remove the last MANAGE_ALL Administrator';
+            END IF;
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bd_administrator_profile_manage_all_guard$$
+CREATE TRIGGER bd_administrator_profile_manage_all_guard
+BEFORE DELETE ON administrator_profile
+FOR EACH ROW
+BEGIN
+    DECLARE v_user_state VARCHAR(20);
+    DECLARE v_is_global_manage_all INT DEFAULT 0;
+    DECLARE v_other_global_manage_all INT DEFAULT 0;
+
+    SELECT state
+    INTO v_user_state
+    FROM user_account
+    WHERE id_user = OLD.id_user;
+
+    IF v_user_state = 'active' THEN
+        SELECT COUNT(*)
+        INTO v_is_global_manage_all
+        FROM grant_administrator ga
+        JOIN permission p ON p.cod_permission = ga.cod_permission
+        WHERE ga.id_admin_user = OLD.id_user
+          AND ga.cod_permission = 'MANAGE_ALL'
+          AND ga.context_type = 'GLOBAL'
+          AND ga.context_id = 0
+          AND p.state = 'active';
+
+        IF v_is_global_manage_all > 0 THEN
+            SELECT COUNT(*)
+            INTO v_other_global_manage_all
+            FROM grant_administrator ga
+            JOIN administrator_profile ap ON ap.id_user = ga.id_admin_user
+            JOIN user_account u ON u.id_user = ap.id_user
+            JOIN permission p ON p.cod_permission = ga.cod_permission
+            WHERE ga.id_admin_user <> OLD.id_user
+              AND ga.cod_permission = 'MANAGE_ALL'
+              AND ga.context_type = 'GLOBAL'
+              AND ga.context_id = 0
+              AND u.state = 'active'
+              AND p.state = 'active';
+
+            IF v_other_global_manage_all = 0 THEN
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Administrator profile deletion would remove the last MANAGE_ALL Administrator';
+            END IF;
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bd_grant_administrator_manage_all_guard$$
+CREATE TRIGGER bd_grant_administrator_manage_all_guard
+BEFORE DELETE ON grant_administrator
+FOR EACH ROW
+BEGIN
+    DECLARE v_user_state VARCHAR(20);
+    DECLARE v_permission_state VARCHAR(20);
+    DECLARE v_other_global_manage_all INT DEFAULT 0;
+
+    SELECT u.state
+    INTO v_user_state
+    FROM administrator_profile ap
+    JOIN user_account u ON u.id_user = ap.id_user
+    WHERE ap.id_user = OLD.id_admin_user;
+
+    SELECT state
+    INTO v_permission_state
+    FROM permission
+    WHERE cod_permission = OLD.cod_permission;
+
+    IF OLD.cod_permission = 'MANAGE_ALL'
+       AND OLD.context_type = 'GLOBAL'
+       AND OLD.context_id = 0
+       AND v_user_state = 'active'
+       AND v_permission_state = 'active' THEN
+        SELECT COUNT(*)
+        INTO v_other_global_manage_all
+        FROM grant_administrator ga
+        JOIN administrator_profile ap ON ap.id_user = ga.id_admin_user
+        JOIN user_account u ON u.id_user = ap.id_user
+        JOIN permission p ON p.cod_permission = ga.cod_permission
+        WHERE ga.id_admin_user <> OLD.id_admin_user
+          AND ga.cod_permission = 'MANAGE_ALL'
+          AND ga.context_type = 'GLOBAL'
+          AND ga.context_id = 0
+          AND u.state = 'active'
+          AND p.state = 'active';
+
+        IF v_other_global_manage_all = 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Permission deletion would remove the last MANAGE_ALL Administrator';
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_grant_administrator_manage_all_guard$$
+CREATE TRIGGER bu_grant_administrator_manage_all_guard
+BEFORE UPDATE ON grant_administrator
+FOR EACH ROW
+BEGIN
+    DECLARE v_user_state VARCHAR(20);
+    DECLARE v_permission_state VARCHAR(20);
+    DECLARE v_other_global_manage_all INT DEFAULT 0;
+
+    SELECT u.state
+    INTO v_user_state
+    FROM administrator_profile ap
+    JOIN user_account u ON u.id_user = ap.id_user
+    WHERE ap.id_user = OLD.id_admin_user;
+
+    SELECT state
+    INTO v_permission_state
+    FROM permission
+    WHERE cod_permission = OLD.cod_permission;
+
+    IF OLD.cod_permission = 'MANAGE_ALL'
+       AND OLD.context_type = 'GLOBAL'
+       AND OLD.context_id = 0
+       AND v_user_state = 'active'
+       AND v_permission_state = 'active'
+       AND NOT (
+           NEW.id_admin_user = OLD.id_admin_user
+           AND NEW.cod_permission = OLD.cod_permission
+           AND NEW.context_type = OLD.context_type
+           AND NEW.context_id = OLD.context_id
+       ) THEN
+        SELECT COUNT(*)
+        INTO v_other_global_manage_all
+        FROM grant_administrator ga
+        JOIN administrator_profile ap ON ap.id_user = ga.id_admin_user
+        JOIN user_account u ON u.id_user = ap.id_user
+        JOIN permission p ON p.cod_permission = ga.cod_permission
+        WHERE ga.id_admin_user <> OLD.id_admin_user
+          AND ga.cod_permission = 'MANAGE_ALL'
+          AND ga.context_type = 'GLOBAL'
+          AND ga.context_id = 0
+          AND u.state = 'active'
+          AND p.state = 'active';
+
+        IF v_other_global_manage_all = 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Permission update would remove the last MANAGE_ALL Administrator';
+        END IF;
+    END IF;
+END$$
+
 DROP TRIGGER IF EXISTS bu_manage_organization_active_admin$$
 CREATE TRIGGER bu_manage_organization_active_admin
 BEFORE UPDATE ON manage_organization
@@ -1608,6 +1881,265 @@ BEGIN
         IF v_organic_unit_org IS NULL OR v_organic_unit_org <> NEW.id_organization THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Course Organic_Unit must belong to the same Organization';
         END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bi_subject_validate$$
+CREATE TRIGGER bi_subject_validate
+BEFORE INSERT ON subject
+FOR EACH ROW
+BEGIN
+    DECLARE v_organization_state VARCHAR(20);
+
+    SELECT state
+    INTO v_organization_state
+    FROM organization
+    WHERE id_organization = NEW.id_organization;
+
+    IF NEW.state <> 'archived' AND v_organization_state = 'archived' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Subject cannot be active in archived Organization';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_subject_validate$$
+CREATE TRIGGER bu_subject_validate
+BEFORE UPDATE ON subject
+FOR EACH ROW
+BEGIN
+    DECLARE v_organization_state VARCHAR(20);
+
+    SELECT state
+    INTO v_organization_state
+    FROM organization
+    WHERE id_organization = NEW.id_organization;
+
+    IF NEW.state <> 'archived' AND v_organization_state = 'archived' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Subject cannot be active in archived Organization';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bi_integrate_subject_validate$$
+CREATE TRIGGER bi_integrate_subject_validate
+BEFORE INSERT ON integrate_subject
+FOR EACH ROW
+BEGIN
+    DECLARE v_course_org BIGINT UNSIGNED;
+    DECLARE v_subject_org BIGINT UNSIGNED;
+    DECLARE v_course_state VARCHAR(20);
+    DECLARE v_subject_state VARCHAR(20);
+
+    SELECT id_organization, state
+    INTO v_course_org, v_course_state
+    FROM course
+    WHERE id_course = NEW.id_course;
+
+    SELECT id_organization, state
+    INTO v_subject_org, v_subject_state
+    FROM subject
+    WHERE id_subject = NEW.id_subject;
+
+    IF v_course_org <> v_subject_org THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Course and Subject must belong to the same Organization';
+    END IF;
+
+    IF NEW.state <> 'archived' AND (v_course_state = 'archived' OR v_subject_state = 'archived') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Course_Subject association cannot use archived entities';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_integrate_subject_validate$$
+CREATE TRIGGER bu_integrate_subject_validate
+BEFORE UPDATE ON integrate_subject
+FOR EACH ROW
+BEGIN
+    DECLARE v_course_org BIGINT UNSIGNED;
+    DECLARE v_subject_org BIGINT UNSIGNED;
+    DECLARE v_course_state VARCHAR(20);
+    DECLARE v_subject_state VARCHAR(20);
+
+    SELECT id_organization, state
+    INTO v_course_org, v_course_state
+    FROM course
+    WHERE id_course = NEW.id_course;
+
+    SELECT id_organization, state
+    INTO v_subject_org, v_subject_state
+    FROM subject
+    WHERE id_subject = NEW.id_subject;
+
+    IF v_course_org <> v_subject_org THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Course and Subject must belong to the same Organization';
+    END IF;
+
+    IF NEW.state <> 'archived' AND (v_course_state = 'archived' OR v_subject_state = 'archived') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Course_Subject association cannot use archived entities';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bi_enroll_course_validate$$
+CREATE TRIGGER bi_enroll_course_validate
+BEFORE INSERT ON enroll_course
+FOR EACH ROW
+BEGIN
+    DECLARE v_course_state VARCHAR(20);
+    DECLARE v_student_count INT DEFAULT 0;
+
+    SELECT state
+    INTO v_course_state
+    FROM course
+    WHERE id_course = NEW.id_course;
+
+    SELECT COUNT(*)
+    INTO v_student_count
+    FROM student_profile sp
+    JOIN user_account u ON u.id_user = sp.id_user
+    WHERE sp.id_user = NEW.id_student_user
+      AND u.state = 'active';
+
+    IF NEW.state = 'active' AND v_course_state <> 'active' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Course enrollment requires active Course';
+    END IF;
+
+    IF NEW.state = 'active' AND v_student_count = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Course enrollment requires active Student';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_enroll_course_validate$$
+CREATE TRIGGER bu_enroll_course_validate
+BEFORE UPDATE ON enroll_course
+FOR EACH ROW
+BEGIN
+    DECLARE v_course_state VARCHAR(20);
+    DECLARE v_student_count INT DEFAULT 0;
+
+    SELECT state
+    INTO v_course_state
+    FROM course
+    WHERE id_course = NEW.id_course;
+
+    SELECT COUNT(*)
+    INTO v_student_count
+    FROM student_profile sp
+    JOIN user_account u ON u.id_user = sp.id_user
+    WHERE sp.id_user = NEW.id_student_user
+      AND u.state = 'active';
+
+    IF NEW.state = 'active' AND v_course_state <> 'active' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Course enrollment requires active Course';
+    END IF;
+
+    IF NEW.state = 'active' AND v_student_count = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Course enrollment requires active Student';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bi_enroll_subject_validate$$
+CREATE TRIGGER bi_enroll_subject_validate
+BEFORE INSERT ON enroll_subject
+FOR EACH ROW
+BEGIN
+    DECLARE v_course_state VARCHAR(20);
+    DECLARE v_subject_state VARCHAR(20);
+    DECLARE v_association_state VARCHAR(20);
+    DECLARE v_course_enrollment_count INT DEFAULT 0;
+    DECLARE v_subject_enrollment_overlap INT DEFAULT 0;
+
+    SELECT c.state, s.state, isub.state
+    INTO v_course_state, v_subject_state, v_association_state
+    FROM integrate_subject isub
+    JOIN course c ON c.id_course = isub.id_course
+    JOIN subject s ON s.id_subject = isub.id_subject
+    WHERE isub.id_course = NEW.id_course
+      AND isub.id_subject = NEW.id_subject;
+
+    SELECT COUNT(*)
+    INTO v_course_enrollment_count
+    FROM enroll_course
+    WHERE id_student_user = NEW.id_student_user
+      AND id_course = NEW.id_course
+      AND state = 'active'
+      AND (start_date IS NULL OR NEW.start_date IS NULL OR start_date <= NEW.start_date)
+      AND (NEW.end_date IS NOT NULL OR end_date IS NULL)
+      AND (NEW.end_date IS NULL OR end_date IS NULL OR end_date >= NEW.end_date);
+
+    SELECT COUNT(*)
+    INTO v_subject_enrollment_overlap
+    FROM enroll_subject
+    WHERE id_student_user = NEW.id_student_user
+      AND id_subject = NEW.id_subject
+      AND state = 'active'
+      AND (start_date IS NULL OR NEW.end_date IS NULL OR start_date <= NEW.end_date)
+      AND (end_date IS NULL OR NEW.start_date IS NULL OR end_date >= NEW.start_date);
+
+    IF NEW.state = 'active'
+       AND (v_course_state <> 'active' OR v_subject_state <> 'active' OR v_association_state <> 'active') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Subject enrollment requires active Course, Subject and association';
+    END IF;
+
+    IF NEW.state = 'active' AND v_course_enrollment_count = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Subject enrollment requires active Course enrollment for the full period';
+    END IF;
+
+    IF NEW.state = 'active' AND v_subject_enrollment_overlap > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Student already has an overlapping active enrollment in this Subject';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_enroll_subject_validate$$
+CREATE TRIGGER bu_enroll_subject_validate
+BEFORE UPDATE ON enroll_subject
+FOR EACH ROW
+BEGIN
+    DECLARE v_course_state VARCHAR(20);
+    DECLARE v_subject_state VARCHAR(20);
+    DECLARE v_association_state VARCHAR(20);
+    DECLARE v_course_enrollment_count INT DEFAULT 0;
+    DECLARE v_subject_enrollment_overlap INT DEFAULT 0;
+
+    SELECT c.state, s.state, isub.state
+    INTO v_course_state, v_subject_state, v_association_state
+    FROM integrate_subject isub
+    JOIN course c ON c.id_course = isub.id_course
+    JOIN subject s ON s.id_subject = isub.id_subject
+    WHERE isub.id_course = NEW.id_course
+      AND isub.id_subject = NEW.id_subject;
+
+    SELECT COUNT(*)
+    INTO v_course_enrollment_count
+    FROM enroll_course
+    WHERE id_student_user = NEW.id_student_user
+      AND id_course = NEW.id_course
+      AND state = 'active'
+      AND (start_date IS NULL OR NEW.start_date IS NULL OR start_date <= NEW.start_date)
+      AND (NEW.end_date IS NOT NULL OR end_date IS NULL)
+      AND (NEW.end_date IS NULL OR end_date IS NULL OR end_date >= NEW.end_date);
+
+    SELECT COUNT(*)
+    INTO v_subject_enrollment_overlap
+    FROM enroll_subject
+    WHERE id_student_user = NEW.id_student_user
+      AND id_subject = NEW.id_subject
+      AND state = 'active'
+      AND NOT (
+          id_student_user = OLD.id_student_user
+          AND id_course = OLD.id_course
+          AND id_subject = OLD.id_subject
+      )
+      AND (start_date IS NULL OR NEW.end_date IS NULL OR start_date <= NEW.end_date)
+      AND (end_date IS NULL OR NEW.start_date IS NULL OR end_date >= NEW.start_date);
+
+    IF NEW.state = 'active'
+       AND (v_course_state <> 'active' OR v_subject_state <> 'active' OR v_association_state <> 'active') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Subject enrollment requires active Course, Subject and association';
+    END IF;
+
+    IF NEW.state = 'active' AND v_course_enrollment_count = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Subject enrollment requires active Course enrollment for the full period';
+    END IF;
+
+    IF NEW.state = 'active' AND v_subject_enrollment_overlap > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Student already has an overlapping active enrollment in this Subject';
     END IF;
 END$$
 

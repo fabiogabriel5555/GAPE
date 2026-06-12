@@ -4,11 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -33,14 +35,21 @@ class OrganicUnitServiceTest {
 
     private OrganicUnitService organicUnitService;
 
+    @BeforeAll
+    static void initializeDatabase() throws Exception {
+        DatabaseTestSupport.resetDatabaseWithBaseSeed();
+    }
+
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() throws SQLException {
+        DatabaseTestSupport.beginTestTransaction();
         ConnectionProvider connectionProvider = DatabaseTestSupport::openConnection;
-        try (Connection connection = DatabaseTestSupport.openConnection()) {
-            DatabaseTestSupport.resetDatabase(connection);
-            DatabaseTestSupport.executeScript(connection, DatabaseTestSupport.SQL_SEED_DIR.resolve("base.sql"));
-        }
         organicUnitService = new OrganicUnitService(connectionProvider, FIXED_CLOCK);
+    }
+
+    @AfterEach
+    void tearDown() throws SQLException {
+        DatabaseTestSupport.rollbackTestTransaction();
     }
 
     @Test

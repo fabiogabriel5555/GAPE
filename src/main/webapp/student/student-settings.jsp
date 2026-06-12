@@ -653,7 +653,8 @@
                             <div class="avatar-upload ">
                                 <div class="d-flex align-items-center gap-40 flex-wrap">
                                     <div class="avatar-preview flex-shrink-0">
-                                        <div id="imagenextPreview" style="background-image: url(assets/images/thumbs/student-dashbord-profile-photo-img1.png);" class="">
+                                        <div id="imagenextPreview" class="gape-photo-placeholder gape-photo-placeholder--user gape-photo-placeholder--user-form">
+                                            <i class="ph ph-user-circle" data-photo-placeholder-icon></i>
                                         </div>
                                     </div>
                                     <div class="avatar-edit">
@@ -950,9 +951,12 @@
   if (input.files && input.files[0]) {
       var reader = new FileReader();
       reader.onload = function(e) {
-          $('#imagenextPreview').css('background-image', 'url('+e.target.result +')');
-          $('#imagenextPreview').hide();
-          $('#imagenextPreview').fadeIn(650);
+          var preview = $('#imagenextPreview');
+          preview.css('background-image', 'url('+e.target.result +')');
+          preview.addClass('is-image');
+          preview.find('[data-photo-placeholder-icon]').addClass('d-none');
+          preview.hide();
+          preview.fadeIn(650);
       }
       reader.readAsDataURL(input.files[0]);
         }

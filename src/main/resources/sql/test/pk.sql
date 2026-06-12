@@ -6,8 +6,8 @@ INSERT INTO organization (id_organization, name, acronym, type, state)
 VALUES (10, 'Org duplicada PK', 'ODP', 'company', 'active');
 
 -- PK composta duplicada
-INSERT INTO grant_administrator (id_admin_user, cod_permission)
-VALUES (1, 'MANAGE_USERS');
+INSERT INTO grant_administrator (id_admin_user, cod_permission, context_type, context_id)
+VALUES (1, 'MANAGE_ALL', 'GLOBAL', 0);
 
 -- Um estudante nao pode repetir a mesma inscricao no mesmo curso
 INSERT INTO enroll_course (id_student_user, id_course, state, start_date, end_date)

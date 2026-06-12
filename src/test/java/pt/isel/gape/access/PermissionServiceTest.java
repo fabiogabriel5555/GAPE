@@ -7,10 +7,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,13 +34,15 @@ class PermissionServiceTest {
     private PermissionService permissionService;
     private GrantService grantService;
 
+    @BeforeAll
+    static void initializeDatabase() throws Exception {
+        DatabaseTestSupport.resetDatabaseWithBaseSeed();
+    }
+
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() throws SQLException {
+        DatabaseTestSupport.beginTestTransaction();
         connectionProvider = DatabaseTestSupport::openConnection;
-        try (Connection connection = DatabaseTestSupport.openConnection()) {
-            DatabaseTestSupport.resetDatabase(connection);
-            DatabaseTestSupport.executeScript(connection, DatabaseTestSupport.SQL_SEED_DIR.resolve("base.sql"));
-        }
 
         PermissionDAO permissionDAO = new PermissionDAO(connectionProvider);
         AuditService auditService = new AuditService(new ActivityLogDAO(connectionProvider), FIXED_CLOCK);
@@ -45,9 +50,14 @@ class PermissionServiceTest {
         grantService = new GrantService(permissionDAO, auditService);
     }
 
+    @AfterEach
+    void tearDown() throws SQLException {
+        DatabaseTestSupport.rollbackTestTransaction();
+    }
+
     @Test
     void activePermissionCanBeRequired() {
-        assertEquals("VIEW_REPORTS", permissionService.requireActive("VIEW_REPORTS").code());
+        assertEquals("MANAGE_ALL", permissionService.requireActive("MANAGE_ALL").code());
     }
 
     @Test
@@ -78,7 +88,7 @@ class PermissionServiceTest {
                         null,
                         AccessProfileType.TEACHER,
                         3L,
-                        "MANAGE_USERS",
+                        "MANAGE_ALL",
                         "127.0.0.1"
                 )
         );
@@ -89,9 +99,9 @@ class PermissionServiceTest {
         assertDoesNotThrow(() -> grantService.grantPermission(
                 1L,
                 null,
-                AccessProfileType.COORDINATOR,
-                2L,
-                "VIEW_REPORTS",
+                AccessProfileType.ADMINISTRATOR,
+                1L,
+                "MANAGE_ALL",
                 "127.0.0.1"
         ));
     }
@@ -105,7 +115,7 @@ class PermissionServiceTest {
                         null,
                         AccessProfileType.STUDENT,
                         4L,
-                        "VIEW_REPORTS",
+                        "MANAGE_ALL",
                         "127.0.0.1"
                 )
         );

@@ -8,10 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,14 +43,18 @@ class AuthServiceTest {
     private PasswordHasher passwordHasher;
     private AuthService authService;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        connectionProvider = DatabaseTestSupport::openConnection;
-        passwordHasher = new PasswordHasher();
-
+    @BeforeAll
+    static void initializeDatabase() throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection()) {
             DatabaseTestSupport.resetDatabase(connection);
         }
+    }
+
+    @BeforeEach
+    void setUp() throws SQLException {
+        DatabaseTestSupport.beginTestTransaction();
+        connectionProvider = DatabaseTestSupport::openConnection;
+        passwordHasher = new PasswordHasher();
 
         AuditService auditService = new AuditService(new ActivityLogDAO(connectionProvider), FIXED_CLOCK);
         authService = new AuthService(
@@ -56,6 +63,11 @@ class AuthServiceTest {
                 passwordHasher,
                 auditService
         );
+    }
+
+    @AfterEach
+    void tearDown() throws SQLException {
+        DatabaseTestSupport.rollbackTestTransaction();
     }
 
     @Test

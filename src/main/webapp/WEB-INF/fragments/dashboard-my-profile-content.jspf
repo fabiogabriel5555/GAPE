@@ -1,6 +1,7 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<c:set var="profilePhotoUrl" value="${pageContext.request.contextPath}/assets/images/thumbs/student-dashbord-profile-photo-img1.png"/>
-<c:if test="${not empty user.photo}">
+<c:set var="profileHasPhoto" value="${not empty user.photo}"/>
+<c:set var="profilePhotoUrl" value=""/>
+<c:if test="${profileHasPhoto}">
     <c:set var="profilePhotoUrl" value="${pageContext.request.contextPath}/media/${user.photo}"/>
 </c:if>
 <c:choose>
@@ -203,10 +204,26 @@
                     <div class="avatar-upload">
                         <div class="d-flex align-items-center gap-40 flex-wrap">
                             <div class="avatar-preview flex-shrink-0">
-                                <div id="imagePreview"
-                                     data-current-image="${profilePhotoUrl}"
-                                     style="background-image: url('${profilePhotoUrl}'); width: 88px; height: 88px; border-radius: 50%; background-size: cover; background-position: center center; background-repeat: no-repeat;">
-                                </div>
+                                <c:choose>
+                                    <c:when test="${profileHasPhoto}">
+                                        <div id="imagePreview"
+                                             class="gape-photo-placeholder gape-photo-placeholder--user gape-photo-placeholder--user-form is-image"
+                                             data-current-image="<c:out value='${profilePhotoUrl}'/>"
+                                             data-has-current-image="true"
+                                             style="background-image: url('<c:out value='${profilePhotoUrl}'/>'); background-size: cover; background-position: center center; background-repeat: no-repeat;">
+                                            <i class="ph ph-user-circle d-none" data-photo-placeholder-icon></i>
+                                        </div>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <div id="imagePreview"
+                                             class="gape-photo-placeholder gape-photo-placeholder--user gape-photo-placeholder--user-form"
+                                             data-current-image=""
+                                             data-has-current-image="false"
+                                             style="background-size: cover; background-position: center center; background-repeat: no-repeat;">
+                                            <i class="ph ph-user-circle" data-photo-placeholder-icon></i>
+                                        </div>
+                                    </c:otherwise>
+                                </c:choose>
                             </div>
                             <div class="avatar-edit">
                                 <input type="file" id="imageUpload" name="profileImage" accept="image/*">
@@ -272,25 +289,40 @@
     </div>
 
     <div class="px-40 py-40 bg-white rounded-10 mb-24">
-        <h4 class="text-16 fw-medium text-neutral-700 mb-0 border-bottom-dashed pb-24">Access Profiles</h4>
-        <div class="mt-24 d-flex align-items-center gap-24 flex-wrap">
-            <div class="form-check common-check mb-0">
-                <input class="form-check-input gape-readonly-check" type="checkbox" id="administratorProfile" disabled ${form.administratorProfile ? 'checked' : ''}>
-                <label class="form-check-label fw-normal flex-grow-1" for="administratorProfile">Administrator</label>
-            </div>
-            <div class="form-check common-check mb-0">
-                <input class="form-check-input gape-readonly-check" type="checkbox" id="coordinatorProfile" disabled ${form.coordinatorProfile ? 'checked' : ''}>
-                <label class="form-check-label fw-normal flex-grow-1" for="coordinatorProfile">Coordinator</label>
-            </div>
-            <div class="form-check common-check mb-0">
-                <input class="form-check-input gape-readonly-check" type="checkbox" id="teacherProfile" disabled ${form.teacherProfile ? 'checked' : ''}>
-                <label class="form-check-label fw-normal flex-grow-1" for="teacherProfile">Teacher</label>
-            </div>
-            <div class="form-check common-check mb-0">
-                <input class="form-check-input gape-readonly-check" type="checkbox" id="studentProfile" disabled ${form.studentProfile ? 'checked' : ''}>
-                <label class="form-check-label fw-normal flex-grow-1" for="studentProfile">Student</label>
-            </div>
+        <h4 class="text-16 fw-medium text-neutral-700 mb-0 border-bottom-dashed pb-24">Access and Permissions</h4>
+
+        <h5 class="text-16 fw-medium text-neutral-700 mt-24 mb-16">Access Profiles</h5>
+        <div class="row gy-4 mb-24">
+            <c:forEach var="detail" items="${profileSummaryDetails}">
+                <div class="col-lg-3 col-md-6">
+                    <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
+                        <span class="fw-medium text-14 text-neutral-700"><c:out value="${detail.group}"/></span>
+                        <span class="d-block text-14 text-neutral-700 mt-6"><c:out value="${detail.label}"/></span>
+                        <span class="d-block text-12 text-neutral-500 mt-4"><c:out value="${detail.detail}"/></span>
+                    </div>
+                </div>
+            </c:forEach>
+            <c:if test="${empty profileSummaryDetails}">
+                <div class="col-12">
+                    <p class="text-14 text-neutral-500 mb-0">No active access profiles found.</p>
+                </div>
+            </c:if>
         </div>
+
+        <c:if test="${not empty administratorAccessDetails}">
+            <h5 class="text-16 fw-medium text-neutral-700 mb-16">Administrator Permissions</h5>
+            <div class="row gy-4">
+                <c:forEach var="detail" items="${administratorAccessDetails}">
+                    <div class="col-lg-3 col-md-6">
+                        <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
+                            <span class="fw-medium text-14 text-neutral-700"><c:out value="${detail.group}"/></span>
+                            <span class="d-block text-14 text-neutral-700 mt-6"><c:out value="${detail.label}"/></span>
+                            <span class="d-block text-12 text-neutral-500 mt-4"><c:out value="${detail.detail}"/></span>
+                        </div>
+                    </div>
+                </c:forEach>
+            </div>
+        </c:if>
     </div>
 
     <div class="ps-40 pe-60 py-40 bg-white rounded-10 mb-24">
@@ -405,10 +437,44 @@ document.addEventListener('DOMContentLoaded', function () {
     const passwordValidationMessage = document.getElementById('passwordValidationMessage');
     const passwordRules = document.querySelectorAll('#passwordRules [data-rule]');
 
-    function restoreCurrentPhoto() {
-        if (preview) {
-            preview.style.backgroundImage = "url('" + preview.dataset.currentImage + "')";
+    function previewPlaceholderIcon() {
+        return preview ? preview.querySelector('[data-photo-placeholder-icon]') : null;
+    }
+
+    function showPreviewImage(url) {
+        if (!preview || !url) {
+            return;
         }
+        preview.style.backgroundImage = "url('" + url + "')";
+        preview.classList.add('is-image');
+        const icon = previewPlaceholderIcon();
+        if (icon) {
+            icon.classList.add('d-none');
+        }
+    }
+
+    function showPreviewPlaceholder() {
+        if (!preview) {
+            return;
+        }
+        preview.style.backgroundImage = '';
+        preview.classList.remove('is-image');
+        const icon = previewPlaceholderIcon();
+        if (icon) {
+            icon.classList.remove('d-none');
+        }
+    }
+
+    function restoreCurrentPhoto() {
+        if (!preview) {
+            return;
+        }
+        const currentImage = preview.dataset.currentImage;
+        if (preview.dataset.hasCurrentImage === 'true' && currentImage) {
+            showPreviewImage(currentImage);
+            return;
+        }
+        showPreviewPlaceholder();
     }
 
     function syncDocumentRequired() {
@@ -506,7 +572,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             const reader = new FileReader();
             reader.onload = function (event) {
-                preview.style.backgroundImage = "url('" + event.target.result + "')";
+                showPreviewImage(event.target.result);
             };
             reader.readAsDataURL(file);
         });

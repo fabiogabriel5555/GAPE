@@ -14,8 +14,6 @@ import pt.isel.gape.common.config.ConnectionProvider;
 
 public final class ProfileDAO {
 
-    private static final String BASE_DASHBOARD_PERMISSION = "VIEW_REPORTS";
-
     private final ConnectionProvider connectionProvider;
 
     public ProfileDAO(ConnectionProvider connectionProvider) {
@@ -87,7 +85,6 @@ public final class ProfileDAO {
             statement.setLong(1, userId);
             statement.setString(2, profile.code());
             statement.executeUpdate();
-            grantBaseDashboardPermission(connection, userId, profile.type());
         }
     }
 
@@ -149,7 +146,6 @@ public final class ProfileDAO {
             statement.setString(2, profile.code());
             statement.executeUpdate();
         }
-        grantBaseDashboardPermission(connection, userId, profile.type());
     }
 
     private static void upsertProfile(Connection connection, long userId, AccessProfile profile) throws SQLException {
@@ -164,54 +160,27 @@ public final class ProfileDAO {
             statement.setString(2, profile.code());
             statement.executeUpdate();
         }
-        grantBaseDashboardPermission(connection, userId, profile.type());
     }
 
-    private static void grantBaseDashboardPermission(
-            Connection connection,
-            long userId,
-            AccessProfileType profileType
-    ) throws SQLException {
-        ProfileTable table = ProfileTable.forType(profileType);
-        String sql = """
-                INSERT INTO %s (%s, cod_permission)
-                VALUES (?, ?)
-                ON DUPLICATE KEY UPDATE cod_permission = VALUES(cod_permission)
-                """.formatted(table.grantTableName(), table.grantUserIdColumn());
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, userId);
-            statement.setString(2, BASE_DASHBOARD_PERMISSION);
-            statement.executeUpdate();
-        }
-    }
-
-    private record ProfileTable(String tableName, String codeColumn, String grantTableName, String grantUserIdColumn) {
+    private record ProfileTable(String tableName, String codeColumn) {
 
         private static ProfileTable forType(AccessProfileType profileType) {
             return switch (profileType) {
                 case ADMINISTRATOR -> new ProfileTable(
                         "administrator_profile",
-                        "cod_administrator",
-                        "grant_administrator",
-                        "id_admin_user"
+                        "cod_administrator"
                 );
                 case COORDINATOR -> new ProfileTable(
                         "coordinator_profile",
-                        "cod_coordinator",
-                        "grant_coordinator",
-                        "id_coordinator_user"
+                        "cod_coordinator"
                 );
                 case TEACHER -> new ProfileTable(
                         "teacher_profile",
-                        "cod_teacher",
-                        "grant_teacher",
-                        "id_teacher_user"
+                        "cod_teacher"
                 );
                 case STUDENT -> new ProfileTable(
                         "student_profile",
-                        "cod_student",
-                        "grant_student",
-                        "id_student_user"
+                        "cod_student"
                 );
             };
         }

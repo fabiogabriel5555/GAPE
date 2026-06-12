@@ -7,12 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -37,14 +40,21 @@ class OrganizationServiceTest {
 
     private OrganizationService organizationService;
 
+    @BeforeAll
+    static void initializeDatabase() throws Exception {
+        DatabaseTestSupport.resetDatabaseWithBaseSeed();
+    }
+
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() throws SQLException {
+        DatabaseTestSupport.beginTestTransaction();
         ConnectionProvider connectionProvider = DatabaseTestSupport::openConnection;
-        try (Connection connection = DatabaseTestSupport.openConnection()) {
-            DatabaseTestSupport.resetDatabase(connection);
-            DatabaseTestSupport.executeScript(connection, DatabaseTestSupport.SQL_SEED_DIR.resolve("base.sql"));
-        }
         organizationService = new OrganizationService(connectionProvider, FIXED_CLOCK);
+    }
+
+    @AfterEach
+    void tearDown() throws SQLException {
+        DatabaseTestSupport.rollbackTestTransaction();
     }
 
     @Test
@@ -114,9 +124,9 @@ class OrganizationServiceTest {
     }
 
     @Test
-    void administratorCannotUpdateOrganizationWithoutContextAssignment() {
+    void manageAllAdministratorCannotActivateOrganizationWithoutActiveAdministrator() {
         assertThrows(
-                SecurityException.class,
+                IllegalStateException.class,
                 () -> organizationService.updateOrganization(
                         1L,
                         null,
@@ -178,7 +188,7 @@ class OrganizationServiceTest {
         organizationService.archiveOrganization(1L, null, AccessProfileType.ADMINISTRATOR, 11L, "127.0.0.1");
 
         assertThrows(
-                SecurityException.class,
+                IllegalStateException.class,
                 () -> organizationService.updateOrganization(
                         1L,
                         null,

@@ -7,14 +7,21 @@ import pt.isel.gape.access.model.AccessProfileType;
 
 public final class AuthorizationPolicy {
 
+    public static final String MANAGE_ALL = "MANAGE_ALL";
+    public static final String MANAGE_ORGANIZATION_STRUCTURE = "MANAGE_ORGANIZATION_STRUCTURE";
+    public static final String MANAGE_LEARNING = "MANAGE_LEARNING";
+    public static final String MANAGE_ENROLLMENTS = "MANAGE_ENROLLMENTS";
+
     public static final String VIEW_REPORTS = "VIEW_REPORTS";
-    public static final String MANAGE_USERS = "MANAGE_USERS";
-    public static final String MANAGE_PERMISSIONS = "MANAGE_PERMISSIONS";
-    public static final String MANAGE_SETTINGS = "MANAGE_SETTINGS";
-    public static final String MANAGE_ORGANIZATIONS = "MANAGE_ORGANIZATIONS";
-    public static final String VIEW_PERSONAL_DATA = "VIEW_PERSONAL_DATA";
-    public static final String MANAGE_PERSONAL_DATA = "MANAGE_PERSONAL_DATA";
-    public static final String PROCESS_DELETION_REQUESTS = "PROCESS_DELETION_REQUESTS";
+    public static final String MANAGE_USERS = MANAGE_ALL;
+    public static final String MANAGE_PERMISSIONS = MANAGE_ALL;
+    public static final String MANAGE_SETTINGS = MANAGE_ALL;
+    public static final String MANAGE_ORGANIZATIONS = MANAGE_ORGANIZATION_STRUCTURE;
+    public static final String MANAGE_COURSES = MANAGE_LEARNING;
+    public static final String MANAGE_SUBJECTS = MANAGE_LEARNING;
+    public static final String VIEW_PERSONAL_DATA = MANAGE_ALL;
+    public static final String MANAGE_PERSONAL_DATA = MANAGE_ALL;
+    public static final String PROCESS_DELETION_REQUESTS = MANAGE_ALL;
 
     private AuthorizationPolicy() {
     }
@@ -81,27 +88,58 @@ public final class AuthorizationPolicy {
 
     private static String adminPermissionFor(String path) {
         if (containsAny(path, "permission", "permissions", "grant", "grants")) {
-            return MANAGE_PERMISSIONS;
+            return MANAGE_ALL;
         }
         if (containsAny(path, "organization", "organizations", "organic-unit", "organic-units")) {
-            return MANAGE_ORGANIZATIONS;
+            return MANAGE_ORGANIZATION_STRUCTURE;
+        }
+        if (containsAny(path, "course", "courses")) {
+            return MANAGE_LEARNING;
+        }
+        if (containsAny(path, "subject", "subjects", "discipline", "disciplines")) {
+            return MANAGE_LEARNING;
+        }
+        if (containsAny(path, "enrollment", "enrollments")) {
+            return MANAGE_ENROLLMENTS;
         }
         if (containsAny(path, "settings", "config", "configuration")) {
-            return MANAGE_SETTINGS;
+            return MANAGE_ALL;
         }
         if (containsAny(path, "deletion", "delete-request", "right-to-be-forgotten")) {
-            return PROCESS_DELETION_REQUESTS;
+            return MANAGE_ALL;
         }
         if (containsAny(path, "audit", "activity-log")) {
+            return MANAGE_ALL;
+        }
+        if (containsAny(path, "my-profile")) {
             return VIEW_REPORTS;
         }
         if (containsAny(path, "personal-data", "profile")) {
-            return MANAGE_PERSONAL_DATA;
+            return MANAGE_ALL;
         }
-        if (containsAny(path, "users", "user-management", "accounts", "roles", "assignments")) {
-            return MANAGE_USERS;
+        if (containsAny(path, "users", "user", "user-management", "accounts", "account", "roles", "assignments")) {
+            return MANAGE_ALL;
         }
         return VIEW_REPORTS;
+    }
+
+    public static String canonicalAdminPermission(String permissionCode) {
+        return switch (permissionCode) {
+            case "MANAGE_USERS", "MANAGE_PERMISSIONS", "MANAGE_SETTINGS", "VIEW_PERSONAL_DATA",
+                 "MANAGE_PERSONAL_DATA", "PROCESS_DELETION_REQUESTS", MANAGE_ALL -> MANAGE_ALL;
+            case "MANAGE_ORGANIZATIONS", MANAGE_ORGANIZATION_STRUCTURE -> MANAGE_ORGANIZATION_STRUCTURE;
+            case "MANAGE_COURSES", "MANAGE_SUBJECTS", MANAGE_LEARNING -> MANAGE_LEARNING;
+            case MANAGE_ENROLLMENTS -> MANAGE_ENROLLMENTS;
+            default -> permissionCode;
+        };
+    }
+
+    public static boolean isAdminPermission(String permissionCode) {
+        String canonical = canonicalAdminPermission(permissionCode);
+        return MANAGE_ALL.equals(canonical)
+                || MANAGE_ORGANIZATION_STRUCTURE.equals(canonical)
+                || MANAGE_LEARNING.equals(canonical)
+                || MANAGE_ENROLLMENTS.equals(canonical);
     }
 
     public static boolean isProtected(String servletPath) {
@@ -117,8 +155,11 @@ public final class AuthorizationPolicy {
                 || path.equals("/sign-in.jsp")
                 || path.equals("/sign-up.jsp")
                 || path.equals("/contact.jsp")
+                || path.equals("/courses")
+                || isPathOrChild(path, "/courses")
                 || path.equals("/courses.jsp")
                 || path.equals("/course.jsp")
+                || path.equals("/course-list-view.jsp")
                 || path.equals("/course-details.jsp")
                 || path.equals("/about-four.jsp")
                 || path.equals("/instructor/instructor.jsp")

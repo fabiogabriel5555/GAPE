@@ -1,8 +1,8 @@
 package pt.isel.gape.security.authorization;
 
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AccessProfileType;
@@ -12,16 +12,6 @@ import pt.isel.gape.structure.dao.ManageOrganizationDAO;
 import pt.isel.gape.structure.dao.TeachClassGroupDAO;
 
 public final class PermissionChecker {
-
-    private static final Set<String> GLOBAL_MANAGEMENT_PERMISSIONS = Set.of(
-            AuthorizationPolicy.MANAGE_USERS,
-            AuthorizationPolicy.MANAGE_PERMISSIONS,
-            AuthorizationPolicy.MANAGE_ORGANIZATIONS,
-            AuthorizationPolicy.MANAGE_SETTINGS,
-            AuthorizationPolicy.VIEW_PERSONAL_DATA,
-            AuthorizationPolicy.MANAGE_PERSONAL_DATA,
-            AuthorizationPolicy.PROCESS_DELETION_REQUESTS
-    );
 
     private final PermissionDAO permissionDAO;
     private final ManageOrganizationDAO manageOrganizationDAO;
@@ -55,19 +45,77 @@ public final class PermissionChecker {
             if (!permissionDAO.activeProfileExists(context.userId(), context.profileType())) {
                 return AuthorizationDecision.deny("inactive_or_missing_profile");
             }
-            if (isGlobalManagementPermission(context.permissionCode())
-                    && context.profileType() != AccessProfileType.ADMINISTRATOR) {
-                return AuthorizationDecision.deny("global_management_requires_administrator");
+            if (AuthorizationPolicy.VIEW_REPORTS.equals(context.permissionCode())) {
+                return AuthorizationDecision.allow();
             }
-            if (!permissionDAO.hasActiveGrant(context.userId(), context.profileType(), context.permissionCode())) {
+            if (context.profileType() != AccessProfileType.ADMINISTRATOR) {
+                if (context.entityType() == AccessEntityType.GLOBAL || context.entityType() == AccessEntityType.SELF) {
+                    return AuthorizationDecision.deny("missing_permission");
+                }
+                if (!hasActiveProfileGrant(context)) {
+                    return AuthorizationDecision.deny("missing_permission");
+                }
+                return hasRequiredContext(context)
+                        ? AuthorizationDecision.allow()
+                        : AuthorizationDecision.deny("missing_context_assignment");
+            }
+            if (permissionDAO.hasActiveGlobalAdministratorGrant(context.userId(), AuthorizationPolicy.MANAGE_ALL)) {
+                return AuthorizationDecision.allow();
+            }
+            String canonicalPermission = AuthorizationPolicy.canonicalAdminPermission(context.permissionCode());
+            if (!AuthorizationPolicy.isAdminPermission(canonicalPermission)) {
                 return AuthorizationDecision.deny("missing_permission");
             }
-            if (!hasRequiredContext(context)) {
+            if (context.entityType() == AccessEntityType.GLOBAL || context.entityType() == AccessEntityType.SELF) {
+                return hasAdministratorGlobalAccess(context.userId(), canonicalPermission)
+                        ? AuthorizationDecision.allow()
+                        : AuthorizationDecision.deny("missing_permission");
+            }
+            Long entityId = context.entityId();
+            if (entityId == null) {
                 return AuthorizationDecision.deny("missing_context_assignment");
             }
-            return AuthorizationDecision.allow();
+            return hasAdministratorScopedPermission(context.userId(), canonicalPermission, context.entityType(), entityId)
+                    ? AuthorizationDecision.allow()
+                    : AuthorizationDecision.deny("missing_context_assignment");
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to check permission " + context.permissionCode(), exception);
+        }
+    }
+
+    public AuthorizationDecision checkDescendant(AccessContext context) {
+        Objects.requireNonNull(context, "context is required");
+        try {
+            if (!permissionDAO.activeProfileExists(context.userId(), context.profileType())) {
+                return AuthorizationDecision.deny("inactive_or_missing_profile");
+            }
+            if (context.profileType() != AccessProfileType.ADMINISTRATOR) {
+                return check(context);
+            }
+            if (permissionDAO.hasActiveGlobalAdministratorGrant(context.userId(), AuthorizationPolicy.MANAGE_ALL)) {
+                return AuthorizationDecision.allow();
+            }
+            String canonicalPermission = AuthorizationPolicy.canonicalAdminPermission(context.permissionCode());
+            if (!AuthorizationPolicy.isAdminPermission(canonicalPermission)) {
+                return AuthorizationDecision.deny("missing_permission");
+            }
+            if (context.entityType() == AccessEntityType.GLOBAL || context.entityType() == AccessEntityType.SELF) {
+                return AuthorizationDecision.deny("missing_context_assignment");
+            }
+            Long entityId = context.entityId();
+            if (entityId == null) {
+                return AuthorizationDecision.deny("missing_context_assignment");
+            }
+            return hasAdministratorDescendantPermission(
+                    context.userId(),
+                    canonicalPermission,
+                    context.entityType(),
+                    entityId
+            )
+                    ? AuthorizationDecision.allow()
+                    : AuthorizationDecision.deny("missing_descendant_context");
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to check descendant permission " + context.permissionCode(), exception);
         }
     }
 
@@ -76,7 +124,7 @@ public final class PermissionChecker {
     }
 
     public static boolean isGlobalManagementPermission(String permissionCode) {
-        return GLOBAL_MANAGEMENT_PERMISSIONS.contains(permissionCode);
+        return AuthorizationPolicy.MANAGE_ALL.equals(AuthorizationPolicy.canonicalAdminPermission(permissionCode));
     }
 
     private boolean hasRequiredContext(AccessContext context) throws SQLException {
@@ -90,11 +138,75 @@ public final class PermissionChecker {
         return switch (context.entityType()) {
             case ORGANIZATION -> context.profileType() == AccessProfileType.ADMINISTRATOR
                     && manageOrganizationDAO.hasActiveAssignment(context.userId(), entityId);
+            case ORGANIC_UNIT, COURSE -> false;
             case SUBJECT -> context.profileType() == AccessProfileType.COORDINATOR
                     && coordinateSubjectDAO.hasActiveAssignment(context.userId(), entityId);
             case CLASS_GROUP -> context.profileType() == AccessProfileType.TEACHER
                     && teachClassGroupDAO.hasActiveAssignment(context.userId(), entityId);
             case GLOBAL, SELF -> true;
+        };
+    }
+
+    private boolean hasActiveProfileGrant(AccessContext context) throws SQLException {
+        String requestedPermission = context.permissionCode();
+        if (permissionDAO.hasActiveGrant(context.userId(), context.profileType(), requestedPermission)) {
+            return true;
+        }
+        String canonicalPermission = AuthorizationPolicy.canonicalAdminPermission(requestedPermission);
+        return !canonicalPermission.equals(requestedPermission)
+                && permissionDAO.hasActiveGrant(context.userId(), context.profileType(), canonicalPermission);
+    }
+
+    private boolean hasAdministratorScopedPermission(
+            long adminUserId,
+            String requestedPermissionCode,
+            AccessEntityType entityType,
+            long entityId
+    ) throws SQLException {
+        for (String permissionCode : acceptablePermissionCodes(requestedPermissionCode)) {
+            if (permissionDAO.hasActiveAdministratorContextGrant(adminUserId, permissionCode, entityType, entityId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasAdministratorGlobalAccess(long adminUserId, String requestedPermissionCode)
+            throws SQLException {
+        if (AuthorizationPolicy.MANAGE_ALL.equals(requestedPermissionCode)) {
+            return permissionDAO.hasActiveGlobalAdministratorGrant(adminUserId, requestedPermissionCode);
+        }
+        return permissionDAO.hasAnyActiveAdministratorGrant(adminUserId, acceptablePermissionCodes(requestedPermissionCode));
+    }
+
+    private boolean hasAdministratorDescendantPermission(
+            long adminUserId,
+            String requestedPermissionCode,
+            AccessEntityType entityType,
+            long entityId
+    ) throws SQLException {
+        for (String permissionCode : acceptablePermissionCodes(requestedPermissionCode)) {
+            if (permissionDAO.hasActiveAdministratorDescendantGrant(adminUserId, permissionCode, entityType, entityId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static List<String> acceptablePermissionCodes(String requestedPermissionCode) {
+        return switch (requestedPermissionCode) {
+            case AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE ->
+                    List.of(AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE);
+            case AuthorizationPolicy.MANAGE_LEARNING ->
+                    List.of(AuthorizationPolicy.MANAGE_LEARNING, AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE);
+            case AuthorizationPolicy.MANAGE_ENROLLMENTS ->
+                    List.of(
+                            AuthorizationPolicy.MANAGE_ENROLLMENTS,
+                            AuthorizationPolicy.MANAGE_LEARNING,
+                            AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE
+                    );
+            case AuthorizationPolicy.MANAGE_ALL -> List.of(AuthorizationPolicy.MANAGE_ALL);
+            default -> List.of(requestedPermissionCode);
         };
     }
 }

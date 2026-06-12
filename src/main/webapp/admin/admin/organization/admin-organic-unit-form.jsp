@@ -32,7 +32,7 @@
                             <h2 class="text-18 fw-medium text-neutral-700 mb-4">${creating ? 'Create Organic Unit' : 'Edit Organic Unit'}</h2>
                             <span class="text-14 text-neutral-500"><c:out value="${organization.name}"/></span>
                         </div>
-                        <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03">Back</a>
+                        <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03">Back</a>
                     </div>
 
                     <div class="row gy-4">
@@ -46,11 +46,11 @@
                         </c:if>
                         <div class="${not creating and not empty form.code ? 'col-lg-6' : 'col-lg-8'}">
                             <label for="name" class="fw-medium text-base text-neutral-800 mb-12">Name</label>
-                            <input id="name" name="name" type="text" value="<c:out value='${form.name}'/>" required class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                            <input id="name" name="name" type="text" value="<c:out value='${form.name}'/>" required pattern="[^|]*" title="Names cannot contain |" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
                         <div class="${not creating and not empty form.code ? 'col-lg-3' : 'col-lg-4'}">
                             <label for="acronym" class="fw-medium text-base text-neutral-800 mb-12">Acronym</label>
-                            <input id="acronym" name="acronym" type="text" value="<c:out value='${form.acronym}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                            <input id="acronym" name="acronym" type="text" value="<c:out value='${form.acronym}'/>" required pattern="[^|]*" title="Acronyms cannot contain |" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
                         <div class="col-lg-4 gape-select-field">
                             <label for="type" class="fw-medium text-base text-neutral-800 mb-12">Type</label>
@@ -88,7 +88,7 @@
 
                     <div class="d-flex align-items-center gap-16 flex-wrap mt-32">
                         <button type="submit" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">Save Change</button>
-                        <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}" class="border-main-600 border px-24 py-12 fw-semibold rounded-12 hover-bg-main-50 transition-03">Cancel</a>
+                        <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units" class="border-main-600 border px-24 py-12 fw-semibold rounded-12 hover-bg-main-50 transition-03">Cancel</a>
                     </div>
                 </form>
             </div>

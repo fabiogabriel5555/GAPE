@@ -305,6 +305,22 @@ class TemplateStructureTest {
     }
 
     @Test
+    void adminUserFormCanAssignAdministratorPermissionsWithContext() throws IOException {
+        String form = Files.readString(WEBAPP_DIR.resolve("admin/admin/user/admin-user-form.jsp"));
+
+        assertTrue(form.contains("Administrator Permissions"),
+                "User form must render administrator permission assignments");
+        assertTrue(form.contains("name=\"adminPermissionAssignments\""),
+                "User form must submit selected administrator permissions and contexts");
+        assertTrue(form.contains("data-admin-permission-input"),
+                "Administrator permission inputs must be tied to the Administrator profile state");
+        assertTrue(form.contains("MANAGE_ORGANIZATION_STRUCTURE")
+                        && form.contains("MANAGE_LEARNING")
+                        && form.contains("MANAGE_ENROLLMENTS"),
+                "User form must expose the contextual administrator permission groups");
+    }
+
+    @Test
     void organizationPagesRenderPhotoAndManagedUnitCode() throws IOException {
         String organizationForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/organization/admin-organization-form.jsp"));
         String organizationList = Files.readString(WEBAPP_DIR.resolve("admin/admin/organization/admin-organizations.jsp"));

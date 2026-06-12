@@ -11,6 +11,7 @@ import java.util.Set;
 import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.common.validation.AcademicTextValidator;
 import pt.isel.gape.security.authorization.AccessContext;
 import pt.isel.gape.security.authorization.AccessEntityType;
 import pt.isel.gape.security.authorization.AuthorizationDecision;
@@ -77,7 +78,14 @@ public final class OrganicUnitService {
     ) {
         try {
             validateCreateCommand(command);
-            requireOrganizationManager(actorUserId, sessionId, actorProfileType, command.organizationId(), sourceIp);
+            requireOrganicUnitCreateContext(
+                    actorUserId,
+                    sessionId,
+                    actorProfileType,
+                    command.organizationId(),
+                    command.parentOrganicUnitId(),
+                    sourceIp
+            );
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
@@ -123,7 +131,7 @@ public final class OrganicUnitService {
         try {
             OrganicUnit unit = organicUnitDAO.findById(organicUnitId)
                     .orElseThrow(() -> new IllegalArgumentException("Organic unit not found: " + organicUnitId));
-            requireOrganizationManager(actorUserId, sessionId, actorProfileType, unit.organizationId(), sourceIp);
+            requireOrganicUnitAccess(actorUserId, sessionId, actorProfileType, unit.id(), sourceIp);
             return unit;
         } catch (RuntimeException | SQLException exception) {
             throw wrap(exception, "Failed to read organic unit");
@@ -160,7 +168,15 @@ public final class OrganicUnitService {
                 connection.setAutoCommit(false);
                 try {
                     OrganicUnit current = requireOrganicUnit(connection, organicUnitId);
-                    requireOrganizationManager(actorUserId, sessionId, actorProfileType, current.organizationId(), sourceIp);
+                    requireOrganicUnitMutationContext(actorUserId, sessionId, actorProfileType, current.id(), sourceIp);
+                    requireOrganicUnitCreateContext(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            current.organizationId(),
+                            command.parentOrganicUnitId(),
+                            sourceIp
+                    );
                     Organization organization = requireOrganization(connection, current.organizationId());
                     requireOrganizationNotArchived(organization);
                     requireOrganicUnitNotArchived(current);
@@ -207,7 +223,7 @@ public final class OrganicUnitService {
                 connection.setAutoCommit(false);
                 try {
                     OrganicUnit current = requireOrganicUnit(connection, organicUnitId);
-                    requireOrganizationManager(actorUserId, sessionId, actorProfileType, current.organizationId(), sourceIp);
+                    requireOrganicUnitMutationContext(actorUserId, sessionId, actorProfileType, current.id(), sourceIp);
                     Organization organization = requireOrganization(connection, current.organizationId());
                     requireOrganizationNotArchived(organization);
                     requireOrganicUnitNotArchived(current);
@@ -241,7 +257,7 @@ public final class OrganicUnitService {
                 connection.setAutoCommit(false);
                 try {
                     OrganicUnit current = requireOrganicUnit(connection, organicUnitId);
-                    requireOrganizationManager(actorUserId, sessionId, actorProfileType, current.organizationId(), sourceIp);
+                    requireOrganicUnitMutationContext(actorUserId, sessionId, actorProfileType, current.id(), sourceIp);
                     Organization organization = requireOrganization(connection, current.organizationId());
                     requireOrganizationNotArchived(organization);
                     requireOrganicUnitNotArchived(current);
@@ -263,6 +279,34 @@ public final class OrganicUnitService {
             auditFailure(actorUserId, sessionId, "ORGANIC_UNIT_DELETE", Long.toString(organicUnitId), sourceIp);
             throw wrap(exception, "Failed to delete organic unit");
         }
+    }
+
+    public boolean canCreateOrganicUnit(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organizationId,
+            Long parentOrganicUnitId,
+            String sourceIp
+    ) {
+        return organicUnitCreateDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                organizationId,
+                parentOrganicUnitId,
+                sourceIp
+        ).allowed();
+    }
+
+    public boolean canModifyOrganicUnit(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organicUnitId,
+            String sourceIp
+    ) {
+        return organicUnitMutationDecision(actorUserId, sessionId, actorProfileType, organicUnitId, sourceIp).allowed();
     }
 
     private void validateParent(
@@ -317,6 +361,108 @@ public final class OrganicUnitService {
         }
     }
 
+    private void requireOrganicUnitCreateContext(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organizationId,
+            Long parentOrganicUnitId,
+            String sourceIp
+    ) {
+        AuthorizationDecision decision = organicUnitCreateDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                organizationId,
+                parentOrganicUnitId,
+                sourceIp
+        );
+        if (!decision.allowed()) {
+            throw new SecurityException("Missing organic unit creation context: " + decision.reason());
+        }
+    }
+
+    private void requireOrganicUnitAccess(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organicUnitId,
+            String sourceIp
+    ) {
+        AuthorizationDecision decision = permissionChecker.check(new AccessContext(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                AuthorizationPolicy.MANAGE_ORGANIZATIONS,
+                AccessEntityType.ORGANIC_UNIT,
+                organicUnitId,
+                sourceIp
+        ));
+        if (!decision.allowed()) {
+            throw new SecurityException("Missing organic unit management context: " + decision.reason());
+        }
+    }
+
+    private AuthorizationDecision organicUnitCreateDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organizationId,
+            Long parentOrganicUnitId,
+            String sourceIp
+    ) {
+        AccessEntityType entityType = parentOrganicUnitId == null
+                ? AccessEntityType.ORGANIZATION
+                : AccessEntityType.ORGANIC_UNIT;
+        long entityId = parentOrganicUnitId == null ? organizationId : parentOrganicUnitId;
+        return permissionChecker.check(new AccessContext(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                AuthorizationPolicy.MANAGE_ORGANIZATIONS,
+                entityType,
+                entityId,
+                sourceIp
+        ));
+    }
+
+    private void requireOrganicUnitMutationContext(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organicUnitId,
+            String sourceIp
+    ) {
+        AuthorizationDecision decision = organicUnitMutationDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                organicUnitId,
+                sourceIp
+        );
+        if (!decision.allowed()) {
+            throw new SecurityException("Missing organic unit ancestor context: " + decision.reason());
+        }
+    }
+
+    private AuthorizationDecision organicUnitMutationDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organicUnitId,
+            String sourceIp
+    ) {
+        return permissionChecker.checkDescendant(new AccessContext(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                AuthorizationPolicy.MANAGE_ORGANIZATIONS,
+                AccessEntityType.ORGANIC_UNIT,
+                organicUnitId,
+                sourceIp
+        ));
+    }
+
     private Organization requireOrganization(Connection connection, long organizationId) throws SQLException {
         return organizationDAO.findById(connection, organizationId)
                 .orElseThrow(() -> new IllegalArgumentException("Organization not found: " + organizationId));
@@ -332,7 +478,8 @@ public final class OrganicUnitService {
         if (command.organizationId() <= 0) {
             throw new IllegalArgumentException("Organic unit organization is required");
         }
-        requireText(command.name(), "Organic unit name is required");
+        AcademicTextValidator.requireName(command.name(), "Organic unit name is required");
+        AcademicTextValidator.requireAcronym(command.acronym(), "Organic unit acronym is required");
         Objects.requireNonNull(command.type(), "organic unit type is required");
         Objects.requireNonNull(command.state(), "organic unit state is required");
         if (command.state() == OrganicUnitState.ARCHIVED) {
@@ -342,7 +489,8 @@ public final class OrganicUnitService {
 
     private static void validateUpdateCommand(OrganicUnitUpdateCommand command) {
         Objects.requireNonNull(command, "command is required");
-        requireText(command.name(), "Organic unit name is required");
+        AcademicTextValidator.requireName(command.name(), "Organic unit name is required");
+        AcademicTextValidator.requireAcronym(command.acronym(), "Organic unit acronym is required");
         Objects.requireNonNull(command.type(), "organic unit type is required");
         Objects.requireNonNull(command.state(), "organic unit state is required");
     }

@@ -8,11 +8,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,13 +35,15 @@ class RoleAssignmentServiceTest {
 
     private RoleAssignmentService roleAssignmentService;
 
+    @BeforeAll
+    static void initializeDatabase() throws Exception {
+        DatabaseTestSupport.resetDatabaseWithBaseSeed();
+    }
+
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() throws SQLException {
+        DatabaseTestSupport.beginTestTransaction();
         ConnectionProvider connectionProvider = DatabaseTestSupport::openConnection;
-        try (Connection connection = DatabaseTestSupport.openConnection()) {
-            DatabaseTestSupport.resetDatabase(connection);
-            DatabaseTestSupport.executeScript(connection, DatabaseTestSupport.SQL_SEED_DIR.resolve("base.sql"));
-        }
 
         roleAssignmentService = new RoleAssignmentService(
                 new PermissionDAO(connectionProvider),
@@ -47,6 +52,11 @@ class RoleAssignmentServiceTest {
                 new TeachClassGroupDAO(connectionProvider),
                 new AuditService(new ActivityLogDAO(connectionProvider), FIXED_CLOCK)
         );
+    }
+
+    @AfterEach
+    void tearDown() throws SQLException {
+        DatabaseTestSupport.rollbackTestTransaction();
     }
 
     @Test

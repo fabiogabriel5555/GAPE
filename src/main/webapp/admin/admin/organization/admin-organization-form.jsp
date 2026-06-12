@@ -9,8 +9,9 @@
 <c:if test="${not creating}">
     <c:set var="organizationBackHref" value="${pageContext.request.contextPath}/admin/organizations/${form.id}"/>
 </c:if>
-<c:set var="organizationPhotoUrl" value="${pageContext.request.contextPath}/assets/images/thumbs/student-dashbord-profile-photo-img1.png"/>
-<c:if test="${not empty form.photo}">
+<c:set var="organizationHasPhoto" value="${not empty form.photo}"/>
+<c:set var="organizationPhotoUrl" value=""/>
+<c:if test="${organizationHasPhoto}">
     <c:set var="organizationPhotoUrl" value="${pageContext.request.contextPath}/media/${form.photo}?v=${mediaCacheVersion}"/>
 </c:if>
 <!DOCTYPE html>
@@ -67,12 +68,25 @@
                         <div class="avatar-upload">
                             <div class="d-flex align-items-center gap-40 flex-wrap">
                                 <div class="avatar-preview flex-shrink-0">
-                                    <div id="organizationImagePreview"
-                                         class="gape-organization-photo-preview"
-                                         data-current-image="<c:out value='${organizationPhotoUrl}'/>"
-                                         data-fallback-image="${pageContext.request.contextPath}/assets/images/thumbs/student-dashbord-profile-photo-img1.png"
-                                         style="background-image: url('<c:out value='${organizationPhotoUrl}'/>');">
-                                    </div>
+                                    <c:choose>
+                                        <c:when test="${organizationHasPhoto}">
+                                            <div id="organizationImagePreview"
+                                                 class="gape-organization-photo-preview gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--organization-form is-image"
+                                                 data-current-image="<c:out value='${organizationPhotoUrl}'/>"
+                                                 data-has-current-image="true"
+                                                 style="background-image: url('<c:out value='${organizationPhotoUrl}'/>');">
+                                                <i class="ph ph-image d-none" data-photo-placeholder-icon></i>
+                                            </div>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <div id="organizationImagePreview"
+                                                 class="gape-organization-photo-preview gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--organization-form"
+                                                 data-current-image=""
+                                                 data-has-current-image="false">
+                                                <i class="ph ph-image" data-photo-placeholder-icon></i>
+                                            </div>
+                                        </c:otherwise>
+                                    </c:choose>
                                 </div>
                                 <div class="avatar-edit">
                                     <input type="file" id="organizationImageUpload" name="organizationImage" accept="image/jpeg,image/png,image/gif,image/bmp,image/webp">
@@ -88,11 +102,11 @@
                     <div class="row gy-4">
                         <div class="col-lg-6">
                             <label for="name" class="fw-medium text-base text-neutral-800 mb-12">Name</label>
-                            <input id="name" name="name" type="text" value="<c:out value='${form.name}'/>" required class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                            <input id="name" name="name" type="text" value="<c:out value='${form.name}'/>" required pattern="[^|]*" title="Names cannot contain |" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
                         <div class="col-lg-3">
                             <label for="acronym" class="fw-medium text-base text-neutral-800 mb-12">Acronym</label>
-                            <input id="acronym" name="acronym" type="text" value="<c:out value='${form.acronym}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                            <input id="acronym" name="acronym" type="text" value="<c:out value='${form.acronym}'/>" required pattern="[^|]*" title="Acronyms cannot contain |" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
                         <div class="col-lg-3 gape-select-field">
                             <label for="state" class="fw-medium text-base text-neutral-800 mb-12">State</label>
@@ -158,13 +172,36 @@
             return;
         }
 
-        const currentImage = imagePreview.dataset.currentImage;
-        const fallbackImage = imagePreview.dataset.fallbackImage;
-        const preloadCurrentImage = new Image();
-        preloadCurrentImage.onerror = function () {
-            imagePreview.style.backgroundImage = "url('" + fallbackImage + "')";
-        };
-        preloadCurrentImage.src = currentImage;
+        function placeholderIcon() {
+            return imagePreview.querySelector('[data-photo-placeholder-icon]');
+        }
+
+        function showPreviewImage(url) {
+            imagePreview.style.backgroundImage = "url('" + url + "')";
+            imagePreview.classList.add('is-image');
+            const icon = placeholderIcon();
+            if (icon) {
+                icon.classList.add('d-none');
+            }
+        }
+
+        function showPreviewPlaceholder() {
+            imagePreview.style.backgroundImage = '';
+            imagePreview.classList.remove('is-image');
+            const icon = placeholderIcon();
+            if (icon) {
+                icon.classList.remove('d-none');
+            }
+        }
+
+        function restoreCurrentImage() {
+            const currentImage = imagePreview.dataset.currentImage;
+            if (imagePreview.dataset.hasCurrentImage === 'true' && currentImage) {
+                showPreviewImage(currentImage);
+                return;
+            }
+            showPreviewPlaceholder();
+        }
 
         imageInput.addEventListener('change', function () {
             const file = imageInput.files && imageInput.files[0];
@@ -173,14 +210,14 @@
             }
             const reader = new FileReader();
             reader.onload = function (event) {
-                imagePreview.style.backgroundImage = "url('" + event.target.result + "')";
+                showPreviewImage(event.target.result);
             };
             reader.readAsDataURL(file);
         });
 
         cancelButton.addEventListener('click', function () {
             imageInput.value = '';
-            imagePreview.style.backgroundImage = "url('" + currentImage + "')";
+            restoreCurrentImage();
         });
     })();
 </script>

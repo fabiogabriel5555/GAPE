@@ -106,6 +106,10 @@ public final class UserView {
         return photo;
     }
 
+    public boolean isHasPhoto() {
+        return photo != null && !photo.isBlank();
+    }
+
     public String getCreatedAt() {
         return createdAt;
     }

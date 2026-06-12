@@ -1,10 +1,23 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <c:set var="isAdminDashboard" value="${sessionScope['gape.auth.hasAdministratorProfile']}" />
 <c:set var="dashboardHref" value="${isAdminDashboard ? '/admin/admin-dashbord.jsp' : '/dashboard'}" />
 <c:set var="siteHomeHref" value="/index.jsp" />
 <c:set var="profileHref" value="${isAdminDashboard ? '/admin/admin-my-profile.jsp' : '/profile'}" />
+<c:set var="coursesHref" value="/courses" />
+<c:if test="${sessionScope['gape.auth.hasStudentProfile']}">
+    <c:set var="coursesHref" value="/student/enrollments" />
+</c:if>
+<c:if test="${sessionScope['gape.auth.hasAdministratorProfile'] and sessionScope['gape.auth.canManageCourses']}">
+    <c:set var="coursesHref" value="/admin/courses" />
+</c:if>
 <c:set var="isProfileActive" value="${activeMenu == 'profile' or activeMenu == 'my-profile'}" />
 <c:set var="isQuizAttemptsActive" value="${activeMenu == 'quiz-attempts' or activeMenu == 'quiz'}" />
+<c:set var="dashboardUserName" value="${sessionScope['gape.auth.userName']}" />
+<c:set var="dashboardFirstName" value="" />
+<c:if test="${not empty dashboardUserName}">
+    <c:set var="dashboardFirstName" value="${fn:split(fn:trim(dashboardUserName), ' ')[0]}" />
+</c:if>
 <div class="dashboard-sidebar px-20 py-24 max-w-288-px bg-white w-100 border-end border-neutral-40 position-relative">
     <a href="${pageContext.request.contextPath}${siteHomeHref}" class="dashboard-sidebar__site-logo">
         <img src="${pageContext.request.contextPath}/assets/images/logo/logo.svg" alt="GAPE">
@@ -12,7 +25,7 @@
     <span class="w-100 bg-neutral-40 mb-24 mt-24 h-1"></span>
     <div class="overflow-x-auto">
         <div class="scrollbar min-w-max">
-            <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome<c:if test="${not empty sessionScope['gape.auth.userName']}"> <c:out value="${sessionScope['gape.auth.userName']}"/></c:if>,</span>
+            <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome<c:if test="${not empty dashboardFirstName}"> <c:out value="${dashboardFirstName}"/></c:if>,</span>
             <ul>
                 <li class="mb-8 ${activeMenu == 'dashboard' ? 'activePage' : ''}">
                     <a href="${pageContext.request.contextPath}${dashboardHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
@@ -32,12 +45,14 @@
                         Message
                     </a>
                 </li>
-                <li class="mb-8 ${activeMenu == 'courses' ? 'activePage' : ''}">
-                    <a href="${pageContext.request.contextPath}/admin/admin-courses.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-watch"></i></span>
-                        Courses
-                    </a>
-                </li>
+                <c:if test="${not sessionScope['gape.auth.hasAdministratorProfile']}">
+                    <li class="mb-8 ${activeMenu == 'courses' ? 'activePage' : ''}">
+                        <a href="${pageContext.request.contextPath}${coursesHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-books"></i></span>
+                            Courses
+                        </a>
+                    </li>
+                </c:if>
                 <li class="mb-8 ${activeMenu == 'reviews' ? 'activePage' : ''}">
                     <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                         <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sparkle"></i></span>
@@ -108,18 +123,88 @@
                                             Detail
                                         </a>
                                     </li>
-                                    <li class="mb-6 ${adminOrganizationActiveChild == 'edit' ? 'activePage' : ''}">
-                                        <a href="${pageContext.request.contextPath}/admin/organizations/${adminOrganizationContextId}/edit" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
-                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-pencil-simple-line"></i></span>
-                                            Edit
-                                        </a>
-                                    </li>
-                                    <li class="mb-6 ${adminOrganizationActiveChild == 'unit-new' ? 'activePage' : ''}">
-                                        <a href="${pageContext.request.contextPath}/admin/organizations/${adminOrganizationContextId}/units/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                    <c:if test="${canModifyOrganization}">
+                                        <li class="mb-6 ${adminOrganizationActiveChild == 'edit' ? 'activePage' : ''}">
+                                            <a href="${pageContext.request.contextPath}/admin/organizations/${adminOrganizationContextId}/edit" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                                <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-pencil-simple-line"></i></span>
+                                                Edit
+                                            </a>
+                                        </li>
+                                    </c:if>
+                                    <li class="mb-6 ${adminOrganizationActiveChild == 'units' ? 'activePage' : ''}">
+                                        <a href="${pageContext.request.contextPath}/admin/organizations/${adminOrganizationContextId}/units" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
                                             <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-tree-structure"></i></span>
-                                            New Unit
+                                            Units
                                         </a>
                                     </li>
+                                    <c:if test="${canCreateOrganicUnits}">
+                                        <li class="mb-6 ${adminOrganizationActiveChild == 'unit-new' ? 'activePage' : ''}">
+                                            <a href="${pageContext.request.contextPath}/admin/organizations/${adminOrganizationContextId}/units/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                                <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-tree-structure"></i></span>
+                                                New Unit
+                                            </a>
+                                        </li>
+                                    </c:if>
+                                </ul>
+                            </c:if>
+                        </li>
+                    </c:if>
+                    <c:if test="${sessionScope['gape.auth.canManageCourses']}">
+                        <li class="mb-8 ${activeMenu == 'courses' ? 'activePage' : ''}">
+                            <a href="${pageContext.request.contextPath}/admin/courses" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-books"></i></span>
+                                Courses
+                            </a>
+                            <c:if test="${not empty adminCourseContextId}">
+                                <ul class="mt-8 ps-24">
+                                    <li class="mb-6 ${adminCourseActiveChild == 'detail' ? 'activePage' : ''}">
+                                        <a href="${pageContext.request.contextPath}/admin/courses/${adminCourseContextId}" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-eye"></i></span>
+                                            Detail
+                                        </a>
+                                    </li>
+                                    <c:if test="${canModifyCourse}">
+                                        <li class="mb-6 ${adminCourseActiveChild == 'edit' ? 'activePage' : ''}">
+                                            <a href="${pageContext.request.contextPath}/admin/courses/${adminCourseContextId}/edit" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                                <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-pencil-simple-line"></i></span>
+                                                Edit
+                                            </a>
+                                        </li>
+                                    </c:if>
+                                    <c:if test="${canManageCourseChildren}">
+                                        <li class="mb-6 ${adminCourseActiveChild == 'subject-new' ? 'activePage' : ''}">
+                                            <a href="${pageContext.request.contextPath}/admin/courses/${adminCourseContextId}/subjects/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                                <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-link-simple"></i></span>
+                                                Associate
+                                            </a>
+                                        </li>
+                                    </c:if>
+                                </ul>
+                            </c:if>
+                        </li>
+                    </c:if>
+                    <c:if test="${sessionScope['gape.auth.canManageSubjects']}">
+                        <li class="mb-8 ${activeMenu == 'subjects' ? 'activePage' : ''}">
+                            <a href="${pageContext.request.contextPath}/admin/subjects" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-book-open-text"></i></span>
+                                Subjects
+                            </a>
+                            <c:if test="${not empty adminSubjectContextId}">
+                                <ul class="mt-8 ps-24">
+                                    <li class="mb-6 ${adminSubjectActiveChild == 'detail' ? 'activePage' : ''}">
+                                        <a href="${pageContext.request.contextPath}/admin/subjects/${adminSubjectContextId}" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-eye"></i></span>
+                                            Detail
+                                        </a>
+                                    </li>
+                                    <c:if test="${canModifySubject}">
+                                        <li class="mb-6 ${adminSubjectActiveChild == 'edit' ? 'activePage' : ''}">
+                                            <a href="${pageContext.request.contextPath}/admin/subjects/${adminSubjectContextId}/edit" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                                <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-pencil-simple-line"></i></span>
+                                                Edit
+                                            </a>
+                                        </li>
+                                    </c:if>
                                 </ul>
                             </c:if>
                         </li>

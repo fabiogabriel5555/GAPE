@@ -19,6 +19,13 @@ DELETE FROM manage_organization
 WHERE id_admin_user = 1
   AND id_organization = 10;
 
+-- Sistema nao pode ficar sem Administrador ativo com MANAGE_ALL global
+DELETE FROM grant_administrator
+WHERE id_admin_user = 1
+  AND cod_permission = 'MANAGE_ALL'
+  AND context_type = 'GLOBAL'
+  AND context_id = 0;
+
 -- Organic_Unit nao pode criar ciclo longo na hierarquia
 UPDATE organic_unit
 SET parent_organic_unit_id = 22
@@ -42,7 +49,7 @@ INSERT INTO organic_unit (
 INSERT INTO course (
     id_course, id_organization, id_organic_unit, name, acronym, description, ects, duration, type, state
 ) VALUES
-    (9101, 10, 21, 'Curso Invalido', 'CI', NULL, 60.00, '1y', 'short_course', 'active');
+    (9101, 10, 21, 'Curso Invalido', 'CI', NULL, 60.00, '1', 'short_course', 'active');
 
 -- Class_Group exige Subject integrada no Course
 INSERT INTO class_group (
@@ -50,6 +57,10 @@ INSERT INTO class_group (
     min_students, max_students, starts_at, ends_at, shift
 ) VALUES
     (9102, 40, 31, 'CG-NAO-INTEGRADA', 'onsite', 'active', 5, 20, '2026-02-01', '2026-06-30', 'night');
+
+-- Enroll_Subject tem de estar coberta pelo periodo completo da inscricao no Course
+INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date)
+VALUES (4, 30, 41, 'active', '2026-01-01', NULL);
 
 -- Physical_Room Organic_Unit tem de pertencer a mesma Organization
 INSERT INTO physical_room (

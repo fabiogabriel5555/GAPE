@@ -21,33 +21,16 @@ INSERT INTO user_session (
     (100, 1, 'tok-admin-100', 'active', '2026-01-10 10:00:00', '2026-01-10 10:30:00', NULL);
 
 INSERT INTO permission (cod_permission, name, state) VALUES
-    ('MANAGE_USERS', 'Manage Users', 'active'),
-    ('MANAGE_PERMISSIONS', 'Manage Permissions', 'active'),
-    ('MANAGE_SETTINGS', 'Manage Critical Settings', 'active'),
-    ('MANAGE_ORGANIZATIONS', 'Manage Organizations', 'active'),
-    ('VIEW_PERSONAL_DATA', 'View Personal Data', 'active'),
-    ('MANAGE_PERSONAL_DATA', 'Manage Personal Data', 'active'),
-    ('PROCESS_DELETION_REQUESTS', 'Process Deletion Requests', 'active'),
-    ('VIEW_REPORTS', 'View Reports', 'active');
+    ('MANAGE_ALL', 'Manage All', 'active'),
+    ('MANAGE_ORGANIZATION_STRUCTURE', 'Manage Organization Structure', 'active'),
+    ('MANAGE_LEARNING', 'Manage Learning', 'active'),
+    ('MANAGE_ENROLLMENTS', 'Manage Enrollments', 'active');
 
-INSERT INTO grant_administrator (id_admin_user, cod_permission) VALUES
-    (1, 'MANAGE_USERS'),
-    (1, 'MANAGE_PERMISSIONS'),
-    (1, 'MANAGE_SETTINGS'),
-    (1, 'MANAGE_ORGANIZATIONS'),
-    (1, 'VIEW_PERSONAL_DATA'),
-    (1, 'MANAGE_PERSONAL_DATA'),
-    (1, 'PROCESS_DELETION_REQUESTS'),
-    (1, 'VIEW_REPORTS');
+INSERT INTO grant_administrator (id_admin_user, cod_permission, context_type, context_id) VALUES
+    (1, 'MANAGE_ALL', 'GLOBAL', 0);
 
 INSERT INTO grant_coordinator (id_coordinator_user, cod_permission) VALUES
-    (2, 'VIEW_REPORTS');
-
-INSERT INTO grant_teacher (id_teacher_user, cod_permission) VALUES
-    (3, 'VIEW_REPORTS');
-
-INSERT INTO grant_student (id_student_user, cod_permission) VALUES
-    (4, 'VIEW_REPORTS');
+    (2, 'MANAGE_LEARNING');
 
 INSERT INTO organization (id_organization, name, acronym, photo, type, state) VALUES
     (10, 'Instituto Superior GAPE', 'ISG', 'organizations/10/profile.webp', 'educational_institution', 'inactive'),
@@ -61,16 +44,16 @@ INSERT INTO organic_unit (
     (22, 10, 'NPRJ', 'Nucleo de Projeto', 'NPRJ', 'section', 'active', 20);
 
 INSERT INTO course (
-    id_course, id_organization, id_organic_unit, name, acronym, description, ects, duration, type, state
+    id_course, id_organization, id_organic_unit, name, acronym, photo, description, ects, duration, type, state
 ) VALUES
-    (30, 10, 20, 'Engenharia Informatica', 'LEI', 'Licenciatura em Engenharia Informatica', 180.00, '3y', 'degree', 'active'),
-    (31, 10, 20, 'Analise de Dados', 'AD', 'Curso de analise de dados', 60.00, '1y', 'short_course', 'active');
+    (30, 10, 20, 'Engenharia Informatica', 'LEI', NULL, 'Licenciatura em Engenharia Informatica', 180.00, '3', 'degree', 'active'),
+    (31, 10, 20, 'Analise de Dados', 'AD', NULL, 'Curso de analise de dados', 60.00, '1', 'short_course', 'active');
 
 INSERT INTO subject (
-    id_subject, name, acronym, description, ects, workload_hours
+    id_subject, id_organization, name, acronym, photo, description, ects, workload_hours, state
 ) VALUES
-    (40, 'Projeto', 'PRJ', 'Unidade curricular de projeto', 12.00, 140),
-    (41, 'Matematica Aplicada', 'MAT', 'Unidade curricular de matematica aplicada', 6.00, 70);
+    (40, 10, 'Projeto', 'PRJ', NULL, 'Unidade curricular de projeto', 12.00, 140, 'active'),
+    (41, 10, 'Matematica Aplicada', 'MAT', NULL, 'Unidade curricular de matematica aplicada', 6.00, 70, 'active');
 
 INSERT INTO integrate_subject (
     id_course, id_subject, curricular_year, term, mandatory, state
@@ -109,8 +92,8 @@ INSERT INTO teach_class_group (id_teacher_user, id_class_group, state, start_dat
 INSERT INTO enroll_course (id_student_user, id_course, state, start_date, end_date) VALUES
     (4, 30, 'active', '2026-02-01', NULL);
 
-INSERT INTO enroll_subject (id_student_user, id_subject, state, start_date, end_date) VALUES
-    (4, 40, 'active', '2026-02-01', NULL);
+INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date) VALUES
+    (4, 30, 40, 'active', '2026-02-01', NULL);
 
 INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date) VALUES
     (4, 50, 'active', '2026-02-01', NULL);

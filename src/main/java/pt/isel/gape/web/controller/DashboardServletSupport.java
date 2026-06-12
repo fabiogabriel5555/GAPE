@@ -194,6 +194,49 @@ abstract class DashboardServletSupport extends HttpServlet {
         if (message.contains("Final deletion request state requires processedAt")) {
             return "A final state requires a processing date.";
         }
+        if (message.contains("Course organization is required")) {
+            return "Course organization is required.";
+        }
+        if (message.contains("Course name is required")) {
+            return "Course name is required.";
+        }
+        if (message.contains("Course organic unit must belong to the same organization")) {
+            return "The selected organic unit must belong to the same organization as the course.";
+        }
+        if (message.contains("Subject organization is required")) {
+            return "Subject organization is required.";
+        }
+        if (message.contains("Subject name is required")) {
+            return "Subject name is required.";
+        }
+        if (message.contains("Course-subject association already exists")) {
+            return "This subject is already associated with the selected course.";
+        }
+        if (message.contains("Curricular year and term must be provided together")) {
+            return "Curricular year and period must be filled together.";
+        }
+        if (message.contains("Course and subject must belong to the same organization")) {
+            return "Course and subject must belong to the same organization.";
+        }
+        if (message.contains("Active course enrollment overlaps")) {
+            return "There is already an active enrollment for this course in the selected period.";
+        }
+        if (message.contains("Active subject enrollment overlaps")) {
+            return "There is already an active enrollment for this subject in the selected period.";
+        }
+        if (message.contains("Student must be actively enrolled in the course")
+                || message.contains("Subject enrollment requires active Course enrollment")) {
+            return "You must be enrolled in the course before enrolling in one of its subjects.";
+        }
+        if (message.contains("Enrollment requires an active course")) {
+            return "Enrollment requires an active course.";
+        }
+        if (message.contains("Enrollment requires an active subject")) {
+            return "Enrollment requires an active subject.";
+        }
+        if (message.contains("Subject is not integrated in the course")) {
+            return "This subject is not integrated in the selected course.";
+        }
         if (message.contains("Unknown")) {
             return "The selected record does not exist.";
         }

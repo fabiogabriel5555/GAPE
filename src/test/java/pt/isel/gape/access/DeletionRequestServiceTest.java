@@ -16,6 +16,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -42,14 +44,24 @@ class DeletionRequestServiceTest {
     private ConnectionProvider connectionProvider;
     private Object deletionRequestService;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        connectionProvider = DatabaseTestSupport::openConnection;
+    @BeforeAll
+    static void initializeDatabase() throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection()) {
             resetSchema(connection);
         }
+    }
+
+    @BeforeEach
+    void setUp() throws Exception {
+        DatabaseTestSupport.beginTestTransaction();
+        connectionProvider = DatabaseTestSupport::openConnection;
 
         deletionRequestService = newDeletionRequestService();
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        DatabaseTestSupport.rollbackTestTransaction();
     }
 
     @Test
@@ -371,13 +383,19 @@ class DeletionRequestServiceTest {
                 CREATE TABLE grant_administrator (
                     id_admin_user BIGINT UNSIGNED NOT NULL,
                     cod_permission VARCHAR(80) NOT NULL,
-                    PRIMARY KEY (id_admin_user, cod_permission),
+                    context_type VARCHAR(30) NOT NULL DEFAULT 'GLOBAL',
+                    context_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+                    PRIMARY KEY (id_admin_user, cod_permission, context_type, context_id),
+                    KEY idx_grant_administrator_permission (cod_permission),
+                    KEY idx_grant_administrator_context (context_type, context_id),
                     CONSTRAINT fk_grant_administrator_admin
                         FOREIGN KEY (id_admin_user) REFERENCES administrator_profile (id_user)
                         ON UPDATE CASCADE ON DELETE CASCADE,
                     CONSTRAINT fk_grant_administrator_permission
                         FOREIGN KEY (cod_permission) REFERENCES permission (cod_permission)
-                        ON UPDATE CASCADE ON DELETE CASCADE
+                        ON UPDATE CASCADE ON DELETE CASCADE,
+                    CONSTRAINT ck_grant_administrator_context_type
+                        CHECK (context_type IN ('GLOBAL', 'ORGANIZATION', 'ORGANIC_UNIT', 'COURSE', 'SUBJECT', 'CLASS_GROUP'))
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """,
                 """
@@ -475,16 +493,12 @@ class DeletionRequestServiceTest {
                 "INSERT INTO student_profile (id_user, cod_student) VALUES (4, 'STD-001')",
                 """
                 INSERT INTO permission (cod_permission, name, state) VALUES
-                    ('PROCESS_DELETION_REQUESTS', 'Process Deletion Requests', 'active'),
-                    ('VIEW_REPORTS', 'View Reports', 'active')
+                    ('MANAGE_ALL', 'Manage All', 'active')
                 """,
                 """
                 INSERT INTO grant_administrator (id_admin_user, cod_permission) VALUES
-                    (1, 'PROCESS_DELETION_REQUESTS'),
-                    (1, 'VIEW_REPORTS')
-                """,
-                "INSERT INTO grant_teacher (id_teacher_user, cod_permission) VALUES (3, 'VIEW_REPORTS')",
-                "INSERT INTO grant_student (id_student_user, cod_permission) VALUES (4, 'VIEW_REPORTS')"
+                    (1, 'MANAGE_ALL')
+                """
         );
     }
 
@@ -568,7 +582,7 @@ class DeletionRequestServiceTest {
     private void grantTeacherProcessDeletionPermission() throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement(
-                     "INSERT INTO grant_teacher (id_teacher_user, cod_permission) VALUES (3, 'PROCESS_DELETION_REQUESTS')"
+                     "INSERT INTO grant_teacher (id_teacher_user, cod_permission) VALUES (3, 'MANAGE_ALL')"
              )) {
             statement.executeUpdate();
         }

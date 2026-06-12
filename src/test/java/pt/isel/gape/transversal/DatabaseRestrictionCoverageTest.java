@@ -32,7 +32,8 @@ class DatabaseRestrictionCoverageTest {
 
     private static final List<String> CORE_TABLES_WITH_VALID_DATA = List.of(
             "user_account", "user_session", "organization", "organic_unit", "course", "subject",
-            "integrate_subject", "class_group", "enroll_class_group", "content_block", "content_item",
+            "integrate_subject", "class_group", "enroll_course", "enroll_subject", "enroll_class_group",
+            "content_block", "content_item",
             "physical_room", "lesson", "assessment", "question", "question_option", "attempt",
             "response", "certificate", "message", "activity_log"
     );

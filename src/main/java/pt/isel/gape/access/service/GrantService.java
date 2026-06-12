@@ -8,16 +8,14 @@ import java.util.Set;
 import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
-import pt.isel.gape.security.authorization.PermissionChecker;
+import pt.isel.gape.security.authorization.AuthorizationPolicy;
 import pt.isel.gape.transversal.service.AuditService;
 
 public final class GrantService {
 
-    public static final String MANAGE_PERMISSIONS = "MANAGE_PERMISSIONS";
+    public static final String MANAGE_PERMISSIONS = AuthorizationPolicy.MANAGE_ALL;
     public static final Set<String> GLOBAL_MANAGEMENT_PERMISSIONS = Set.of(
-            "MANAGE_USERS",
-            MANAGE_PERMISSIONS,
-            "MANAGE_SETTINGS"
+            AuthorizationPolicy.MANAGE_ALL
     );
 
     private final PermissionDAO permissionDAO;
@@ -64,6 +62,7 @@ public final class GrantService {
     ) {
         try {
             requireAdministratorWithPermission(actorUserId);
+            preventRevokingLastManageAllAdministrator(targetProfileType, targetUserId, permissionCode);
             permissionDAO.revokePermission(targetUserId, targetProfileType, permissionCode);
             auditRevoke(actorUserId, sessionId, targetProfileType, targetUserId, permissionCode, "success", sourceIp);
         } catch (RuntimeException | SQLException exception) {
@@ -77,8 +76,8 @@ public final class GrantService {
 
     private void requireAdministratorWithPermission(long actorUserId) throws SQLException {
         if (!permissionDAO.activeProfileExists(actorUserId, AccessProfileType.ADMINISTRATOR)
-                || !permissionDAO.hasActiveGrant(actorUserId, AccessProfileType.ADMINISTRATOR, MANAGE_PERMISSIONS)) {
-            throw new SecurityException("Only administrators with MANAGE_PERMISSIONS can manage grants");
+                || !permissionDAO.hasActiveGrant(actorUserId, AccessProfileType.ADMINISTRATOR, AuthorizationPolicy.MANAGE_ALL)) {
+            throw new SecurityException("Only administrators with MANAGE_ALL can manage grants");
         }
     }
 
@@ -90,9 +89,21 @@ public final class GrantService {
         if (!permissionDAO.activeProfileExists(targetUserId, targetProfileType)) {
             throw new IllegalArgumentException("Permission can only be assigned to an active user profile");
         }
-        if (PermissionChecker.isGlobalManagementPermission(permissionCode)
+        if (AuthorizationPolicy.isAdminPermission(permissionCode)
                 && targetProfileType != AccessProfileType.ADMINISTRATOR) {
-            throw new SecurityException("Global management permissions can only be assigned to administrators");
+            throw new SecurityException("Administrator permissions can only be assigned to administrators");
+        }
+    }
+
+    private void preventRevokingLastManageAllAdministrator(
+            AccessProfileType targetProfileType,
+            long targetUserId,
+            String permissionCode
+    ) throws SQLException {
+        if (targetProfileType == AccessProfileType.ADMINISTRATOR
+                && AuthorizationPolicy.MANAGE_ALL.equals(AuthorizationPolicy.canonicalAdminPermission(permissionCode))
+                && permissionDAO.isSoleActiveGlobalManageAllAdministrator(targetUserId)) {
+            throw new IllegalStateException("The system requires at least one active administrator with MANAGE_ALL");
         }
     }
 

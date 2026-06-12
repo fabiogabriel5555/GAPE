@@ -7,7 +7,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import pt.isel.gape.access.model.UserState;
 import pt.isel.gape.common.config.ConnectionProvider;
@@ -110,6 +112,63 @@ public final class ManageOrganizationDAO {
         }
     }
 
+    public Set<Long> findActiveOrganizationIdsByAdministrator(long adminUserId) throws SQLException {
+        try (Connection connection = connectionProvider.getConnection()) {
+            return findActiveOrganizationIdsByAdministrator(connection, adminUserId);
+        }
+    }
+
+    public Set<Long> findActiveOrganizationIdsByAdministrator(Connection connection, long adminUserId)
+            throws SQLException {
+        String sql = """
+                SELECT mo.id_organization
+                FROM manage_organization mo
+                JOIN administrator_profile ap ON ap.id_user = mo.id_admin_user
+                JOIN user_account u ON u.id_user = ap.id_user
+                JOIN organization o ON o.id_organization = mo.id_organization
+                WHERE mo.id_admin_user = ?
+                  AND mo.state = 'active'
+                  AND u.state = 'active'
+                  AND o.state <> 'archived'
+                  AND (mo.start_date IS NULL OR mo.start_date <= CURRENT_DATE)
+                  AND (mo.end_date IS NULL OR mo.end_date >= CURRENT_DATE)
+                ORDER BY o.name, mo.id_organization
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, adminUserId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Set<Long> organizationIds = new LinkedHashSet<>();
+                while (resultSet.next()) {
+                    organizationIds.add(resultSet.getLong("id_organization"));
+                }
+                return organizationIds;
+            }
+        }
+    }
+
+    public void synchronizeAssignments(
+            Connection connection,
+            long adminUserId,
+            Set<Long> organizationIdsInScope,
+            Set<Long> selectedOrganizationIds,
+            LocalDate startDate
+    ) throws SQLException {
+        Set<Long> scope = organizationIdsInScope == null ? Set.of() : new LinkedHashSet<>(organizationIdsInScope);
+        Set<Long> selected = selectedOrganizationIds == null ? Set.of() : new LinkedHashSet<>(selectedOrganizationIds);
+
+        for (long organizationId : selected) {
+            if (scope.contains(organizationId)) {
+                assign(connection, adminUserId, organizationId, startDate, null);
+            }
+        }
+        for (long organizationId : scope) {
+            if (!selected.contains(organizationId)) {
+                archiveAssignment(connection, adminUserId, organizationId);
+            }
+        }
+    }
+
     public boolean hasAnyActiveAdministrator(Connection connection, long organizationId) throws SQLException {
         String sql = """
                 SELECT COUNT(*)
@@ -129,6 +188,25 @@ public final class ManageOrganizationDAO {
                 resultSet.next();
                 return resultSet.getInt(1) > 0;
             }
+        }
+    }
+
+    private static void archiveAssignment(Connection connection, long adminUserId, long organizationId)
+            throws SQLException {
+        String sql = """
+                UPDATE manage_organization
+                SET state = ?
+                WHERE id_admin_user = ?
+                  AND id_organization = ?
+                  AND state <> ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, RoleAssignmentState.ARCHIVED.toDatabaseValue());
+            statement.setLong(2, adminUserId);
+            statement.setLong(3, organizationId);
+            statement.setString(4, RoleAssignmentState.ARCHIVED.toDatabaseValue());
+            statement.executeUpdate();
         }
     }
 

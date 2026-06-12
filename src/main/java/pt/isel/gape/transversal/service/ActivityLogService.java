@@ -73,7 +73,7 @@ public final class ActivityLogService {
         try {
             if (permissionChecker != null
                     && actorProfileType == AccessProfileType.ADMINISTRATOR
-                    && permissionChecker.hasPermission(actorUserId, actorProfileType, AuthorizationPolicy.VIEW_REPORTS)) {
+                    && permissionChecker.hasPermission(actorUserId, actorProfileType, AuthorizationPolicy.MANAGE_ALL)) {
                 return activityLogDAO.findAll();
             }
             return activityLogDAO.findByUserId(actorUserId);
@@ -97,10 +97,10 @@ public final class ActivityLogService {
             }
             if (permissionChecker != null
                     && actorProfileType == AccessProfileType.ADMINISTRATOR
-                    && permissionChecker.hasPermission(actorUserId, actorProfileType, AuthorizationPolicy.VIEW_REPORTS)) {
+                    && permissionChecker.hasPermission(actorUserId, actorProfileType, AuthorizationPolicy.MANAGE_ALL)) {
                 return activityLogDAO.findByUserInvolvement(targetUserId);
             }
-            throw new SecurityException("VIEW_REPORTS permission is required");
+            throw new SecurityException("MANAGE_ALL permission is required");
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load audit records for user " + targetUserId, exception);
         }

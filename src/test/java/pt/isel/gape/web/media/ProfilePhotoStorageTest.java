@@ -47,6 +47,44 @@ class ProfilePhotoStorageTest {
     }
 
     @Test
+    void storesCoursePhotoInCourseDirectory() throws Exception {
+        Path testRoot = Files.createDirectories(Path.of("target", "profile-photo-storage-test"));
+        Path uploadRoot = Files.createTempDirectory(testRoot, "uploads-");
+        try {
+            ProfilePhotoStorage storage = new ProfilePhotoStorage(uploadRoot.toAbsolutePath().toString());
+
+            String storedPath = storage.saveCoursePhoto(30L, new ImagePart(pngImageBytes(), "image/png", "course.png"), null);
+
+            assertEquals("courses/30/profile.webp", storedPath);
+            Path storedFile = uploadRoot.resolve("courses/30/profile.webp");
+            assertTrue(Files.exists(storedFile));
+            assertTrue(Files.size(storedFile) > 0);
+            assertWebpFile(storedFile);
+        } finally {
+            deleteDirectory(uploadRoot);
+        }
+    }
+
+    @Test
+    void storesSubjectPhotoInSubjectDirectory() throws Exception {
+        Path testRoot = Files.createDirectories(Path.of("target", "profile-photo-storage-test"));
+        Path uploadRoot = Files.createTempDirectory(testRoot, "uploads-");
+        try {
+            ProfilePhotoStorage storage = new ProfilePhotoStorage(uploadRoot.toAbsolutePath().toString());
+
+            String storedPath = storage.saveSubjectPhoto(40L, new ImagePart(pngImageBytes(), "image/png", "subject.png"), null);
+
+            assertEquals("subjects/40/profile.webp", storedPath);
+            Path storedFile = uploadRoot.resolve("subjects/40/profile.webp");
+            assertTrue(Files.exists(storedFile));
+            assertTrue(Files.size(storedFile) > 0);
+            assertWebpFile(storedFile);
+        } finally {
+            deleteDirectory(uploadRoot);
+        }
+    }
+
+    @Test
     void convertsJpegProfilePhotoToWebp() throws Exception {
         Path testRoot = Files.createDirectories(Path.of("target", "profile-photo-storage-test"));
         Path uploadRoot = Files.createTempDirectory(testRoot, "uploads-");

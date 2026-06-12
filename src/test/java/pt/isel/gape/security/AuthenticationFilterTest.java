@@ -8,6 +8,7 @@ import java.lang.reflect.Proxy;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Clock;
 import java.time.Instant;
@@ -16,6 +17,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -46,14 +49,18 @@ class AuthenticationFilterTest {
     private SessionManager sessionManager;
     private AuthenticationFilter filter;
 
-    @BeforeEach
-    void setUp() throws Exception {
-        connectionProvider = DatabaseTestSupport::openConnection;
-
+    @BeforeAll
+    static void initializeDatabase() throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection()) {
             DatabaseTestSupport.resetDatabase(connection);
             insertUser(connection, 400L);
         }
+    }
+
+    @BeforeEach
+    void setUp() throws Exception {
+        DatabaseTestSupport.beginTestTransaction();
+        connectionProvider = DatabaseTestSupport::openConnection;
 
         sessionService = new SessionService(
                 new SessionDAO(connectionProvider),
@@ -62,6 +69,11 @@ class AuthenticationFilterTest {
         );
         sessionManager = new SessionManager();
         filter = instantiateFilter(sessionService, sessionManager);
+    }
+
+    @AfterEach
+    void tearDown() throws SQLException {
+        DatabaseTestSupport.rollbackTestTransaction();
     }
 
     @Test
@@ -233,7 +245,7 @@ class AuthenticationFilterTest {
         return constructor.newInstance(service, manager);
     }
 
-    private void insertUser(Connection connection, long userId) throws Exception {
+    private static void insertUser(Connection connection, long userId) throws Exception {
         try (PreparedStatement statement = connection.prepareStatement("""
                 INSERT INTO user_account (
                     id_user, name, email, state, language, created_at, credential_hash, credential_salt

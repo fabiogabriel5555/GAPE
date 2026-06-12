@@ -5,7 +5,7 @@
 INSERT INTO course (
     id_course, id_organization, id_organic_unit, name, acronym, description, ects, duration, type, state
 ) VALUES
-    (9001, 999999, NULL, 'Curso FK invalida', 'CFK', NULL, 60.00, '1y', 'short_course', 'active');
+    (9001, 999999, NULL, 'Curso FK invalida', 'CFK', NULL, 60.00, '1', 'short_course', 'active');
 
 -- Sessao sem utilizador existente
 INSERT INTO user_session (

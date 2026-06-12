@@ -16,6 +16,8 @@ Thumbs.db
 # Ficheiros locais sensíveis
 src/main/resources/db-local.properties
 src/main/resources/db.local.properties
+docs/Credenciais.txt
+docs/creCredenciais.txt
 
 # Build alternativo
 build/
@@ -33,6 +35,7 @@ uploads/**
 !uploads/**/
 !uploads/**/.gitkeep
 gape/uploads/**
+.gape-webp-native/
 
 # Templates originais/intactos (staging - integram-se a partir daqui; versiona-se so o que for copiado para webapp/)
 docs/templates/

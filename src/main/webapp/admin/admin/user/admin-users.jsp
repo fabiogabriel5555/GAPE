@@ -87,6 +87,13 @@
             background-color: #c2410c !important;
             border-color: #c2410c !important;
         }
+
+        .gape-user-table-photo {
+            border-radius: 50%;
+            height: 44px;
+            object-fit: cover;
+            width: 44px;
+        }
     </style>
 </head>
 <body>
@@ -152,19 +159,43 @@
                             </thead>
                             <tbody>
                             <c:forEach var="user" items="${users}">
+                                <c:set var="userPhotoUrl" value=""/>
+                                <c:if test="${user.hasPhoto}">
+                                    <c:set var="userPhotoUrl" value="${pageContext.request.contextPath}/media/${user.photo}?v=${mediaCacheVersion}"/>
+                                </c:if>
                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                     <td class="py-20 px-20">
-                                        <a href="${pageContext.request.contextPath}/admin/users/${user.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
-                                            <c:out value="${user.name}"/>
-                                        </a>
-                                        <c:choose>
-                                            <c:when test="${sessionScope['gape.auth.canViewPersonalData']}">
-                                                <span class="d-block text-12 text-neutral-500"><c:out value="${user.email}"/></span>
-                                            </c:when>
-                                            <c:otherwise>
-                                                <span class="d-block text-12 text-neutral-500">Personal data restricted</span>
-                                            </c:otherwise>
-                                        </c:choose>
+                                        <div class="d-flex align-items-center gap-12">
+                                            <c:choose>
+                                                <c:when test="${user.hasPhoto}">
+                                                    <img src="${userPhotoUrl}"
+                                                         alt=""
+                                                         class="gape-user-table-photo flex-shrink-0"
+                                                         onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
+                                                    <span class="gape-photo-placeholder gape-photo-placeholder--user gape-photo-placeholder--table d-none" aria-label="No profile photo">
+                                                        <i class="ph ph-user-circle"></i>
+                                                    </span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span class="gape-photo-placeholder gape-photo-placeholder--user gape-photo-placeholder--table" aria-label="No profile photo">
+                                                        <i class="ph ph-user-circle"></i>
+                                                    </span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                            <div>
+                                                <a href="${pageContext.request.contextPath}/admin/users/${user.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                                    <c:out value="${user.name}"/>
+                                                </a>
+                                                <c:choose>
+                                                    <c:when test="${sessionScope['gape.auth.canViewPersonalData']}">
+                                                        <span class="d-block text-12 text-neutral-500"><c:out value="${user.email}"/></span>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <span class="d-block text-12 text-neutral-500">Personal data restricted</span>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${user.profileSummary}"/></td>
                                     <td class="py-20 px-20 text-14 text-neutral-500">

@@ -23,6 +23,7 @@ import pt.isel.gape.access.model.UserState;
 import pt.isel.gape.access.service.UserService;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
+import pt.isel.gape.security.authorization.AuthorizationPolicy;
 import pt.isel.gape.security.session.SessionUser;
 import pt.isel.gape.structure.model.OrganicUnit;
 import pt.isel.gape.structure.model.OrganicUnitCreateCommand;
@@ -50,6 +51,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
 
     private static final String ORGANIZATIONS_LIST_JSP = "/admin/admin/organization/admin-organizations.jsp";
     private static final String ORGANIZATION_DETAIL_JSP = "/admin/admin/organization/admin-organization-detail.jsp";
+    private static final String ORGANIZATION_UNITS_JSP = "/admin/admin/organization/admin-organization-units.jsp";
     private static final String ORGANIZATION_FORM_JSP = "/admin/admin/organization/admin-organization-form.jsp";
     private static final String ORGANIC_UNIT_FORM_JSP = "/admin/admin/organization/admin-organic-unit-form.jsp";
 
@@ -99,6 +101,10 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
             }
             if (segments.length == 2 && "edit".equals(segments[1])) {
                 showEditForm(request, response, Long.parseLong(segments[0]), null);
+                return;
+            }
+            if (segments.length == 2 && "units".equals(segments[1])) {
+                showUnits(request, response, Long.parseLong(segments[0]));
                 return;
             }
             if (segments.length == 3 && "units".equals(segments[1]) && "new".equals(segments[2])) {
@@ -151,7 +157,6 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 long organizationId = Long.parseLong(segments[0]);
                 long organicUnitId = Long.parseLong(segments[2]);
                 switch (segments[3]) {
-                    case "archive" -> archiveOrganicUnit(request, response, organizationId, organicUnitId);
                     case "delete" -> deleteOrganicUnit(request, response, organizationId, organicUnitId);
                     default -> response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 }
@@ -183,7 +188,16 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         request.setAttribute("activeOrganizations", views.stream().filter(OrganizationView::isActive).count());
         request.setAttribute("inactiveOrganizations", views.stream().filter(OrganizationView::isInactive).count());
         request.setAttribute("unitTotal", views.stream().mapToInt(OrganizationView::getOrganicUnitCount).sum());
-        prepareDashboard(request, "organizations", "Organizations", "/admin/organizations/new", "New Organization");
+        boolean canModifyOrganizations = canManageOrganizationRoots(actor);
+        request.setAttribute("canCreateOrganizations", canModifyOrganizations);
+        request.setAttribute("canModifyOrganizations", canModifyOrganizations);
+        prepareDashboard(
+                request,
+                "organizations",
+                "Organizations",
+                canModifyOrganizations ? "/admin/organizations/new" : null,
+                canModifyOrganizations ? "New Organization" : null
+        );
         forward(request, response, ORGANIZATIONS_LIST_JSP);
     }
 
@@ -205,8 +219,15 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 request.getRemoteAddr()
         );
         OrganizationView organizationView = OrganizationView.from(organization, units.size());
+        boolean canModifyOrganization = canManageOrganizationRoots(actor);
+        boolean canCreateOrganicUnits = canCreateAnyOrganicUnit(actor, organizationId, units, request)
+                && !organizationView.isArchived();
         request.setAttribute("organization", organizationView);
         request.setAttribute("organicUnits", hierarchyViews(units, null));
+        request.setAttribute("canModifyOrganization", canModifyOrganization);
+        request.setAttribute("canAssignOrganizationAdministrators", canModifyOrganization);
+        request.setAttribute("canCreateOrganicUnits", canCreateOrganicUnits);
+        request.setAttribute("canModifyOrganicUnitById", canModifyOrganicUnitById(actor, units, request));
         request.setAttribute("assignedAdministrators", organizationService.listAdministrators(
                 actor.userId(),
                 currentSessionId(request),
@@ -220,8 +241,43 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         forward(request, response, ORGANIZATION_DETAIL_JSP);
     }
 
+    private void showUnits(HttpServletRequest request, HttpServletResponse response, long organizationId)
+            throws ServletException, IOException {
+        SessionUser actor = requireCurrentUser(request);
+        Organization organization = organizationService.getOrganization(
+                actor.userId(),
+                currentSessionId(request),
+                primaryProfile(actor),
+                organizationId,
+                request.getRemoteAddr()
+        );
+        List<OrganicUnit> units = organicUnitService.listOrganicUnits(
+                actor.userId(),
+                currentSessionId(request),
+                primaryProfile(actor),
+                organizationId,
+                request.getRemoteAddr()
+        );
+        OrganizationView organizationView = OrganizationView.from(organization, units.size());
+        boolean canCreateOrganicUnits = canCreateAnyOrganicUnit(actor, organizationId, units, request)
+                && !organizationView.isArchived();
+        request.setAttribute("organization", organizationView);
+        request.setAttribute("organicUnits", hierarchyViews(units, null));
+        request.setAttribute("canModifyOrganization", canManageOrganizationRoots(actor));
+        request.setAttribute("canCreateOrganicUnits", canCreateOrganicUnits);
+        request.setAttribute("canModifyOrganicUnitById", canModifyOrganicUnitById(actor, units, request));
+        prepareOrganizationContext(request, organizationView, "units");
+        prepareDashboard(request, "organizations", "Organic Units");
+        forward(request, response, ORGANIZATION_UNITS_JSP);
+    }
+
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response, OrganizationFormData form, String error)
             throws ServletException, IOException {
+        SessionUser actor = requireCurrentUser(request);
+        if (!canManageOrganizationRoots(actor)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
         request.setAttribute("form", form);
         request.setAttribute("creating", Boolean.TRUE);
         request.setAttribute("formAction", request.getContextPath() + "/admin/organizations");
@@ -236,6 +292,10 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
     private void showEditForm(HttpServletRequest request, HttpServletResponse response, long organizationId, String error)
             throws ServletException, IOException {
         SessionUser actor = requireCurrentUser(request);
+        if (!canManageOrganizationRoots(actor)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
         Organization organization = organizationService.getOrganization(
                 actor.userId(),
                 currentSessionId(request),
@@ -251,6 +311,8 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         request.setAttribute("creating", Boolean.FALSE);
         request.setAttribute("formAction", request.getContextPath() + "/admin/organizations/" + organizationId);
         prepareOrganizationContext(request, organizationView, "edit");
+        request.setAttribute("canModifyOrganization", Boolean.TRUE);
+        request.setAttribute("canCreateOrganicUnits", Boolean.FALSE);
         if (error != null) {
             request.setAttribute("errorMessage", error);
         }
@@ -273,6 +335,11 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 organizationId,
                 request.getRemoteAddr()
         );
+        List<OrganicUnit> units = safeOrganicUnits(actor, organizationId, request);
+        if (!canCreateAnyOrganicUnit(actor, organizationId, units, request)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
         prepareUnitForm(request, organization, form, true, null, error);
         forward(request, response, ORGANIC_UNIT_FORM_JSP);
     }
@@ -294,6 +361,16 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 unitId,
                 request.getRemoteAddr()
         );
+        if (!organicUnitService.canModifyOrganicUnit(
+                actor.userId(),
+                currentSessionId(request),
+                primaryProfile(actor),
+                unitId,
+                request.getRemoteAddr()
+        )) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
         OrganicUnitFormData form = error == null
                 ? OrganicUnitFormData.from(unit)
                 : OrganicUnitFormData.from(request, unitId, organizationId, unit.code());
@@ -500,7 +577,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Organic unit created successfully.");
-            redirect(request, response, "/admin/organizations/" + organizationId);
+            redirect(request, response, "/admin/organizations/" + organizationId + "/units");
         } catch (RuntimeException exception) {
             showUnitCreateForm(request, response, organizationId, form, messageFor(exception));
         }
@@ -526,28 +603,10 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Organic unit updated successfully.");
-            redirect(request, response, "/admin/organizations/" + organizationId);
+            redirect(request, response, "/admin/organizations/" + organizationId + "/units");
         } catch (RuntimeException exception) {
             showUnitEditForm(request, response, organizationId, unitId, messageFor(exception));
         }
-    }
-
-    private void archiveOrganicUnit(HttpServletRequest request, HttpServletResponse response, long organizationId, long unitId)
-            throws IOException {
-        SessionUser actor = requireCurrentUser(request);
-        try {
-            organicUnitService.archiveOrganicUnit(
-                    actor.userId(),
-                    currentSessionId(request),
-                    primaryProfile(actor),
-                    unitId,
-                    request.getRemoteAddr()
-            );
-            flashSuccess(request, "Organic unit archived.");
-        } catch (RuntimeException exception) {
-            flashError(request, messageFor(exception));
-        }
-        redirect(request, response, "/admin/organizations/" + organizationId);
     }
 
     private void deleteOrganicUnit(HttpServletRequest request, HttpServletResponse response, long organizationId, long unitId)
@@ -565,7 +624,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirect(request, response, "/admin/organizations/" + organizationId);
+        redirect(request, response, "/admin/organizations/" + organizationId + "/units");
     }
 
     private void prepareUnitForm(
@@ -587,6 +646,9 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 : request.getContextPath() + "/admin/organizations/" + organization.id() + "/units/" + editingUnitId);
         request.setAttribute("parentOptions", hierarchyViews(units, editingUnitId));
         prepareOrganizationContext(request, organizationView, creating ? "unit-new" : "unit-edit");
+        request.setAttribute("canModifyOrganization", canManageOrganizationRoots(actor));
+        request.setAttribute("canCreateOrganicUnits", canCreateAnyOrganicUnit(actor, organization.id(), units, request)
+                && !organizationView.isArchived());
         if (error != null) {
             request.setAttribute("errorMessage", error);
         }
@@ -618,6 +680,60 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         } catch (RuntimeException exception) {
             return List.of();
         }
+    }
+
+    private boolean canCreateAnyOrganicUnit(
+            SessionUser actor,
+            long organizationId,
+            List<OrganicUnit> units,
+            HttpServletRequest request
+    ) {
+        if (organicUnitService.canCreateOrganicUnit(
+                actor.userId(),
+                currentSessionId(request),
+                primaryProfile(actor),
+                organizationId,
+                null,
+                request.getRemoteAddr()
+        )) {
+            return true;
+        }
+        for (OrganicUnit unit : units) {
+            if (!unit.state().equals(OrganicUnitState.ARCHIVED)
+                    && organicUnitService.canCreateOrganicUnit(
+                            actor.userId(),
+                            currentSessionId(request),
+                            primaryProfile(actor),
+                            organizationId,
+                            unit.id(),
+                            request.getRemoteAddr()
+                    )) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Map<Long, Boolean> canModifyOrganicUnitById(
+            SessionUser actor,
+            List<OrganicUnit> units,
+            HttpServletRequest request
+    ) {
+        Map<Long, Boolean> permissions = new HashMap<>();
+        for (OrganicUnit unit : units) {
+            permissions.put(unit.id(), organicUnitService.canModifyOrganicUnit(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    unit.id(),
+                    request.getRemoteAddr()
+            ));
+        }
+        return permissions;
+    }
+
+    private static boolean canManageOrganizationRoots(SessionUser actor) {
+        return actor.hasPermission(AuthorizationPolicy.MANAGE_ALL);
     }
 
     private static List<OrganicUnitView> hierarchyViews(List<OrganicUnit> units, Long excludedUnitId) {
