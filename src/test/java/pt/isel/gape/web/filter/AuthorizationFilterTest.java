@@ -164,6 +164,55 @@ class AuthorizationFilterTest {
     }
 
     @Test
+    void administratorCanAccessLearningClassGroupsUrl() throws Exception {
+        TestHttpSession httpSession = authenticatedHttpSession(1L, Set.of(AccessProfileType.ADMINISTRATOR));
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        TestFilterChain chainState = new TestFilterChain();
+
+        filter.doFilter(
+                requestProxy("/learning/class-groups", httpSession),
+                responseProxy(responseState),
+                chainProxy(chainState)
+        );
+
+        assertTrue(chainState.called);
+        assertEquals(null, responseState.errorStatus);
+    }
+
+    @Test
+    void teacherCanAccessLearningClassGroupsUrl() throws Exception {
+        TestHttpSession httpSession = authenticatedHttpSession(3L, Set.of(AccessProfileType.TEACHER));
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        TestFilterChain chainState = new TestFilterChain();
+
+        filter.doFilter(
+                requestProxy("/learning/class-groups", httpSession),
+                responseProxy(responseState),
+                chainProxy(chainState)
+        );
+
+        assertTrue(chainState.called);
+        assertEquals(null, responseState.errorStatus);
+    }
+
+    @Test
+    void studentCannotAccessLearningClassGroupsManagementUrl() throws Exception {
+        TestHttpSession httpSession = authenticatedHttpSession(4L, Set.of(AccessProfileType.STUDENT));
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        TestFilterChain chainState = new TestFilterChain();
+
+        filter.doFilter(
+                requestProxy("/learning/class-groups", httpSession),
+                responseProxy(responseState),
+                chainProxy(chainState)
+        );
+
+        assertFalse(chainState.called);
+        assertEquals("/ctx/student/student-home.jsp", responseState.redirectLocation);
+        assertEquals(null, responseState.errorStatus);
+    }
+
+    @Test
     void administratorWithoutManageUsersCannotAccessUserManagementUrl() throws Exception {
         TestHttpSession httpSession = authenticatedHttpSession(601L, Set.of(AccessProfileType.ADMINISTRATOR));
         TestHttpServletResponse responseState = new TestHttpServletResponse();

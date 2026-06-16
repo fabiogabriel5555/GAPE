@@ -1,0 +1,18 @@
+package pt.isel.gape.learning.model;
+
+import java.time.LocalDate;
+
+public record ClassGroup(
+        long id,
+        long subjectId,
+        long courseId,
+        String code,
+        ClassGroupModality modality,
+        ClassGroupState state,
+        Integer minStudents,
+        Integer maxStudents,
+        LocalDate startsAt,
+        LocalDate endsAt,
+        String shift
+) {
+}

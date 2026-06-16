@@ -89,12 +89,13 @@ class SchemaIntegrityTest {
             assertTrue(DatabaseTestSupport.isUniqueIndex(connection, "user_account", "uq_user_account_document"));
             assertTrue(DatabaseTestSupport.isUniqueIndex(connection, "user_session", "uq_user_session_token"));
             assertTrue(DatabaseTestSupport.isUniqueIndex(connection, "question", "uq_question_assessment_code"));
+            assertTrue(DatabaseTestSupport.isUniqueIndex(connection, "content_block", "uq_content_block_active_order"));
 
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "user_account", "ck_user_account_state", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "user_account", "ck_user_account_document_pair", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "user_session", "ck_user_session_last_activity_end", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "class_group", "ck_class_group_modality", "CHECK"));
-            assertTrue(DatabaseTestSupport.existsConstraint(connection, "class_group", "ck_class_group_students_pair", "CHECK"));
+            assertTrue(DatabaseTestSupport.existsConstraint(connection, "class_group", "ck_class_group_students_range", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "content_block", "ck_content_block_scheduled_access", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "message", "ck_message_attachment_type", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "certificate", "ck_certificate_issued_context", "CHECK"));
@@ -105,6 +106,8 @@ class SchemaIntegrityTest {
     void shouldExposeValidationTriggersForCrossEntityRules() throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection()) {
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_course_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_enroll_class_group_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_content_block_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_lesson_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_attempt_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_schedule_event_validate"));

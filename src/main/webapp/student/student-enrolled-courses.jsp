@@ -30,7 +30,7 @@
                     <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap">
                         <div>
                             <h2 class="text-18 fw-medium text-neutral-700 mb-4">My Course Enrollments</h2>
-                            <span class="text-14 text-neutral-500">Course and subject enrollments managed by GAPE.</span>
+                            <span class="text-14 text-neutral-500">Course, subject and class group enrollments managed by GAPE.</span>
                         </div>
                         <a href="${pageContext.request.contextPath}/courses" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">Open Catalog</a>
                     </div>
@@ -132,6 +132,82 @@
                             </c:if>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-10 px-24 py-24 mb-24">
+                    <h3 class="text-18 fw-medium text-neutral-700 mb-20">Class Groups</h3>
+                    <div class="row gy-4">
+                        <c:forEach var="item" items="${studentClassGroups}">
+                            <div class="col-xl-6">
+                                <div class="border border-neutral-30 rounded-12 px-20 py-20 h-100">
+                                    <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-16">
+                                        <div>
+                                            <h4 class="text-16 fw-semibold text-neutral-700 mb-8">
+                                                <c:out value="${item.classGroup.code}"/>
+                                            </h4>
+                                            <p class="text-13 text-neutral-500 mb-0" title="<c:out value='${item.classGroup.contextTitle}'/>">
+                                                <c:out value="${item.classGroup.contextHtml}" escapeXml="false"/>
+                                            </p>
+                                        </div>
+                                        <span class="${item.enrollmentBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13">
+                                            <c:out value="${item.enrollmentStateLabel}"/>
+                                        </span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-12 flex-wrap mb-16">
+                                        <span class="text-13 text-neutral-500"><c:out value="${item.classGroup.modalityLabel}"/></span>
+                                        <span class="text-13 text-neutral-500"><c:out value="${item.classGroup.dateRangeLabel}"/></span>
+                                        <span class="text-13 text-neutral-500"><c:out value="${item.classGroup.capacityLabel}"/></span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-12 flex-wrap mb-16">
+                                        <c:if test="${item.canEnroll}">
+                                            <form action="${pageContext.request.contextPath}/student/enrollments/class-groups/${item.classGroup.id}" method="post" class="m-0">
+                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                <input type="hidden" name="returnTo" value="/student/enrollments">
+                                                <button type="submit" class="bg-main-600 px-18 py-9 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">Enroll</button>
+                                            </form>
+                                        </c:if>
+                                        <c:if test="${item.canWithdraw}">
+                                            <form action="${pageContext.request.contextPath}/student/enrollments/class-groups/${item.classGroup.id}/withdraw" method="post" class="m-0">
+                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                <input type="hidden" name="returnTo" value="/student/enrollments">
+                                                <button type="submit" class="border-main-600 border px-18 py-9 rounded-12 fw-semibold text-main-600 hover-bg-main-50 transition-03">Withdraw</button>
+                                            </form>
+                                        </c:if>
+                                    </div>
+                                    <c:if test="${item.activeEnrollment}">
+                                        <div class="border-top border-neutral-30 pt-16">
+                                            <div class="text-13 fw-medium text-neutral-700 mb-12">Pedagogical Blocks</div>
+                                            <c:choose>
+                                                <c:when test="${not empty item.contentBlocks}">
+                                                    <div class="d-flex flex-column gap-10">
+                                                        <c:forEach var="block" items="${item.contentBlocks}">
+                                                            <div class="d-flex align-items-start justify-content-between gap-12 flex-wrap bg-neutral-20 rounded-10 px-16 py-12">
+                                                                <div>
+                                                                    <span class="text-13 fw-semibold text-neutral-700">#<c:out value="${block.orderNo}"/> <c:out value="${block.name}"/></span>
+                                                                    <p class="text-12 text-neutral-500 mb-0"><c:out value="${block.availabilityLabel}"/></p>
+                                                                </div>
+                                                                <span class="${block.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
+                                                                    <c:out value="${block.accessModeLabel}"/>
+                                                                </span>
+                                                            </div>
+                                                        </c:forEach>
+                                                    </div>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <div class="text-13 text-neutral-500">No visible pedagogical blocks.</div>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </div>
+                                    </c:if>
+                                </div>
+                            </div>
+                        </c:forEach>
+                        <c:if test="${empty studentClassGroups}">
+                            <div class="col-12">
+                                <div class="border border-neutral-30 rounded-12 px-24 py-32 text-center text-14 text-neutral-500">No class groups available for your active subject enrollments.</div>
+                            </div>
+                        </c:if>
                     </div>
                 </div>
 

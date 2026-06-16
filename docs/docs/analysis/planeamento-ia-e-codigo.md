@@ -3099,7 +3099,7 @@ Usa o agente `Codex Test Agent`.
 Cria:
 
 * `ClassGroupServiceTest.java`;
-* `StudentClassGroupServiceTest.java`;
+* `ClassGroupEnrollmentServiceTest.java`;
 * `ContentBlockServiceTest.java`;
 * `docs/tests/class-groups-blocks-tests.md`.
 
@@ -3107,7 +3107,7 @@ Executa:
 
 ```bash
 mvn test -Dtest=ClassGroupServiceTest
-mvn test -Dtest=StudentClassGroupServiceTest
+mvn test -Dtest=ClassGroupEnrollmentServiceTest
 mvn test -Dtest=ContentBlockServiceTest
 ```
 
@@ -3211,7 +3211,7 @@ Antes de rever, analisa:
 * JSPs da fase;
 * `docs/docs/analysis/eduall-class-groups-blocks-integration.md`;
 * `ClassGroupServiceTest.java`;
-* `StudentClassGroupServiceTest.java`;
+* `ClassGroupEnrollmentServiceTest.java`;
 * `ContentBlockServiceTest.java`;
 * `docs/tests/class-groups-blocks-tests.md`.
 

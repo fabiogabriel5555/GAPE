@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test;
 class TemplateStructureTest {
 
     private static final Path WEBAPP_DIR = Path.of("src/main/webapp");
+    private static final Path JAVA_DIR = Path.of("src/main/java");
     private static final Path ASSETS_DIR = WEBAPP_DIR.resolve("assets");
     private static final Path FRAGMENTS_DIR = WEBAPP_DIR.resolve("WEB-INF/fragments");
     private static final Path ANALYSIS_DOC = Path.of("docs/docs/analysis/eduall-template-analysis.md");
@@ -46,15 +49,26 @@ class TemplateStructureTest {
             "admin/admin/organization/admin-organizations.jsp",
             "admin/admin/organization/admin-organization-form.jsp",
             "admin/admin/organization/admin-organization-detail.jsp",
+            "admin/admin/organization/admin-organic-unit-detail.jsp",
             "admin/admin/organization/admin-organic-unit-form.jsp",
             "admin/admin-message.jsp",
             "admin/admin-my-profile.jsp",
             "admin/admin-quiz-attempts.jsp",
             "admin/admin-reviews.jsp",
-            "coordinator/coordinator-home.jsp",
+            "coordinator/coordinator-dashbord.jsp",
             "coordinator/coordinator-message.jsp",
             "coordinator/coordinator-my-profile.jsp",
-            "coordinator/coordinator-account-settings.jsp",
+            "coordinator/coordinator-quiz-attempts.jsp",
+            "coordinator/coordinator-reviews.jsp",
+            "coordinator/coordinator/subject/coordinator-subjects.jsp",
+            "coordinator/coordinator/subject/coordinator-subject-form.jsp",
+            "coordinator/coordinator/subject/coordinator-subject-detail.jsp",
+            "coordinator/coordinator/subject/coordinator-subject-course-form.jsp",
+            "instructor/instructor-dashbord.jsp",
+            "instructor/instructor-message.jsp",
+            "instructor/instructor-my-profile.jsp",
+            "instructor/instructor-quiz-attempts.jsp",
+            "instructor/instructor-reviews.jsp",
             "courses.jsp",
             "course.jsp",
             "course-details.jsp",
@@ -66,8 +80,6 @@ class TemplateStructureTest {
             "profile.jsp",
             "contact.jsp",
             "about-four.jsp",
-            "instructor/instructor.jsp",
-            "instructor/instructor-details.jsp",
             "tutor.jsp",
             "tutor-details.jsp",
             "events.jsp",
@@ -105,18 +117,181 @@ class TemplateStructureTest {
     }
 
     @Test
-    void coordinatorPagesMirrorInstructorPages() throws Exception {
-        Path instructorDir = WEBAPP_DIR.resolve("instructor");
+    void coordinatorPagesFollowAdministratorStructure() throws Exception {
         Path coordinatorDir = WEBAPP_DIR.resolve("coordinator");
+        List<String> sharedRootPages = List.of(
+                "coordinator-dashbord.jsp",
+                "coordinator-message.jsp",
+                "coordinator-my-profile.jsp",
+                "coordinator-quiz-attempts.jsp",
+                "coordinator-reviews.jsp"
+        );
+
+        for (String sharedRootPage : sharedRootPages) {
+            Path page = coordinatorDir.resolve(sharedRootPage);
+            assertTrue(Files.isRegularFile(page), () -> "Expected coordinator shared root page: " + page);
+        }
+
+        assertFalse(Files.exists(coordinatorDir.resolve("coordinator-home.jsp")),
+                "Coordinator dashboard must use the admin-like dashbord page name, not home");
+        assertTrue(Files.isDirectory(coordinatorDir.resolve("coordinator")),
+                "Coordinator-specific pages must live under coordinator/coordinator, matching admin/admin");
+
+        try (Stream<Path> stream = Files.list(coordinatorDir)) {
+            List<String> rootSpecificPages = stream
+                    .filter(Files::isRegularFile)
+                    .map(path -> path.getFileName().toString())
+                    .filter(name -> name.endsWith(".jsp"))
+                    .filter(name -> !sharedRootPages.contains(name))
+                    .collect(Collectors.toList());
+
+            assertTrue(rootSpecificPages.isEmpty(),
+                    () -> "Coordinator-specific JSPs must not stay in the coordinator root: " + rootSpecificPages);
+        }
+
+        try (Stream<Path> stream = Files.walk(coordinatorDir.resolve("coordinator"))) {
+            List<Path> unexpectedSpecificPages = stream
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.toString().endsWith(".jsp"))
+                    .filter(path -> !path.startsWith(coordinatorDir.resolve("coordinator/subject")))
+                    .filter(path -> !path.startsWith(coordinatorDir.resolve("coordinator/class-group")))
+                    .collect(Collectors.toList());
+
+            assertTrue(unexpectedSpecificPages.isEmpty(),
+                    () -> "Unused coordinator JSPs must not remain under coordinator/coordinator: "
+                            + unexpectedSpecificPages);
+        }
+    }
+
+    @Test
+    void instructorPagesFollowAdministratorStructure() throws Exception {
+        Path instructorDir = WEBAPP_DIR.resolve("instructor");
+        List<String> sharedRootPages = List.of(
+                "instructor-dashbord.jsp",
+                "instructor-message.jsp",
+                "instructor-my-profile.jsp",
+                "instructor-quiz-attempts.jsp",
+                "instructor-reviews.jsp"
+        );
+
+        for (String sharedRootPage : sharedRootPages) {
+            Path page = instructorDir.resolve(sharedRootPage);
+            assertTrue(Files.isRegularFile(page), () -> "Expected instructor shared root page: " + page);
+        }
+
+        assertFalse(Files.exists(instructorDir.resolve("instructor-home.jsp")),
+                "Instructor dashboard must use the admin-like dashbord page name, not home");
+        assertFalse(Files.exists(instructorDir.resolve("instructor.jsp")),
+                "Unused instructor listing JSP must not remain under instructor");
+        assertFalse(Files.exists(instructorDir.resolve("instructor-details.jsp")),
+                "Unused instructor detail JSP must not remain under instructor");
 
         try (Stream<Path> stream = Files.list(instructorDir)) {
-            for (Path instructorPage : stream.filter(Files::isRegularFile).toList()) {
-                String expectedCoordinatorName = instructorPage.getFileName().toString()
-                        .replaceFirst("^instructor", "coordinator");
-                Path coordinatorPage = coordinatorDir.resolve(expectedCoordinatorName);
-                assertTrue(Files.isRegularFile(coordinatorPage), () -> "Expected coordinator mirror page: " + coordinatorPage);
+            List<String> rootSpecificPages = stream
+                    .filter(Files::isRegularFile)
+                    .map(path -> path.getFileName().toString())
+                    .filter(name -> name.endsWith(".jsp"))
+                    .filter(name -> !sharedRootPages.contains(name))
+                    .collect(Collectors.toList());
+
+            assertTrue(rootSpecificPages.isEmpty(),
+                    () -> "Unused instructor JSPs must not stay in the instructor root: " + rootSpecificPages);
+        }
+
+        assertTrue(Files.isDirectory(instructorDir.resolve("instructor/class-group")),
+                "Instructor-specific class group pages must live under instructor/instructor/class-group");
+    }
+
+    @Test
+    void classGroupPagesAreProfileSpecific() throws IOException {
+        Map<Path, List<String>> expectedPagesByDirectory = Map.of(
+                WEBAPP_DIR.resolve("admin/admin/class-group"),
+                List.of(
+                        "admin-class-groups.jsp",
+                        "admin-class-group-detail.jsp",
+                        "admin-class-group-form.jsp",
+                        "admin-content-block-form.jsp"
+                ),
+                WEBAPP_DIR.resolve("coordinator/coordinator/class-group"),
+                List.of(
+                        "coordinator-class-groups.jsp",
+                        "coordinator-class-group-detail.jsp",
+                        "coordinator-class-group-form.jsp",
+                        "coordinator-content-block-form.jsp"
+                ),
+                WEBAPP_DIR.resolve("instructor/instructor/class-group"),
+                List.of(
+                        "instructor-class-groups.jsp",
+                        "instructor-class-group-detail.jsp",
+                        "instructor-class-group-form.jsp",
+                        "instructor-content-block-form.jsp"
+                )
+        );
+
+        for (Map.Entry<Path, List<String>> entry : expectedPagesByDirectory.entrySet()) {
+            Path directory = entry.getKey();
+            assertTrue(Files.isDirectory(directory), () -> "Expected class group directory: " + directory);
+            for (String pageName : entry.getValue()) {
+                assertTrue(Files.isRegularFile(directory.resolve(pageName)),
+                        () -> "Expected profile-specific class group page: " + directory.resolve(pageName));
             }
         }
+
+        try (Stream<Path> stream = Files.list(WEBAPP_DIR.resolve("admin/admin/course"))) {
+            List<Path> misplacedClassGroupPages = stream
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().contains("class-group")
+                            || path.getFileName().toString().contains("class-groups")
+                            || path.getFileName().toString().contains("content-block"))
+                    .collect(Collectors.toList());
+
+            assertTrue(misplacedClassGroupPages.isEmpty(),
+                    () -> "Class group JSPs must not remain under admin/admin/course: " + misplacedClassGroupPages);
+        }
+
+        String servlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/ClassGroupManagementServlet.java"));
+        assertTrue(servlet.contains("/admin/admin/class-group/admin-class-groups.jsp")
+                        && servlet.contains("/coordinator/coordinator/class-group/coordinator-class-groups.jsp")
+                        && servlet.contains("/instructor/instructor/class-group/instructor-class-groups.jsp"),
+                "ClassGroupManagementServlet must route class groups to profile-specific JSPs");
+        assertFalse(servlet.contains("/admin/admin/course/admin-class-groups.jsp"),
+                "ClassGroupManagementServlet must not route class groups through the admin course JSP folder");
+    }
+
+    @Test
+    void classGroupFormsKeepCourseAndSubjectImmutableDuringEdit() throws IOException {
+        List<Path> formPaths = List.of(
+                WEBAPP_DIR.resolve("admin/admin/class-group/admin-class-group-form.jsp"),
+                WEBAPP_DIR.resolve("coordinator/coordinator/class-group/coordinator-class-group-form.jsp"),
+                WEBAPP_DIR.resolve("instructor/instructor/class-group/instructor-class-group-form.jsp")
+        );
+
+        for (Path formPath : formPaths) {
+            String form = Files.readString(formPath);
+            assertTrue(form.contains("<c:when test=\"${creating}\">"),
+                    () -> "Class group form must only show course/subject selectors while creating: " + formPath);
+            assertTrue(form.contains("id=\"courseContext\"")
+                            && form.contains("id=\"subjectContext\"")
+                            && form.contains("name=\"courseId\" value=\"${form.courseId}\"")
+                            && form.contains("name=\"subjectId\" value=\"${form.subjectId}\""),
+                    () -> "Class group edit form must preserve immutable course/subject as readonly context: " + formPath);
+        }
+    }
+
+    @Test
+    void studentEnrollmentPageExposesClassGroupFlow() throws IOException {
+        String servlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/StudentEnrollmentServlet.java"));
+        String page = Files.readString(WEBAPP_DIR.resolve("student/student-enrolled-courses.jsp"));
+
+        assertTrue(servlet.contains("ClassGroupEnrollmentService")
+                        && servlet.contains("studentClassGroups")
+                        && servlet.contains("\"class-groups\""),
+                "StudentEnrollmentServlet must load and handle student class group enrollments");
+        assertTrue(page.contains("Class Groups")
+                        && page.contains("/student/enrollments/class-groups/${item.classGroup.id}")
+                        && page.contains("/student/enrollments/class-groups/${item.classGroup.id}/withdraw")
+                        && page.contains("Pedagogical Blocks"),
+                "Student enrollment page must expose class group enrollment, withdrawal and visible blocks");
     }
 
     @Test
@@ -130,13 +305,18 @@ class TemplateStructureTest {
 
         for (Path profileDirectory : profileDirectories) {
             try (Stream<Path> stream = Files.walk(profileDirectory)) {
+                Set<String> allowedDashbordNames = Set.of(
+                        "admin-dashbord.jsp",
+                        "coordinator-dashbord.jsp",
+                        "instructor-dashbord.jsp"
+                );
                 List<String> unexpectedNames = stream
                         .filter(Files::isRegularFile)
                         .map(path -> path.getFileName().toString())
                         .filter(name -> name.endsWith(".jsp"))
                         .filter(name -> name.contains("dashboard")
                                 || name.contains("ashboard")
-                                || (name.contains("dashbord") && !"admin-dashbord.jsp".equals(name)))
+                                || (name.contains("dashbord") && !allowedDashbordNames.contains(name)))
                         .collect(Collectors.toList());
 
                 assertTrue(unexpectedNames.isEmpty(),
@@ -205,7 +385,7 @@ class TemplateStructureTest {
                     }
 
                     assertEquals(1, count, () -> "Expected exactly one active sidebar item in " + page);
-                    assertEquals(expectedSidebarHref(dashboardDirectory.getFileName().toString(), pageName),
+                    assertEquals(expectedSidebarHref(dashboardDirectory, page),
                             normalizeDashboardHref(activeHref),
                             () -> "Unexpected active sidebar href in " + page);
                 }
@@ -219,6 +399,8 @@ class TemplateStructureTest {
 
         assertFalse(mainScript.contains("dynamicActiveMenuClass($('ul'))"),
                 "Main script must not run active menu detection over every ul, because it clears dashboard sidebars");
+        assertFalse(mainScript.contains("dynamicActiveSidebarClass($('.dashboard-sidebar"),
+                "Main script must not recalculate active state for the shared dashboard sidebar");
         assertTrue(mainScript.contains("dynamicActiveMenuClass($('.nav-menu'))"),
                 "Main script should scope top navigation active state to .nav-menu");
     }
@@ -321,11 +503,109 @@ class TemplateStructureTest {
     }
 
     @Test
+    void associationFormsExposeDeleteActions() throws IOException {
+        String courseSubjectForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/course/admin-course-subject-form.jsp"));
+        String subjectCourseForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subject-course-form.jsp"));
+        String subjectList = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subjects.jsp"));
+
+        assertTrue(courseSubjectForm.contains("/subjects/${association.subjectId}/delete")
+                        && courseSubjectForm.contains("gape-action-delete"),
+                "Associate Subject must allow deleting existing subject associations");
+        assertTrue(subjectCourseForm.contains("/courses/${association.courseId}/delete")
+                        && subjectCourseForm.contains("gape-action-delete"),
+                "Associate Courses must allow deleting existing course associations");
+        assertTrue(subjectList.contains("canManageSubjectAssociationsById")
+                        && subjectList.contains("canManageSubjectAssociationsRow")
+                        && subjectList.contains("${subjectBasePath}/${subject.id}/courses"),
+                "Subjects list must expose association actions independently from subject mutation");
+    }
+
+    @Test
+    void coordinatorSidebarLinksToManagedSubjects() throws IOException {
+        String sidebar = Files.readString(FRAGMENTS_DIR.resolve("dashboard-sidebar.jspf"));
+        String coordinatorHome = Files.readString(WEBAPP_DIR.resolve("coordinator/coordinator-dashbord.jsp"));
+        String coordinatorMessage = Files.readString(WEBAPP_DIR.resolve("coordinator/coordinator-message.jsp"));
+        String coordinatorProfile = Files.readString(WEBAPP_DIR.resolve("coordinator/coordinator-my-profile.jsp"));
+        String coordinatorQuizAttempts = Files.readString(WEBAPP_DIR.resolve("coordinator/coordinator-quiz-attempts.jsp"));
+        String coordinatorReviews = Files.readString(WEBAPP_DIR.resolve("coordinator/coordinator-reviews.jsp"));
+        String subjectList = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subjects.jsp"));
+        String subjectDetail = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subject-detail.jsp"));
+        String subjectForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subject-form.jsp"));
+        String subjectCourseForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subject-course-form.jsp"));
+
+        assertTrue(coordinatorHome.contains("<jsp:include page=\"/admin/admin-dashbord.jsp\"")
+                        && coordinatorMessage.contains("<jsp:include page=\"/admin/admin-message.jsp\"")
+                        && coordinatorProfile.contains("<jsp:include page=\"/admin/admin-my-profile.jsp\""),
+                "Coordinator shared root pages must reuse the administrator templates");
+        assertTrue(coordinatorQuizAttempts.contains("<jsp:include page=\"/admin/admin-quiz-attempts.jsp\"")
+                        && coordinatorReviews.contains("<jsp:include page=\"/admin/admin-reviews.jsp\""),
+                "Coordinator shared root pages must reuse the administrator quiz/review templates");
+        assertTrue(sidebar.contains("/coordinator/subjects")
+                        && sidebar.contains("coordinatorSubjectContextId")
+                        && sidebar.contains("coordinatorSubjectActiveChild"),
+                "Coordinator sidebar must expose the admin-like subject navigation under the coordinator route");
+        assertTrue(sidebar.contains("not sessionScope['gape.auth.hasCoordinatorProfile']"),
+                "Coordinator sidebar must not expose the generic courses tab");
+        assertTrue(sidebar.contains("coordinator/coordinator-reviews.jsp")
+                        && sidebar.contains("coordinator/coordinator-quiz-attempts.jsp")
+                        && sidebar.contains("${reviewsHref}")
+                        && sidebar.contains("${quizAttemptsHref}"),
+                "Coordinator sidebar must route reviews and quiz attempts to coordinator pages");
+        assertTrue(sidebar.indexOf("Message") < sidebar.indexOf("Reviews")
+                        && sidebar.indexOf("Reviews") < sidebar.indexOf("Quiz Attempts")
+                        && sidebar.indexOf("Quiz Attempts") < sidebar.indexOf(">Coordinator<")
+                        && sidebar.indexOf(">Coordinator<") < sidebar.indexOf("Class Groups"),
+                "Coordinator sidebar must keep reviews and quiz attempts directly below messages");
+        assertTrue(subjectList.contains("${subjectBasePath}/${subject.id}")
+                        && subjectDetail.contains("${subjectBasePath}/${subject.id}/edit")
+                        && subjectForm.contains("${subjectBasePath}/${form.id}/courses")
+                        && subjectCourseForm.contains("${subjectBasePath}/${subject.id}/courses")
+                        && subjectDetail.contains("${subjectCourseBasePath}/${association.courseId}")
+                        && subjectForm.contains("${subjectCourseBasePath}/${association.courseId}")
+                        && subjectCourseForm.contains("${subjectCourseBasePath}/${association.courseId}"),
+                "Shared subject views must use the request-scoped base path for admin and coordinator routes");
+        assertTrue(subjectForm.contains("not creating and canAssignSubjectCoordinators"),
+                "Subject edit form must hide coordinator assignment outside administrator context");
+    }
+
+    @Test
+    void instructorSharedPagesReuseAdministratorTemplates() throws IOException {
+        String sidebar = Files.readString(FRAGMENTS_DIR.resolve("dashboard-sidebar.jspf"));
+        String instructorDashboard = Files.readString(WEBAPP_DIR.resolve("instructor/instructor-dashbord.jsp"));
+        String instructorMessage = Files.readString(WEBAPP_DIR.resolve("instructor/instructor-message.jsp"));
+        String instructorProfile = Files.readString(WEBAPP_DIR.resolve("instructor/instructor-my-profile.jsp"));
+        String instructorQuizAttempts = Files.readString(WEBAPP_DIR.resolve("instructor/instructor-quiz-attempts.jsp"));
+        String instructorReviews = Files.readString(WEBAPP_DIR.resolve("instructor/instructor-reviews.jsp"));
+
+        assertTrue(instructorDashboard.contains("<jsp:include page=\"/admin/admin-dashbord.jsp\"")
+                        && instructorMessage.contains("<jsp:include page=\"/admin/admin-message.jsp\"")
+                        && instructorProfile.contains("<jsp:include page=\"/admin/admin-my-profile.jsp\""),
+                "Instructor shared root pages must reuse the administrator templates");
+        assertTrue(instructorQuizAttempts.contains("<jsp:include page=\"/admin/admin-quiz-attempts.jsp\"")
+                        && instructorReviews.contains("<jsp:include page=\"/admin/admin-reviews.jsp\""),
+                "Instructor shared root pages must reuse the administrator quiz/review templates");
+        assertTrue(sidebar.contains("/instructor/instructor-message.jsp")
+                        && sidebar.contains("/instructor/instructor-reviews.jsp")
+                        && sidebar.contains("/instructor/instructor-quiz-attempts.jsp")
+                        && sidebar.contains("${messageHref}")
+                        && sidebar.contains("${reviewsHref}")
+                        && sidebar.contains("${quizAttemptsHref}"),
+                "Instructor sidebar must route shared pages to the instructor wrappers");
+        assertTrue(sidebar.contains("not isTeacherDashboard"),
+                "Instructor sidebar must not expose the generic courses tab");
+        int teacherSection = sidebar.indexOf(">Teacher<");
+        assertTrue(teacherSection > 0 && sidebar.indexOf("Class Groups", teacherSection) > teacherSection,
+                "Instructor sidebar must show class groups under the Teacher section");
+    }
+
+    @Test
     void organizationPagesRenderPhotoAndManagedUnitCode() throws IOException {
         String organizationForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/organization/admin-organization-form.jsp"));
         String organizationList = Files.readString(WEBAPP_DIR.resolve("admin/admin/organization/admin-organizations.jsp"));
         String organizationDetail = Files.readString(WEBAPP_DIR.resolve("admin/admin/organization/admin-organization-detail.jsp"));
+        String unitDetail = Files.readString(WEBAPP_DIR.resolve("admin/admin/organization/admin-organic-unit-detail.jsp"));
         String unitForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/organization/admin-organic-unit-form.jsp"));
+        String unitAdministrators = Files.readString(FRAGMENTS_DIR.resolve("organic-unit-administrators.jspf"));
 
         assertTrue(organizationForm.contains("enctype=\"multipart/form-data\""),
                 "Organization form must support photo uploads");
@@ -341,12 +621,24 @@ class TemplateStructureTest {
                 "Organization photo upload must be visible when creating a new organization");
         assertTrue(organizationList.contains("gape-organization-table-photo"),
                 "Organization list must render organization photos");
+        assertTrue(organizationList.contains("gape-organization-list")
+                        && organizationList.contains("gape-organization-card"),
+                "Organization list must visually separate each organization card");
+        assertTrue(organizationList.contains("gape-organization-units-panel")
+                        && organizationList.contains("<section class=\"gape-organization-card\">"),
+                "Organic units must render inside the owning organization card");
+        assertFalse(organizationList.contains("gape-organization-units-row"),
+                "Organic units must not render as a separate table row");
         assertTrue(organizationDetail.contains("gape-organization-detail-photo"),
                 "Organization detail must render organization photos");
         assertTrue(organizationDetail.contains("Current Administrators"),
                 "Organization detail must show assigned administrators and assignment metadata");
         assertTrue(organizationDetail.contains("not unit.archived"),
                 "Organization detail must hide unit edit/archive/delete actions for archived units");
+        assertTrue(organizationList.contains("/admin/organizations/${organization.id}/units/${unit.id}"),
+                "Organization list must link each organic unit to its detail page");
+        assertTrue(organizationDetail.contains("/admin/organizations/${organization.id}/units/${unit.id}"),
+                "Organization detail must link each organic unit to its detail page");
         assertFalse(organizationForm.contains("value=\"ARCHIVED\""),
                 "Organization edit form must not archive through the normal update flow");
         assertFalse(unitForm.contains("value=\"ARCHIVED\""),
@@ -358,6 +650,18 @@ class TemplateStructureTest {
         assertTrue(unitForm.contains("value=\"FACULTY\"") && unitForm.contains("value=\"CENTER\"")
                         && unitForm.contains("value=\"OFFICE\"") && unitForm.contains("value=\"SERVICE\""),
                 "Organic unit form must expose the expanded project unit types");
+        assertTrue(unitDetail.contains("organic-unit-administrators.jspf"),
+                "Organic unit detail must render the direct administrator panel");
+        assertTrue(unitForm.contains("organic-unit-administrators.jspf"),
+                "Organic unit edit form must render the direct administrator panel");
+        assertTrue(unitAdministrators.contains("organicUnitAdministratorOptions")
+                        && unitAdministrators.contains("assignedOrganicUnitAdministrators")
+                        && unitAdministrators.contains("unitAdminAssignAction")
+                        && unitAdministrators.contains("unitAdminRevokeAction"),
+                "Organic unit administrator panel must expose assign and revoke controls");
+        assertTrue(unitAdministrators.indexOf("assignedOrganicUnitAdministrators")
+                        < unitAdministrators.indexOf("unitAdminAssignAction"),
+                "Organic unit administrator panel must render assigned administrators before the assign form");
     }
 
     @Test
@@ -442,8 +746,8 @@ class TemplateStructureTest {
         return html.contains("/WEB-INF/fragments/dashboard-sidebar.jspf");
     }
 
-    private static String expectedSidebarHref(String role, String pageName) {
-        return role + "/" + pageName;
+    private static String expectedSidebarHref(Path dashboardDirectory, Path page) {
+        return dashboardDirectory.getParent().relativize(page).toString().replace('\\', '/');
     }
 
     private static String normalizeDashboardHref(String href) {

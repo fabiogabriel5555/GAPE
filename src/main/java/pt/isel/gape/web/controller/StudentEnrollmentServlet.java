@@ -4,33 +4,56 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import pt.isel.gape.access.dao.UserDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
+import pt.isel.gape.learning.dao.ClassGroupDAO;
+import pt.isel.gape.learning.dao.ClassGroupEnrollmentDAO;
+import pt.isel.gape.learning.dao.ContentBlockDAO;
 import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.dao.EnrollmentDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
+import pt.isel.gape.learning.model.ClassGroup;
+import pt.isel.gape.learning.model.ClassGroupEnrollment;
+import pt.isel.gape.learning.model.ClassGroupEnrollmentCommand;
+import pt.isel.gape.learning.model.ContentBlock;
+import pt.isel.gape.learning.model.ContentBlockAccessMode;
+import pt.isel.gape.learning.model.ContentBlockState;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseEnrollment;
 import pt.isel.gape.learning.model.CourseEnrollmentCommand;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
+import pt.isel.gape.learning.model.EnrollmentState;
 import pt.isel.gape.learning.model.SubjectEnrollment;
 import pt.isel.gape.learning.model.SubjectEnrollmentCommand;
+import pt.isel.gape.learning.service.ClassGroupEnrollmentService;
 import pt.isel.gape.learning.service.EnrollmentService;
 import pt.isel.gape.security.session.SessionUser;
 import pt.isel.gape.structure.dao.OrganicUnitDAO;
 import pt.isel.gape.structure.dao.OrganizationDAO;
+import pt.isel.gape.structure.dao.TeachClassGroupDAO;
+import pt.isel.gape.web.view.ClassGroupEnrollmentView;
+import pt.isel.gape.web.view.ClassGroupView;
+import pt.isel.gape.web.view.ContentBlockView;
 import pt.isel.gape.web.view.CourseSubjectView;
 import pt.isel.gape.web.view.CourseView;
 import pt.isel.gape.web.view.EnrollmentView;
+import pt.isel.gape.web.view.StudentClassGroupView;
 
 @WebServlet(name = "studentEnrollmentServlet", urlPatterns = {"/student/enrollments", "/student/enrollments/*"})
 public final class StudentEnrollmentServlet extends DashboardServletSupport {
@@ -38,10 +61,15 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
     private static final String STUDENT_ENROLLMENTS_JSP = "/student/student-enrolled-courses.jsp";
 
     private final EnrollmentService enrollmentService;
+    private final ClassGroupEnrollmentService classGroupEnrollmentService;
     private final CourseDAO courseDAO;
     private final CourseSubjectDAO courseSubjectDAO;
     private final EnrollmentDAO enrollmentDAO;
+    private final ClassGroupDAO classGroupDAO;
+    private final ClassGroupEnrollmentDAO classGroupEnrollmentDAO;
+    private final ContentBlockDAO contentBlockDAO;
     private final LearningViewFactory viewFactory;
+    private final Clock clock;
 
     public StudentEnrollmentServlet() {
         this(ConnectionProvider.defaultProvider(), ApplicationClock.system());
@@ -50,31 +78,52 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
     private StudentEnrollmentServlet(ConnectionProvider connectionProvider, Clock clock) {
         this(
                 new EnrollmentService(connectionProvider, clock),
+                new ClassGroupEnrollmentService(connectionProvider, clock),
                 new CourseDAO(connectionProvider),
                 new CourseSubjectDAO(connectionProvider),
                 new EnrollmentDAO(connectionProvider),
+                new ClassGroupDAO(connectionProvider),
+                new ClassGroupEnrollmentDAO(connectionProvider),
+                new ContentBlockDAO(connectionProvider),
                 new LearningViewFactory(
                         new OrganizationDAO(connectionProvider),
                         new OrganicUnitDAO(connectionProvider),
+                        new CourseDAO(connectionProvider),
                         new SubjectDAO(connectionProvider),
                         new CourseSubjectDAO(connectionProvider),
-                        new EnrollmentDAO(connectionProvider)
-                )
+                        new EnrollmentDAO(connectionProvider),
+                        new ClassGroupDAO(connectionProvider),
+                        new ClassGroupEnrollmentDAO(connectionProvider),
+                        new ContentBlockDAO(connectionProvider),
+                        new UserDAO(connectionProvider),
+                        new TeachClassGroupDAO(connectionProvider)
+                ),
+                clock
         );
     }
 
     StudentEnrollmentServlet(
             EnrollmentService enrollmentService,
+            ClassGroupEnrollmentService classGroupEnrollmentService,
             CourseDAO courseDAO,
             CourseSubjectDAO courseSubjectDAO,
             EnrollmentDAO enrollmentDAO,
-            LearningViewFactory viewFactory
+            ClassGroupDAO classGroupDAO,
+            ClassGroupEnrollmentDAO classGroupEnrollmentDAO,
+            ContentBlockDAO contentBlockDAO,
+            LearningViewFactory viewFactory,
+            Clock clock
     ) {
         this.enrollmentService = enrollmentService;
+        this.classGroupEnrollmentService = classGroupEnrollmentService;
         this.courseDAO = courseDAO;
         this.courseSubjectDAO = courseSubjectDAO;
         this.enrollmentDAO = enrollmentDAO;
+        this.classGroupDAO = classGroupDAO;
+        this.classGroupEnrollmentDAO = classGroupEnrollmentDAO;
+        this.contentBlockDAO = contentBlockDAO;
         this.viewFactory = viewFactory;
+        this.clock = clock;
     }
 
     @Override
@@ -105,6 +154,14 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                     && "subjects".equals(segments[2])
                     && "withdraw".equals(segments[4])) {
                 withdrawSubject(request, response, Long.parseLong(segments[1]), Long.parseLong(segments[3]));
+                return;
+            }
+            if (segments.length == 2 && "class-groups".equals(segments[0])) {
+                enrollClassGroup(request, response, Long.parseLong(segments[1]));
+                return;
+            }
+            if (segments.length == 3 && "class-groups".equals(segments[0]) && "withdraw".equals(segments[2])) {
+                withdrawClassGroup(request, response, Long.parseLong(segments[1]));
                 return;
             }
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -144,6 +201,8 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                 subjectEnrollments.add(EnrollmentView.subject(courseView, subjectView));
             }
 
+            List<StudentClassGroupView> studentClassGroups = studentClassGroupViews(studentUserId);
+
             List<CourseView> availableCourses = new ArrayList<>();
             for (Course course : courseDAO.findCatalogCourses(null, null, null)) {
                 availableCourses.add(viewFactory.courseView(
@@ -154,6 +213,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
 
             request.setAttribute("courseEnrollments", courseEnrollments);
             request.setAttribute("subjectEnrollments", subjectEnrollments);
+            request.setAttribute("studentClassGroups", studentClassGroups);
             request.setAttribute("availableCourses", availableCourses);
             prepareDashboard(request, "courses", "My Courses");
             forward(request, response, STUDENT_ENROLLMENTS_JSP);
@@ -237,6 +297,151 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             flashError(request, messageFor(exception));
         }
         redirectToReturnPath(request, response, "/student/enrollments");
+    }
+
+    private void enrollClassGroup(HttpServletRequest request, HttpServletResponse response, long classGroupId)
+            throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            classGroupEnrollmentService.enrollStudentInClassGroup(
+                    actor.userId(),
+                    currentSessionId(request),
+                    AccessProfileType.STUDENT,
+                    new ClassGroupEnrollmentCommand(
+                            actor.userId(),
+                            classGroupId,
+                            optionalDate(request, "startDate"),
+                            optionalDate(request, "endDate")
+                    ),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Class group enrollment completed.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirectToReturnPath(request, response, "/student/enrollments");
+    }
+
+    private void withdrawClassGroup(HttpServletRequest request, HttpServletResponse response, long classGroupId)
+            throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            classGroupEnrollmentService.withdrawStudentFromClassGroup(
+                    actor.userId(),
+                    currentSessionId(request),
+                    AccessProfileType.STUDENT,
+                    actor.userId(),
+                    classGroupId,
+                    optionalDate(request, "endDate"),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Class group withdrawal completed.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirectToReturnPath(request, response, "/student/enrollments");
+    }
+
+    private List<StudentClassGroupView> studentClassGroupViews(long studentUserId) throws SQLException {
+        Map<Long, ClassGroupEnrollment> enrollmentsByClassGroup = new HashMap<>();
+        for (ClassGroupEnrollment enrollment : classGroupEnrollmentDAO.findByStudent(studentUserId)) {
+            enrollmentsByClassGroup.put(enrollment.classGroupId(), enrollment);
+        }
+
+        Set<String> activeSubjectContexts = new HashSet<>();
+        Map<Long, ClassGroup> classGroupsById = new HashMap<>();
+        for (SubjectEnrollment enrollment : enrollmentDAO.findActiveSubjectEnrollmentsByStudent(studentUserId)) {
+            activeSubjectContexts.add(subjectContextKey(enrollment.courseId(), enrollment.subjectId()));
+            for (ClassGroup classGroup : classGroupDAO.findByCourseAndSubject(
+                    enrollment.courseId(),
+                    enrollment.subjectId()
+            )) {
+                classGroupsById.put(classGroup.id(), classGroup);
+            }
+        }
+
+        for (long classGroupId : enrollmentsByClassGroup.keySet()) {
+            classGroupDAO.findById(classGroupId).ifPresent(classGroup -> classGroupsById.putIfAbsent(
+                    classGroup.id(),
+                    classGroup
+            ));
+        }
+
+        Set<String> activeClassGroupContexts = new HashSet<>();
+        for (ClassGroupEnrollment enrollment : enrollmentsByClassGroup.values()) {
+            if (enrollment.state() != EnrollmentState.ACTIVE) {
+                continue;
+            }
+            ClassGroup classGroup = classGroupsById.get(enrollment.classGroupId());
+            if (classGroup != null) {
+                activeClassGroupContexts.add(subjectContextKey(classGroup.courseId(), classGroup.subjectId()));
+            }
+        }
+
+        return classGroupsById.values()
+                .stream()
+                .sorted(Comparator.comparing(ClassGroup::courseId)
+                        .thenComparing(ClassGroup::subjectId)
+                        .thenComparing(ClassGroup::code))
+                .map(classGroup -> studentClassGroupView(
+                        classGroup,
+                        enrollmentsByClassGroup.get(classGroup.id()),
+                        canEnrollInClassGroupContext(classGroup, activeSubjectContexts, activeClassGroupContexts)
+                ))
+                .toList();
+    }
+
+    private StudentClassGroupView studentClassGroupView(
+            ClassGroup classGroup,
+            ClassGroupEnrollment enrollment,
+            boolean eligibleForEnrollment
+    ) {
+        ClassGroupView classGroupView = viewFactory.classGroupView(classGroup);
+        ClassGroupEnrollmentView enrollmentView = enrollment == null
+                ? null
+                : viewFactory.classGroupEnrollmentView(enrollment);
+        List<ContentBlockView> contentBlocks = enrollmentView != null && enrollmentView.isActive()
+                ? visibleStudentContentBlocks(classGroup.id())
+                : List.of();
+        return StudentClassGroupView.of(classGroupView, enrollmentView, contentBlocks, eligibleForEnrollment);
+    }
+
+    private List<ContentBlockView> visibleStudentContentBlocks(long classGroupId) {
+        try {
+            LocalDateTime now = LocalDateTime.now(clock);
+            return contentBlockDAO.findByClassGroup(classGroupId)
+                    .stream()
+                    .filter(block -> isVisibleToStudent(block, now))
+                    .map(viewFactory::contentBlockView)
+                    .toList();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load class group content blocks", exception);
+        }
+    }
+
+    private static boolean isVisibleToStudent(ContentBlock block, LocalDateTime now) {
+        if (block.state() != ContentBlockState.ACTIVE) {
+            return false;
+        }
+        if (block.accessMode() != ContentBlockAccessMode.SCHEDULED) {
+            return true;
+        }
+        return block.availableFrom() != null
+                && !block.availableFrom().isAfter(now)
+                && (block.availableUntil() == null || !block.availableUntil().isBefore(now));
+    }
+
+    private static String subjectContextKey(long courseId, long subjectId) {
+        return courseId + ":" + subjectId;
+    }
+
+    private static boolean canEnrollInClassGroupContext(
+            ClassGroup classGroup,
+            Set<String> activeSubjectContexts,
+            Set<String> activeClassGroupContexts
+    ) {
+        String key = subjectContextKey(classGroup.courseId(), classGroup.subjectId());
+        return activeSubjectContexts.contains(key) && !activeClassGroupContexts.contains(key);
     }
 
     private static LocalDate optionalDate(HttpServletRequest request, String name) {

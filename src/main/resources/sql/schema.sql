@@ -340,19 +340,13 @@ CREATE TABLE IF NOT EXISTS class_group (
         CHECK (state IN ('active', 'inactive', 'closed', 'archived')),
     CONSTRAINT ck_class_group_students_range
         CHECK (
-            min_students IS NULL
-            OR max_students IS NULL
-            OR min_students <= max_students
-        ),
-    CONSTRAINT ck_class_group_students_pair
-        CHECK (
-            (min_students IS NULL AND max_students IS NULL)
-            OR (min_students IS NOT NULL AND max_students IS NOT NULL)
-        ),
-    CONSTRAINT ck_class_group_dates_pair
-        CHECK (
-            (starts_at IS NULL AND ends_at IS NULL)
-            OR (starts_at IS NOT NULL AND ends_at IS NOT NULL)
+            (min_students IS NULL OR min_students >= 0)
+            AND (max_students IS NULL OR max_students >= 0)
+            AND (
+                min_students IS NULL
+                OR max_students IS NULL
+                OR min_students <= max_students
+            )
         ),
     CONSTRAINT ck_class_group_dates
         CHECK (ends_at IS NULL OR starts_at IS NULL OR ends_at >= starts_at)
@@ -367,11 +361,15 @@ CREATE TABLE IF NOT EXISTS content_block (
     order_no INT NOT NULL,
     access_mode VARCHAR(30) NOT NULL,
     state VARCHAR(20) NOT NULL,
+    active_order_no INT GENERATED ALWAYS AS (
+        CASE WHEN state = 'active' THEN order_no ELSE NULL END
+    ) STORED,
     available_from DATETIME NULL,
     available_until DATETIME NULL,
     PRIMARY KEY (id_content_block),
     UNIQUE KEY uq_content_block_group_code (id_class_group, cod_content_block),
-    UNIQUE KEY uq_content_block_group_order (id_class_group, order_no),
+    UNIQUE KEY uq_content_block_active_order (id_class_group, active_order_no),
+    KEY idx_content_block_group_order (id_class_group, order_no),
     KEY idx_content_block_state (state),
     CONSTRAINT fk_content_block_class_group
         FOREIGN KEY (id_class_group) REFERENCES class_group (id_class_group)
@@ -477,7 +475,9 @@ CREATE TABLE IF NOT EXISTS teach_class_group (
         FOREIGN KEY (id_class_group) REFERENCES class_group (id_class_group)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT ck_teach_class_group_dates
-        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date)
+        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
+    CONSTRAINT ck_teach_class_group_state
+        CHECK (state IN ('active', 'inactive', 'archived'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS enroll_course (
@@ -546,7 +546,9 @@ CREATE TABLE IF NOT EXISTS enroll_class_group (
         FOREIGN KEY (id_class_group) REFERENCES class_group (id_class_group)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT ck_enroll_class_group_dates
-        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date)
+        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
+    CONSTRAINT ck_enroll_class_group_state
+        CHECK (state IN ('active', 'inactive', 'completed', 'withdrawn', 'archived'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- =========================================================
@@ -2148,17 +2150,25 @@ CREATE TRIGGER bi_class_group_validate
 BEFORE INSERT ON class_group
 FOR EACH ROW
 BEGIN
-    DECLARE v_exists INT DEFAULT 0;
+    DECLARE v_course_state VARCHAR(20);
+    DECLARE v_subject_state VARCHAR(20);
+    DECLARE v_association_state VARCHAR(20);
 
-    SELECT COUNT(*)
-    INTO v_exists
-    FROM integrate_subject
-    WHERE id_course = NEW.id_course
-      AND id_subject = NEW.id_subject
-      AND state <> 'archived';
+    SELECT c.state, s.state, isub.state
+    INTO v_course_state, v_subject_state, v_association_state
+    FROM integrate_subject isub
+    JOIN course c ON c.id_course = isub.id_course
+    JOIN subject s ON s.id_subject = isub.id_subject
+    WHERE isub.id_course = NEW.id_course
+      AND isub.id_subject = NEW.id_subject;
 
-    IF v_exists = 0 THEN
+    IF v_association_state IS NULL THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group Course must integrate the selected Subject';
+    END IF;
+
+    IF NEW.state <> 'archived'
+       AND (v_course_state = 'archived' OR v_subject_state = 'archived' OR v_association_state = 'archived') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group cannot be active under archived context';
     END IF;
 END$$
 
@@ -2167,17 +2177,325 @@ CREATE TRIGGER bu_class_group_validate
 BEFORE UPDATE ON class_group
 FOR EACH ROW
 BEGIN
-    DECLARE v_exists INT DEFAULT 0;
+    DECLARE v_course_state VARCHAR(20);
+    DECLARE v_subject_state VARCHAR(20);
+    DECLARE v_association_state VARCHAR(20);
+    DECLARE v_active_enrollments INT DEFAULT 0;
+
+    IF NEW.id_course <> OLD.id_course OR NEW.id_subject <> OLD.id_subject THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group Course and Subject cannot be changed after creation';
+    END IF;
+
+    SELECT c.state, s.state, isub.state
+    INTO v_course_state, v_subject_state, v_association_state
+    FROM integrate_subject isub
+    JOIN course c ON c.id_course = isub.id_course
+    JOIN subject s ON s.id_subject = isub.id_subject
+    WHERE isub.id_course = NEW.id_course
+      AND isub.id_subject = NEW.id_subject;
+
+    IF v_association_state IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group Course must integrate the selected Subject';
+    END IF;
+
+    IF NEW.state <> 'archived'
+       AND (v_course_state = 'archived' OR v_subject_state = 'archived' OR v_association_state = 'archived') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group cannot be active under archived context';
+    END IF;
+
+    IF NEW.max_students IS NOT NULL THEN
+        SELECT COUNT(*)
+        INTO v_active_enrollments
+        FROM enroll_class_group
+        WHERE id_class_group = NEW.id_class_group
+          AND state = 'active';
+
+        IF v_active_enrollments > NEW.max_students THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group max_students cannot be below active enrollments';
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bi_teach_class_group_validate$$
+CREATE TRIGGER bi_teach_class_group_validate
+BEFORE INSERT ON teach_class_group
+FOR EACH ROW
+BEGIN
+    DECLARE v_teacher_count INT DEFAULT 0;
+    DECLARE v_class_state VARCHAR(20);
 
     SELECT COUNT(*)
-    INTO v_exists
-    FROM integrate_subject
-    WHERE id_course = NEW.id_course
-      AND id_subject = NEW.id_subject
-      AND state <> 'archived';
+    INTO v_teacher_count
+    FROM teacher_profile tp
+    JOIN user_account u ON u.id_user = tp.id_user
+    WHERE tp.id_user = NEW.id_teacher_user
+      AND u.state = 'active';
 
-    IF v_exists = 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group Course must integrate the selected Subject';
+    SELECT state
+    INTO v_class_state
+    FROM class_group
+    WHERE id_class_group = NEW.id_class_group;
+
+    IF NEW.state = 'active' AND (v_teacher_count = 0 OR v_class_state <> 'active') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Class_Group teaching assignment requires active Teacher and Class_Group';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_teach_class_group_validate$$
+CREATE TRIGGER bu_teach_class_group_validate
+BEFORE UPDATE ON teach_class_group
+FOR EACH ROW
+BEGIN
+    DECLARE v_teacher_count INT DEFAULT 0;
+    DECLARE v_class_state VARCHAR(20);
+
+    SELECT COUNT(*)
+    INTO v_teacher_count
+    FROM teacher_profile tp
+    JOIN user_account u ON u.id_user = tp.id_user
+    WHERE tp.id_user = NEW.id_teacher_user
+      AND u.state = 'active';
+
+    SELECT state
+    INTO v_class_state
+    FROM class_group
+    WHERE id_class_group = NEW.id_class_group;
+
+    IF NEW.state = 'active' AND (v_teacher_count = 0 OR v_class_state <> 'active') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Class_Group teaching assignment requires active Teacher and Class_Group';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bi_enroll_class_group_validate$$
+CREATE TRIGGER bi_enroll_class_group_validate
+BEFORE INSERT ON enroll_class_group
+FOR EACH ROW
+BEGIN
+    DECLARE v_course_id BIGINT UNSIGNED;
+    DECLARE v_subject_id BIGINT UNSIGNED;
+    DECLARE v_max_students INT;
+    DECLARE v_class_state VARCHAR(20);
+    DECLARE v_course_state VARCHAR(20);
+    DECLARE v_subject_state VARCHAR(20);
+    DECLARE v_association_state VARCHAR(20);
+    DECLARE v_student_count INT DEFAULT 0;
+    DECLARE v_subject_enrollment_count INT DEFAULT 0;
+    DECLARE v_overlap_count INT DEFAULT 0;
+    DECLARE v_active_enrollments INT DEFAULT 0;
+
+    SELECT cg.id_course, cg.id_subject, cg.max_students, cg.state, c.state, s.state, isub.state
+    INTO v_course_id, v_subject_id, v_max_students, v_class_state, v_course_state, v_subject_state, v_association_state
+    FROM class_group cg
+    JOIN course c ON c.id_course = cg.id_course
+    JOIN subject s ON s.id_subject = cg.id_subject
+    LEFT JOIN integrate_subject isub ON isub.id_course = cg.id_course AND isub.id_subject = cg.id_subject
+    WHERE cg.id_class_group = NEW.id_class_group;
+
+    SELECT COUNT(*)
+    INTO v_student_count
+    FROM student_profile sp
+    JOIN user_account u ON u.id_user = sp.id_user
+    WHERE sp.id_user = NEW.id_student_user
+      AND u.state = 'active';
+
+    SELECT COUNT(*)
+    INTO v_subject_enrollment_count
+    FROM enroll_subject es
+    WHERE es.id_student_user = NEW.id_student_user
+      AND es.id_course = v_course_id
+      AND es.id_subject = v_subject_id
+      AND es.state = 'active'
+      AND (es.start_date IS NULL OR NEW.start_date IS NULL OR es.start_date <= NEW.start_date)
+      AND (NEW.end_date IS NOT NULL OR es.end_date IS NULL)
+      AND (NEW.end_date IS NULL OR es.end_date IS NULL OR es.end_date >= NEW.end_date);
+
+    SELECT COUNT(*)
+    INTO v_overlap_count
+    FROM enroll_class_group ecg
+    JOIN class_group existing_cg ON existing_cg.id_class_group = ecg.id_class_group
+    WHERE ecg.id_student_user = NEW.id_student_user
+      AND existing_cg.id_course = v_course_id
+      AND existing_cg.id_subject = v_subject_id
+      AND ecg.state = 'active'
+      AND (ecg.start_date IS NULL OR NEW.end_date IS NULL OR ecg.start_date <= NEW.end_date)
+      AND (ecg.end_date IS NULL OR NEW.start_date IS NULL OR ecg.end_date >= NEW.start_date);
+
+    SELECT COUNT(*)
+    INTO v_active_enrollments
+    FROM enroll_class_group
+    WHERE id_class_group = NEW.id_class_group
+      AND state = 'active';
+
+    IF NEW.state = 'active'
+       AND (v_student_count = 0
+            OR v_class_state <> 'active'
+            OR v_course_state <> 'active'
+            OR v_subject_state <> 'active'
+            OR v_association_state <> 'active') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Class_Group enrollment requires active Student, Class_Group, Course, Subject and association';
+    END IF;
+
+    IF NEW.state = 'active' AND v_subject_enrollment_count = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group enrollment requires active Subject enrollment for the full period';
+    END IF;
+
+    IF NEW.state = 'active' AND v_overlap_count > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Student already has an overlapping active enrollment in this Course/Subject class group context';
+    END IF;
+
+    IF NEW.state = 'active' AND v_max_students IS NOT NULL AND v_active_enrollments >= v_max_students THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group maximum capacity exceeded';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_enroll_class_group_validate$$
+CREATE TRIGGER bu_enroll_class_group_validate
+BEFORE UPDATE ON enroll_class_group
+FOR EACH ROW
+BEGIN
+    DECLARE v_course_id BIGINT UNSIGNED;
+    DECLARE v_subject_id BIGINT UNSIGNED;
+    DECLARE v_max_students INT;
+    DECLARE v_class_state VARCHAR(20);
+    DECLARE v_course_state VARCHAR(20);
+    DECLARE v_subject_state VARCHAR(20);
+    DECLARE v_association_state VARCHAR(20);
+    DECLARE v_student_count INT DEFAULT 0;
+    DECLARE v_subject_enrollment_count INT DEFAULT 0;
+    DECLARE v_overlap_count INT DEFAULT 0;
+    DECLARE v_active_enrollments INT DEFAULT 0;
+
+    SELECT cg.id_course, cg.id_subject, cg.max_students, cg.state, c.state, s.state, isub.state
+    INTO v_course_id, v_subject_id, v_max_students, v_class_state, v_course_state, v_subject_state, v_association_state
+    FROM class_group cg
+    JOIN course c ON c.id_course = cg.id_course
+    JOIN subject s ON s.id_subject = cg.id_subject
+    LEFT JOIN integrate_subject isub ON isub.id_course = cg.id_course AND isub.id_subject = cg.id_subject
+    WHERE cg.id_class_group = NEW.id_class_group;
+
+    SELECT COUNT(*)
+    INTO v_student_count
+    FROM student_profile sp
+    JOIN user_account u ON u.id_user = sp.id_user
+    WHERE sp.id_user = NEW.id_student_user
+      AND u.state = 'active';
+
+    SELECT COUNT(*)
+    INTO v_subject_enrollment_count
+    FROM enroll_subject es
+    WHERE es.id_student_user = NEW.id_student_user
+      AND es.id_course = v_course_id
+      AND es.id_subject = v_subject_id
+      AND es.state = 'active'
+      AND (es.start_date IS NULL OR NEW.start_date IS NULL OR es.start_date <= NEW.start_date)
+      AND (NEW.end_date IS NOT NULL OR es.end_date IS NULL)
+      AND (NEW.end_date IS NULL OR es.end_date IS NULL OR es.end_date >= NEW.end_date);
+
+    SELECT COUNT(*)
+    INTO v_overlap_count
+    FROM enroll_class_group ecg
+    JOIN class_group existing_cg ON existing_cg.id_class_group = ecg.id_class_group
+    WHERE ecg.id_student_user = NEW.id_student_user
+      AND existing_cg.id_course = v_course_id
+      AND existing_cg.id_subject = v_subject_id
+      AND ecg.state = 'active'
+      AND NOT (ecg.id_student_user = OLD.id_student_user AND ecg.id_class_group = OLD.id_class_group)
+      AND (ecg.start_date IS NULL OR NEW.end_date IS NULL OR ecg.start_date <= NEW.end_date)
+      AND (ecg.end_date IS NULL OR NEW.start_date IS NULL OR ecg.end_date >= NEW.start_date);
+
+    SELECT COUNT(*)
+    INTO v_active_enrollments
+    FROM enroll_class_group
+    WHERE id_class_group = NEW.id_class_group
+      AND state = 'active'
+      AND NOT (id_student_user = OLD.id_student_user AND id_class_group = OLD.id_class_group);
+
+    IF NEW.state = 'active'
+       AND (v_student_count = 0
+            OR v_class_state <> 'active'
+            OR v_course_state <> 'active'
+            OR v_subject_state <> 'active'
+            OR v_association_state <> 'active') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Class_Group enrollment requires active Student, Class_Group, Course, Subject and association';
+    END IF;
+
+    IF NEW.state = 'active' AND v_subject_enrollment_count = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group enrollment requires active Subject enrollment for the full period';
+    END IF;
+
+    IF NEW.state = 'active' AND v_overlap_count > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Student already has an overlapping active enrollment in this Course/Subject class group context';
+    END IF;
+
+    IF NEW.state = 'active' AND v_max_students IS NOT NULL AND v_active_enrollments >= v_max_students THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group maximum capacity exceeded';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bi_content_block_validate$$
+CREATE TRIGGER bi_content_block_validate
+BEFORE INSERT ON content_block
+FOR EACH ROW
+BEGIN
+    DECLARE v_class_state VARCHAR(20);
+    DECLARE v_duplicate_order_count INT DEFAULT 0;
+
+    SELECT state
+    INTO v_class_state
+    FROM class_group
+    WHERE id_class_group = NEW.id_class_group;
+
+    IF NEW.state <> 'archived' AND v_class_state = 'archived' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Content_Block cannot be changed under archived Class_Group';
+    END IF;
+
+    IF NEW.state = 'active' THEN
+        SELECT COUNT(*)
+        INTO v_duplicate_order_count
+        FROM content_block
+        WHERE id_class_group = NEW.id_class_group
+          AND order_no = NEW.order_no
+          AND state = 'active';
+
+        IF v_duplicate_order_count > 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Content_Block order must be unique in the Class_Group';
+        END IF;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_content_block_validate$$
+CREATE TRIGGER bu_content_block_validate
+BEFORE UPDATE ON content_block
+FOR EACH ROW
+BEGIN
+    DECLARE v_class_state VARCHAR(20);
+    DECLARE v_duplicate_order_count INT DEFAULT 0;
+
+    IF NEW.id_class_group <> OLD.id_class_group THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Content_Block Class_Group cannot be changed after creation';
+    END IF;
+
+    SELECT state
+    INTO v_class_state
+    FROM class_group
+    WHERE id_class_group = NEW.id_class_group;
+
+    IF NEW.state <> 'archived' AND v_class_state = 'archived' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Content_Block cannot be changed under archived Class_Group';
+    END IF;
+
+    IF NEW.state = 'active' THEN
+        SELECT COUNT(*)
+        INTO v_duplicate_order_count
+        FROM content_block
+        WHERE id_class_group = NEW.id_class_group
+          AND order_no = NEW.order_no
+          AND state = 'active'
+          AND id_content_block <> NEW.id_content_block;
+
+        IF v_duplicate_order_count > 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Content_Block order must be unique in the Class_Group';
+        END IF;
     END IF;
 END$$
 
