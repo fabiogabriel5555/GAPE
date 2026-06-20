@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
     if (request.getAttribute("activeMenu") == null) {
         request.setAttribute("activeMenu", "courses");
@@ -182,14 +183,51 @@
                                                 <c:when test="${not empty item.contentBlocks}">
                                                     <div class="d-flex flex-column gap-10">
                                                         <c:forEach var="block" items="${item.contentBlocks}">
-                                                            <div class="d-flex align-items-start justify-content-between gap-12 flex-wrap bg-neutral-20 rounded-10 px-16 py-12">
-                                                                <div>
-                                                                    <span class="text-13 fw-semibold text-neutral-700">#<c:out value="${block.orderNo}"/> <c:out value="${block.name}"/></span>
-                                                                    <p class="text-12 text-neutral-500 mb-0"><c:out value="${block.availabilityLabel}"/></p>
+                                                            <div class="bg-neutral-20 rounded-10 px-16 py-12">
+                                                                <div class="d-flex align-items-start justify-content-between gap-12 flex-wrap">
+                                                                    <div>
+                                                                        <span class="text-13 fw-semibold text-neutral-700">#<c:out value="${block.orderNo}"/> <c:out value="${block.name}"/></span>
+                                                                        <p class="text-12 text-neutral-500 mb-0"><c:out value="${block.availabilityLabel}"/></p>
+                                                                    </div>
+                                                                    <span class="${block.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
+                                                                        <c:out value="${block.accessModeLabel}"/>
+                                                                    </span>
                                                                 </div>
-                                                                <span class="${block.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
-                                                                    <c:out value="${block.accessModeLabel}"/>
-                                                                </span>
+                                                                <c:set var="blockContents" value="${item.blockContentsByBlock[block.id]}"/>
+                                                                <c:if test="${not empty blockContents}">
+                                                                    <div class="d-flex flex-column gap-8 mt-12">
+                                                                        <c:forEach var="content" items="${blockContents}">
+                                                                            <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap bg-white rounded-8 px-12 py-10 border border-neutral-30">
+                                                                                <div class="d-flex align-items-center gap-10">
+                                                                                    <span class="${content.formatBadgeClass} px-8 py-6 rounded-8 text-12">
+                                                                                        <i class="${content.formatIconClass}"></i>
+                                                                                    </span>
+                                                                                    <div>
+                                                                                        <div class="text-13 fw-semibold text-neutral-700"><c:out value="${content.title}"/></div>
+                                                                                        <div class="text-12 text-neutral-500"><c:out value="${content.formatLabel}"/> · <c:out value="${content.mandatoryLabel}"/></div>
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="d-flex align-items-center gap-8">
+                                                                                    <c:choose>
+                                                                                        <c:when test="${content.downloadable}">
+                                                                                            <a href="${pageContext.request.contextPath}/contents/download/${content.id}?disposition=inline" target="_blank" rel="noopener noreferrer" class="border-neutral-30 border px-10 py-6 rounded-8 text-12 text-neutral-700" title="View">
+                                                                                                <i class="ph ph-eye"></i>
+                                                                                            </a>
+                                                                                            <a href="${pageContext.request.contextPath}/contents/download/${content.id}" class="bg-main-600 px-10 py-6 rounded-8 text-12 text-white" title="Download">
+                                                                                                <i class="ph ph-download-simple"></i>
+                                                                                            </a>
+                                                                                        </c:when>
+                                                                                        <c:when test="${content.linkable}">
+                                                                                            <a href="${fn:escapeXml(content.source)}" target="_blank" rel="noopener noreferrer" class="border-neutral-30 border px-10 py-6 rounded-8 text-12 text-neutral-700" title="Open">
+                                                                                                <i class="ph ph-arrow-square-out"></i>
+                                                                                            </a>
+                                                                                        </c:when>
+                                                                                    </c:choose>
+                                                                                </div>
+                                                                            </div>
+                                                                        </c:forEach>
+                                                                    </div>
+                                                                </c:if>
                                                             </div>
                                                         </c:forEach>
                                                     </div>

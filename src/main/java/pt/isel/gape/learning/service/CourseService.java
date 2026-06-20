@@ -12,9 +12,12 @@ import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.validation.AcademicTextValidator;
 import pt.isel.gape.common.validation.MediaPathValidator;
 import pt.isel.gape.learning.dao.CourseDAO;
+import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseCreateCommand;
 import pt.isel.gape.learning.model.CourseState;
+import pt.isel.gape.learning.model.CourseSubjectAssociation;
+import pt.isel.gape.learning.model.CourseSubjectState;
 import pt.isel.gape.learning.model.CourseUpdateCommand;
 import pt.isel.gape.security.authorization.AccessContext;
 import pt.isel.gape.security.authorization.AccessEntityType;
@@ -37,6 +40,7 @@ public final class CourseService {
 
     private final ConnectionProvider connectionProvider;
     private final CourseDAO courseDAO;
+    private final CourseSubjectDAO courseSubjectDAO;
     private final OrganizationDAO organizationDAO;
     private final OrganicUnitDAO organicUnitDAO;
     private final PermissionChecker permissionChecker;
@@ -45,6 +49,7 @@ public final class CourseService {
     public CourseService(
             ConnectionProvider connectionProvider,
             CourseDAO courseDAO,
+            CourseSubjectDAO courseSubjectDAO,
             OrganizationDAO organizationDAO,
             OrganicUnitDAO organicUnitDAO,
             PermissionChecker permissionChecker,
@@ -52,6 +57,7 @@ public final class CourseService {
     ) {
         this.connectionProvider = Objects.requireNonNull(connectionProvider, "connectionProvider is required");
         this.courseDAO = Objects.requireNonNull(courseDAO, "courseDAO is required");
+        this.courseSubjectDAO = Objects.requireNonNull(courseSubjectDAO, "courseSubjectDAO is required");
         this.organizationDAO = Objects.requireNonNull(organizationDAO, "organizationDAO is required");
         this.organicUnitDAO = Objects.requireNonNull(organicUnitDAO, "organicUnitDAO is required");
         this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
@@ -62,6 +68,7 @@ public final class CourseService {
         this(
                 connectionProvider,
                 new CourseDAO(connectionProvider),
+                new CourseSubjectDAO(connectionProvider),
                 new OrganizationDAO(connectionProvider),
                 new OrganicUnitDAO(connectionProvider),
                 new PermissionChecker(
@@ -139,8 +146,26 @@ public final class CourseService {
             String sourceIp
     ) {
         try {
-            requireCourseManager(actorUserId, sessionId, actorProfileType, organizationId, sourceIp);
-            return courseDAO.findByOrganization(organizationId);
+            if (courseManagerDecision(actorUserId, sessionId, actorProfileType, organizationId, sourceIp).allowed()) {
+                return courseDAO.findByOrganization(organizationId);
+            }
+            validateOrganizationExists(organizationId);
+            return courseDAO.findByOrganization(organizationId)
+                    .stream()
+                    .filter(course -> courseAccessDecision(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            course.id(),
+                            sourceIp
+                    ).allowed() || courseMutationDecision(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            course.id(),
+                            sourceIp
+                    ).allowed())
+                    .toList();
         } catch (RuntimeException | SQLException exception) {
             throw wrap(exception, "Failed to list courses");
         }
@@ -370,6 +395,9 @@ public final class CourseService {
             long courseId,
             String sourceIp
     ) {
+        if (actorProfileType != AccessProfileType.ADMINISTRATOR) {
+            return false;
+        }
         return courseAccessDecision(actorUserId, sessionId, actorProfileType, courseId, sourceIp).allowed();
     }
 
@@ -402,7 +430,26 @@ public final class CourseService {
             long organizationId,
             String sourceIp
     ) {
-        AuthorizationDecision decision = permissionChecker.check(new AccessContext(
+        AuthorizationDecision decision = courseManagerDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                organizationId,
+                sourceIp
+        );
+        if (!decision.allowed()) {
+            throw new SecurityException("Missing course management context: " + decision.reason());
+        }
+    }
+
+    private AuthorizationDecision courseManagerDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organizationId,
+            String sourceIp
+    ) {
+        return permissionChecker.check(new AccessContext(
                 actorUserId,
                 sessionId,
                 actorProfileType,
@@ -411,9 +458,6 @@ public final class CourseService {
                 organizationId,
                 sourceIp
         ));
-        if (!decision.allowed()) {
-            throw new SecurityException("Missing course management context: " + decision.reason());
-        }
     }
 
     private void requireCourseCreateContext(
@@ -463,7 +507,7 @@ public final class CourseService {
             long courseId,
             String sourceIp
     ) {
-        return permissionChecker.check(new AccessContext(
+        AuthorizationDecision decision = permissionChecker.check(new AccessContext(
                 actorUserId,
                 sessionId,
                 actorProfileType,
@@ -472,6 +516,45 @@ public final class CourseService {
                 courseId,
                 sourceIp
         ));
+        if (decision.allowed() || actorProfileType != AccessProfileType.COORDINATOR) {
+            return decision;
+        }
+        return coordinatorCourseAccessDecision(actorUserId, sessionId, actorProfileType, courseId, sourceIp);
+    }
+
+    private AuthorizationDecision coordinatorCourseAccessDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long courseId,
+            String sourceIp
+    ) {
+        try {
+            boolean hasActiveAssociation = false;
+            for (CourseSubjectAssociation association : courseSubjectDAO.findActiveByCourse(courseId)) {
+                if (association.state() != CourseSubjectState.ACTIVE) {
+                    continue;
+                }
+                hasActiveAssociation = true;
+                AuthorizationDecision subjectDecision = permissionChecker.check(new AccessContext(
+                        actorUserId,
+                        sessionId,
+                        actorProfileType,
+                        AuthorizationPolicy.MANAGE_SUBJECTS,
+                        AccessEntityType.SUBJECT,
+                        association.subjectId(),
+                        sourceIp
+                ));
+                if (subjectDecision.allowed()) {
+                    return subjectDecision;
+                }
+            }
+            return AuthorizationDecision.deny(hasActiveAssociation
+                    ? "missing_coordinated_course_subject"
+                    : "course_has_no_active_subjects");
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to check coordinator course context", exception);
+        }
     }
 
     private AuthorizationDecision courseCreateDecision(
@@ -537,6 +620,11 @@ public final class CourseService {
     private Course requireCourse(long courseId) throws SQLException {
         return courseDAO.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+    }
+
+    private void validateOrganizationExists(long organizationId) throws SQLException {
+        organizationDAO.findById(organizationId)
+                .orElseThrow(() -> new IllegalArgumentException("Course organization not found: " + organizationId));
     }
 
     private Course requireCourse(Connection connection, long courseId) throws SQLException {

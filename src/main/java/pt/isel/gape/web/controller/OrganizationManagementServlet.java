@@ -1,6 +1,7 @@
 package pt.isel.gape.web.controller;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -23,6 +24,17 @@ import pt.isel.gape.access.model.UserState;
 import pt.isel.gape.access.service.UserService;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
+import pt.isel.gape.learning.dao.ClassGroupDAO;
+import pt.isel.gape.learning.dao.CourseDAO;
+import pt.isel.gape.learning.dao.CourseSubjectDAO;
+import pt.isel.gape.learning.dao.SubjectDAO;
+import pt.isel.gape.learning.model.Course;
+import pt.isel.gape.learning.model.CourseSubjectAssociation;
+import pt.isel.gape.learning.model.Subject;
+import pt.isel.gape.learning.service.ClassGroupService;
+import pt.isel.gape.learning.service.CourseService;
+import pt.isel.gape.learning.service.CourseSubjectService;
+import pt.isel.gape.learning.service.SubjectService;
 import pt.isel.gape.security.authorization.AuthorizationPolicy;
 import pt.isel.gape.security.session.SessionUser;
 import pt.isel.gape.structure.model.OrganicUnit;
@@ -39,33 +51,53 @@ import pt.isel.gape.structure.service.OrganicUnitService;
 import pt.isel.gape.structure.service.OrganizationService;
 import pt.isel.gape.web.media.ProfilePhotoStorage;
 import pt.isel.gape.web.view.AdministratorOptionView;
+import pt.isel.gape.web.view.OrganicUnitAdministratorView;
 import pt.isel.gape.web.view.OrganicUnitFormData;
 import pt.isel.gape.web.view.OrganicUnitView;
 import pt.isel.gape.web.view.OrganizationAdministratorView;
+import pt.isel.gape.web.view.OrganizationClassGroupTreeView;
+import pt.isel.gape.web.view.OrganizationCourseTreeView;
 import pt.isel.gape.web.view.OrganizationFormData;
+import pt.isel.gape.web.view.OrganizationSubjectTreeView;
 import pt.isel.gape.web.view.OrganizationView;
 
 @WebServlet(name = "organizationManagementServlet", urlPatterns = {"/admin/organizations", "/admin/organizations/*"})
-@MultipartConfig(maxFileSize = 10 * 1024 * 1024, maxRequestSize = 12 * 1024 * 1024)
+@MultipartConfig(maxFileSize = 50L * 1024L * 1024L, maxRequestSize = 52L * 1024L * 1024L)
 public final class OrganizationManagementServlet extends DashboardServletSupport {
 
     private static final String ORGANIZATIONS_LIST_JSP = "/admin/admin/organization/admin-organizations.jsp";
     private static final String ORGANIZATION_DETAIL_JSP = "/admin/admin/organization/admin-organization-detail.jsp";
-    private static final String ORGANIZATION_UNITS_JSP = "/admin/admin/organization/admin-organization-units.jsp";
     private static final String ORGANIZATION_FORM_JSP = "/admin/admin/organization/admin-organization-form.jsp";
+    private static final String ORGANIC_UNIT_DETAIL_JSP = "/admin/admin/organization/admin-organic-unit-detail.jsp";
     private static final String ORGANIC_UNIT_FORM_JSP = "/admin/admin/organization/admin-organic-unit-form.jsp";
 
     private final OrganizationService organizationService;
     private final OrganicUnitService organicUnitService;
     private final UserService userService;
     private final ProfilePhotoStorage photoStorage;
+    private final CourseDAO courseDAO;
+    private final SubjectDAO subjectDAO;
+    private final CourseSubjectDAO courseSubjectDAO;
+    private final ClassGroupDAO classGroupDAO;
+    private final CourseService courseService;
+    private final SubjectService subjectService;
+    private final CourseSubjectService courseSubjectService;
+    private final ClassGroupService classGroupService;
 
     public OrganizationManagementServlet() {
         this(
                 new OrganizationService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new OrganicUnitService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new UserService(ConnectionProvider.defaultProvider()),
-                new ProfilePhotoStorage()
+                new ProfilePhotoStorage(),
+                new CourseDAO(ConnectionProvider.defaultProvider()),
+                new SubjectDAO(ConnectionProvider.defaultProvider()),
+                new CourseSubjectDAO(ConnectionProvider.defaultProvider()),
+                new ClassGroupDAO(ConnectionProvider.defaultProvider()),
+                new CourseService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
+                new SubjectService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
+                new CourseSubjectService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
+                new ClassGroupService(ConnectionProvider.defaultProvider(), ApplicationClock.system())
         );
     }
 
@@ -73,12 +105,54 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
             OrganizationService organizationService,
             OrganicUnitService organicUnitService,
             UserService userService,
-            ProfilePhotoStorage photoStorage
+            ProfilePhotoStorage photoStorage,
+            CourseDAO courseDAO,
+            SubjectDAO subjectDAO,
+            CourseSubjectDAO courseSubjectDAO,
+            ClassGroupDAO classGroupDAO
+    ) {
+        this(
+                organizationService,
+                organicUnitService,
+                userService,
+                photoStorage,
+                courseDAO,
+                subjectDAO,
+                courseSubjectDAO,
+                classGroupDAO,
+                new CourseService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
+                new SubjectService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
+                new CourseSubjectService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
+                new ClassGroupService(ConnectionProvider.defaultProvider(), ApplicationClock.system())
+        );
+    }
+
+    OrganizationManagementServlet(
+            OrganizationService organizationService,
+            OrganicUnitService organicUnitService,
+            UserService userService,
+            ProfilePhotoStorage photoStorage,
+            CourseDAO courseDAO,
+            SubjectDAO subjectDAO,
+            CourseSubjectDAO courseSubjectDAO,
+            ClassGroupDAO classGroupDAO,
+            CourseService courseService,
+            SubjectService subjectService,
+            CourseSubjectService courseSubjectService,
+            ClassGroupService classGroupService
     ) {
         this.organizationService = organizationService;
         this.organicUnitService = organicUnitService;
         this.userService = userService;
         this.photoStorage = photoStorage;
+        this.courseDAO = courseDAO;
+        this.subjectDAO = subjectDAO;
+        this.courseSubjectDAO = courseSubjectDAO;
+        this.classGroupDAO = classGroupDAO;
+        this.courseService = courseService;
+        this.subjectService = subjectService;
+        this.courseSubjectService = courseSubjectService;
+        this.classGroupService = classGroupService;
     }
 
     @Override
@@ -104,12 +178,16 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 return;
             }
             if (segments.length == 2 && "units".equals(segments[1])) {
-                showUnits(request, response, Long.parseLong(segments[0]));
+                redirect(request, response, "/admin/organizations");
                 return;
             }
             if (segments.length == 3 && "units".equals(segments[1]) && "new".equals(segments[2])) {
                 showUnitCreateForm(request, response, Long.parseLong(segments[0]),
                         OrganicUnitFormData.blank(Long.parseLong(segments[0])), null);
+                return;
+            }
+            if (segments.length == 3 && "units".equals(segments[1])) {
+                showUnitDetail(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
                 return;
             }
             if (segments.length == 4 && "units".equals(segments[1]) && "edit".equals(segments[3])) {
@@ -158,6 +236,8 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 long organicUnitId = Long.parseLong(segments[2]);
                 switch (segments[3]) {
                     case "delete" -> deleteOrganicUnit(request, response, organizationId, organicUnitId);
+                    case "assign-admin" -> assignOrganicUnitAdministrator(request, response, organizationId, organicUnitId);
+                    case "revoke-admin" -> revokeOrganicUnitAdministrator(request, response, organizationId, organicUnitId);
                     default -> response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 }
                 return;
@@ -177,13 +257,35 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 primaryProfile(actor),
                 request.getRemoteAddr()
         );
-        List<OrganizationView> views = organizations.stream()
-                .map(organization -> OrganizationView.from(
-                        organization,
-                        safeOrganicUnits(actor, organization.id(), request).size()
-                ))
-                .toList();
+        List<OrganizationView> views = new ArrayList<>();
+        Map<Long, Boolean> canCreateOrganicUnitsByOrganizationId = new HashMap<>();
+        Map<Long, Boolean> canModifyOrganicUnitById = new HashMap<>();
+        Set<Long> courseIds = new HashSet<>();
+        Set<Long> subjectIds = new HashSet<>();
+        Set<Long> classGroupIds = new HashSet<>();
+        for (Organization organization : organizations) {
+            List<OrganicUnit> units = safeOrganicUnits(actor, organization.id(), request);
+            Map<Long, List<OrganizationCourseTreeView>> coursesByUnit = courseTreesByOrganicUnit(organization.id());
+            OrganizationView view = OrganizationView.from(organization, hierarchyViews(units, null, coursesByUnit));
+            views.add(view);
+            collectPedagogicalTreeIds(view, courseIds, subjectIds, classGroupIds);
+            canCreateOrganicUnitsByOrganizationId.put(
+                    organization.id(),
+                    canCreateAnyOrganicUnit(actor, organization.id(), units, request) && !view.isArchived()
+            );
+            canModifyOrganicUnitById.putAll(canModifyOrganicUnitById(actor, units, request));
+        }
         request.setAttribute("organizations", views);
+        request.setAttribute("canCreateOrganicUnitsByOrganizationId", canCreateOrganicUnitsByOrganizationId);
+        request.setAttribute("canModifyOrganicUnitById", canModifyOrganicUnitById);
+        request.setAttribute("canModifyCourseById", canModifyCourseById(actor, courseIds, request));
+        request.setAttribute("canManageCourseChildrenById", canManageCourseChildrenById(actor, courseIds, request));
+        request.setAttribute("canModifySubjectById", canModifySubjectById(actor, subjectIds, request));
+        request.setAttribute("canManageSubjectAssociationsById",
+                canManageSubjectAssociationsById(actor, subjectIds, request));
+        request.setAttribute("canModifyClassGroupById", canModifyClassGroupById(actor, classGroupIds, request));
+        request.setAttribute("canManageClassGroupStructureById",
+                canManageClassGroupStructureById(actor, classGroupIds, request));
         request.setAttribute("organizationCount", views.size());
         request.setAttribute("activeOrganizations", views.stream().filter(OrganizationView::isActive).count());
         request.setAttribute("inactiveOrganizations", views.stream().filter(OrganizationView::isInactive).count());
@@ -241,7 +343,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         forward(request, response, ORGANIZATION_DETAIL_JSP);
     }
 
-    private void showUnits(HttpServletRequest request, HttpServletResponse response, long organizationId)
+    private void showUnitDetail(HttpServletRequest request, HttpServletResponse response, long organizationId, long unitId)
             throws ServletException, IOException {
         SessionUser actor = requireCurrentUser(request);
         Organization organization = organizationService.getOrganization(
@@ -251,24 +353,30 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 organizationId,
                 request.getRemoteAddr()
         );
-        List<OrganicUnit> units = organicUnitService.listOrganicUnits(
+        OrganicUnit unit = requireOrganicUnitInOrganization(request, response, actor, organizationId, unitId);
+        if (unit == null) {
+            return;
+        }
+        List<OrganicUnit> units = safeOrganicUnits(actor, organizationId, request);
+        OrganizationView organizationView = OrganizationView.from(organization, units.size());
+        OrganicUnitView unitView = organicUnitView(units, unit);
+        boolean canModifyUnit = organicUnitService.canModifyOrganicUnit(
                 actor.userId(),
                 currentSessionId(request),
                 primaryProfile(actor),
-                organizationId,
+                unitId,
                 request.getRemoteAddr()
-        );
-        OrganizationView organizationView = OrganizationView.from(organization, units.size());
-        boolean canCreateOrganicUnits = canCreateAnyOrganicUnit(actor, organizationId, units, request)
-                && !organizationView.isArchived();
+        ) && !unitView.isArchived();
         request.setAttribute("organization", organizationView);
-        request.setAttribute("organicUnits", hierarchyViews(units, null));
+        request.setAttribute("unit", unitView);
+        request.setAttribute("canModifyUnit", canModifyUnit);
         request.setAttribute("canModifyOrganization", canManageOrganizationRoots(actor));
-        request.setAttribute("canCreateOrganicUnits", canCreateOrganicUnits);
-        request.setAttribute("canModifyOrganicUnitById", canModifyOrganicUnitById(actor, units, request));
-        prepareOrganizationContext(request, organizationView, "units");
-        prepareDashboard(request, "organizations", "Organic Units");
-        forward(request, response, ORGANIZATION_UNITS_JSP);
+        request.setAttribute("canCreateOrganicUnits", canCreateAnyOrganicUnit(actor, organizationId, units, request)
+                && !organizationView.isArchived());
+        prepareUnitAdministratorPanel(request, actor, organizationId, unitId);
+        prepareOrganizationContext(request, organizationView, "unit-detail");
+        prepareDashboard(request, "organizations", "Organic Unit Detail");
+        forward(request, response, ORGANIC_UNIT_DETAIL_JSP);
     }
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response, OrganizationFormData form, String error)
@@ -354,13 +462,10 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 organizationId,
                 request.getRemoteAddr()
         );
-        OrganicUnit unit = organicUnitService.getOrganicUnit(
-                actor.userId(),
-                currentSessionId(request),
-                primaryProfile(actor),
-                unitId,
-                request.getRemoteAddr()
-        );
+        OrganicUnit unit = requireOrganicUnitInOrganization(request, response, actor, organizationId, unitId);
+        if (unit == null) {
+            return;
+        }
         if (!organicUnitService.canModifyOrganicUnit(
                 actor.userId(),
                 currentSessionId(request),
@@ -561,7 +666,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         SessionUser actor = requireCurrentUser(request);
         OrganicUnitFormData form = OrganicUnitFormData.from(request, null, organizationId);
         try {
-            organicUnitService.createOrganicUnit(
+            OrganicUnit created = organicUnitService.createOrganicUnit(
                     actor.userId(),
                     currentSessionId(request),
                     primaryProfile(actor),
@@ -577,7 +682,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Organic unit created successfully.");
-            redirect(request, response, "/admin/organizations/" + organizationId + "/units");
+            redirect(request, response, "/admin/organizations/" + organizationId + "/units/" + created.id());
         } catch (RuntimeException exception) {
             showUnitCreateForm(request, response, organizationId, form, messageFor(exception));
         }
@@ -586,6 +691,9 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
     private void updateOrganicUnit(HttpServletRequest request, HttpServletResponse response, long organizationId, long unitId)
             throws ServletException, IOException {
         SessionUser actor = requireCurrentUser(request);
+        if (requireOrganicUnitInOrganization(request, response, actor, organizationId, unitId) == null) {
+            return;
+        }
         try {
             organicUnitService.updateOrganicUnit(
                     actor.userId(),
@@ -603,7 +711,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Organic unit updated successfully.");
-            redirect(request, response, "/admin/organizations/" + organizationId + "/units");
+            redirect(request, response, "/admin/organizations/" + organizationId + "/units/" + unitId);
         } catch (RuntimeException exception) {
             showUnitEditForm(request, response, organizationId, unitId, messageFor(exception));
         }
@@ -612,6 +720,9 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
     private void deleteOrganicUnit(HttpServletRequest request, HttpServletResponse response, long organizationId, long unitId)
             throws IOException {
         SessionUser actor = requireCurrentUser(request);
+        if (requireOrganicUnitInOrganization(request, response, actor, organizationId, unitId) == null) {
+            return;
+        }
         try {
             organicUnitService.deleteOrganicUnit(
                     actor.userId(),
@@ -624,7 +735,59 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirect(request, response, "/admin/organizations/" + organizationId + "/units");
+        redirect(request, response, "/admin/organizations");
+    }
+
+    private void assignOrganicUnitAdministrator(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long organizationId,
+            long unitId
+    ) throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        if (requireOrganicUnitInOrganization(request, response, actor, organizationId, unitId) == null) {
+            return;
+        }
+        try {
+            organicUnitService.assignOrganicUnitAdministrator(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    unitId,
+                    longParameter(request, "administratorUserId"),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Organic unit administrator assigned successfully.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirectToReturnPath(request, response, "/admin/organizations/" + organizationId + "/units/" + unitId);
+    }
+
+    private void revokeOrganicUnitAdministrator(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long organizationId,
+            long unitId
+    ) throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        if (requireOrganicUnitInOrganization(request, response, actor, organizationId, unitId) == null) {
+            return;
+        }
+        try {
+            organicUnitService.revokeOrganicUnitAdministrator(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    unitId,
+                    longParameter(request, "administratorUserId"),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Organic unit administrator removed successfully.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirectToReturnPath(request, response, "/admin/organizations/" + organizationId + "/units/" + unitId);
     }
 
     private void prepareUnitForm(
@@ -644,15 +807,133 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         request.setAttribute("unitFormAction", creating
                 ? request.getContextPath() + "/admin/organizations/" + organization.id() + "/units"
                 : request.getContextPath() + "/admin/organizations/" + organization.id() + "/units/" + editingUnitId);
+        request.setAttribute("unitBackHref", creating
+                ? request.getContextPath() + "/admin/organizations"
+                : request.getContextPath() + "/admin/organizations/" + organization.id() + "/units/" + editingUnitId);
         request.setAttribute("parentOptions", hierarchyViews(units, editingUnitId));
         prepareOrganizationContext(request, organizationView, creating ? "unit-new" : "unit-edit");
         request.setAttribute("canModifyOrganization", canManageOrganizationRoots(actor));
         request.setAttribute("canCreateOrganicUnits", canCreateAnyOrganicUnit(actor, organization.id(), units, request)
                 && !organizationView.isArchived());
+        if (!creating && editingUnitId != null) {
+            OrganicUnit editingUnit = units.stream()
+                    .filter(unit -> unit.id() == editingUnitId)
+                    .findFirst()
+                    .orElse(null);
+            if (editingUnit != null) {
+                request.setAttribute("unit", organicUnitView(units, editingUnit));
+                prepareUnitAdministratorPanel(request, actor, organization.id(), editingUnitId);
+            }
+        }
         if (error != null) {
             request.setAttribute("errorMessage", error);
         }
         prepareDashboard(request, "organizations", creating ? "Create Organic Unit" : "Edit Organic Unit");
+    }
+
+    private void prepareUnitAdministratorPanel(
+            HttpServletRequest request,
+            SessionUser actor,
+            long organizationId,
+            long unitId
+    ) {
+        request.setAttribute("assignedOrganicUnitAdministrators",
+                assignedOrganicUnitAdministrators(request, actor, unitId));
+        try {
+            request.setAttribute("organicUnitAdministratorOptions",
+                    organicUnitAdministratorOptions(request, actor, unitId));
+            request.setAttribute("canManageOrganicUnitAdministrators", Boolean.TRUE);
+        } catch (RuntimeException exception) {
+            request.setAttribute("organicUnitAdministratorOptions", List.of());
+            request.setAttribute("canManageOrganicUnitAdministrators", Boolean.FALSE);
+        }
+        String returnPath = "/admin/organizations/" + organizationId + "/units/" + unitId;
+        request.setAttribute("unitAdminReturnPath", returnPath);
+        request.setAttribute("unitAdminAssignAction",
+                request.getContextPath() + "/admin/organizations/" + organizationId + "/units/" + unitId + "/assign-admin");
+        request.setAttribute("unitAdminRevokeAction",
+                request.getContextPath() + "/admin/organizations/" + organizationId + "/units/" + unitId + "/revoke-admin");
+    }
+
+    private List<OrganicUnitAdministratorView> assignedOrganicUnitAdministrators(
+            HttpServletRequest request,
+            SessionUser actor,
+            long unitId
+    ) {
+        try {
+            return organicUnitService.listDirectOrganicUnitAdministratorIds(
+                            actor.userId(),
+                            currentSessionId(request),
+                            primaryProfile(actor),
+                            unitId,
+                            request.getRemoteAddr()
+                    )
+                    .stream()
+                    .map(userService::findById)
+                    .flatMap(java.util.Optional::stream)
+                    .map(user -> OrganicUnitAdministratorView.from(
+                            user,
+                            organicUnitService.canRevokeOrganicUnitAdministrator(
+                                    actor.userId(),
+                                    currentSessionId(request),
+                                    primaryProfile(actor),
+                                    unitId,
+                                    user.id(),
+                                    request.getRemoteAddr()
+                            )
+                    ))
+                    .toList();
+        } catch (RuntimeException exception) {
+            return List.of();
+        }
+    }
+
+    private List<AdministratorOptionView> organicUnitAdministratorOptions(
+            HttpServletRequest request,
+            SessionUser actor,
+            long unitId
+    ) {
+        return organicUnitService.listEligibleOrganicUnitAdministratorIds(
+                        actor.userId(),
+                        currentSessionId(request),
+                        primaryProfile(actor),
+                        unitId,
+                        request.getRemoteAddr()
+                )
+                .stream()
+                .map(userService::findById)
+                .flatMap(java.util.Optional::stream)
+                .map(user -> AdministratorOptionView.from(user, false))
+                .toList();
+    }
+
+    private OrganicUnit requireOrganicUnitInOrganization(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            SessionUser actor,
+            long organizationId,
+            long unitId
+    ) throws IOException {
+        OrganicUnit unit = organicUnitService.getOrganicUnit(
+                actor.userId(),
+                currentSessionId(request),
+                primaryProfile(actor),
+                unitId,
+                request.getRemoteAddr()
+        );
+        if (unit.organizationId() != organizationId) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return null;
+        }
+        return unit;
+    }
+
+    private static OrganicUnitView organicUnitView(List<OrganicUnit> units, OrganicUnit unit) {
+        return hierarchyViews(units, null)
+                .stream()
+                .filter(view -> view.getId() == unit.id())
+                .findFirst()
+                .orElseGet(() -> OrganicUnitView.from(unit, null, 0));
     }
 
     private List<AdministratorOptionView> administratorOptions(HttpServletRequest request, Set<Long> selectedIds) {
@@ -680,6 +961,191 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         } catch (RuntimeException exception) {
             return List.of();
         }
+    }
+
+    private Map<Long, List<OrganizationCourseTreeView>> courseTreesByOrganicUnit(long organizationId) {
+        Map<Long, List<OrganizationCourseTreeView>> coursesByUnit = new HashMap<>();
+        try {
+            for (Course course : courseDAO.findByOrganization(organizationId)) {
+                if (course.organicUnitId() == null) {
+                    continue;
+                }
+                coursesByUnit.computeIfAbsent(course.organicUnitId(), ignored -> new ArrayList<>())
+                        .add(courseTree(course));
+            }
+            coursesByUnit.values().forEach(courses -> courses.sort(Comparator.comparingLong(OrganizationCourseTreeView::getId)));
+            return coursesByUnit;
+        } catch (SQLException exception) {
+            return Map.of();
+        }
+    }
+
+    private OrganizationCourseTreeView courseTree(Course course) throws SQLException {
+        List<OrganizationSubjectTreeView> subjects = new ArrayList<>();
+        for (CourseSubjectAssociation association : courseSubjectDAO.findByCourse(course.id())) {
+            Subject subject = subjectDAO.findById(association.subjectId()).orElse(null);
+            if (subject == null) {
+                continue;
+            }
+            List<OrganizationClassGroupTreeView> classGroups = classGroupDAO
+                    .findByCourseAndSubject(course.id(), subject.id())
+                    .stream()
+                    .map(OrganizationClassGroupTreeView::from)
+                    .toList();
+            subjects.add(OrganizationSubjectTreeView.from(association, subject, classGroups));
+        }
+        subjects.sort(Comparator.comparingLong(OrganizationSubjectTreeView::getSubjectId));
+        return OrganizationCourseTreeView.from(course, subjects);
+    }
+
+    private static void collectPedagogicalTreeIds(
+            OrganizationView organization,
+            Set<Long> courseIds,
+            Set<Long> subjectIds,
+            Set<Long> classGroupIds
+    ) {
+        for (OrganicUnitView unit : organization.getOrganicUnits()) {
+            for (OrganizationCourseTreeView course : unit.getCourses()) {
+                courseIds.add(course.getId());
+                for (OrganizationSubjectTreeView subject : course.getSubjects()) {
+                    subjectIds.add(subject.getSubjectId());
+                    for (OrganizationClassGroupTreeView classGroup : subject.getClassGroups()) {
+                        classGroupIds.add(classGroup.getId());
+                    }
+                }
+            }
+        }
+    }
+
+    private Map<Long, Boolean> canModifyCourseById(
+            SessionUser actor,
+            Set<Long> courseIds,
+            HttpServletRequest request
+    ) {
+        Map<Long, Boolean> permissions = new HashMap<>();
+        for (Long courseId : courseIds) {
+            permissions.put(courseId, courseService.canModifyCourse(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    courseId,
+                    request.getRemoteAddr()
+            ));
+        }
+        return permissions;
+    }
+
+    private Map<Long, Boolean> canManageCourseChildrenById(
+            SessionUser actor,
+            Set<Long> courseIds,
+            HttpServletRequest request
+    ) {
+        Map<Long, Boolean> permissions = new HashMap<>();
+        for (Long courseId : courseIds) {
+            permissions.put(courseId, courseService.canManageCourseChildren(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    courseId,
+                    request.getRemoteAddr()
+            ));
+        }
+        return permissions;
+    }
+
+    private Map<Long, Boolean> canModifySubjectById(
+            SessionUser actor,
+            Set<Long> subjectIds,
+            HttpServletRequest request
+    ) {
+        Map<Long, Boolean> permissions = new HashMap<>();
+        for (Long subjectId : subjectIds) {
+            permissions.put(subjectId, subjectService.canModifySubject(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    subjectId,
+                    request.getRemoteAddr()
+            ));
+        }
+        return permissions;
+    }
+
+    private Map<Long, Boolean> canManageSubjectAssociationsById(
+            SessionUser actor,
+            Set<Long> subjectIds,
+            HttpServletRequest request
+    ) {
+        Map<Long, Boolean> permissions = new HashMap<>();
+        for (Long subjectId : subjectIds) {
+            permissions.put(subjectId, canManageSubjectAssociations(actor, subjectId, request));
+        }
+        return permissions;
+    }
+
+    private boolean canManageSubjectAssociations(
+            SessionUser actor,
+            long subjectId,
+            HttpServletRequest request
+    ) {
+        if (courseSubjectService.canManageSubjectAssociations(
+                actor.userId(),
+                currentSessionId(request),
+                primaryProfile(actor),
+                subjectId,
+                request.getRemoteAddr()
+        )) {
+            return true;
+        }
+        try {
+            return courseSubjectDAO.findBySubject(subjectId).stream()
+                    .anyMatch(association -> courseSubjectService.canManageAssociation(
+                            actor.userId(),
+                            currentSessionId(request),
+                            primaryProfile(actor),
+                            association.courseId(),
+                            subjectId,
+                            request.getRemoteAddr()
+                    ));
+        } catch (SQLException exception) {
+            return false;
+        }
+    }
+
+    private Map<Long, Boolean> canModifyClassGroupById(
+            SessionUser actor,
+            Set<Long> classGroupIds,
+            HttpServletRequest request
+    ) {
+        Map<Long, Boolean> permissions = new HashMap<>();
+        for (Long classGroupId : classGroupIds) {
+            permissions.put(classGroupId, classGroupService.canModifyClassGroup(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    classGroupId,
+                    request.getRemoteAddr()
+            ));
+        }
+        return permissions;
+    }
+
+    private Map<Long, Boolean> canManageClassGroupStructureById(
+            SessionUser actor,
+            Set<Long> classGroupIds,
+            HttpServletRequest request
+    ) {
+        Map<Long, Boolean> permissions = new HashMap<>();
+        for (Long classGroupId : classGroupIds) {
+            permissions.put(classGroupId, classGroupService.canManageClassGroupStructure(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    classGroupId,
+                    request.getRemoteAddr()
+            ));
+        }
+        return permissions;
     }
 
     private boolean canCreateAnyOrganicUnit(
@@ -737,6 +1203,14 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
     }
 
     private static List<OrganicUnitView> hierarchyViews(List<OrganicUnit> units, Long excludedUnitId) {
+        return hierarchyViews(units, excludedUnitId, Map.of());
+    }
+
+    private static List<OrganicUnitView> hierarchyViews(
+            List<OrganicUnit> units,
+            Long excludedUnitId,
+            Map<Long, List<OrganizationCourseTreeView>> coursesByUnit
+    ) {
         Map<Long, OrganicUnit> byId = new HashMap<>();
         Map<Long, List<OrganicUnit>> childrenByParent = new HashMap<>();
         for (OrganicUnit unit : units) {
@@ -751,10 +1225,10 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
 
         List<OrganicUnitView> views = new ArrayList<>();
         Set<Long> visited = new HashSet<>();
-        appendChildren(0L, 0, childrenByParent, byId, visited, views);
+        appendChildren(0L, 0, childrenByParent, byId, visited, views, coursesByUnit);
         for (OrganicUnit unit : units.stream().sorted(unitComparator()).toList()) {
             if (!visited.contains(unit.id()) && (excludedUnitId == null || unit.id() != excludedUnitId)) {
-                appendUnit(unit, 0, childrenByParent, byId, visited, views);
+                appendUnit(unit, 0, childrenByParent, byId, visited, views, coursesByUnit);
             }
         }
         return views;
@@ -766,10 +1240,11 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
             Map<Long, List<OrganicUnit>> childrenByParent,
             Map<Long, OrganicUnit> byId,
             Set<Long> visited,
-            List<OrganicUnitView> views
+            List<OrganicUnitView> views,
+            Map<Long, List<OrganizationCourseTreeView>> coursesByUnit
     ) {
         for (OrganicUnit child : childrenByParent.getOrDefault(parentId, List.of())) {
-            appendUnit(child, depth, childrenByParent, byId, visited, views);
+            appendUnit(child, depth, childrenByParent, byId, visited, views, coursesByUnit);
         }
     }
 
@@ -779,7 +1254,8 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
             Map<Long, List<OrganicUnit>> childrenByParent,
             Map<Long, OrganicUnit> byId,
             Set<Long> visited,
-            List<OrganicUnitView> views
+            List<OrganicUnitView> views,
+            Map<Long, List<OrganizationCourseTreeView>> coursesByUnit
     ) {
         if (!visited.add(unit.id())) {
             return;
@@ -789,12 +1265,12 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
             OrganicUnit parent = byId.get(unit.parentOrganicUnitId());
             parentLabel = parent == null ? "Unknown parent" : parent.code() + " - " + parent.name();
         }
-        views.add(OrganicUnitView.from(unit, parentLabel, depth));
-        appendChildren(unit.id(), depth + 1, childrenByParent, byId, visited, views);
+        views.add(OrganicUnitView.from(unit, parentLabel, depth, coursesByUnit.getOrDefault(unit.id(), List.of())));
+        appendChildren(unit.id(), depth + 1, childrenByParent, byId, visited, views, coursesByUnit);
     }
 
     private static Comparator<OrganicUnit> unitComparator() {
-        return Comparator.comparing(OrganicUnit::code).thenComparing(OrganicUnit::name);
+        return Comparator.comparingLong(OrganicUnit::id);
     }
 
     private static void prepareOrganizationContext(HttpServletRequest request, OrganizationView organization, String activeChild) {

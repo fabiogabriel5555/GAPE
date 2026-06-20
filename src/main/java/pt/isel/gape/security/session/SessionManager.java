@@ -172,7 +172,7 @@ public final class SessionManager {
         boolean canManageAll = sessionUser.hasPermission(AuthorizationPolicy.MANAGE_ALL);
         boolean canManageOrganizationStructure = canManageAll
                 || sessionUser.hasPermission(AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE);
-        boolean canManageLearning = canManageOrganizationStructure
+        boolean canManageLearning = canManageAll
                 || sessionUser.hasPermission(AuthorizationPolicy.MANAGE_LEARNING);
         boolean canManageEnrollments = canManageLearning
                 || sessionUser.hasPermission(AuthorizationPolicy.MANAGE_ENROLLMENTS);
@@ -187,8 +187,8 @@ public final class SessionManager {
                 CAN_MANAGE_ORGANIZATIONS_ATTRIBUTE,
                 canManageOrganizationStructure
         );
-        httpSession.setAttribute(CAN_MANAGE_COURSES_ATTRIBUTE, canManageLearning);
-        httpSession.setAttribute(CAN_MANAGE_SUBJECTS_ATTRIBUTE, canManageLearning);
+        httpSession.setAttribute(CAN_MANAGE_COURSES_ATTRIBUTE, canManageAll);
+        httpSession.setAttribute(CAN_MANAGE_SUBJECTS_ATTRIBUTE, canManageAll);
         httpSession.setAttribute(
                 CAN_MANAGE_ENROLLMENTS_ATTRIBUTE,
                 canManageEnrollments

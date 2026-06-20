@@ -12,6 +12,6 @@ public record ClassGroupCreateCommand(
         Integer maxStudents,
         LocalDate startsAt,
         LocalDate endsAt,
-        String shift
+        ClassGroupShift shift
 ) {
 }

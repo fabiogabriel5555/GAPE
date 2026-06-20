@@ -40,6 +40,7 @@ DROP TABLE IF EXISTS question;
 DROP TABLE IF EXISTS assessment;
 DROP TABLE IF EXISTS lesson;
 DROP TABLE IF EXISTS physical_room;
+DROP TABLE IF EXISTS content_file;
 DROP TABLE IF EXISTS content_item;
 
 DROP TABLE IF EXISTS enroll_class_group;

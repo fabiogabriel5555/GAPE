@@ -179,6 +179,10 @@
         opacity: .55;
         cursor: not-allowed;
     }
+
+    .gape-profile-assignment-card {
+        min-height: 96px;
+    }
 </style>
 
 <div class="px-24 py-24">
@@ -295,10 +299,15 @@
         <div class="row gy-4 mb-24">
             <c:forEach var="detail" items="${profileSummaryDetails}">
                 <div class="col-lg-3 col-md-6">
-                    <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
+                    <div class="gape-profile-assignment-card border border-neutral-30 rounded-12 px-20 py-18 h-100">
                         <span class="fw-medium text-14 text-neutral-700"><c:out value="${detail.group}"/></span>
                         <span class="d-block text-14 text-neutral-700 mt-6"><c:out value="${detail.label}"/></span>
-                        <span class="d-block text-12 text-neutral-500 mt-4"><c:out value="${detail.detail}"/></span>
+                        <span class="d-block text-12 text-neutral-500 mt-4">
+                            <c:choose>
+                                <c:when test="${detail.hasDetailHtml}"><c:out value="${detail.detailHtml}" escapeXml="false"/></c:when>
+                                <c:otherwise><c:out value="${detail.detail}"/></c:otherwise>
+                            </c:choose>
+                        </span>
                     </div>
                 </div>
             </c:forEach>
@@ -314,10 +323,35 @@
             <div class="row gy-4">
                 <c:forEach var="detail" items="${administratorAccessDetails}">
                     <div class="col-lg-3 col-md-6">
-                        <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
+                        <div class="gape-profile-assignment-card border border-neutral-30 rounded-12 px-20 py-18 h-100">
                             <span class="fw-medium text-14 text-neutral-700"><c:out value="${detail.group}"/></span>
                             <span class="d-block text-14 text-neutral-700 mt-6"><c:out value="${detail.label}"/></span>
-                            <span class="d-block text-12 text-neutral-500 mt-4"><c:out value="${detail.detail}"/></span>
+                            <span class="d-block text-12 text-neutral-500 mt-4">
+                                <c:choose>
+                                    <c:when test="${detail.hasDetailHtml}"><c:out value="${detail.detailHtml}" escapeXml="false"/></c:when>
+                                    <c:otherwise><c:out value="${detail.detail}"/></c:otherwise>
+                                </c:choose>
+                            </span>
+                        </div>
+                    </div>
+                </c:forEach>
+            </div>
+        </c:if>
+
+        <c:if test="${not empty profileContextDetails}">
+            <h5 class="text-16 fw-medium text-neutral-700 mt-24 mb-16">Profile Contexts</h5>
+            <div class="row gy-4">
+                <c:forEach var="detail" items="${profileContextDetails}">
+                    <div class="col-lg-4 col-md-6">
+                        <div class="gape-profile-assignment-card border border-neutral-30 rounded-12 px-20 py-18 h-100">
+                            <span class="fw-medium text-14 text-neutral-700"><c:out value="${detail.group}"/></span>
+                            <span class="d-block text-14 text-neutral-700 mt-6"><c:out value="${detail.label}"/></span>
+                            <span class="d-block text-12 text-neutral-500 mt-4">
+                                <c:choose>
+                                    <c:when test="${detail.hasDetailHtml}"><c:out value="${detail.detailHtml}" escapeXml="false"/></c:when>
+                                    <c:otherwise><c:out value="${detail.detail}"/></c:otherwise>
+                                </c:choose>
+                            </span>
                         </div>
                     </div>
                 </c:forEach>

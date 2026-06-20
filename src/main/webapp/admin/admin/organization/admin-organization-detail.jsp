@@ -159,18 +159,9 @@
                                             <div class="d-flex align-items-start gap-12">
                                                 <span class="text-22 text-main-600 line-height-1"><i class="ph ph-tree-structure"></i></span>
                                                 <div>
-                                                    <c:choose>
-                                                        <c:when test="${unit.archived or not canModifyUnit}">
-                                                            <span class="fw-medium text-14 text-neutral-700">
-                                                                <c:out value="${unit.code}"/> - <c:out value="${unit.name}"/>
-                                                            </span>
-                                                        </c:when>
-                                                        <c:otherwise>
-                                                            <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/${unit.id}/edit" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
-                                                                <c:out value="${unit.code}"/> - <c:out value="${unit.name}"/>
-                                                            </a>
-                                                        </c:otherwise>
-                                                    </c:choose>
+                                                    <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/${unit.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                                        <c:out value="${unit.code}"/> - <c:out value="${unit.name}"/>
+                                                    </a>
                                                     <span class="d-block text-12 text-neutral-500">Parent: <c:out value="${unit.parentLabel}"/></span>
                                                 </div>
                                             </div>
@@ -179,6 +170,9 @@
                                                 <span class="${unit.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
                                                     <c:out value="${unit.stateLabel}"/>
                                                 </span>
+                                                <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/${unit.id}" class="text-21 text-neutral-500 hover-text-main-600" title="Detail">
+                                                    <i class="ph ph-eye"></i>
+                                                </a>
                                                 <c:if test="${not unit.archived and canModifyUnit}">
                                                     <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/${unit.id}/edit" class="text-21 text-neutral-500 hover-text-main-600" title="Edit">
                                                         <i class="ph ph-pencil-simple-line"></i>

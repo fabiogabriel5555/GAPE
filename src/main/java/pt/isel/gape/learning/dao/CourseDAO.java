@@ -84,7 +84,7 @@ public final class CourseDAO {
                        ects, duration, type, state
                 FROM course
                 WHERE id_organization = ?
-                ORDER BY name
+                ORDER BY id_course
                 """;
 
         try (Connection connection = connectionProvider.getConnection();
@@ -117,7 +117,7 @@ public final class CourseDAO {
                         OR LOWER(COALESCE(acronym, '')) LIKE ?
                         OR LOWER(COALESCE(description, '')) LIKE ?
                   )
-                ORDER BY name
+                ORDER BY id_course
                 """;
 
         try (Connection connection = connectionProvider.getConnection();

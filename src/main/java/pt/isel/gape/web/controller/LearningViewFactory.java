@@ -26,6 +26,7 @@ import pt.isel.gape.structure.dao.OrganizationDAO;
 import pt.isel.gape.structure.model.OrganicUnit;
 import pt.isel.gape.structure.model.Organization;
 import pt.isel.gape.web.view.ClassGroupEnrollmentView;
+import pt.isel.gape.web.view.ClassGroupTeacherView;
 import pt.isel.gape.web.view.ClassGroupView;
 import pt.isel.gape.web.view.ContentBlockView;
 import pt.isel.gape.web.view.CourseSubjectView;
@@ -205,6 +206,17 @@ final class LearningViewFactory {
                     .toList();
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to build class group enrollment views", exception);
+        }
+    }
+
+    List<ClassGroupTeacherView> classGroupTeacherViews(long classGroupId) {
+        requireClassGroupSupport();
+        try {
+            return teachClassGroupDAO.findByClassGroup(classGroupId).stream()
+                    .map(ClassGroupTeacherView::from)
+                    .toList();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to build class group teacher views", exception);
         }
     }
 

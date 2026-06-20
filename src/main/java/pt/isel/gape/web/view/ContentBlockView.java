@@ -1,12 +1,17 @@
 package pt.isel.gape.web.view;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 import pt.isel.gape.learning.model.ContentBlock;
 import pt.isel.gape.learning.model.ContentBlockAccessMode;
 import pt.isel.gape.learning.model.ContentBlockState;
 
 public final class ContentBlockView {
+
+    private static final DateTimeFormatter PORTUGUESE_DATE_TIME =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("pt-PT"));
 
     private final long id;
     private final long classGroupId;
@@ -103,19 +108,19 @@ public final class ContentBlockView {
     }
 
     public String getAvailableFrom() {
-        return availableFrom == null ? "" : availableFrom.toString();
+        return availableFrom == null ? "" : PORTUGUESE_DATE_TIME.format(availableFrom);
     }
 
     public String getAvailableUntil() {
-        return availableUntil == null ? "" : availableUntil.toString();
+        return availableUntil == null ? "" : PORTUGUESE_DATE_TIME.format(availableUntil);
     }
 
     public String getAvailabilityLabel() {
         if (availableFrom == null && availableUntil == null) {
             return "-";
         }
-        return (availableFrom == null ? "-" : availableFrom.toString())
+        return (availableFrom == null ? "-" : PORTUGUESE_DATE_TIME.format(availableFrom))
                 + " to "
-                + (availableUntil == null ? "-" : availableUntil.toString());
+                + (availableUntil == null ? "-" : PORTUGUESE_DATE_TIME.format(availableUntil));
     }
 }

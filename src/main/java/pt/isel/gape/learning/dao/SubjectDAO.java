@@ -78,7 +78,7 @@ public final class SubjectDAO {
                 SELECT id_subject, id_organization, name, acronym, photo, description, ects, workload_hours, state
                 FROM subject
                 WHERE id_organization = ?
-                ORDER BY name
+                ORDER BY id_subject
                 """;
 
         try (Connection connection = connectionProvider.getConnection();
@@ -100,7 +100,7 @@ public final class SubjectDAO {
                 FROM subject
                 WHERE id_organization = ?
                   AND state = 'active'
-                ORDER BY name
+                ORDER BY id_subject
                 """;
 
         try (Connection connection = connectionProvider.getConnection();
@@ -129,7 +129,7 @@ public final class SubjectDAO {
                   AND s.state <> 'archived'
                   AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
                   AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
-                ORDER BY s.name
+                ORDER BY s.id_subject
                 """;
 
         try (Connection connection = connectionProvider.getConnection();

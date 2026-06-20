@@ -1,0 +1,1993 @@
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base href="${pageContext.request.contextPath}/">
+    <title>GAPE - Class Group Detail</title>
+    <%@ include file="/WEB-INF/fragments/template-base-head.jspf" %>
+    <style>
+        .cg-shell {
+            --cg-primary: #00a991;
+            --cg-primary-dark: #008a78;
+            --cg-border: #e6edf0;
+            --cg-muted: #64748b;
+            --cg-ink: #172033;
+        }
+
+        .cg-surface {
+            background: #fff;
+            border: 1px solid var(--cg-border);
+            border-radius: 8px;
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
+        }
+
+        .cg-hero {
+            background: linear-gradient(135deg, rgba(0, 169, 145, 0.12), rgba(39, 134, 245, 0.06)), #fff;
+        }
+
+        .cg-mode-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .cg-mode-card {
+            background: #fff;
+            border: 1px solid var(--cg-border);
+            border-radius: 8px;
+            color: var(--cg-ink);
+            cursor: pointer;
+            min-height: 132px;
+            padding: 20px;
+            text-align: left;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+            width: 100%;
+        }
+
+        .cg-mode-card.is-active {
+            background: linear-gradient(135deg, rgba(0, 169, 145, 0.16), rgba(0, 169, 145, 0.06)), #f2fffc;
+            border-color: rgba(0, 169, 145, 0.75);
+            box-shadow: 0 16px 36px rgba(0, 169, 145, 0.12);
+            transform: translateY(-1px);
+        }
+
+        .cg-mode-card.is-active .cg-mode-icon {
+            background: var(--cg-primary) !important;
+            color: #fff !important;
+        }
+
+        .cg-mode-icon,
+        .cg-content-icon,
+        .cg-activity-icon {
+            align-items: center;
+            border-radius: 8px;
+            display: inline-flex;
+            flex-shrink: 0;
+            justify-content: center;
+        }
+
+        .cg-mode-icon {
+            height: 44px;
+            width: 44px;
+        }
+
+        .cg-tab-panel[hidden] {
+            display: none !important;
+        }
+
+        .cg-primary-button,
+        .cg-outline-button,
+        .cg-danger-button,
+        .cg-warning-button,
+        .cg-icon-button {
+            align-items: center;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            font-weight: 600;
+            justify-content: center;
+            line-height: 1.2;
+            min-height: 42px;
+            text-decoration: none;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .cg-primary-button {
+            background: var(--cg-primary);
+            border: 1px solid var(--cg-primary);
+            color: #fff;
+            padding: 10px 16px;
+        }
+
+        .cg-primary-button:hover {
+            background: var(--cg-primary-dark);
+            border-color: var(--cg-primary-dark);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .cg-primary-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.76;
+            transform: none;
+        }
+
+        .cg-upload-button {
+            gap: 8px;
+            min-width: 150px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .cg-upload-button > span:not(.cg-upload-button-progress) {
+            position: relative;
+            z-index: 1;
+        }
+
+        .cg-upload-button-progress {
+            background: rgba(255, 255, 255, 0.24);
+            bottom: 0;
+            display: none;
+            left: 0;
+            position: absolute;
+            top: 0;
+            transition: width 0.18s ease;
+            width: 0;
+        }
+
+        .cg-upload-button.is-uploading .cg-upload-button-progress {
+            display: block;
+        }
+
+        .cg-upload-button.is-indeterminate .cg-upload-button-progress {
+            animation: cg-upload-indeterminate 1.15s ease-in-out infinite;
+            width: 42%;
+        }
+
+        .cg-upload-button-spinner {
+            display: none;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .cg-upload-button.is-uploading .cg-upload-button-spinner {
+            display: inline-flex;
+        }
+
+        .cg-upload-button-spinner i {
+            animation: cg-upload-spin 0.9s linear infinite;
+        }
+
+        @keyframes cg-upload-spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes cg-upload-indeterminate {
+            0% {
+                left: -45%;
+            }
+            55% {
+                left: 42%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+
+        .cg-outline-button {
+            background: #fff;
+            border: 1px solid var(--cg-border);
+            color: var(--cg-ink);
+            padding: 10px 16px;
+        }
+
+        .cg-outline-button:hover {
+            border-color: rgba(0, 169, 145, 0.45);
+            color: var(--cg-primary-dark);
+        }
+
+        .cg-danger-button {
+            background: #dc2626;
+            border: 1px solid #dc2626;
+            color: #fff;
+            padding: 10px 16px;
+        }
+
+        .cg-warning-button {
+            background: #f97316;
+            border: 1px solid #f97316;
+            color: #fff;
+            padding: 10px 16px;
+        }
+
+        .cg-icon-button {
+            background: transparent;
+            border: 1px solid transparent;
+            color: #64748b;
+            height: 40px;
+            min-height: 40px;
+            padding: 0;
+            width: 40px;
+        }
+
+        .cg-icon-button:hover {
+            background: rgba(0, 169, 145, 0.09);
+            color: var(--cg-primary-dark);
+        }
+
+        .cg-block {
+            border-left: 4px solid var(--cg-primary);
+            overflow: hidden;
+        }
+
+        .cg-block-header {
+            background: linear-gradient(180deg, #ffffff 0%, #f7fffd 100%);
+            border-bottom: 2px solid rgba(0, 169, 145, 0.18);
+            padding: 22px 20px 20px;
+        }
+
+        .cg-block.is-archived {
+            border-left-color: #f43f5e;
+        }
+
+        .cg-block-number {
+            color: rgba(0, 169, 145, 0.26);
+            font-size: 54px;
+            font-weight: 800;
+            letter-spacing: 0;
+            line-height: 0.9;
+            min-width: 72px;
+            text-align: center;
+        }
+
+        .cg-block.is-archived .cg-block-number {
+            color: rgba(244, 63, 94, 0.28);
+        }
+
+        .cg-block-toolbar {
+            background: #f8fbfb;
+            border-top: 1px solid var(--cg-border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 14px 18px;
+        }
+
+        .cg-content-list {
+            background: #fff;
+        }
+
+        .cg-content-row {
+            align-items: center;
+            display: grid;
+            gap: 14px;
+            grid-template-columns: minmax(0, 1fr) auto;
+            min-height: 82px;
+            padding: 16px 18px;
+        }
+
+        .cg-content-list .cg-content-row:first-child {
+            padding-top: 20px;
+        }
+
+        .cg-content-row + .cg-content-row {
+            border-top: 1px solid var(--cg-border);
+        }
+
+        .cg-content-icon {
+            height: 44px;
+            width: 44px;
+        }
+
+        .cg-content-thumb-wrap {
+            align-items: center;
+            display: inline-flex;
+            flex-shrink: 0;
+            height: 52px;
+            justify-content: center;
+            width: 68px;
+        }
+
+        .cg-content-thumb {
+            background: #f8fbfb;
+            border: 1px solid var(--cg-border);
+            border-radius: 8px;
+            display: block;
+            height: 52px;
+            object-fit: cover;
+            width: 68px;
+        }
+
+        .cg-truncate-2 {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden;
+        }
+
+        .cg-empty {
+            background: #f8fbfb;
+            border-top: 1px dashed var(--cg-border);
+            min-height: 96px;
+        }
+
+        .cg-table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .cg-data-table {
+            min-width: 820px;
+        }
+
+        .cg-info-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .cg-info-cell {
+            background: #f8fbfb;
+            border: 1px solid var(--cg-border);
+            border-radius: 8px;
+            min-height: 88px;
+            padding: 16px;
+        }
+
+        .cg-activity-modal .modal-dialog {
+            max-width: 1180px;
+            width: min(1180px, calc(100vw - 32px));
+        }
+
+        .cg-activity-modal .modal-content {
+            height: min(860px, calc(100vh - 32px));
+        }
+
+        .cg-activity-modal .modal-header,
+        .cg-activity-modal .modal-footer {
+            flex: 0 0 auto;
+        }
+
+        .cg-activity-modal .modal-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .cg-activity-modal [data-content-upload-form] {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .cg-activity-shell {
+            display: grid;
+            flex: 1 1 auto;
+            grid-template-columns: 240px minmax(0, 1fr);
+            height: auto;
+            min-height: 0;
+        }
+
+        .cg-activity-side {
+            border-right: 1px solid var(--cg-border);
+            min-height: 0;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .cg-activity-main {
+            min-height: 0;
+            overflow-y: auto;
+            padding: 18px;
+        }
+
+        .cg-content-picker-panel {
+            border-bottom: 1px solid var(--cg-border);
+            margin: 0 -18px 18px;
+            padding: 0 18px 18px;
+        }
+
+        .cg-content-details-panel {
+            background: #f8fbfb;
+            border: 1px solid var(--cg-border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .cg-content-section-label {
+            align-items: center;
+            color: var(--cg-muted);
+            display: flex;
+            font-size: 12px;
+            font-weight: 700;
+            gap: 10px;
+            letter-spacing: 0;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        .cg-content-section-label::after {
+            background: var(--cg-border);
+            content: "";
+            flex: 1 1 auto;
+            height: 1px;
+        }
+
+        .cg-activity-category,
+        .cg-activity-option {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            color: var(--cg-ink);
+            cursor: pointer;
+            display: flex;
+            text-align: left;
+            width: 100%;
+        }
+
+        .cg-activity-category {
+            align-items: center;
+            font-weight: 600;
+            gap: 10px;
+            min-height: 42px;
+            padding: 10px 12px;
+        }
+
+        .cg-activity-category.is-active,
+        .cg-activity-category:hover {
+            background: rgba(0, 169, 145, 0.09);
+            color: var(--cg-primary-dark);
+        }
+
+        .cg-activity-option {
+            align-items: flex-start;
+            gap: 14px;
+            padding: 12px;
+        }
+
+        .cg-activity-option > span:last-child {
+            min-width: 0;
+        }
+
+        .cg-activity-option > span:last-child > span.text-13 {
+            display: block;
+            line-height: 1.35;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .cg-activity-option:hover,
+        .cg-activity-option.is-selected {
+            background: #f8fbfb;
+            border-color: rgba(0, 169, 145, 0.26);
+        }
+
+        .cg-activity-option.is-planned {
+            opacity: 0.62;
+        }
+
+        .cg-activity-icon {
+            color: #fff;
+            font-size: 24px;
+            height: 48px;
+            width: 48px;
+        }
+
+        .cg-activity-options {
+            display: grid;
+            align-content: start;
+            gap: 10px;
+            max-height: 420px;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .cg-repository-group,
+        .cg-repository-empty {
+            grid-column: 1 / -1;
+        }
+
+        .cg-repository-list {
+            display: grid;
+            gap: 10px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .cg-repository-item {
+            align-items: stretch;
+            background: #fff;
+            border: 1px solid var(--cg-border);
+            border-radius: 8px;
+            display: flex;
+            overflow: hidden;
+            transition: background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .cg-repository-item.is-selected {
+            background: rgba(0, 169, 145, 0.12);
+            border-color: rgba(0, 169, 145, 0.55);
+            box-shadow: inset 4px 0 0 var(--cg-primary);
+        }
+
+        .cg-repository-item.is-selected .cg-activity-option {
+            background: transparent;
+        }
+
+        .cg-repository-item .cg-activity-option {
+            border: 0;
+            border-radius: 0;
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .cg-repository-preview {
+            align-items: center;
+            border-left: 1px solid var(--cg-border);
+            color: var(--cg-primary-dark);
+            display: flex;
+            flex: 0 0 52px;
+            font-size: 20px;
+            justify-content: center;
+            width: 52px;
+        }
+
+        .cg-repository-item.is-selected .cg-repository-preview {
+            background: rgba(0, 169, 145, 0.08);
+            border-left-color: rgba(0, 169, 145, 0.35);
+        }
+
+        .cg-repository-preview:hover {
+            background: rgba(0, 169, 145, 0.08);
+            color: var(--cg-primary-dark);
+        }
+
+        .cg-selected-repository-file {
+            background: #fff;
+            border: 1px solid rgba(0, 169, 145, 0.28);
+            border-left: 4px solid var(--cg-primary);
+            border-radius: 8px;
+            margin-top: 14px;
+            padding: 12px;
+        }
+
+        .dashbord-body {
+            min-width: 0;
+        }
+
+        @media (max-width: 1199.98px) {
+            .cg-info-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 992px) {
+            .cg-activity-options {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                max-height: none;
+                overflow: visible;
+                padding-right: 0;
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .cg-mode-grid,
+            .cg-activity-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .cg-activity-side {
+                border-bottom: 1px solid var(--cg-border);
+                border-right: 0;
+            }
+
+            .cg-repository-list {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .cg-content-row,
+            .cg-info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cg-content-row .text-end {
+                text-align: left !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="preloader">
+    <img src="${pageContext.request.contextPath}/assets/images/icons/preloader.gif" alt="">
+</div>
+<div class="overlay"></div>
+<div class="side-overlay"></div>
+<div class="dashbord bg-main-25 w-100 overflow-hidden">
+    <div class="d-flex">
+        <%@ include file="/WEB-INF/fragments/dashboard-sidebar.jspf" %>
+        <div class="dashbord-body flex-grow-1 d-flex flex-column min-vh-100">
+            <%@ include file="/WEB-INF/fragments/dashboard-topbar.jspf" %>
+            <div class="cg-shell px-24 py-24 flex-grow-1">
+                <%@ include file="/WEB-INF/fragments/flash-messages.jspf" %>
+
+                <section class="cg-surface cg-hero px-24 py-24 mb-20">
+                    <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap">
+                        <div class="min-w-0">
+                            <div class="d-flex align-items-center gap-10 flex-wrap mb-10">
+                                <span class="${classGroup.stateBadgeClass} px-14 py-7 border-neutral-30 border rounded-pill text-13">
+                                    <c:out value="${classGroup.stateLabel}"/>
+                                </span>
+                                <span class="bg-main-50 text-main-600 px-14 py-7 rounded-pill text-13">
+                                    <i class="ph ph-clock me-6"></i><c:out value="${classGroup.shift}"/>
+                                </span>
+                            </div>
+                            <h2 class="text-28 fw-semibold text-neutral-800 mb-8"><c:out value="${classGroup.code}"/></h2>
+                            <span class="text-14 text-neutral-500" title="<c:out value='${classGroup.contextTitle}'/>">
+                                <c:out value="${classGroup.contextHtml}" escapeXml="false"/>
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-10 flex-wrap">
+                            <a href="${pageContext.request.contextPath}/learning/class-groups" class="cg-outline-button">
+                                <i class="ph ph-arrow-left me-8"></i>Back
+                            </a>
+                            <c:if test="${canManageClassGroup}">
+                                <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/edit" class="cg-outline-button">
+                                    <i class="ph ph-pencil-simple-line me-8"></i>Edit
+                                </a>
+                            </c:if>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="cg-mode-grid mb-20" role="tablist" aria-label="Class group detail views">
+                    <button type="button" class="cg-mode-card is-active" data-cg-tab="structure" aria-selected="true">
+                        <span class="cg-mode-icon bg-main-50 text-main-600 text-24 mb-14"><i class="ph ph-stack"></i></span>
+                        <span class="text-20 fw-semibold text-neutral-800 d-block mb-8">Learning Plan</span>
+                        <span class="text-14 text-neutral-500 d-block mb-12">Pedagogical blocks, contents and critical actions.</span>
+                        <span class="text-13 text-main-600 fw-semibold"><c:out value="${classGroup.blockCount}"/> blocks | <c:out value="${blockContentCount}"/> contents</span>
+                    </button>
+                    <button type="button" class="cg-mode-card" data-cg-tab="info" aria-selected="false">
+                        <span class="cg-mode-icon bg-success-50 text-success-600 text-24 mb-14"><i class="ph ph-users-three"></i></span>
+                        <span class="text-20 fw-semibold text-neutral-800 d-block mb-8">Class Details</span>
+                        <span class="text-14 text-neutral-500 d-block mb-12">Setup, students, teachers and critical actions.</span>
+                        <span class="text-13 text-success-600 fw-semibold"><c:out value="${classGroup.activeEnrollmentCountLabel}"/> | <c:out value="${classGroup.teacherCountLabel}"/></span>
+                    </button>
+                </div>
+
+                <main class="min-w-0">
+                    <div class="cg-tab-panel" data-cg-panel="structure">
+                        <section id="pedagogical-blocks" class="cg-surface mb-20">
+                            <div class="px-22 py-22 d-flex align-items-start justify-content-between gap-16 flex-wrap">
+                                <div>
+                                    <h3 class="text-20 fw-semibold text-neutral-800 mb-6">Structure</h3>
+                                    <span class="text-14 text-neutral-500">Blocks, learning resources, exam files and questionnaires in their class order.</span>
+                                </div>
+                                <div class="d-flex align-items-center gap-10 flex-wrap">
+                                    <span class="bg-main-50 text-main-600 px-14 py-8 rounded-pill text-13">
+                                        <i class="ph ph-files me-6"></i><c:out value="${blockContentCount}"/> contents
+                                    </span>
+                                    <c:choose>
+                                        <c:when test="${blockContentLoadSuccess}">
+                                            <span class="bg-success-50 text-success-600 px-14 py-8 rounded-pill text-13">
+                                                <i class="ph ph-check-circle me-6"></i>Loaded
+                                            </span>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span class="bg-warning-30 text-warning-600 px-14 py-8 rounded-pill text-13">
+                                                <i class="ph ph-warning-circle me-6"></i>Content error
+                                            </span>
+                                        </c:otherwise>
+                                    </c:choose>
+                                    <c:if test="${canManageClassGroup}">
+                                        <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/new" class="cg-primary-button">
+                                            <i class="ph ph-plus-circle me-8"></i>New Block
+                                        </a>
+                                    </c:if>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-column gap-16 px-18 pb-18">
+                                <c:set var="activeBlockNumber" value="${0}"/>
+                                <c:forEach var="block" items="${contentBlocks}" varStatus="blockLoop">
+                                    <c:choose>
+                                        <c:when test="${block.archived}">
+                                            <c:set var="displayBlockNumber" value="${activeBlockNumber + 1}"/>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:set var="activeBlockNumber" value="${activeBlockNumber + 1}"/>
+                                            <c:set var="displayBlockNumber" value="${activeBlockNumber}"/>
+                                        </c:otherwise>
+                                    </c:choose>
+                                    <article id="block-${block.id}" class="cg-surface cg-block ${block.archived ? 'is-archived' : ''}">
+                                        <div class="cg-block-header">
+                                            <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap">
+                                                <div class="d-flex align-items-start gap-16 min-w-0">
+                                                    <div class="cg-block-number">
+                                                        <c:choose>
+                                                            <c:when test="${displayBlockNumber lt 10}">0<c:out value="${displayBlockNumber}"/></c:when>
+                                                            <c:otherwise><c:out value="${displayBlockNumber}"/></c:otherwise>
+                                                        </c:choose>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <div class="d-flex align-items-center gap-8 flex-wrap mb-6">
+                                                            <h4 class="text-18 fw-semibold text-neutral-800 mb-0"><c:out value="${block.name}"/></h4>
+                                                            <span class="${block.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
+                                                                <c:out value="${block.stateLabel}"/>
+                                                            </span>
+                                                        </div>
+                                                        <c:if test="${not empty block.availableFrom or not empty block.availableUntil}">
+                                                            <div class="d-flex align-items-center gap-8 flex-wrap">
+                                                                <c:if test="${not empty block.availableFrom}">
+                                                                    <span class="bg-main-50 text-main-600 px-10 py-5 rounded-pill text-12">Available From <c:out value="${block.availableFrom}"/></span>
+                                                                </c:if>
+                                                                <c:if test="${not empty block.availableUntil}">
+                                                                    <span class="bg-main-50 text-main-600 px-10 py-5 rounded-pill text-12">Available Until <c:out value="${block.availableUntil}"/></span>
+                                                                </c:if>
+                                                            </div>
+                                                        </c:if>
+                                                    </div>
+                                                </div>
+                                                <c:if test="${canManageClassGroup}">
+                                                    <div class="d-flex align-items-center gap-8 flex-wrap">
+                                                        <c:choose>
+                                                            <c:when test="${block.archived}">
+                                                                <button type="button" class="cg-icon-button" title="Restore block" data-bs-toggle="modal" data-bs-target="#unarchiveBlock${block.id}">
+                                                                    <i class="ph ph-arrow-counter-clockwise text-20"></i>
+                                                                </button>
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/edit" class="cg-icon-button" title="Edit block">
+                                                                    <i class="ph ph-pencil-simple-line text-20"></i>
+                                                                </a>
+                                                                <button type="button" class="cg-icon-button" title="Archive block" data-bs-toggle="modal" data-bs-target="#archiveBlock${block.id}">
+                                                                    <i class="ph ph-archive-box text-20"></i>
+                                                                </button>
+                                                                <button type="button" class="cg-icon-button" title="Delete block" data-bs-toggle="modal" data-bs-target="#deleteBlock${block.id}">
+                                                                    <i class="ph ph-trash text-20"></i>
+                                                                </button>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                    </div>
+                                                </c:if>
+                                            </div>
+                                        </div>
+
+                                        <c:set var="blockContents" value="${blockContentsByBlock[block.id]}"/>
+                                        <div class="cg-content-list">
+                                            <c:choose>
+                                                <c:when test="${not empty blockContentLoadError}">
+                                                    <div class="cg-empty d-flex align-items-center justify-content-center px-18 py-18 text-warning-600 text-14">
+                                                        <i class="ph ph-warning-circle me-8"></i><c:out value="${blockContentLoadError}"/>
+                                                    </div>
+                                                </c:when>
+                                                <c:when test="${empty blockContents}">
+                                                    <div class="cg-empty d-flex align-items-center justify-content-center px-18 py-18 text-neutral-500 text-14">
+                                                        <i class="ph ph-folder-open me-8 text-20"></i>No pedagogical content associated with this block.
+                                                    </div>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <c:forEach var="content" items="${blockContents}">
+                                                        <div class="cg-content-row">
+                                                            <div class="d-flex align-items-start gap-14 min-w-0">
+                                                                <c:choose>
+                                                                    <c:when test="${classGroup.showContentThumbnails and content.visualThumbnailAvailable}">
+                                                                        <span class="cg-content-thumb-wrap" data-content-thumbnail>
+                                                                            <img src="${pageContext.request.contextPath}/contents/download/${content.id}?variant=thumbnail" alt="" class="cg-content-thumb" loading="lazy">
+                                                                        </span>
+                                                                        <span class="cg-content-icon ${content.formatBadgeClass} text-22 d-none" data-content-thumbnail-fallback>
+                                                                            <i class="${content.formatIconClass}"></i>
+                                                                        </span>
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        <span class="cg-content-icon ${content.formatBadgeClass} text-22">
+                                                                            <i class="${content.formatIconClass}"></i>
+                                                                        </span>
+                                                                    </c:otherwise>
+                                                                </c:choose>
+                                                                <div class="min-w-0">
+                                                                    <div class="d-flex align-items-center gap-8 flex-wrap mb-6">
+                                                                        <h5 class="text-15 fw-semibold text-neutral-800 mb-0"><c:out value="${content.title}"/></h5>
+                                                                        <span class="${content.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${content.stateLabel}"/></span>
+                                                                    </div>
+                                                                    <p class="text-13 text-neutral-500 mb-0 cg-truncate-2"><c:out value="${content.description}"/></p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="d-flex align-items-center justify-content-end gap-8 flex-wrap">
+                                                                <c:choose>
+                                                                    <c:when test="${content.downloadable}">
+                                                                        <a href="${pageContext.request.contextPath}/contents/download/${content.id}?disposition=inline" target="_blank" rel="noopener noreferrer" class="cg-outline-button text-13 px-12 py-8" title="View">
+                                                                            <i class="ph ph-eye"></i>
+                                                                        </a>
+                                                                        <a href="${pageContext.request.contextPath}/contents/download/${content.id}" class="cg-primary-button text-13 px-12 py-8" title="Download">
+                                                                            <i class="ph ph-download-simple"></i>
+                                                                        </a>
+                                                                    </c:when>
+                                                                    <c:when test="${content.linkable}">
+                                                                        <a href="${fn:escapeXml(content.source)}" target="_blank" rel="noopener noreferrer" class="cg-outline-button text-13 px-12 py-8" title="Open">
+                                                                            <i class="ph ph-arrow-square-out"></i>
+                                                                        </a>
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        <span class="cg-outline-button text-13 px-12 py-8 text-neutral-400" title="Preview unavailable">
+                                                                            <i class="ph ph-eye-slash"></i>
+                                                                        </span>
+                                                                    </c:otherwise>
+                                                                </c:choose>
+                                                                <c:if test="${canManageClassGroup and not block.archived}">
+                                                                    <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/contents/${content.id}/delete" method="post" class="m-0">
+                                                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                                        <button type="submit" class="cg-icon-button" title="Delete content">
+                                                                            <i class="ph ph-x text-20"></i>
+                                                                        </button>
+                                                                    </form>
+                                                                </c:if>
+                                                            </div>
+                                                        </div>
+                                                    </c:forEach>
+                                                </c:otherwise>
+                                            </c:choose>
+                                        </div>
+
+                                        <c:if test="${canManageClassGroup and not block.archived}">
+                                            <div class="cg-block-toolbar">
+                                                <button type="button" class="cg-primary-button" data-bs-toggle="modal" data-bs-target="#addContent${block.id}">
+                                                    <i class="ph ph-plus-circle me-8"></i>Add Content
+                                                </button>
+                                            </div>
+                                        </c:if>
+
+                                    </article>
+
+                                    <c:if test="${canManageClassGroup and not block.archived}">
+                                        <div class="modal fade cg-activity-modal" id="addContent${block.id}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered modal-xl">
+                                                <div class="modal-content rounded-8 border-0">
+                                                    <div class="modal-header border-neutral-30">
+                                                        <div>
+                                                            <h5 class="modal-title text-18 fw-semibold">Add Content</h5>
+                                                            <span class="text-13 text-neutral-500">Choose an activity type supported by the current GAPE content architecture.</span>
+                                                        </div>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <form action="${pageContext.request.contextPath}/contents/upload" method="post" enctype="multipart/form-data" data-content-upload-form>
+                                                        <div class="cg-activity-shell">
+                                                            <div class="cg-activity-side">
+                                                                <input type="search" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 mb-14" placeholder="Search activity" data-activity-search>
+                                                                <div class="d-flex flex-column gap-4">
+                                                                    <button type="button" class="cg-activity-category is-active" data-content-category="multimedia"><i class="ph ph-monitor-play"></i>Multimedia</button>
+                                                                    <button type="button" class="cg-activity-category" data-content-category="repository"><i class="ph ph-folder-open"></i>Repository</button>
+                                                                    <button type="button" class="cg-activity-category" data-content-category="live_classes"><i class="ph ph-video-camera"></i>Live Classes</button>
+                                                                    <button type="button" class="cg-activity-category" data-content-category="in_person_classes"><i class="ph ph-chalkboard-teacher"></i>In-Person Classes</button>
+                                                                    <button type="button" class="cg-activity-category" data-content-category="live_exams"><i class="ph ph-monitor"></i>Live Exams</button>
+                                                                    <button type="button" class="cg-activity-category" data-content-category="in_person_exams"><i class="ph ph-clipboard-text"></i>In-person Exams</button>
+                                                                    <button type="button" class="cg-activity-category" data-content-category="live_forms"><i class="ph ph-list-checks"></i>Live Forms</button>
+                                                                    <button type="button" class="cg-activity-category" data-content-category="in_person_forms"><i class="ph ph-note-pencil"></i>In-person Forms</button>
+                                                                    <button type="button" class="cg-activity-category" data-content-category="grade_sheet"><i class="ph ph-table"></i>Grade Sheet</button>
+                                                                    <button type="button" class="cg-activity-category" data-content-category="embed"><i class="ph ph-code"></i>Embed</button>
+                                                                </div>
+                                                            </div>
+                                                            <div class="cg-activity-main">
+                                                                <div class="cg-content-picker-panel">
+                                                                    <div class="cg-content-section-label">Choose content</div>
+                                                                    <div class="cg-activity-options" data-activity-options>
+                                                                    <button type="button" class="cg-activity-option is-selected" data-content-option data-category="multimedia" data-supported="true" data-format="pdf" data-role="support_material" data-source-kind="file" data-title="PDF" data-submit-label="Upload PDF" data-accept="application/pdf,.pdf">
+                                                                        <span class="cg-activity-icon bg-danger-600"><i class="ph ph-file-pdf"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">PDF</strong><span class="text-13 text-neutral-500">PDF file.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="multimedia" data-supported="true" data-format="text" data-role="text" data-source-kind="file" data-title="Text" data-submit-label="Upload Text" data-accept="text/plain,.txt">
+                                                                        <span class="cg-activity-icon bg-main-two-600"><i class="ph ph-text-aa"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Text</strong><span class="text-13 text-neutral-500">Text file.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="multimedia" data-supported="true" data-format="image" data-role="image" data-source-kind="file" data-title="Image" data-submit-label="Upload Image" data-accept="image/jpeg,image/png,image/webp,image/gif,image/bmp,.jpg,.jpeg,.png,.webp,.gif,.bmp">
+                                                                        <span class="cg-activity-icon bg-success-600"><i class="ph ph-image"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Image</strong><span class="text-13 text-neutral-500">Image file.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="multimedia" data-supported="true" data-format="video" data-role="video" data-source-kind="file" data-title="Video" data-submit-label="Upload Video" data-accept="video/mp4,video/webm,video/quicktime,video/x-m4v,video/x-matroska,video/x-msvideo,video/mpeg,video/3gpp,.mp4,.webm,.mov,.m4v,.mkv,.avi,.mpeg,.mpg,.3gp,.3gpp">
+                                                                        <span class="cg-activity-icon bg-main-600"><i class="ph ph-play-circle"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Video</strong><span class="text-13 text-neutral-500">Video file.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="multimedia" data-supported="true" data-format="audio" data-role="audio" data-source-kind="file" data-title="Audio" data-submit-label="Upload Audio" data-accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,audio/ogg,audio/flac,audio/aac,audio/webm,audio/opus,application/ogg,.mp3,.m4a,.wav,.ogg,.flac,.aac,.weba,.opus">
+                                                                        <span class="cg-activity-icon bg-main-600"><i class="ph ph-speaker-high"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Audio</strong><span class="text-13 text-neutral-500">Audio file.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="multimedia" data-supported="true" data-format="url" data-role="video_link" data-source-kind="url" data-title="YouTube" data-submit-label="Create Link">
+                                                                        <span class="cg-activity-icon bg-danger-600"><i class="ph ph-youtube-logo"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">YouTube</strong><span class="text-13 text-neutral-500">Video URL.</span></span>
+                                                                    </button>
+                                                                    <div class="cg-repository-group" data-repository-group data-category="repository" hidden>
+                                                                        <div class="d-flex align-items-center justify-content-between gap-12 mb-8">
+                                                                            <span class="text-13 fw-semibold text-neutral-600 text-uppercase">PDF</span>
+                                                                            <span class="h-1 bg-neutral-30 flex-grow-1"></span>
+                                                                        </div>
+                                                                        <div class="cg-repository-list">
+                                                                            <c:forEach var="repositoryItem" items="${contentRepository}">
+                                                                                <c:if test="${repositoryItem.format eq 'pdf'}">
+                                                                                    <div class="cg-repository-item" data-repository-item>
+                                                                                        <button type="button" class="cg-activity-option" data-content-option data-category="repository" data-supported="true" data-format="${repositoryItem.format}" data-role="${repositoryItem.defaultRole}" data-source-kind="repository" data-content-id="${repositoryItem.id}" data-preview-url="${pageContext.request.contextPath}/contents/download/${repositoryItem.id}?disposition=inline" data-original-title="${repositoryItem.rawTitleAttribute}" data-original-description="${repositoryItem.rawDescriptionAttribute}" data-original-mandatory="${repositoryItem.defaultMandatory}" data-submit-label="Reuse File">
+                                                                                            <span class="cg-activity-icon ${repositoryItem.formatBadgeClass}"><i class="${repositoryItem.formatIconClass}"></i></span>
+                                                                                            <span><strong class="text-15 text-neutral-800 d-block mb-4"><c:out value="${repositoryItem.title}"/></strong><span class="text-13 text-neutral-500 cg-truncate-2"><c:out value="${repositoryItem.description}"/></span></span>
+                                                                                        </button>
+                                                                                        <a href="${pageContext.request.contextPath}/contents/download/${repositoryItem.id}?disposition=inline" target="_blank" rel="noopener noreferrer" class="cg-repository-preview" title="Preview" aria-label="Preview">
+                                                                                            <i class="ph ph-eye"></i>
+                                                                                        </a>
+                                                                                    </div>
+                                                                                </c:if>
+                                                                            </c:forEach>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="cg-repository-group" data-repository-group data-category="repository" hidden>
+                                                                        <div class="d-flex align-items-center justify-content-between gap-12 mb-8">
+                                                                            <span class="text-13 fw-semibold text-neutral-600 text-uppercase">Text</span>
+                                                                            <span class="h-1 bg-neutral-30 flex-grow-1"></span>
+                                                                        </div>
+                                                                        <div class="cg-repository-list">
+                                                                            <c:forEach var="repositoryItem" items="${contentRepository}">
+                                                                                <c:if test="${repositoryItem.format eq 'text'}">
+                                                                                    <div class="cg-repository-item" data-repository-item>
+                                                                                        <button type="button" class="cg-activity-option" data-content-option data-category="repository" data-supported="true" data-format="${repositoryItem.format}" data-role="${repositoryItem.defaultRole}" data-source-kind="repository" data-content-id="${repositoryItem.id}" data-preview-url="${pageContext.request.contextPath}/contents/download/${repositoryItem.id}?disposition=inline" data-original-title="${repositoryItem.rawTitleAttribute}" data-original-description="${repositoryItem.rawDescriptionAttribute}" data-original-mandatory="${repositoryItem.defaultMandatory}" data-submit-label="Reuse File">
+                                                                                            <span class="cg-activity-icon ${repositoryItem.formatBadgeClass}"><i class="${repositoryItem.formatIconClass}"></i></span>
+                                                                                            <span><strong class="text-15 text-neutral-800 d-block mb-4"><c:out value="${repositoryItem.title}"/></strong><span class="text-13 text-neutral-500 cg-truncate-2"><c:out value="${repositoryItem.description}"/></span></span>
+                                                                                        </button>
+                                                                                        <a href="${pageContext.request.contextPath}/contents/download/${repositoryItem.id}?disposition=inline" target="_blank" rel="noopener noreferrer" class="cg-repository-preview" title="Preview" aria-label="Preview">
+                                                                                            <i class="ph ph-eye"></i>
+                                                                                        </a>
+                                                                                    </div>
+                                                                                </c:if>
+                                                                            </c:forEach>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="cg-repository-group" data-repository-group data-category="repository" hidden>
+                                                                        <div class="d-flex align-items-center justify-content-between gap-12 mb-8">
+                                                                            <span class="text-13 fw-semibold text-neutral-600 text-uppercase">Image</span>
+                                                                            <span class="h-1 bg-neutral-30 flex-grow-1"></span>
+                                                                        </div>
+                                                                        <div class="cg-repository-list">
+                                                                            <c:forEach var="repositoryItem" items="${contentRepository}">
+                                                                                <c:if test="${repositoryItem.format eq 'image'}">
+                                                                                    <div class="cg-repository-item" data-repository-item>
+                                                                                        <button type="button" class="cg-activity-option" data-content-option data-category="repository" data-supported="true" data-format="${repositoryItem.format}" data-role="${repositoryItem.defaultRole}" data-source-kind="repository" data-content-id="${repositoryItem.id}" data-preview-url="${pageContext.request.contextPath}/contents/download/${repositoryItem.id}?disposition=inline" data-original-title="${repositoryItem.rawTitleAttribute}" data-original-description="${repositoryItem.rawDescriptionAttribute}" data-original-mandatory="${repositoryItem.defaultMandatory}" data-submit-label="Reuse File">
+                                                                                            <span class="cg-activity-icon ${repositoryItem.formatBadgeClass}"><i class="${repositoryItem.formatIconClass}"></i></span>
+                                                                                            <span><strong class="text-15 text-neutral-800 d-block mb-4"><c:out value="${repositoryItem.title}"/></strong><span class="text-13 text-neutral-500 cg-truncate-2"><c:out value="${repositoryItem.description}"/></span></span>
+                                                                                        </button>
+                                                                                        <a href="${pageContext.request.contextPath}/contents/download/${repositoryItem.id}?disposition=inline" target="_blank" rel="noopener noreferrer" class="cg-repository-preview" title="Preview" aria-label="Preview">
+                                                                                            <i class="ph ph-eye"></i>
+                                                                                        </a>
+                                                                                    </div>
+                                                                                </c:if>
+                                                                            </c:forEach>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="cg-repository-group" data-repository-group data-category="repository" hidden>
+                                                                        <div class="d-flex align-items-center justify-content-between gap-12 mb-8">
+                                                                            <span class="text-13 fw-semibold text-neutral-600 text-uppercase">Video</span>
+                                                                            <span class="h-1 bg-neutral-30 flex-grow-1"></span>
+                                                                        </div>
+                                                                        <div class="cg-repository-list">
+                                                                            <c:forEach var="repositoryItem" items="${contentRepository}">
+                                                                                <c:if test="${repositoryItem.format eq 'video'}">
+                                                                                    <div class="cg-repository-item" data-repository-item>
+                                                                                        <button type="button" class="cg-activity-option" data-content-option data-category="repository" data-supported="true" data-format="${repositoryItem.format}" data-role="${repositoryItem.defaultRole}" data-source-kind="repository" data-content-id="${repositoryItem.id}" data-preview-url="${pageContext.request.contextPath}/contents/download/${repositoryItem.id}?disposition=inline" data-original-title="${repositoryItem.rawTitleAttribute}" data-original-description="${repositoryItem.rawDescriptionAttribute}" data-original-mandatory="${repositoryItem.defaultMandatory}" data-submit-label="Reuse File">
+                                                                                            <span class="cg-activity-icon ${repositoryItem.formatBadgeClass}"><i class="${repositoryItem.formatIconClass}"></i></span>
+                                                                                            <span><strong class="text-15 text-neutral-800 d-block mb-4"><c:out value="${repositoryItem.title}"/></strong><span class="text-13 text-neutral-500 cg-truncate-2"><c:out value="${repositoryItem.description}"/></span></span>
+                                                                                        </button>
+                                                                                        <a href="${pageContext.request.contextPath}/contents/download/${repositoryItem.id}?disposition=inline" target="_blank" rel="noopener noreferrer" class="cg-repository-preview" title="Preview" aria-label="Preview">
+                                                                                            <i class="ph ph-eye"></i>
+                                                                                        </a>
+                                                                                    </div>
+                                                                                </c:if>
+                                                                            </c:forEach>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="cg-repository-group" data-repository-group data-category="repository" hidden>
+                                                                        <div class="d-flex align-items-center justify-content-between gap-12 mb-8">
+                                                                            <span class="text-13 fw-semibold text-neutral-600 text-uppercase">Audio</span>
+                                                                            <span class="h-1 bg-neutral-30 flex-grow-1"></span>
+                                                                        </div>
+                                                                        <div class="cg-repository-list">
+                                                                            <c:forEach var="repositoryItem" items="${contentRepository}">
+                                                                                <c:if test="${repositoryItem.format eq 'audio'}">
+                                                                                    <div class="cg-repository-item" data-repository-item>
+                                                                                        <button type="button" class="cg-activity-option" data-content-option data-category="repository" data-supported="true" data-format="${repositoryItem.format}" data-role="${repositoryItem.defaultRole}" data-source-kind="repository" data-content-id="${repositoryItem.id}" data-preview-url="${pageContext.request.contextPath}/contents/download/${repositoryItem.id}?disposition=inline" data-original-title="${repositoryItem.rawTitleAttribute}" data-original-description="${repositoryItem.rawDescriptionAttribute}" data-original-mandatory="${repositoryItem.defaultMandatory}" data-submit-label="Reuse File">
+                                                                                            <span class="cg-activity-icon ${repositoryItem.formatBadgeClass}"><i class="${repositoryItem.formatIconClass}"></i></span>
+                                                                                            <span><strong class="text-15 text-neutral-800 d-block mb-4"><c:out value="${repositoryItem.title}"/></strong><span class="text-13 text-neutral-500 cg-truncate-2"><c:out value="${repositoryItem.description}"/></span></span>
+                                                                                        </button>
+                                                                                        <a href="${pageContext.request.contextPath}/contents/download/${repositoryItem.id}?disposition=inline" target="_blank" rel="noopener noreferrer" class="cg-repository-preview" title="Preview" aria-label="Preview">
+                                                                                            <i class="ph ph-eye"></i>
+                                                                                        </a>
+                                                                                    </div>
+                                                                                </c:if>
+                                                                            </c:forEach>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="cg-repository-empty text-center py-32 px-16 border border-neutral-30 rounded-8 bg-neutral-20" data-repository-empty data-category="repository" hidden>
+                                                                        <span class="text-14 text-neutral-500">No reusable pedagogical files are available yet.</span>
+                                                                    </div>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="live_classes" data-supported="false" data-format="url" data-role="online_class" data-source-kind="url" data-title="Online Class Link" data-unavailable-message="Live Classes depend on classroom setup, external tool integration and scheduling workflows that are not available yet.">
+                                                                        <span class="cg-activity-icon bg-success-600"><i class="ph ph-video-camera"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Online Class Link</strong><span class="text-13 text-neutral-500">Meeting link.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="live_classes" data-supported="false" data-format="text" data-role="online_class_plan" data-source-kind="file" data-title="Online Class Plan" data-unavailable-message="Live Classes depend on classroom setup, external tool integration and scheduling workflows that are not available yet.">
+                                                                        <span class="cg-activity-icon bg-success-600"><i class="ph ph-calendar-check"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Online Class Plan</strong><span class="text-13 text-neutral-500">Class plan.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="live_classes" data-supported="false" data-format="url" data-role="recorded_online_class" data-source-kind="url" data-title="Recorded Online Class" data-unavailable-message="Live Classes depend on classroom setup, external tool integration and scheduling workflows that are not available yet.">
+                                                                        <span class="cg-activity-icon bg-success-600"><i class="ph ph-user-focus"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Recorded Online Class</strong><span class="text-13 text-neutral-500">Recording URL.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="in_person_classes" data-supported="false" data-format="text" data-role="in_person_class" data-source-kind="file" data-title="In-person Class" data-unavailable-message="In-Person Classes depend on classroom management and attendance workflows that are not available yet.">
+                                                                        <span class="cg-activity-icon bg-main-two-600"><i class="ph ph-book-open"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">In-person Class</strong><span class="text-13 text-neutral-500">Class plan.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="in_person_classes" data-supported="false" data-format="text" data-role="lab_class" data-source-kind="file" data-title="Laboratory Class" data-unavailable-message="In-Person Classes depend on classroom management and attendance workflows that are not available yet.">
+                                                                        <span class="cg-activity-icon bg-main-two-600"><i class="ph ph-chalkboard-teacher"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Laboratory Class</strong><span class="text-13 text-neutral-500">Lab plan.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="in_person_classes" data-supported="false" data-format="pdf" data-role="class_handout" data-source-kind="file" data-title="Class Handout" data-unavailable-message="In-Person Classes depend on classroom management and attendance workflows that are not available yet.">
+                                                                        <span class="cg-activity-icon bg-danger-600"><i class="ph ph-file-pdf"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Class Handout</strong><span class="text-13 text-neutral-500">PDF handout.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="live_exams" data-supported="false" data-format="other" data-role="live_exam" data-source-kind="assessment" data-title="Live Exam">
+                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-exam"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Live Exam</strong><span class="text-13 text-neutral-500">Exam workflow.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="live_exams" data-supported="false" data-format="other" data-role="live_quiz" data-source-kind="assessment" data-title="Live Quiz">
+                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-list-checks"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Live Quiz</strong><span class="text-13 text-neutral-500">Quiz workflow.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="in_person_exams" data-supported="false" data-format="other" data-role="in_person_exam" data-source-kind="assessment" data-title="In-person Exam">
+                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-clipboard-text"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">In-person Exam</strong><span class="text-13 text-neutral-500">Exam schedule.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="in_person_exams" data-supported="false" data-format="other" data-role="oral_exam" data-source-kind="assessment" data-title="Oral Exam">
+                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-microphone"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Oral Exam</strong><span class="text-13 text-neutral-500">Oral grading.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="live_forms" data-supported="false" data-format="other" data-role="live_form" data-source-kind="form" data-title="Live Form">
+                                                                        <span class="cg-activity-icon bg-success-600"><i class="ph ph-file"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Live Form</strong><span class="text-13 text-neutral-500">Form workflow.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="live_forms" data-supported="false" data-format="other" data-role="live_survey" data-source-kind="form" data-title="Live Survey">
+                                                                        <span class="cg-activity-icon bg-success-600"><i class="ph ph-graduation-cap"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Live Survey</strong><span class="text-13 text-neutral-500">Survey workflow.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="in_person_forms" data-supported="false" data-format="other" data-role="in_person_form" data-source-kind="form" data-title="In-person Form">
+                                                                        <span class="cg-activity-icon bg-success-600"><i class="ph ph-note-pencil"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">In-person Form</strong><span class="text-13 text-neutral-500">Response form.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="in_person_forms" data-supported="false" data-format="other" data-role="attendance_form" data-source-kind="form" data-title="Attendance Form">
+                                                                        <span class="cg-activity-icon bg-success-600"><i class="ph ph-check-square"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Attendance Form</strong><span class="text-13 text-neutral-500">Attendance form.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="grade_sheet" data-supported="false" data-format="other" data-role="grade_sheet" data-source-kind="grade" data-title="Grade Sheet">
+                                                                        <span class="cg-activity-icon bg-info-600"><i class="ph ph-table"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Grade Sheet</strong><span class="text-13 text-neutral-500">Excel grade file.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="grade_sheet" data-supported="false" data-format="other" data-role="exam_results" data-source-kind="grade" data-title="Exam Results">
+                                                                        <span class="cg-activity-icon bg-info-600"><i class="ph ph-chart-bar"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Exam Results</strong><span class="text-13 text-neutral-500">Result file.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="embed" data-supported="true" data-format="url" data-role="external_link" data-source-kind="url" data-title="External link" data-submit-label="Create Link">
+                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-link"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">External link</strong><span class="text-13 text-neutral-500">Web resource.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="embed" data-supported="true" data-format="embed" data-role="embed" data-source-kind="embed" data-title="Embed" data-submit-label="Create Embed">
+                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-code"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Embed</strong><span class="text-13 text-neutral-500">Embed code.</span></span>
+                                                                    </button>
+                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="embed" data-supported="true" data-format="embed" data-role="embed" data-source-kind="url" data-title="Slideshare" data-submit-label="Create Embed">
+                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-projector-screen"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Slideshare</strong><span class="text-13 text-neutral-500">Presentation URL.</span></span>
+                                                                    </button>
+                                                                    </div>
+                                                                    <div class="cg-selected-repository-file d-none" data-selected-repository-file>
+                                                                        <div class="d-flex align-items-start justify-content-between gap-12">
+                                                                            <div class="d-flex align-items-start gap-12 min-w-0">
+                                                                                <span class="cg-activity-icon bg-main-600 flex-shrink-0" data-selected-repository-icon><i class="ph ph-file"></i></span>
+                                                                                <span class="min-w-0">
+                                                                                    <strong class="text-15 text-neutral-800 d-block mb-4" data-selected-repository-title></strong>
+                                                                                    <span class="text-13 text-neutral-500 cg-truncate-2" data-selected-repository-description></span>
+                                                                                </span>
+                                                                            </div>
+                                                                            <a href="#" target="_blank" rel="noopener noreferrer" class="cg-outline-button text-18 px-12 py-8 flex-shrink-0" data-selected-repository-preview title="Preview" aria-label="Preview">
+                                                                                <i class="ph ph-eye"></i>
+                                                                            </a>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="cg-content-details-panel">
+                                                                <div class="cg-content-section-label">Item details</div>
+                                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                                <input type="hidden" name="contextType" value="content_block">
+                                                                <input type="hidden" name="contextId" value="${block.id}">
+                                                                <input type="hidden" name="format" value="pdf" data-content-format>
+                                                                <input type="hidden" name="role" value="support_material" data-content-role>
+                                                                <input type="hidden" name="repositorySourceContentItemId" value="" data-repository-content-id>
+                                                                <input type="hidden" name="repositoryMetadataMode" value="custom" data-repository-metadata-mode>
+                                                                <div class="row gy-3">
+                                                                    <div class="col-12 d-none" data-repository-metadata-wrapper>
+                                                                        <label class="fw-medium text-base text-neutral-800 mb-10 d-block">Item details</label>
+                                                                        <div class="d-flex flex-wrap gap-10">
+                                                                            <label class="d-inline-flex align-items-center gap-8 px-14 py-10 border border-neutral-30 rounded-8 bg-neutral-20 text-14 text-neutral-700">
+                                                                                <input type="radio" name="repositoryMetadataChoice" value="custom" checked data-repository-metadata-choice>
+                                                                                Custom details
+                                                                            </label>
+                                                                            <label class="d-inline-flex align-items-center gap-8 px-14 py-10 border border-neutral-30 rounded-8 bg-neutral-20 text-14 text-neutral-700">
+                                                                                <input type="radio" name="repositoryMetadataChoice" value="original" data-repository-metadata-choice>
+                                                                                Use original details
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="col-md-8" data-title-wrapper>
+                                                                        <label for="contentTitle${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Title</label>
+                                                                        <input id="contentTitle${block.id}" name="title" type="text" maxlength="160" required class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
+                                                                    </div>
+                                                                    <div class="col-md-4" data-mandatory-wrapper>
+                                                                        <label for="contentMandatory${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Mandatory</label>
+                                                                        <select id="contentMandatory${block.id}" name="mandatory" class="form-select px-18 py-11 text-14 bg-neutral-20 border-neutral-30 border rounded-8" data-mandatory-input>
+                                                                            <option value="false">Optional</option>
+                                                                            <option value="true">Mandatory</option>
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-12" data-description-wrapper>
+                                                                        <label for="contentDescription${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Description</label>
+                                                                        <textarea id="contentDescription${block.id}" name="description" rows="2" maxlength="500" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600"></textarea>
+                                                                    </div>
+                                                                    <div class="col-12" data-file-wrapper>
+                                                                        <label for="contentFile${block.id}" class="fw-medium text-base text-neutral-800 mb-10" data-file-label>File</label>
+                                                                        <input id="contentFile${block.id}" name="file" type="file" accept="application/pdf,.pdf" required class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
+                                                                    </div>
+                                                                    <div class="col-12 d-none" data-source-wrapper>
+                                                                        <label for="contentSource${block.id}" class="fw-medium text-base text-neutral-800 mb-10" data-source-label>Source</label>
+                                                                        <textarea id="contentSource${block.id}" name="source" rows="2" maxlength="1000" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-source-input></textarea>
+                                                                    </div>
+                                                                </div>
+                                                                <p class="text-13 text-danger-600 mt-14 mb-0" data-upload-status aria-live="polite"></p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer border-neutral-30">
+                                                            <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="cg-primary-button cg-upload-button" data-content-submit data-idle-label="Upload PDF">
+                                                                <span class="cg-upload-button-progress" data-upload-button-progress></span>
+                                                                <span data-upload-button-label>Upload PDF</span>
+                                                                <span class="cg-upload-button-spinner" aria-hidden="true"><i class="ph ph-circle-notch"></i></span>
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="modal fade" id="archiveBlock${block.id}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content rounded-8 border-0">
+                                                    <div class="modal-header border-neutral-30">
+                                                        <h5 class="modal-title text-18 fw-semibold">Archive Content Block</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p class="text-14 text-neutral-600 mb-0">Confirm archiving <strong><c:out value="${block.name}"/></strong>?</p>
+                                                    </div>
+                                                    <div class="modal-footer border-neutral-30">
+                                                        <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
+                                                        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/archive" method="post" class="m-0">
+                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                            <button type="submit" class="cg-warning-button">Archive</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="modal fade" id="deleteBlock${block.id}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content rounded-8 border-0">
+                                                    <div class="modal-header border-neutral-30">
+                                                        <h5 class="modal-title text-18 fw-semibold">Delete Content Block</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p class="text-14 text-neutral-600 mb-0">This action removes the block if it has no dependencies.</p>
+                                                    </div>
+                                                    <div class="modal-footer border-neutral-30">
+                                                        <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
+                                                        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/delete" method="post" class="m-0">
+                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                            <button type="submit" class="cg-danger-button">Delete</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </c:if>
+                                    <c:if test="${canManageClassGroup and block.archived}">
+                                        <div class="modal fade" id="unarchiveBlock${block.id}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content rounded-8 border-0">
+                                                    <div class="modal-header border-neutral-30">
+                                                        <h5 class="modal-title text-18 fw-semibold">Restore Content Block</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p class="text-14 text-neutral-600 mb-0">Restore <strong><c:out value="${block.name}"/></strong> to the active pedagogical structure?</p>
+                                                    </div>
+                                                    <div class="modal-footer border-neutral-30">
+                                                        <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
+                                                        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/unarchive" method="post" class="m-0">
+                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                            <button type="submit" class="cg-primary-button">Restore</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </c:if>
+                                </c:forEach>
+
+                                <c:if test="${empty contentBlocks}">
+                                    <div class="cg-empty d-flex align-items-center justify-content-center px-20 py-32 text-center text-14 text-neutral-500">
+                                        No pedagogical blocks created for this class group.
+                                    </div>
+                                </c:if>
+                            </div>
+                        </section>
+
+                        <c:if test="${canManageClassGroupStructure}">
+                            <section class="cg-surface px-22 py-22 mb-20">
+                                <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap">
+                                    <div>
+                                        <h3 class="text-18 fw-semibold text-neutral-800 mb-6">Critical Actions</h3>
+                                        <span class="text-14 text-neutral-500">Archive or delete this class group when its lifecycle ends.</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-10 flex-wrap">
+                                        <button type="button" class="cg-warning-button" data-bs-toggle="modal" data-bs-target="#archiveClassGroup">Archive</button>
+                                        <button type="button" class="cg-danger-button" data-bs-toggle="modal" data-bs-target="#deleteClassGroup">Delete</button>
+                                    </div>
+                                </div>
+                            </section>
+                        </c:if>
+                    </div>
+
+                    <div class="cg-tab-panel" data-cg-panel="info" hidden>
+                        <section id="class-setup" class="cg-surface px-22 py-22 mb-20">
+                            <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-18">
+                                <div>
+                                    <h3 class="text-18 fw-semibold text-neutral-800 mb-6">Setup</h3>
+                                    <span class="text-14 text-neutral-500">Course, subject, dates, modality, capacity and fixed shift.</span>
+                                </div>
+                                <span class="${classGroup.stateBadgeClass} px-14 py-7 border-neutral-30 border rounded-pill text-13">
+                                    <c:out value="${classGroup.stateLabel}"/>
+                                </span>
+                            </div>
+                            <div class="cg-info-grid">
+                                <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Course</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.courseName}"/></strong></div>
+                                <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Subject</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.subjectName}"/></strong></div>
+                                <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Capacity</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.capacityLabel}"/></strong></div>
+                                <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Shift</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.shift}"/></strong></div>
+                                <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Modality</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.modalityLabel}"/></strong></div>
+                                <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Dates</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.dateRangeLabel}"/></strong></div>
+                                <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Students</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.activeEnrollmentCountLabel}"/></strong></div>
+                                <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Teachers</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.teacherCountLabel}"/></strong></div>
+                            </div>
+                        </section>
+
+                        <section id="students" class="cg-surface px-22 py-22 mb-20">
+                            <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-18">
+                                <div>
+                                    <h3 class="text-18 fw-semibold text-neutral-800 mb-6">Students</h3>
+                                    <span class="text-14 text-neutral-500">Enroll, withdraw and review student membership in this class group.</span>
+                                </div>
+                                <span class="bg-main-50 text-main-600 px-14 py-8 rounded-pill text-13">
+                                    <c:out value="${classGroup.activeEnrollmentCountLabel}"/>
+                                </span>
+                            </div>
+                            <c:if test="${canManageClassGroupEnrollments}">
+                                <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments" method="post" class="border border-neutral-30 rounded-8 px-18 py-18 mb-20">
+                                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                    <div class="row gy-3 align-items-start">
+                                        <div class="col-lg-6 gape-select-field">
+                                            <label for="studentUserId" class="fw-medium text-base text-neutral-800 mb-12">Student</label>
+                                            <select id="studentUserId" name="studentUserId" required class="form-select px-20 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                                                <option value="">Select student</option>
+                                                <c:forEach var="student" items="${studentOptions}">
+                                                    <c:if test="${not activeEnrollmentByStudent[student.id]}">
+                                                        <option value="${student.id}"><c:out value="${student.name}"/> - <c:out value="${student.email}"/></option>
+                                                    </c:if>
+                                                </c:forEach>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="enrollmentStartDate" class="fw-medium text-base text-neutral-800 mb-12">Start</label>
+                                            <input id="enrollmentStartDate" name="startDate" type="date" class="form-control px-20 py-12 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="enrollmentEndDate" class="fw-medium text-base text-neutral-800 mb-12">End</label>
+                                            <input id="enrollmentEndDate" name="endDate" type="date" class="form-control px-20 py-12 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="submit" class="cg-primary-button">Enroll Student</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </c:if>
+                            <div class="cg-table-wrap">
+                                <table class="table mb-0 cg-data-table">
+                                    <thead>
+                                    <tr>
+                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Student</th>
+                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Period</th>
+                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600">State</th>
+                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600 text-end">Management</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <c:forEach var="enrollment" items="${classGroupEnrollments}">
+                                        <tr class="hover-bg-neutral-20 border-bottom transition-03">
+                                            <td class="py-16 px-16">
+                                                <span class="fw-medium text-14 text-neutral-700"><c:out value="${enrollment.studentName}"/></span>
+                                                <span class="d-block text-12 text-neutral-500"><c:out value="${enrollment.studentEmail}"/></span>
+                                            </td>
+                                            <td class="py-16 px-16 text-14 text-neutral-500"><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></td>
+                                            <td class="py-16 px-16">
+                                                <span class="${enrollment.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
+                                                    <c:out value="${enrollment.stateLabel}"/>
+                                                </span>
+                                            </td>
+                                            <td class="py-16 px-16 text-end">
+                                                <c:if test="${canManageClassGroupEnrollments and enrollment.active}">
+                                                    <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments/${enrollment.studentUserId}/withdraw" method="post" class="m-0 d-inline-flex align-items-center gap-8 flex-wrap justify-content-end">
+                                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                        <input name="endDate" type="date" class="form-control px-12 py-8 fw-normal text-13 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" style="min-width: 150px;">
+                                                        <button type="submit" class="cg-outline-button px-12 py-8 text-13">Withdraw</button>
+                                                    </form>
+                                                </c:if>
+                                            </td>
+                                        </tr>
+                                    </c:forEach>
+                                    <c:if test="${empty classGroupEnrollments}">
+                                        <tr>
+                                            <td colspan="4" class="py-32 px-16 text-center text-14 text-neutral-500">No students enrolled in this class group.</td>
+                                        </tr>
+                                    </c:if>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <section id="teachers" class="cg-surface px-22 py-22 mb-20">
+                            <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-18">
+                                <div>
+                                    <h3 class="text-18 fw-semibold text-neutral-800 mb-6">Teachers</h3>
+                                    <span class="text-14 text-neutral-500">Assign, remove and review teaching coverage for this class group.</span>
+                                </div>
+                                <span class="bg-success-50 text-success-600 px-14 py-8 rounded-pill text-13">
+                                    <c:out value="${classGroup.teacherCountLabel}"/>
+                                </span>
+                            </div>
+                            <c:if test="${canManageTeacherAssignments}">
+                                <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/teachers" method="post" class="border border-neutral-30 rounded-8 px-18 py-18 mb-20">
+                                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                    <div class="row gy-3 align-items-start">
+                                        <div class="col-lg-6 gape-select-field">
+                                            <label for="teacherUserId" class="fw-medium text-base text-neutral-800 mb-12">Teacher</label>
+                                            <select id="teacherUserId" name="teacherUserId" required class="form-select px-20 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                                                <option value="">Select teacher</option>
+                                                <c:forEach var="teacher" items="${teacherOptions}">
+                                                    <option value="${teacher.id}"><c:out value="${teacher.name}"/> - <c:out value="${teacher.email}"/></option>
+                                                </c:forEach>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="teacherStartDate" class="fw-medium text-base text-neutral-800 mb-12">Start</label>
+                                            <input id="teacherStartDate" name="startDate" type="date" class="form-control px-20 py-12 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="teacherEndDate" class="fw-medium text-base text-neutral-800 mb-12">End</label>
+                                            <input id="teacherEndDate" name="endDate" type="date" class="form-control px-20 py-12 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="submit" class="cg-primary-button">Assign Teacher</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </c:if>
+                            <div class="cg-table-wrap">
+                                <table class="table mb-0 cg-data-table">
+                                    <thead>
+                                    <tr>
+                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Teacher</th>
+                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Period</th>
+                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600">State</th>
+                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600 text-end">Management</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <c:forEach var="teacherAssignment" items="${classGroupTeachers}">
+                                        <tr class="hover-bg-neutral-20 border-bottom transition-03">
+                                            <td class="py-16 px-16">
+                                                <span class="fw-medium text-14 text-neutral-700"><c:out value="${teacherAssignment.teacherName}"/></span>
+                                                <span class="d-block text-12 text-neutral-500"><c:out value="${teacherAssignment.teacherEmail}"/></span>
+                                            </td>
+                                            <td class="py-16 px-16 text-14 text-neutral-500"><c:out value="${teacherAssignment.startDate}"/> to <c:out value="${teacherAssignment.endDate}"/></td>
+                                            <td class="py-16 px-16">
+                                                <span class="${teacherAssignment.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
+                                                    <c:out value="${teacherAssignment.stateLabel}"/>
+                                                </span>
+                                            </td>
+                                            <td class="py-16 px-16 text-end">
+                                                <c:if test="${canManageTeacherAssignments and teacherAssignment.active}">
+                                                    <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/teachers/${teacherAssignment.teacherUserId}/remove" method="post" class="m-0 d-inline-flex align-items-center gap-8 flex-wrap justify-content-end">
+                                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                        <input name="endDate" type="date" class="form-control px-12 py-8 fw-normal text-13 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" style="min-width: 150px;">
+                                                        <button type="submit" class="cg-outline-button px-12 py-8 text-13">Remove</button>
+                                                    </form>
+                                                </c:if>
+                                            </td>
+                                        </tr>
+                                    </c:forEach>
+                                    <c:if test="${empty classGroupTeachers}">
+                                        <tr>
+                                            <td colspan="4" class="py-32 px-16 text-center text-14 text-neutral-500">No teachers assigned to this class group.</td>
+                                        </tr>
+                                    </c:if>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <c:if test="${canManageClassGroupStructure}">
+                            <section class="cg-surface px-22 py-22">
+                                <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap">
+                                    <div>
+                                        <h3 class="text-18 fw-semibold text-neutral-800 mb-6">Critical Actions</h3>
+                                        <span class="text-14 text-neutral-500">Archive or delete this class group when its lifecycle ends.</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-10 flex-wrap">
+                                        <button type="button" class="cg-warning-button" data-bs-toggle="modal" data-bs-target="#archiveClassGroup">Archive</button>
+                                        <button type="button" class="cg-danger-button" data-bs-toggle="modal" data-bs-target="#deleteClassGroup">Delete</button>
+                                    </div>
+                                </div>
+                            </section>
+                        </c:if>
+                    </div>
+                </main>
+            </div>
+            <%@ include file="/WEB-INF/fragments/dashboard-footer.jspf" %>
+        </div>
+    </div>
+</div>
+
+<c:if test="${canManageClassGroupStructure}">
+<div class="modal fade" id="archiveClassGroup" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-8 border-0">
+            <div class="modal-header border-neutral-30">
+                <h5 class="modal-title text-18 fw-semibold">Archive Class Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-14 text-neutral-600 mb-0">Confirm archiving <strong><c:out value="${classGroup.code}"/></strong>?</p>
+            </div>
+            <div class="modal-footer border-neutral-30">
+                <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
+                <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/archive" method="post" class="m-0">
+                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                    <button type="submit" class="cg-warning-button">Archive</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteClassGroup" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-8 border-0">
+            <div class="modal-header border-neutral-30">
+                <h5 class="modal-title text-18 fw-semibold">Delete Class Group</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-14 text-neutral-600 mb-0">This action removes the class group if it has no dependencies.</p>
+            </div>
+            <div class="modal-footer border-neutral-30">
+                <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
+                <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/delete" method="post" class="m-0">
+                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                    <button type="submit" class="cg-danger-button">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</c:if>
+
+<%@ include file="/WEB-INF/fragments/template-base-scripts.jspf" %>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        function uploadButtonLabel(button) {
+            if (!button) {
+                return '';
+            }
+            var label = button.querySelector('[data-upload-button-label]');
+            return label ? label.textContent.trim() : button.textContent.trim();
+        }
+
+        function setUploadButtonLabel(button, label) {
+            if (!button) {
+                return;
+            }
+            var normalizedLabel = label || 'Upload';
+            button.setAttribute('data-idle-label', normalizedLabel);
+            var labelNode = button.querySelector('[data-upload-button-label]');
+            if (labelNode) {
+                labelNode.textContent = normalizedLabel;
+            } else {
+                button.textContent = normalizedLabel;
+            }
+        }
+
+        function setUploadButtonProgress(button, percent, label, indeterminate) {
+            if (!button) {
+                return;
+            }
+            var progress = button.querySelector('[data-upload-button-progress]');
+            button.classList.add('is-uploading');
+            button.classList.toggle('is-indeterminate', !!indeterminate);
+            if (progress && !indeterminate) {
+                progress.style.width = Math.max(0, Math.min(100, percent || 0)) + '%';
+            }
+            var labelNode = button.querySelector('[data-upload-button-label]');
+            if (labelNode) {
+                labelNode.textContent = label || 'Uploading...';
+            } else {
+                button.textContent = label || 'Uploading...';
+            }
+        }
+
+        function resetUploadButton(button) {
+            if (!button) {
+                return;
+            }
+            var progress = button.querySelector('[data-upload-button-progress]');
+            button.classList.remove('is-uploading', 'is-indeterminate');
+            if (progress) {
+                progress.style.width = '0%';
+            }
+            var idleLabel = button.getAttribute('data-idle-label') || uploadButtonLabel(button) || 'Upload';
+            var labelNode = button.querySelector('[data-upload-button-label]');
+            if (labelNode) {
+                labelNode.textContent = idleLabel;
+            } else {
+                button.textContent = idleLabel;
+            }
+        }
+
+        function setUploadStatus(status, message, isError) {
+            if (!status) {
+                return;
+            }
+            status.textContent = message || '';
+            status.classList.toggle('text-danger-600', !!isError);
+            status.classList.toggle('text-neutral-600', !isError && !!message);
+        }
+
+        document.querySelectorAll('[data-content-thumbnail] img').forEach(function (image) {
+            image.addEventListener('error', function () {
+                var thumbnail = image.closest('[data-content-thumbnail]');
+                var fallback = thumbnail ? thumbnail.nextElementSibling : null;
+                if (thumbnail) {
+                    thumbnail.classList.add('d-none');
+                }
+                if (fallback && fallback.hasAttribute('data-content-thumbnail-fallback')) {
+                    fallback.classList.remove('d-none');
+                }
+            }, { once: true });
+        });
+
+        document.querySelectorAll('[data-cg-tab]').forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                var target = tab.getAttribute('data-cg-tab');
+                document.querySelectorAll('[data-cg-tab]').forEach(function (item) {
+                    var active = item === tab;
+                    item.classList.toggle('is-active', active);
+                    item.setAttribute('aria-selected', active ? 'true' : 'false');
+                });
+                document.querySelectorAll('[data-cg-panel]').forEach(function (panel) {
+                    panel.hidden = panel.getAttribute('data-cg-panel') !== target;
+                });
+            });
+        });
+
+        document.querySelectorAll('.cg-activity-modal').forEach(function (modal) {
+            var selectedCategory = 'multimedia';
+            var search = modal.querySelector('[data-activity-search]');
+            var submit = modal.querySelector('[data-content-submit]');
+            var fileWrapper = modal.querySelector('[data-file-wrapper]');
+            var fileInput = modal.querySelector('input[name="file"]');
+            var fileLabel = modal.querySelector('[data-file-label]');
+            var sourceWrapper = modal.querySelector('[data-source-wrapper]');
+            var sourceInput = modal.querySelector('[data-source-input]');
+            var sourceLabel = modal.querySelector('[data-source-label]');
+            var formatInput = modal.querySelector('[data-content-format]');
+            var roleInput = modal.querySelector('[data-content-role]');
+            var repositoryInput = modal.querySelector('[data-repository-content-id]');
+            var repositoryMetadataWrapper = modal.querySelector('[data-repository-metadata-wrapper]');
+            var repositoryMetadataModeInput = modal.querySelector('[data-repository-metadata-mode]');
+            var repositoryMetadataChoices = modal.querySelectorAll('[data-repository-metadata-choice]');
+            var selectedRepositoryFile = modal.querySelector('[data-selected-repository-file]');
+            var selectedRepositoryIcon = modal.querySelector('[data-selected-repository-icon]');
+            var selectedRepositoryTitle = modal.querySelector('[data-selected-repository-title]');
+            var selectedRepositoryDescription = modal.querySelector('[data-selected-repository-description]');
+            var selectedRepositoryPreview = modal.querySelector('[data-selected-repository-preview]');
+            var titleWrapper = modal.querySelector('[data-title-wrapper]');
+            var titleInput = modal.querySelector('input[name="title"]');
+            var mandatoryInput = modal.querySelector('[data-mandatory-input]');
+            var descriptionWrapper = modal.querySelector('[data-description-wrapper]');
+            var descriptionInput = modal.querySelector('textarea[name="description"]');
+            var selectedTypeInput = modal.querySelector('[data-selected-activity]');
+            var status = modal.querySelector('[data-upload-status]');
+            var selectedOption = null;
+
+            function applyFilter() {
+                var term = search ? search.value.trim().toLowerCase() : '';
+                modal.querySelectorAll('[data-content-option]').forEach(function (option) {
+                    var categoryMatches = option.getAttribute('data-category') === selectedCategory;
+                    var textMatches = !term || option.textContent.toLowerCase().indexOf(term) >= 0;
+                    option.hidden = !(categoryMatches && textMatches);
+                    var repositoryItem = option.closest('[data-repository-item]');
+                    if (repositoryItem) {
+                        repositoryItem.hidden = option.hidden;
+                    }
+                });
+                modal.querySelectorAll('[data-repository-group]').forEach(function (group) {
+                    var visibleOption = group.querySelector('[data-content-option]:not([hidden])');
+                    group.hidden = selectedCategory !== 'repository' || !visibleOption;
+                });
+                var visibleRepositoryOption = modal.querySelector('[data-content-option][data-category="repository"]:not([hidden])');
+                modal.querySelectorAll('[data-repository-empty]').forEach(function (emptyState) {
+                    emptyState.hidden = selectedCategory !== 'repository' || !!visibleRepositoryOption;
+                });
+            }
+
+            function updateSelectedRepositoryFile(option) {
+                var expectsRepository = option
+                        && option.getAttribute('data-supported') === 'true'
+                        && option.getAttribute('data-source-kind') === 'repository';
+                if (!expectsRepository) {
+                    if (selectedRepositoryFile) {
+                        selectedRepositoryFile.classList.add('d-none');
+                    }
+                    if (selectedRepositoryPreview) {
+                        selectedRepositoryPreview.removeAttribute('href');
+                    }
+                    return;
+                }
+
+                if (selectedRepositoryFile) {
+                    selectedRepositoryFile.classList.remove('d-none');
+                }
+                var sourceIcon = option.querySelector('.cg-activity-icon');
+                if (selectedRepositoryIcon) {
+                    selectedRepositoryIcon.className = sourceIcon
+                            ? sourceIcon.className + ' flex-shrink-0'
+                            : 'cg-activity-icon bg-main-600 flex-shrink-0';
+                    selectedRepositoryIcon.innerHTML = sourceIcon ? sourceIcon.innerHTML : '<i class="ph ph-file"></i>';
+                }
+                if (selectedRepositoryTitle) {
+                    selectedRepositoryTitle.textContent = option.getAttribute('data-original-title') || option.innerText.trim();
+                }
+                if (selectedRepositoryDescription) {
+                    selectedRepositoryDescription.textContent = option.getAttribute('data-original-description') || 'No description.';
+                }
+                if (selectedRepositoryPreview) {
+                    selectedRepositoryPreview.href = option.getAttribute('data-preview-url') || '#';
+                }
+            }
+
+            function repositoryMetadataMode() {
+                var checked = modal.querySelector('[data-repository-metadata-choice]:checked');
+                return checked ? checked.value : 'custom';
+            }
+
+            function resetRepositoryMetadataMode() {
+                repositoryMetadataChoices.forEach(function (choice) {
+                    choice.checked = choice.value === 'custom';
+                });
+                if (repositoryMetadataModeInput) {
+                    repositoryMetadataModeInput.value = 'custom';
+                }
+            }
+
+            function applyRepositoryMetadataMode() {
+                var expectsRepository = selectedOption
+                        && selectedOption.getAttribute('data-supported') === 'true'
+                        && selectedOption.getAttribute('data-source-kind') === 'repository';
+                if (!expectsRepository) {
+                    if (repositoryMetadataWrapper) {
+                        repositoryMetadataWrapper.classList.add('d-none');
+                    }
+                    if (repositoryMetadataModeInput) {
+                        repositoryMetadataModeInput.value = 'custom';
+                    }
+                    if (titleInput) {
+                        titleInput.disabled = false;
+                        titleInput.required = true;
+                    }
+                    if (descriptionInput) {
+                        descriptionInput.disabled = false;
+                    }
+                    if (mandatoryInput) {
+                        mandatoryInput.disabled = false;
+                    }
+                    return;
+                }
+
+                if (repositoryMetadataWrapper) {
+                    repositoryMetadataWrapper.classList.remove('d-none');
+                }
+                var mode = repositoryMetadataMode();
+                if (repositoryMetadataModeInput) {
+                    repositoryMetadataModeInput.value = mode;
+                }
+                var useOriginal = mode === 'original';
+                if (titleInput) {
+                    titleInput.value = useOriginal ? (selectedOption.getAttribute('data-original-title') || '') : '';
+                    titleInput.disabled = useOriginal;
+                    titleInput.required = !useOriginal;
+                }
+                if (descriptionInput) {
+                    descriptionInput.value = useOriginal ? (selectedOption.getAttribute('data-original-description') || '') : '';
+                    descriptionInput.disabled = useOriginal;
+                }
+                if (mandatoryInput) {
+                    mandatoryInput.value = useOriginal && selectedOption.getAttribute('data-original-mandatory') === 'true'
+                            ? 'true'
+                            : 'false';
+                    mandatoryInput.disabled = useOriginal;
+                }
+            }
+
+            function selectOption(option) {
+                selectedOption = option;
+                if (!option) {
+                    modal.querySelectorAll('[data-content-option]').forEach(function (item) {
+                        item.classList.remove('is-selected');
+                        var repositoryItem = item.closest('[data-repository-item]');
+                        if (repositoryItem) {
+                            repositoryItem.classList.remove('is-selected');
+                        }
+                    });
+                    if (submit) {
+                        submit.disabled = true;
+                        setUploadButtonLabel(submit, 'Not Available');
+                        resetUploadButton(submit);
+                    }
+                    if (repositoryInput) {
+                        repositoryInput.value = '';
+                    }
+                    resetRepositoryMetadataMode();
+                    if (repositoryMetadataWrapper) {
+                        repositoryMetadataWrapper.classList.add('d-none');
+                    }
+                    updateSelectedRepositoryFile(null);
+                    if (fileWrapper && fileInput) {
+                        fileWrapper.classList.add('d-none');
+                        fileInput.required = false;
+                        fileInput.value = '';
+                    }
+                    if (sourceWrapper && sourceInput) {
+                        sourceWrapper.classList.add('d-none');
+                        sourceInput.required = false;
+                        sourceInput.value = '';
+                    }
+                    if (titleWrapper && titleInput) {
+                        titleWrapper.classList.add('d-none');
+                        titleInput.required = false;
+                        titleInput.disabled = true;
+                    }
+                    if (descriptionWrapper && descriptionInput) {
+                        descriptionWrapper.classList.add('d-none');
+                        descriptionInput.disabled = true;
+                    }
+                    if (mandatoryInput) {
+                        mandatoryInput.disabled = false;
+                        mandatoryInput.value = 'false';
+                    }
+                    if (status) {
+                        setUploadStatus(status, selectedCategory === 'repository' ? 'No reusable pedagogical files are available yet.' : '', false);
+                    }
+                    return;
+                }
+                modal.querySelectorAll('[data-content-option]').forEach(function (item) {
+                    var active = item === option;
+                    item.classList.toggle('is-selected', active);
+                    var repositoryItem = item.closest('[data-repository-item]');
+                    if (repositoryItem) {
+                        repositoryItem.classList.toggle('is-selected', active);
+                    }
+                });
+                var supported = option.getAttribute('data-supported') === 'true';
+                var sourceKind = option.getAttribute('data-source-kind');
+                var optionTitle = option.getAttribute('data-title') || '';
+                formatInput.value = option.getAttribute('data-format') || 'pdf';
+                roleInput.value = option.getAttribute('data-role') || 'support_material';
+                if (selectedTypeInput) {
+                    selectedTypeInput.value = optionTitle;
+                }
+                if (titleInput) {
+                    titleInput.value = optionTitle;
+                }
+                if (submit) {
+                    submit.disabled = !supported;
+                    setUploadButtonLabel(submit, supported ? (option.getAttribute('data-submit-label') || 'Add Content') : 'Not Available');
+                    resetUploadButton(submit);
+                }
+                if (status) {
+                    setUploadStatus(status, supported
+                            ? ''
+                            : (option.getAttribute('data-unavailable-message') || 'This content type is represented in the GAPE data model but does not yet have a complete creation workflow here.'), !supported);
+                }
+                var expectsFile = supported && sourceKind === 'file';
+                var expectsSource = supported && (sourceKind === 'url' || sourceKind === 'embed');
+                var expectsRepository = supported && sourceKind === 'repository';
+                if (repositoryInput) {
+                    repositoryInput.value = expectsRepository ? (option.getAttribute('data-content-id') || '') : '';
+                }
+                updateSelectedRepositoryFile(option);
+                if (expectsRepository) {
+                    resetRepositoryMetadataMode();
+                }
+                if (titleWrapper && titleInput) {
+                    titleWrapper.classList.remove('d-none');
+                    titleInput.required = supported;
+                    titleInput.disabled = false;
+                }
+                if (descriptionWrapper && descriptionInput) {
+                    descriptionWrapper.classList.remove('d-none');
+                    descriptionInput.disabled = false;
+                }
+                if (fileWrapper && fileInput) {
+                    fileWrapper.classList.toggle('d-none', !expectsFile);
+                    fileInput.required = expectsFile;
+                    fileInput.setAttribute('accept', option.getAttribute('data-accept') || 'application/pdf,.pdf');
+                    if (fileLabel) {
+                        fileLabel.textContent = 'File';
+                    }
+                    if (!expectsFile) {
+                        fileInput.value = '';
+                    }
+                }
+                if (sourceWrapper && sourceInput) {
+                    sourceWrapper.classList.toggle('d-none', !expectsSource);
+                    sourceInput.required = expectsSource;
+                    if (sourceLabel) {
+                        sourceLabel.textContent = sourceKind === 'embed' ? 'Embed source' : (sourceKind === 'text' ? 'Text' : 'URL');
+                    }
+                    if (!expectsSource) {
+                        sourceInput.value = '';
+                    }
+                }
+                applyRepositoryMetadataMode();
+            }
+
+            modal.querySelectorAll('[data-content-category]').forEach(function (categoryButton) {
+                categoryButton.addEventListener('click', function () {
+                    selectedCategory = categoryButton.getAttribute('data-content-category');
+                    modal.querySelectorAll('[data-content-category]').forEach(function (item) {
+                        item.classList.toggle('is-active', item === categoryButton);
+                    });
+                    applyFilter();
+                    selectOption(modal.querySelector('[data-content-option]:not([hidden])'));
+                });
+            });
+            modal.querySelectorAll('[data-content-option]').forEach(function (option) {
+                option.addEventListener('click', function () {
+                    selectOption(option);
+                });
+            });
+            if (search) {
+                search.addEventListener('input', applyFilter);
+            }
+            repositoryMetadataChoices.forEach(function (choice) {
+                choice.addEventListener('change', applyRepositoryMetadataMode);
+            });
+            applyFilter();
+            selectOption(modal.querySelector('[data-content-option].is-selected'));
+        });
+
+        document.querySelectorAll('[data-content-upload-form]').forEach(function (form) {
+            form.addEventListener('submit', function (event) {
+                event.preventDefault();
+                var status = form.querySelector('[data-upload-status]');
+                var submit = form.querySelector('button[type="submit"]');
+                if (submit && submit.disabled) {
+                    return;
+                }
+                var requestBody = new FormData(form);
+                if (submit) {
+                    submit.disabled = true;
+                    setUploadButtonProgress(submit, 0, 'Preparing...', true);
+                }
+                setUploadStatus(status, 'Preparing upload...', false);
+
+                var request = new XMLHttpRequest();
+                request.open('POST', form.action, true);
+                request.withCredentials = true;
+                request.upload.addEventListener('loadstart', function () {
+                    setUploadButtonProgress(submit, 0, 'Uploading...', true);
+                    setUploadStatus(status, 'Uploading file...', false);
+                });
+                request.upload.addEventListener('progress', function (progressEvent) {
+                    if (!progressEvent.lengthComputable) {
+                        setUploadButtonProgress(submit, 0, 'Uploading...', true);
+                        setUploadStatus(status, 'Uploading file...', false);
+                        return;
+                    }
+                    var uploadPercent = Math.max(1, Math.min(100, Math.round((progressEvent.loaded / progressEvent.total) * 100)));
+                    var processAwarePercent = Math.max(1, Math.min(90, Math.round(uploadPercent * 0.9)));
+                    setUploadButtonProgress(submit, processAwarePercent, 'Uploading ' + uploadPercent + '%', false);
+                    setUploadStatus(status, 'Uploading file... ' + uploadPercent + '%', false);
+                });
+                request.upload.addEventListener('load', function () {
+                    setUploadButtonProgress(submit, 90, 'Processing...', false);
+                    setUploadStatus(status, 'Upload complete. Processing file...', false);
+                });
+                request.addEventListener('load', function () {
+                    if (request.status >= 200 && request.status < 300) {
+                        setUploadButtonProgress(submit, 100, 'Ready', false);
+                        setUploadStatus(status, 'Content saved. Refreshing...', false);
+                        window.location.reload();
+                        return;
+                    }
+                    setUploadStatus(status, readableUploadError(request.responseText, request.getResponseHeader('content-type')), true);
+                    if (submit) {
+                        submit.disabled = false;
+                        resetUploadButton(submit);
+                    }
+                });
+                request.addEventListener('error', function () {
+                    setUploadStatus(status, 'Content could not be saved. Please try again.', true);
+                    if (submit) {
+                        submit.disabled = false;
+                        resetUploadButton(submit);
+                    }
+                });
+                request.addEventListener('abort', function () {
+                    setUploadStatus(status, 'Upload was cancelled.', true);
+                    if (submit) {
+                        submit.disabled = false;
+                        resetUploadButton(submit);
+                    }
+                });
+                request.send(requestBody);
+            });
+        });
+
+        function readableUploadError(message, contentType) {
+            if (!message || !message.trim()) {
+                return 'Content could not be saved.';
+            }
+            var normalizedType = (contentType || '').toLowerCase();
+            if (normalizedType.indexOf('text/html') >= 0 || message.trim().charAt(0) === '<') {
+                try {
+                    var parsed = new DOMParser().parseFromString(message, 'text/html');
+                    var title = parsed.querySelector('title');
+                    if (title && title.textContent.trim()) {
+                        return title.textContent.trim();
+                    }
+                } catch (ignored) {
+                }
+                return 'Content could not be saved. Please try again.';
+            }
+            return message.trim();
+        }
+    });
+</script>
+</body>
+</html>

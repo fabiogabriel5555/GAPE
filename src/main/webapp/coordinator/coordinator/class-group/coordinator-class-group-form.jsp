@@ -90,9 +90,15 @@
                                 <option value="HYBRID" ${form.modality == 'HYBRID' ? 'selected' : ''}>Hybrid</option>
                             </select>
                         </div>
-                        <div class="col-lg-4">
+                        <div class="col-lg-4 gape-select-field">
                             <label for="shift" class="fw-medium text-base text-neutral-800 mb-12">Shift</label>
-                            <input id="shift" name="shift" type="text" value="<c:out value='${form.shift}'/>" pattern="[^|]*" title="Shifts cannot contain |" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                            <select id="shift" name="shift" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
+                                <c:forEach var="shiftOption" items="${shiftOptions}">
+                                    <option value="${shiftOption.code}" ${form.shift == shiftOption.code ? 'selected' : ''}>
+                                        <c:out value="${shiftOption.label}"/>
+                                    </option>
+                                </c:forEach>
+                            </select>
                         </div>
                         <div class="col-lg-4 gape-select-field">
                             <label for="state" class="fw-medium text-base text-neutral-800 mb-12">State</label>
@@ -118,6 +124,17 @@
                             <label for="endsAt" class="fw-medium text-base text-neutral-800 mb-12">End Date</label>
                             <input id="endsAt" name="endsAt" type="date" value="<c:out value='${form.endsAt}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
+                        <c:if test="${not creating}">
+                            <div class="col-12">
+                                <label class="d-flex align-items-start gap-12 border border-neutral-30 rounded-12 px-20 py-16 bg-neutral-20">
+                                    <input type="checkbox" name="showContentThumbnails" value="true" class="mt-4" ${form.showContentThumbnails == 'true' ? 'checked' : ''}>
+                                    <span>
+                                        <span class="d-block fw-semibold text-neutral-800 mb-4">Show file thumbnails</span>
+                                        <span class="d-block text-13 text-neutral-500">Display generated media previews inside pedagogical blocks when available.</span>
+                                    </span>
+                                </label>
+                            </div>
+                        </c:if>
                     </div>
 
                     <div class="d-flex align-items-center gap-16 flex-wrap mt-32">

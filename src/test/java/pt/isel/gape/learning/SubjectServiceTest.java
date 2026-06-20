@@ -1,6 +1,7 @@
 package pt.isel.gape.learning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -282,7 +283,15 @@ class SubjectServiceTest {
     }
 
     @Test
-    void coordinatorCanUpdateAssignedSubject() {
+    void coordinatorCanModifyAssignedSubject() {
+        assertTrue(subjectService.canModifySubject(
+                2L,
+                null,
+                AccessProfileType.COORDINATOR,
+                40L,
+                "127.0.0.1"
+        ));
+
         Subject updated = subjectService.updateSubject(
                 2L,
                 null,
@@ -301,6 +310,28 @@ class SubjectServiceTest {
         );
 
         assertEquals("Projeto Aplicado", updated.name());
+    }
+
+    @Test
+    void coordinatorLosesMutationContextAfterArchivingAssignedSubject() {
+        subjectService.archiveSubject(
+                2L,
+                null,
+                AccessProfileType.COORDINATOR,
+                40L,
+                "127.0.0.1"
+        );
+
+        assertThrows(
+                SecurityException.class,
+                () -> subjectService.deleteSubject(
+                        2L,
+                        null,
+                        AccessProfileType.COORDINATOR,
+                        40L,
+                        "127.0.0.1"
+                )
+        );
     }
 
     @Test
@@ -345,6 +376,58 @@ class SubjectServiceTest {
         );
     }
 
+    @Test
+    void organizationStructureAdministratorDoesNotListLearningSubjects() throws Exception {
+        addAdministrator(100L, "ADM-SUBJECT-UNIT", "MANAGE_ORGANIZATION_STRUCTURE", "ORGANIC_UNIT", 20L);
+
+        Set<Long> subjectIds = subjectService.listSubjects(
+                        100L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        10L,
+                        "127.0.0.1"
+                )
+                .stream()
+                .map(Subject::id)
+                .collect(java.util.stream.Collectors.toSet());
+
+        assertEquals(Set.of(), subjectIds);
+    }
+
+    @Test
+    void coordinatorLearningListsOnlyAssignedSubjectsInOrganization() {
+        Set<Long> subjectIds = subjectService.listSubjects(
+                        2L,
+                        null,
+                        AccessProfileType.COORDINATOR,
+                        10L,
+                        "127.0.0.1"
+                )
+                .stream()
+                .map(Subject::id)
+                .collect(java.util.stream.Collectors.toSet());
+
+        assertEquals(Set.of(40L), subjectIds);
+    }
+
+    @Test
+    void coordinatorLearningCanModifyOnlyAssignedSubjects() {
+        assertTrue(subjectService.canModifySubject(
+                2L,
+                null,
+                AccessProfileType.COORDINATOR,
+                40L,
+                "127.0.0.1"
+        ));
+        assertFalse(subjectService.canModifySubject(
+                2L,
+                null,
+                AccessProfileType.COORDINATOR,
+                41L,
+                "127.0.0.1"
+        ));
+    }
+
     private static boolean hasActiveCoordinator(long coordinatorUserId, long subjectId) throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement("""
@@ -377,6 +460,45 @@ class SubjectServiceTest {
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 return resultSet.getInt(1) > 0;
+            }
+        }
+    }
+
+    private void addAdministrator(
+            long userId,
+            String administratorCode,
+            String permissionCode,
+            String contextType,
+            long contextId
+    ) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            try (PreparedStatement user = connection.prepareStatement("""
+                    INSERT INTO user_account (
+                        id_user, name, email, state, language, photo, created_at, credential_hash, credential_salt
+                    ) VALUES (?, ?, ?, 'active', 'pt-PT', NULL, '2026-01-01 10:00:00', 'hash', 'salt')
+                    """)) {
+                user.setLong(1, userId);
+                user.setString(2, "Scoped Subject Admin");
+                user.setString(3, "scoped.subject.admin@gape.local");
+                user.executeUpdate();
+            }
+            try (PreparedStatement profile = connection.prepareStatement("""
+                    INSERT INTO administrator_profile (id_user, cod_administrator)
+                    VALUES (?, ?)
+                    """)) {
+                profile.setLong(1, userId);
+                profile.setString(2, administratorCode);
+                profile.executeUpdate();
+            }
+            try (PreparedStatement grant = connection.prepareStatement("""
+                    INSERT INTO grant_administrator (id_admin_user, cod_permission, context_type, context_id)
+                    VALUES (?, ?, ?, ?)
+                    """)) {
+                grant.setLong(1, userId);
+                grant.setString(2, permissionCode);
+                grant.setString(3, contextType);
+                grant.setLong(4, contextId);
+                grant.executeUpdate();
             }
         }
     }

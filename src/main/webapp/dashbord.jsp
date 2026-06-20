@@ -90,10 +90,10 @@
                 <a href="about-four.jsp" class="nav-submenu__link hover-bg-neutral-30"> About Four</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
+                <a href="${pageContext.request.contextPath}/tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
+                <a href="${pageContext.request.contextPath}/tutor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Premium Tutors</a>

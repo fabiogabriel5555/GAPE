@@ -54,6 +54,23 @@ class CsrfFilterTest {
     }
 
     @Test
+    void contentUploadPostWithoutCsrfTokenIsForbidden() throws Exception {
+        TestHttpSession session = new TestHttpSession();
+        session.setAttribute("gape.auth.csrfToken", "csrf-123");
+        TestHttpServletResponse response = new TestHttpServletResponse();
+        TestFilterChain chain = new TestFilterChain();
+
+        filter.doFilter(
+                requestProxy("POST", "/contents/upload", session, null),
+                responseProxy(response),
+                chainProxy(chain)
+        );
+
+        assertFalse(chain.called);
+        assertEquals(HttpServletResponse.SC_FORBIDDEN, response.errorStatus);
+    }
+
+    @Test
     void publicPostDoesNotRequireCsrfToken() throws Exception {
         TestHttpServletResponse response = new TestHttpServletResponse();
         TestFilterChain chain = new TestFilterChain();

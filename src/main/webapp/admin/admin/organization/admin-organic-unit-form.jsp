@@ -32,7 +32,7 @@
                             <h2 class="text-18 fw-medium text-neutral-700 mb-4">${creating ? 'Create Organic Unit' : 'Edit Organic Unit'}</h2>
                             <span class="text-14 text-neutral-500"><c:out value="${organization.name}"/></span>
                         </div>
-                        <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03">Back</a>
+                        <a href="${unitBackHref}" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03">Back</a>
                     </div>
 
                     <div class="row gy-4">
@@ -88,9 +88,14 @@
 
                     <div class="d-flex align-items-center gap-16 flex-wrap mt-32">
                         <button type="submit" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">Save Change</button>
-                        <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units" class="border-main-600 border px-24 py-12 fw-semibold rounded-12 hover-bg-main-50 transition-03">Cancel</a>
+                        <a href="${unitBackHref}" class="border-main-600 border px-24 py-12 fw-semibold rounded-12 hover-bg-main-50 transition-03">Cancel</a>
                     </div>
                 </form>
+                <c:if test="${not creating}">
+                    <div class="mt-24">
+                        <%@ include file="/WEB-INF/fragments/organic-unit-administrators.jspf" %>
+                    </div>
+                </c:if>
             </div>
             <%@ include file="/WEB-INF/fragments/dashboard-footer.jspf" %>
         </div>

@@ -132,7 +132,7 @@ public final class ManageOrganizationDAO {
                   AND o.state <> 'archived'
                   AND (mo.start_date IS NULL OR mo.start_date <= CURRENT_DATE)
                   AND (mo.end_date IS NULL OR mo.end_date >= CURRENT_DATE)
-                ORDER BY o.name, mo.id_organization
+                ORDER BY mo.id_organization
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {

@@ -30,8 +30,10 @@ import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupCreateCommand;
 import pt.isel.gape.learning.model.ClassGroupEnrollmentCommand;
 import pt.isel.gape.learning.model.ClassGroupModality;
+import pt.isel.gape.learning.model.ClassGroupShift;
 import pt.isel.gape.learning.model.ClassGroupState;
 import pt.isel.gape.learning.model.ClassGroupUpdateCommand;
+import pt.isel.gape.learning.model.ContentAssociationType;
 import pt.isel.gape.learning.model.ContentBlock;
 import pt.isel.gape.learning.model.ContentBlockAccessMode;
 import pt.isel.gape.learning.model.ContentBlockCreateCommand;
@@ -40,18 +42,26 @@ import pt.isel.gape.learning.model.ContentBlockUpdateCommand;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseState;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
+import pt.isel.gape.learning.model.ContentDeletionResult;
+import pt.isel.gape.learning.model.ContentRemovalResult;
 import pt.isel.gape.learning.service.ClassGroupEnrollmentService;
 import pt.isel.gape.learning.service.ClassGroupService;
+import pt.isel.gape.learning.service.ContentAssociationService;
 import pt.isel.gape.learning.service.ContentBlockService;
+import pt.isel.gape.learning.service.ContentItemService;
+import pt.isel.gape.learning.service.PdfUploadService;
 import pt.isel.gape.security.session.SessionUser;
 import pt.isel.gape.structure.dao.OrganicUnitDAO;
 import pt.isel.gape.structure.dao.OrganizationDAO;
 import pt.isel.gape.structure.dao.TeachClassGroupDAO;
+import pt.isel.gape.web.view.BlockContentItemView;
 import pt.isel.gape.web.view.ClassGroupEnrollmentView;
 import pt.isel.gape.web.view.ClassGroupFormData;
+import pt.isel.gape.web.view.ClassGroupTeacherView;
 import pt.isel.gape.web.view.ClassGroupView;
 import pt.isel.gape.web.view.ContentBlockFormData;
 import pt.isel.gape.web.view.ContentBlockView;
+import pt.isel.gape.web.view.ContentRepositoryItemView;
 import pt.isel.gape.web.view.CourseSubjectView;
 import pt.isel.gape.web.view.CourseView;
 
@@ -82,6 +92,9 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
     private final ClassGroupService classGroupService;
     private final ClassGroupEnrollmentService enrollmentService;
     private final ContentBlockService contentBlockService;
+    private final ContentAssociationService contentAssociationService;
+    private final ContentItemService contentItemService;
+    private final PdfUploadService pdfUploadService;
     private final ClassGroupDAO classGroupDAO;
     private final CourseDAO courseDAO;
     private final CourseSubjectDAO courseSubjectDAO;
@@ -96,6 +109,9 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 new ClassGroupService(connectionProvider, clock),
                 new ClassGroupEnrollmentService(connectionProvider, clock),
                 new ContentBlockService(connectionProvider, clock),
+                new ContentAssociationService(connectionProvider, clock),
+                new ContentItemService(connectionProvider, clock),
+                new PdfUploadService(),
                 new ClassGroupDAO(connectionProvider),
                 new CourseDAO(connectionProvider),
                 new CourseSubjectDAO(connectionProvider),
@@ -119,6 +135,9 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
             ClassGroupService classGroupService,
             ClassGroupEnrollmentService enrollmentService,
             ContentBlockService contentBlockService,
+            ContentAssociationService contentAssociationService,
+            ContentItemService contentItemService,
+            PdfUploadService pdfUploadService,
             ClassGroupDAO classGroupDAO,
             CourseDAO courseDAO,
             CourseSubjectDAO courseSubjectDAO,
@@ -127,6 +146,9 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         this.classGroupService = classGroupService;
         this.enrollmentService = enrollmentService;
         this.contentBlockService = contentBlockService;
+        this.contentAssociationService = contentAssociationService;
+        this.contentItemService = contentItemService;
+        this.pdfUploadService = pdfUploadService;
         this.classGroupDAO = classGroupDAO;
         this.courseDAO = courseDAO;
         this.courseSubjectDAO = courseSubjectDAO;
@@ -210,6 +232,23 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 withdrawStudent(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
                 return;
             }
+            if (segments.length == 4 && "teachers".equals(segments[1]) && "remove".equals(segments[3])) {
+                removeTeacher(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
+                return;
+            }
+            if (segments.length == 6
+                    && "blocks".equals(segments[1])
+                    && "contents".equals(segments[3])
+                    && ("delete".equals(segments[5]) || "remove".equals(segments[5]))) {
+                deleteBlockContent(
+                        request,
+                        response,
+                        Long.parseLong(segments[0]),
+                        Long.parseLong(segments[2]),
+                        Long.parseLong(segments[4])
+                );
+                return;
+            }
             if (segments.length == 3 && "blocks".equals(segments[1])) {
                 updateContentBlock(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
                 return;
@@ -219,6 +258,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 long contentBlockId = Long.parseLong(segments[2]);
                 switch (segments[3]) {
                     case "archive" -> archiveContentBlock(request, response, classGroupId, contentBlockId);
+                    case "unarchive" -> unarchiveContentBlock(request, response, classGroupId, contentBlockId);
                     case "delete" -> deleteContentBlock(request, response, classGroupId, contentBlockId);
                     default -> response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 }
@@ -237,9 +277,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         List<ClassGroup> visible = visibleClassGroups(request).stream()
                 .filter(classGroup -> courseFilter == null || classGroup.courseId() == courseFilter)
                 .filter(classGroup -> subjectFilter == null || classGroup.subjectId() == subjectFilter)
-                .sorted(Comparator.comparing(ClassGroup::courseId)
-                        .thenComparing(ClassGroup::subjectId)
-                        .thenComparing(ClassGroup::code))
+                .sorted(Comparator.comparingLong(ClassGroup::id))
                 .toList();
         List<ClassGroupView> classGroups = viewFactory.classGroupViews(visible);
         request.setAttribute("classGroups", classGroups);
@@ -273,8 +311,13 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         boolean canManageClassGroup = canModifyClassGroup(request, classGroupView);
         boolean canManageClassGroupStructure = canManageClassGroupStructure(request, classGroupView);
         boolean canManageClassGroupEnrollments = canManageClassGroupEnrollments(request, classGroupView);
-        List<ContentBlockView> blocks = canManageClassGroup
-                ? contentBlockService.listContentBlocksByClassGroup(
+        boolean canManageTeacherAssignments = canManageClassGroupStructure
+                && primaryProfile(actor) != AccessProfileType.TEACHER;
+        List<ContentBlockView> blocks = List.of();
+        String blockContentLoadError = null;
+        if (canManageClassGroup || canManageClassGroupStructure) {
+            try {
+                blocks = contentBlockService.listContentBlocksByClassGroup(
                                 actor.userId(),
                                 currentSessionId(request),
                                 primaryProfile(actor),
@@ -283,23 +326,90 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                         )
                         .stream()
                         .map(viewFactory::contentBlockView)
-                        .toList()
-                : List.of();
+                        .toList();
+            } catch (RuntimeException exception) {
+                blockContentLoadError = "Could not load pedagogical blocks for this class group.";
+            }
+        }
         List<ClassGroupEnrollmentView> enrollments = viewFactory.classGroupEnrollmentViews(classGroupId);
+        List<ClassGroupTeacherView> teacherAssignments = viewFactory.classGroupTeacherViews(classGroupId);
         Map<Long, Boolean> activeEnrollmentByStudent = activeEnrollmentByStudent(enrollments);
+        Map<Long, List<BlockContentItemView>> blockContentsByBlock = new LinkedHashMap<>();
+        if (blockContentLoadError == null && !blocks.isEmpty()) {
+            try {
+                blockContentsByBlock = blockContentsByBlock(actor, blocks, request);
+            } catch (RuntimeException exception) {
+                blockContentLoadError = "Could not load pedagogical contents for this class group.";
+            }
+        }
+        int blockContentCount = blockContentsByBlock.values().stream().mapToInt(List::size).sum();
+        long pdfContentCount = blockContentsByBlock.values().stream()
+                .flatMap(List::stream)
+                .filter(BlockContentItemView::isPdf)
+                .count();
+        List<ContentRepositoryItemView> contentRepository = List.of();
+        if (canManageClassGroupStructure) {
+            try {
+                contentRepository = contentItemService.listReusableFileBackedContent(
+                                actor.userId(),
+                                currentSessionId(request),
+                                primaryProfile(actor),
+                                ContentAssociationType.CLASS_GROUP,
+                                classGroupId,
+                                request.getRemoteAddr()
+                        )
+                        .stream()
+                        .map(ContentRepositoryItemView::from)
+                        .toList();
+            } catch (RuntimeException ignored) {
+                contentRepository = List.of();
+            }
+        }
 
         request.setAttribute("classGroup", classGroupView);
         request.setAttribute("contentBlocks", blocks);
+        request.setAttribute("blockContentsByBlock", blockContentsByBlock);
+        request.setAttribute("blockContentLoadSuccess", blockContentLoadError == null);
+        request.setAttribute("blockContentLoadError", blockContentLoadError);
+        request.setAttribute("blockContentCount", blockContentCount);
+        request.setAttribute("pdfContentCount", pdfContentCount);
+        request.setAttribute("contentRepository", contentRepository);
         request.setAttribute("classGroupEnrollments", enrollments);
+        request.setAttribute("classGroupTeachers", teacherAssignments);
         request.setAttribute("teacherOptions", viewFactory.activeTeacherOptions(null));
         request.setAttribute("studentOptions", viewFactory.eligibleStudentOptions(classGroup.courseId(), classGroup.subjectId()));
         request.setAttribute("activeEnrollmentByStudent", activeEnrollmentByStudent);
         request.setAttribute("canManageClassGroup", canManageClassGroup);
         request.setAttribute("canManageClassGroupStructure", canManageClassGroupStructure);
         request.setAttribute("canManageClassGroupEnrollments", canManageClassGroupEnrollments);
+        request.setAttribute("canManageTeacherAssignments", canManageTeacherAssignments);
         prepareClassGroupContext(request, classGroupView, "detail");
         prepareDashboard(request, "class-groups", "Class Group Detail");
         forward(request, response, classGroupDetailJsp(request));
+    }
+
+    private Map<Long, List<BlockContentItemView>> blockContentsByBlock(
+            SessionUser actor,
+            List<ContentBlockView> blocks,
+            HttpServletRequest request
+    ) {
+        Map<Long, List<BlockContentItemView>> result = new LinkedHashMap<>();
+        for (ContentBlockView block : blocks) {
+            result.put(
+                    block.getId(),
+                    contentAssociationService.listBlockContentItems(
+                                    actor.userId(),
+                                    currentSessionId(request),
+                                    primaryProfile(actor),
+                                    block.getId(),
+                                    request.getRemoteAddr()
+                            )
+                            .stream()
+                            .map(BlockContentItemView::from)
+                            .toList()
+            );
+        }
+        return result;
     }
 
     private void showClassGroupForm(
@@ -491,6 +601,26 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         redirect(request, response, "/learning/class-groups/" + classGroupId);
     }
 
+    private void removeTeacher(HttpServletRequest request, HttpServletResponse response, long classGroupId, long teacherUserId)
+            throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            classGroupService.removeTeacherFromClassGroup(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    classGroupId,
+                    teacherUserId,
+                    optionalDate(request, "endDate"),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Teacher removed from class group.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirect(request, response, "/learning/class-groups/" + classGroupId);
+    }
+
     private void enrollStudent(HttpServletRequest request, HttpServletResponse response, long classGroupId)
             throws IOException {
         SessionUser actor = requireCurrentUser(request);
@@ -593,6 +723,28 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         redirect(request, response, "/learning/class-groups/" + classGroupId);
     }
 
+    private void unarchiveContentBlock(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long classGroupId,
+            long contentBlockId
+    ) throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            contentBlockService.unarchiveContentBlock(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    contentBlockId,
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Content block restored successfully.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirect(request, response, "/learning/class-groups/" + classGroupId);
+    }
+
     private void deleteContentBlock(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -615,6 +767,48 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         redirect(request, response, "/learning/class-groups/" + classGroupId);
     }
 
+    private void deleteBlockContent(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long classGroupId,
+            long contentBlockId,
+            long contentItemId
+    ) throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            ContentRemovalResult removalResult = contentItemService.deleteContentItemFromBlock(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    contentBlockId,
+                    contentItemId,
+                    request.getRemoteAddr()
+            );
+            deleteOrphanedContentFiles(removalResult);
+            if (removalResult.deletionResult() == ContentDeletionResult.ARCHIVED) {
+                flashSuccess(request, "Pedagogical content archived because it is protected by active learning history.");
+            } else if (removalResult.orphanedRelativePaths().isEmpty()) {
+                flashSuccess(request, "Pedagogical content deleted. Reused file was kept in the repository.");
+            } else {
+                flashSuccess(request, "Pedagogical content and unused file deleted.");
+            }
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirect(request, response, "/learning/class-groups/" + classGroupId);
+    }
+
+    private void deleteOrphanedContentFiles(ContentRemovalResult removalResult) {
+        if (removalResult == null || removalResult.orphanedRelativePaths().isEmpty()) {
+            return;
+        }
+        try {
+            pdfUploadService.deleteStoredContentFiles(removalResult.orphanedRelativePaths());
+        } catch (IOException exception) {
+            throw new IllegalStateException("Pedagogical content was deleted, but the stored file could not be deleted", exception);
+        }
+    }
+
     private void prepareClassGroupForm(
             HttpServletRequest request,
             ClassGroupFormData form,
@@ -627,6 +821,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         request.setAttribute("creating", creating);
         request.setAttribute("courseOptions", courseOptions(request));
         request.setAttribute("courseSubjectOptions", courseSubjectOptions(request));
+        request.setAttribute("shiftOptions", ClassGroupShift.values());
         request.setAttribute("formAction", creating
                 ? request.getContextPath() + "/learning/class-groups"
                 : request.getContextPath() + "/learning/class-groups/" + form.getId());
@@ -796,6 +991,16 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 .orElse(0) + 1;
     }
 
+    private String nextBlockCode(long classGroupId, int orderNo) {
+        String baseCode = "BLK-" + (orderNo < 10 ? "0" : "") + orderNo;
+        boolean exists = viewFactory.contentBlockViews(classGroupId).stream()
+                .anyMatch(block -> baseCode.equalsIgnoreCase(block.getCode()));
+        if (!exists) {
+            return baseCode;
+        }
+        return baseCode + "-" + System.currentTimeMillis();
+    }
+
     private Map<Long, Boolean> activeEnrollmentByStudent(List<ClassGroupEnrollmentView> enrollments) {
         Map<Long, Boolean> result = new HashMap<>();
         for (ClassGroupEnrollmentView enrollment : enrollments) {
@@ -847,7 +1052,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 optionalInteger(request, "maxStudents"),
                 optionalDate(request, "startsAt"),
                 optionalDate(request, "endsAt"),
-                text(request, "shift")
+                classGroupShift(text(request, "shift"))
         );
     }
 
@@ -862,17 +1067,19 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 optionalInteger(request, "maxStudents"),
                 optionalDate(request, "startsAt"),
                 optionalDate(request, "endsAt"),
-                text(request, "shift")
+                classGroupShift(text(request, "shift")),
+                "true".equalsIgnoreCase(request.getParameter("showContentThumbnails"))
         );
     }
 
     private ContentBlockCreateCommand contentBlockCreateCommand(HttpServletRequest request, long classGroupId) {
+        int orderNo = nextBlockOrder(classGroupId);
         return new ContentBlockCreateCommand(
                 classGroupId,
-                text(request, "code"),
+                nextBlockCode(classGroupId, orderNo),
                 text(request, "name"),
                 text(request, "description"),
-                integerParameter(request, "orderNo"),
+                orderNo,
                 contentBlockAccessMode(text(request, "accessMode")),
                 contentBlockState(text(request, "state")),
                 optionalDateTime(request, "availableFrom"),
@@ -934,6 +1141,17 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
 
     private static ClassGroupState classGroupState(String value) {
         return enumValue(ClassGroupState.class, value, ClassGroupState.ACTIVE, "class group state");
+    }
+
+    private static ClassGroupShift classGroupShift(String value) {
+        if (value == null || value.isBlank()) {
+            return ClassGroupShift.MORNING;
+        }
+        try {
+            return ClassGroupShift.fromDatabaseValue(value);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Invalid class group shift");
+        }
     }
 
     private static ContentBlockAccessMode contentBlockAccessMode(String value) {

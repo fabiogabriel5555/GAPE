@@ -19,6 +19,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import pt.isel.gape.access.dao.UserDAO;
 import pt.isel.gape.access.model.AccessProfile;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.access.model.User;
@@ -26,6 +27,9 @@ import pt.isel.gape.access.model.UserState;
 import pt.isel.gape.access.service.UserService;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
+import pt.isel.gape.learning.dao.ClassGroupDAO;
+import pt.isel.gape.learning.dao.ClassGroupEnrollmentDAO;
+import pt.isel.gape.learning.dao.ContentBlockDAO;
 import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.dao.EnrollmentDAO;
@@ -41,14 +45,20 @@ import pt.isel.gape.learning.model.SubjectCreateCommand;
 import pt.isel.gape.learning.model.SubjectInitialCourseAssignment;
 import pt.isel.gape.learning.model.SubjectState;
 import pt.isel.gape.learning.model.SubjectUpdateCommand;
+import pt.isel.gape.learning.service.ClassGroupService;
+import pt.isel.gape.learning.service.CourseService;
 import pt.isel.gape.learning.service.CourseSubjectService;
 import pt.isel.gape.learning.service.SubjectService;
+import pt.isel.gape.security.authorization.AuthorizationPolicy;
 import pt.isel.gape.security.session.SessionUser;
+import pt.isel.gape.structure.dao.CoordinateSubjectDAO;
+import pt.isel.gape.structure.dao.TeachClassGroupDAO;
 import pt.isel.gape.structure.dao.OrganicUnitDAO;
 import pt.isel.gape.structure.dao.OrganizationDAO;
 import pt.isel.gape.structure.model.Organization;
 import pt.isel.gape.structure.service.OrganizationService;
 import pt.isel.gape.web.media.ProfilePhotoStorage;
+import pt.isel.gape.web.view.ClassGroupView;
 import pt.isel.gape.web.view.CourseView;
 import pt.isel.gape.web.view.OrganizationView;
 import pt.isel.gape.web.view.SubjectCourseView;
@@ -56,21 +66,40 @@ import pt.isel.gape.web.view.SubjectFormData;
 import pt.isel.gape.web.view.SubjectView;
 import pt.isel.gape.web.view.UserOptionView;
 
-@WebServlet(name = "subjectManagementServlet", urlPatterns = {"/admin/subjects", "/admin/subjects/*"})
-@MultipartConfig(maxFileSize = 10 * 1024 * 1024, maxRequestSize = 12 * 1024 * 1024)
+@WebServlet(name = "subjectManagementServlet", urlPatterns = {
+        "/admin/subjects",
+        "/admin/subjects/*",
+        "/coordinator/subjects",
+        "/coordinator/subjects/*"
+})
+@MultipartConfig(maxFileSize = 50L * 1024L * 1024L, maxRequestSize = 52L * 1024L * 1024L)
 public final class SubjectManagementServlet extends DashboardServletSupport {
 
-    private static final String SUBJECT_LIST_JSP = "/admin/admin/subject/admin-subjects.jsp";
-    private static final String SUBJECT_FORM_JSP = "/admin/admin/subject/admin-subject-form.jsp";
-    private static final String SUBJECT_DETAIL_JSP = "/admin/admin/subject/admin-subject-detail.jsp";
-    private static final String SUBJECT_COURSE_FORM_JSP = "/admin/admin/subject/admin-subject-course-form.jsp";
+    private static final String ADMIN_SUBJECT_LIST_JSP = "/admin/admin/subject/admin-subjects.jsp";
+    private static final String ADMIN_SUBJECT_FORM_JSP = "/admin/admin/subject/admin-subject-form.jsp";
+    private static final String ADMIN_SUBJECT_DETAIL_JSP = "/admin/admin/subject/admin-subject-detail.jsp";
+    private static final String ADMIN_SUBJECT_COURSE_FORM_JSP = "/admin/admin/subject/admin-subject-course-form.jsp";
+    private static final String COORDINATOR_SUBJECT_LIST_JSP =
+            "/coordinator/coordinator/subject/coordinator-subjects.jsp";
+    private static final String COORDINATOR_SUBJECT_FORM_JSP =
+            "/coordinator/coordinator/subject/coordinator-subject-form.jsp";
+    private static final String COORDINATOR_SUBJECT_DETAIL_JSP =
+            "/coordinator/coordinator/subject/coordinator-subject-detail.jsp";
+    private static final String COORDINATOR_SUBJECT_COURSE_FORM_JSP =
+            "/coordinator/coordinator/subject/coordinator-subject-course-form.jsp";
 
     private final SubjectService subjectService;
+    private final CourseService courseService;
     private final CourseSubjectService courseSubjectService;
+    private final ClassGroupService classGroupService;
     private final OrganizationService organizationService;
     private final UserService userService;
     private final CourseDAO courseDAO;
     private final CourseSubjectDAO courseSubjectDAO;
+    private final ClassGroupDAO classGroupDAO;
+    private final SubjectDAO subjectDAO;
+    private final CoordinateSubjectDAO coordinateSubjectDAO;
+    private final OrganizationDAO organizationDAO;
     private final LearningViewFactory viewFactory;
     private final ProfilePhotoStorage photoStorage;
 
@@ -81,17 +110,29 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
     private SubjectManagementServlet(ConnectionProvider connectionProvider, Clock clock) {
         this(
                 new SubjectService(connectionProvider, clock),
+                new CourseService(connectionProvider, clock),
                 new CourseSubjectService(connectionProvider, clock),
+                new ClassGroupService(connectionProvider, clock),
                 new OrganizationService(connectionProvider, clock),
                 new UserService(connectionProvider, clock),
                 new CourseDAO(connectionProvider),
                 new CourseSubjectDAO(connectionProvider),
+                new ClassGroupDAO(connectionProvider),
+                new SubjectDAO(connectionProvider),
+                new CoordinateSubjectDAO(connectionProvider),
+                new OrganizationDAO(connectionProvider),
                 new LearningViewFactory(
                         new OrganizationDAO(connectionProvider),
                         new OrganicUnitDAO(connectionProvider),
+                        new CourseDAO(connectionProvider),
                         new SubjectDAO(connectionProvider),
                         new CourseSubjectDAO(connectionProvider),
-                        new EnrollmentDAO(connectionProvider)
+                        new EnrollmentDAO(connectionProvider),
+                        new ClassGroupDAO(connectionProvider),
+                        new ClassGroupEnrollmentDAO(connectionProvider),
+                        new ContentBlockDAO(connectionProvider),
+                        new UserDAO(connectionProvider),
+                        new TeachClassGroupDAO(connectionProvider)
                 ),
                 new ProfilePhotoStorage()
         );
@@ -99,20 +140,32 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
 
     SubjectManagementServlet(
             SubjectService subjectService,
+            CourseService courseService,
             CourseSubjectService courseSubjectService,
+            ClassGroupService classGroupService,
             OrganizationService organizationService,
             UserService userService,
             CourseDAO courseDAO,
             CourseSubjectDAO courseSubjectDAO,
+            ClassGroupDAO classGroupDAO,
+            SubjectDAO subjectDAO,
+            CoordinateSubjectDAO coordinateSubjectDAO,
+            OrganizationDAO organizationDAO,
             LearningViewFactory viewFactory,
             ProfilePhotoStorage photoStorage
     ) {
         this.subjectService = subjectService;
+        this.courseService = courseService;
         this.courseSubjectService = courseSubjectService;
+        this.classGroupService = classGroupService;
         this.organizationService = organizationService;
         this.userService = userService;
         this.courseDAO = courseDAO;
         this.courseSubjectDAO = courseSubjectDAO;
+        this.classGroupDAO = classGroupDAO;
+        this.subjectDAO = subjectDAO;
+        this.coordinateSubjectDAO = coordinateSubjectDAO;
+        this.organizationDAO = organizationDAO;
         this.viewFactory = viewFactory;
         this.photoStorage = photoStorage;
     }
@@ -127,6 +180,10 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 return;
             }
             if (segments.length == 1 && "new".equals(segments[0])) {
+                if (isCoordinatorSubjectRequest(request)) {
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    return;
+                }
                 showSubjectForm(request, response, SubjectFormData.blank(firstManagedOrganizationId(request)), true, null);
                 return;
             }
@@ -154,6 +211,10 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         String[] segments = pathSegments(request.getPathInfo());
         try {
             if (segments.length == 0) {
+                if (isCoordinatorSubjectRequest(request)) {
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    return;
+                }
                 createSubject(request, response);
                 return;
             }
@@ -189,25 +250,42 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
     private void showList(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         SessionUser actor = requireCurrentUser(request);
-        List<Organization> organizations = managedOrganizations(request);
-        List<Subject> rawSubjects = organizations.stream()
-                .flatMap(organization -> subjectService.listSubjects(
-                        actor.userId(),
-                        currentSessionId(request),
-                        primaryProfile(actor),
-                        organization.id(),
-                        request.getRemoteAddr()
-                ).stream())
-                .sorted(Comparator.comparing(Subject::name))
-                .toList();
+        boolean coordinatorMode = isCoordinatorSubjectRequest(request);
+        List<Organization> organizations = coordinatorMode ? coordinatorManagedOrganizations(actor) : managedOrganizations(request);
+        List<Subject> rawSubjects = coordinatorMode
+                ? coordinatorSubjects(actor, organizations, request)
+                : organizations.stream()
+                        .flatMap(organization -> subjectService.listSubjects(
+                                actor.userId(),
+                                currentSessionId(request),
+                                primaryProfile(actor),
+                                organization.id(),
+                                request.getRemoteAddr()
+                        ).stream())
+                        .sorted(Comparator.comparingLong(Subject::id))
+                        .toList();
         List<SubjectView> subjects = rawSubjects.stream()
                 .map(viewFactory::subjectView)
                 .toList();
+        Map<Long, List<SubjectCourseView>> subjectCoursesBySubject = subjectCoursesBySubject(subjects);
+        Map<Long, Map<Long, List<ClassGroupView>>> subjectCourseClassGroups =
+                subjectCourseClassGroupsBySubjectAndCourse(subjectCoursesBySubject);
+        Set<Long> courseIds = courseIdsFrom(subjectCoursesBySubject);
+        Set<Long> classGroupIds = classGroupIdsFrom(subjectCourseClassGroups);
 
         request.setAttribute("subjects", subjects);
-        request.setAttribute("canCreateSubjects", !organizations.isEmpty());
+        prepareSubjectBasePath(request);
+        request.setAttribute("canCreateSubjects", canCreateAnySubject(actor, organizations, request));
         request.setAttribute("canModifySubjectById", canModifySubjectById(actor, rawSubjects, request));
-        request.setAttribute("subjectCoursesBySubject", subjectCoursesBySubject(subjects));
+        request.setAttribute("canManageSubjectAssociationsById",
+                canManageSubjectAssociationsById(actor, rawSubjects, request));
+        request.setAttribute("subjectCoursesBySubject", subjectCoursesBySubject);
+        request.setAttribute("subjectCourseClassGroupsBySubjectAndCourse", subjectCourseClassGroups);
+        request.setAttribute("canModifyCourseById", canModifyCourseById(actor, courseIds, request));
+        request.setAttribute("canManageCourseChildrenById", canManageCourseChildrenById(actor, courseIds, request));
+        request.setAttribute("canModifyClassGroupById", canModifyClassGroupById(actor, classGroupIds, request));
+        request.setAttribute("canManageClassGroupStructureById",
+                canManageClassGroupStructureById(actor, classGroupIds, request));
         request.setAttribute("subjectCount", subjects.size());
         request.setAttribute("activeSubjects", subjects.stream().filter(SubjectView::isActive).count());
         request.setAttribute("archivedSubjects", subjects.stream().filter(SubjectView::isArchived).count());
@@ -215,10 +293,10 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 request,
                 "subjects",
                 "Subjects",
-                !organizations.isEmpty() ? "/admin/subjects/new" : null,
-                !organizations.isEmpty() ? "New Subject" : null
+                (Boolean) request.getAttribute("canCreateSubjects") ? subjectBasePath(request) + "/new" : null,
+                (Boolean) request.getAttribute("canCreateSubjects") ? "New Subject" : null
         );
-        forward(request, response, SUBJECT_LIST_JSP);
+        forward(request, response, subjectListJsp(request));
     }
 
     private void showDetail(HttpServletRequest request, HttpServletResponse response, long subjectId)
@@ -239,15 +317,20 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 subjectId,
                 request.getRemoteAddr()
         );
+        boolean canManageSubjectAssociations = canManageSubjectAssociations(actor, subjectId, request);
+        prepareSubjectBasePath(request);
         request.setAttribute("subject", subjectView);
         request.setAttribute("subjectCourseAssociations", subjectCourseViews(subjectId));
+        request.setAttribute("classGroups", viewFactory.classGroupViews(classGroupsBySubject(subjectId)));
         request.setAttribute("coordinatorOptions", coordinatorOptions(request, null));
         request.setAttribute("canModifySubject", canModifySubject);
-        request.setAttribute("canAssignSubjectCoordinators", canModifySubject
-                && primaryProfile(actor) == AccessProfileType.ADMINISTRATOR);
+        request.setAttribute("canManageSubjectAssociations", canManageSubjectAssociations);
+        request.setAttribute("canCreateClassGroupsForSubject",
+                canCreateClassGroupsForSubject(actor, subjectId, request));
+        request.setAttribute("canAssignSubjectCoordinators", canModifySubject);
         prepareSubjectContext(request, subjectView, "detail");
         prepareDashboard(request, "subjects", "Subject Detail");
-        forward(request, response, SUBJECT_DETAIL_JSP);
+        forward(request, response, subjectDetailJsp(request));
     }
 
     private void showSubjectForm(
@@ -258,7 +341,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             String error
     ) throws ServletException, IOException {
         prepareSubjectForm(request, form, creating, error, null);
-        forward(request, response, SUBJECT_FORM_JSP);
+        forward(request, response, subjectFormJsp(request));
     }
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response, long subjectId, String error)
@@ -285,8 +368,8 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         prepareSubjectForm(request, form, false, error, subject);
         prepareSubjectContext(request, viewFactory.subjectView(subject), "edit");
         request.setAttribute("canModifySubject", Boolean.TRUE);
-        request.setAttribute("canAssignSubjectCoordinators", primaryProfile(actor) == AccessProfileType.ADMINISTRATOR);
-        forward(request, response, SUBJECT_FORM_JSP);
+        request.setAttribute("canAssignSubjectCoordinators", Boolean.TRUE);
+        forward(request, response, subjectFormJsp(request));
     }
 
     private void showCourseAssociationForm(
@@ -304,29 +387,44 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 request.getRemoteAddr()
         );
         SubjectView subjectView = viewFactory.subjectView(subject);
-        boolean canModifySubject = subjectService.canModifySubject(
+        List<SubjectCourseView> allAssociations = subjectCourseViews(subjectId);
+        List<SubjectCourseView> associations = allAssociations.stream()
+                .filter(association -> courseSubjectService.canManageAssociation(
+                        actor.userId(),
+                        currentSessionId(request),
+                        primaryProfile(actor),
+                        association.getCourseId(),
+                        subjectId,
+                        request.getRemoteAddr()
+                ))
+                .toList();
+        List<CourseView> availableCourseOptions = availableCourseOptions(request, subject, allAssociations);
+        if ((!canManageSubjectAssociations(actor, subjectId, request)
+                && associations.isEmpty()
+                && availableCourseOptions.isEmpty())
+                || subjectView.isArchived()) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+
+        request.setAttribute("subject", subjectView);
+        prepareSubjectBasePath(request);
+        request.setAttribute("subjectCourseAssociations", associations);
+        request.setAttribute("availableCourseOptions", availableCourseOptions);
+        request.setAttribute("canModifySubject", subjectService.canModifySubject(
                 actor.userId(),
                 currentSessionId(request),
                 primaryProfile(actor),
                 subjectId,
                 request.getRemoteAddr()
-        );
-        if (!canModifySubject || subjectView.isArchived()) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
-            return;
-        }
-        List<SubjectCourseView> associations = subjectCourseViews(subjectId);
-
-        request.setAttribute("subject", subjectView);
-        request.setAttribute("subjectCourseAssociations", associations);
-        request.setAttribute("availableCourseOptions", availableCourseOptions(subject, associations));
-        request.setAttribute("canModifySubject", Boolean.TRUE);
+        ));
+        request.setAttribute("canManageSubjectAssociations", Boolean.TRUE);
         if (error != null) {
             request.setAttribute("errorMessage", error);
         }
         prepareSubjectContext(request, subjectView, "courses");
         prepareDashboard(request, "subjects", "Associate Courses");
-        forward(request, response, SUBJECT_COURSE_FORM_JSP);
+        forward(request, response, subjectCourseFormJsp(request));
     }
 
     private void createSubject(HttpServletRequest request, HttpServletResponse response)
@@ -372,15 +470,15 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 created = attachUploadedPhotoToCreatedSubject(request, actor, created, subjectImage);
             } catch (IOException exception) {
                 flashError(request, "Subject created, but the uploaded image could not be processed. Please edit the subject and try again.");
-                redirect(request, response, "/admin/subjects/" + created.id());
+                redirect(request, response, subjectBasePath(request) + "/" + created.id());
                 return;
             } catch (RuntimeException exception) {
                 flashError(request, "Subject created, but " + messageFor(exception));
-                redirect(request, response, "/admin/subjects/" + created.id());
+                redirect(request, response, subjectBasePath(request) + "/" + created.id());
                 return;
             }
             flashSuccess(request, "Subject created successfully.");
-            redirect(request, response, "/admin/subjects/" + created.id());
+            redirect(request, response, subjectBasePath(request) + "/" + created.id());
         } catch (RuntimeException exception) {
             showSubjectForm(request, response, form, true, messageFor(exception));
         }
@@ -447,7 +545,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Subject updated successfully.");
-            redirect(request, response, "/admin/subjects/" + subjectId);
+            redirect(request, response, subjectBasePath(request) + "/" + subjectId);
         } catch (RuntimeException exception) {
             showEditForm(request, response, subjectId, messageFor(exception));
         }
@@ -471,7 +569,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirect(request, response, "/admin/subjects/" + subjectId);
+        redirect(request, response, subjectBasePath(request) + "/" + subjectId);
     }
 
     private void archiveSubject(HttpServletRequest request, HttpServletResponse response, long subjectId)
@@ -480,10 +578,10 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         try {
             subjectService.archiveSubject(actor.userId(), currentSessionId(request), primaryProfile(actor), subjectId, request.getRemoteAddr());
             flashSuccess(request, "Subject archived.");
-            redirect(request, response, "/admin/subjects");
+            redirect(request, response, subjectBasePath(request));
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
-            redirect(request, response, "/admin/subjects/" + subjectId);
+            redirect(request, response, subjectBasePath(request) + "/" + subjectId);
         }
     }
 
@@ -493,10 +591,10 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         try {
             subjectService.deleteSubject(actor.userId(), currentSessionId(request), primaryProfile(actor), subjectId, request.getRemoteAddr());
             flashSuccess(request, "Subject deleted.");
-            redirect(request, response, "/admin/subjects");
+            redirect(request, response, subjectBasePath(request));
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
-            redirect(request, response, "/admin/subjects/" + subjectId);
+            redirect(request, response, subjectBasePath(request) + "/" + subjectId);
         }
     }
 
@@ -519,7 +617,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Course associated with subject.");
-            redirect(request, response, "/admin/subjects/" + subjectId + "/courses");
+            redirect(request, response, subjectBasePath(request) + "/" + subjectId + "/courses");
         } catch (RuntimeException exception) {
             showCourseAssociationForm(request, response, subjectId, messageFor(exception));
         }
@@ -544,7 +642,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Course association updated.");
-            redirect(request, response, "/admin/subjects/" + subjectId + "/courses");
+            redirect(request, response, subjectBasePath(request) + "/" + subjectId + "/courses");
         } catch (RuntimeException exception) {
             showCourseAssociationForm(request, response, subjectId, messageFor(exception));
         }
@@ -566,7 +664,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirect(request, response, "/admin/subjects/" + subjectId + "/courses");
+        redirect(request, response, subjectBasePath(request) + "/" + subjectId + "/courses");
     }
 
     private static List<SubjectInitialCourseAssignment> selectedInitialCourseAssignments(HttpServletRequest request) {
@@ -597,7 +695,11 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             String error,
             Subject subjectForEdit
     ) {
-        List<Organization> organizations = managedOrganizations(request);
+        prepareSubjectBasePath(request);
+        SessionUser actor = requireCurrentUser(request);
+        List<Organization> organizations = isCoordinatorSubjectRequest(request)
+                ? coordinatorSubjectOrganizations(actor, subjectForEdit)
+                : managedOrganizations(request);
         long selectedOrganizationId = selectedOrganizationId(organizations, form);
         List<SubjectCourseView> associations = subjectForEdit == null
                 ? List.of()
@@ -612,11 +714,11 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         request.setAttribute("subjectCourseAssociations", associations);
         request.setAttribute("availableCourseOptions", subjectForEdit == null
                 ? List.of()
-                : availableCourseOptions(subjectForEdit, associations));
+                : availableCourseOptions(request, subjectForEdit, associations));
         request.setAttribute("coordinatorOptions", coordinatorOptions(request, parseOptionalLong(form.getCoordinatorUserId())));
         request.setAttribute("formAction", creating
-                ? request.getContextPath() + "/admin/subjects"
-                : request.getContextPath() + "/admin/subjects/" + form.getId());
+                ? request.getContextPath() + subjectBasePath(request)
+                : request.getContextPath() + subjectBasePath(request) + "/" + form.getId());
         if (error != null) {
             request.setAttribute("errorMessage", error);
         }
@@ -629,8 +731,97 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 actor.userId(),
                 currentSessionId(request),
                 primaryProfile(actor),
+                AuthorizationPolicy.MANAGE_SUBJECTS,
                 request.getRemoteAddr()
         );
+    }
+
+    private List<Subject> coordinatorSubjects(
+            SessionUser actor,
+            List<Organization> organizations,
+            HttpServletRequest request
+    ) {
+        try {
+            return coordinateSubjectDAO.findActiveSubjectIdsByCoordinator(actor.userId()).stream()
+                    .map(subjectId -> subjectService.getSubject(
+                            actor.userId(),
+                            currentSessionId(request),
+                            primaryProfile(actor),
+                            subjectId,
+                            request.getRemoteAddr()
+                    ))
+                    .sorted(Comparator.comparingLong(Subject::id))
+                    .toList();
+        } catch (RuntimeException | SQLException exception) {
+            throw new IllegalStateException("Failed to load coordinator subjects", exception);
+        }
+    }
+
+    private List<Organization> coordinatorManagedOrganizations(SessionUser actor) {
+        return List.of();
+    }
+
+    private List<Organization> coordinatorSubjectOrganizations(SessionUser actor, Subject subjectForEdit) {
+        if (subjectForEdit == null) {
+            return List.of();
+        }
+        try {
+            return organizationDAO.findById(subjectForEdit.organizationId())
+                    .map(organization -> List.of(organization))
+                    .orElseGet(List::of);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load subject organization", exception);
+        }
+    }
+
+    private void prepareSubjectBasePath(HttpServletRequest request) {
+        request.setAttribute("subjectBasePath", subjectBasePath(request));
+        request.setAttribute("subjectCourseBasePath", subjectCourseBasePath(request));
+    }
+
+    private static String subjectBasePath(HttpServletRequest request) {
+        return isCoordinatorSubjectRequest(request) ? "/coordinator/subjects" : "/admin/subjects";
+    }
+
+    private static String subjectCourseBasePath(HttpServletRequest request) {
+        return isCoordinatorSubjectRequest(request) ? "/courses" : "/admin/courses";
+    }
+
+    private static String subjectListJsp(HttpServletRequest request) {
+        return isCoordinatorSubjectRequest(request) ? COORDINATOR_SUBJECT_LIST_JSP : ADMIN_SUBJECT_LIST_JSP;
+    }
+
+    private static String subjectFormJsp(HttpServletRequest request) {
+        return isCoordinatorSubjectRequest(request) ? COORDINATOR_SUBJECT_FORM_JSP : ADMIN_SUBJECT_FORM_JSP;
+    }
+
+    private static String subjectDetailJsp(HttpServletRequest request) {
+        return isCoordinatorSubjectRequest(request) ? COORDINATOR_SUBJECT_DETAIL_JSP : ADMIN_SUBJECT_DETAIL_JSP;
+    }
+
+    private static String subjectCourseFormJsp(HttpServletRequest request) {
+        return isCoordinatorSubjectRequest(request)
+                ? COORDINATOR_SUBJECT_COURSE_FORM_JSP
+                : ADMIN_SUBJECT_COURSE_FORM_JSP;
+    }
+
+    private static boolean isCoordinatorSubjectRequest(HttpServletRequest request) {
+        return request.getServletPath() != null && request.getServletPath().startsWith("/coordinator/subjects");
+    }
+
+    private boolean canCreateAnySubject(SessionUser actor, List<Organization> organizations, HttpServletRequest request) {
+        for (Organization organization : organizations) {
+            if (subjectService.canCreateSubject(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    organization.id(),
+                    request.getRemoteAddr()
+            )) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Map<Long, Boolean> canModifySubjectById(
@@ -651,6 +842,186 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         return permissions;
     }
 
+    private Map<Long, Boolean> canManageSubjectAssociationsById(
+            SessionUser actor,
+            List<Subject> subjects,
+            HttpServletRequest request
+    ) {
+        Map<Long, Boolean> permissions = new HashMap<>();
+        for (Subject subject : subjects) {
+            permissions.put(subject.id(), canManageSubjectAssociations(actor, subject.id(), request));
+        }
+        return permissions;
+    }
+
+    private boolean canManageSubjectAssociations(
+            SessionUser actor,
+            long subjectId,
+            HttpServletRequest request
+    ) {
+        if (courseSubjectService.canManageSubjectAssociations(
+                actor.userId(),
+                currentSessionId(request),
+                primaryProfile(actor),
+                subjectId,
+                request.getRemoteAddr()
+        )) {
+            return true;
+        }
+        return subjectCourseViews(subjectId).stream()
+                .anyMatch(association -> courseSubjectService.canManageAssociation(
+                        actor.userId(),
+                        currentSessionId(request),
+                        primaryProfile(actor),
+                        association.getCourseId(),
+                        subjectId,
+                        request.getRemoteAddr()
+                ));
+    }
+
+    private Map<Long, Map<Long, List<ClassGroupView>>> subjectCourseClassGroupsBySubjectAndCourse(
+            Map<Long, List<SubjectCourseView>> coursesBySubject
+    ) {
+        Map<Long, Map<Long, List<ClassGroupView>>> classGroupsBySubjectAndCourse = new HashMap<>();
+        for (Map.Entry<Long, List<SubjectCourseView>> subjectEntry : coursesBySubject.entrySet()) {
+            Map<Long, List<ClassGroupView>> classGroupsByCourse = new HashMap<>();
+            for (SubjectCourseView association : subjectEntry.getValue()) {
+                classGroupsByCourse.put(
+                        association.getCourseId(),
+                        viewFactory.classGroupViews(classGroupsByCourseSubject(
+                                association.getCourseId(),
+                                subjectEntry.getKey()
+                        ))
+                );
+            }
+            classGroupsBySubjectAndCourse.put(subjectEntry.getKey(), classGroupsByCourse);
+        }
+        return classGroupsBySubjectAndCourse;
+    }
+
+    private static Set<Long> courseIdsFrom(Map<Long, List<SubjectCourseView>> coursesBySubject) {
+        Set<Long> courseIds = new HashSet<>();
+        for (List<SubjectCourseView> associations : coursesBySubject.values()) {
+            for (SubjectCourseView association : associations) {
+                courseIds.add(association.getCourseId());
+            }
+        }
+        return courseIds;
+    }
+
+    private static Set<Long> classGroupIdsFrom(
+            Map<Long, Map<Long, List<ClassGroupView>>> classGroupsBySubjectAndCourse
+    ) {
+        Set<Long> classGroupIds = new HashSet<>();
+        for (Map<Long, List<ClassGroupView>> classGroupsByCourse : classGroupsBySubjectAndCourse.values()) {
+            for (List<ClassGroupView> classGroups : classGroupsByCourse.values()) {
+                for (ClassGroupView classGroup : classGroups) {
+                    classGroupIds.add(classGroup.getId());
+                }
+            }
+        }
+        return classGroupIds;
+    }
+
+    private Map<Long, Boolean> canModifyCourseById(
+            SessionUser actor,
+            Set<Long> courseIds,
+            HttpServletRequest request
+    ) {
+        Map<Long, Boolean> permissions = new HashMap<>();
+        for (Long courseId : courseIds) {
+            permissions.put(courseId, courseService.canModifyCourse(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    courseId,
+                    request.getRemoteAddr()
+            ));
+        }
+        return permissions;
+    }
+
+    private Map<Long, Boolean> canManageCourseChildrenById(
+            SessionUser actor,
+            Set<Long> courseIds,
+            HttpServletRequest request
+    ) {
+        Map<Long, Boolean> permissions = new HashMap<>();
+        for (Long courseId : courseIds) {
+            permissions.put(courseId, courseService.canManageCourseChildren(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    courseId,
+                    request.getRemoteAddr()
+            ));
+        }
+        return permissions;
+    }
+
+    private Map<Long, Boolean> canModifyClassGroupById(
+            SessionUser actor,
+            Set<Long> classGroupIds,
+            HttpServletRequest request
+    ) {
+        Map<Long, Boolean> permissions = new HashMap<>();
+        for (Long classGroupId : classGroupIds) {
+            permissions.put(classGroupId, classGroupService.canModifyClassGroup(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    classGroupId,
+                    request.getRemoteAddr()
+            ));
+        }
+        return permissions;
+    }
+
+    private Map<Long, Boolean> canManageClassGroupStructureById(
+            SessionUser actor,
+            Set<Long> classGroupIds,
+            HttpServletRequest request
+    ) {
+        Map<Long, Boolean> permissions = new HashMap<>();
+        for (Long classGroupId : classGroupIds) {
+            permissions.put(classGroupId, classGroupService.canManageClassGroupStructure(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    classGroupId,
+                    request.getRemoteAddr()
+            ));
+        }
+        return permissions;
+    }
+
+    private boolean canCreateClassGroupsForSubject(
+            SessionUser actor,
+            long subjectId,
+            HttpServletRequest request
+    ) {
+        try {
+            for (CourseSubjectAssociation association : courseSubjectDAO.findBySubject(subjectId)) {
+                if (association.state() != CourseSubjectState.ACTIVE) {
+                    continue;
+                }
+                if (classGroupService.canCreateClassGroup(
+                        actor.userId(),
+                        currentSessionId(request),
+                        primaryProfile(actor),
+                        association.courseId(),
+                        subjectId,
+                        request.getRemoteAddr()
+                )) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (RuntimeException | SQLException exception) {
+            return false;
+        }
+    }
+
     private List<CourseView> courseOptions(List<Organization> organizations) {
         return organizations.stream()
                 .flatMap(organization -> coursesByOrganization(organization.id()).stream())
@@ -660,7 +1031,12 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 .toList();
     }
 
-    private List<CourseView> availableCourseOptions(Subject subject, List<SubjectCourseView> associations) {
+    private List<CourseView> availableCourseOptions(
+            HttpServletRequest request,
+            Subject subject,
+            List<SubjectCourseView> associations
+    ) {
+        SessionUser actor = requireCurrentUser(request);
         Set<Long> associatedCourseIds = new HashSet<>();
         for (SubjectCourseView association : associations) {
             associatedCourseIds.add(association.getCourseId());
@@ -668,6 +1044,14 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         return coursesByOrganization(subject.organizationId()).stream()
                 .filter(course -> course.state() != CourseState.ARCHIVED)
                 .filter(course -> !associatedCourseIds.contains(course.id()))
+                .filter(course -> courseSubjectService.canManageAssociation(
+                        actor.userId(),
+                        currentSessionId(request),
+                        primaryProfile(actor),
+                        course.id(),
+                        subject.id(),
+                        request.getRemoteAddr()
+                ))
                 .map(viewFactory::courseView)
                 .sorted(Comparator.comparing(CourseView::getName))
                 .toList();
@@ -678,6 +1062,22 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             return courseDAO.findByOrganization(organizationId);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load course options", exception);
+        }
+    }
+
+    private List<pt.isel.gape.learning.model.ClassGroup> classGroupsBySubject(long subjectId) {
+        try {
+            return classGroupDAO.findBySubject(subjectId);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load subject class groups", exception);
+        }
+    }
+
+    private List<pt.isel.gape.learning.model.ClassGroup> classGroupsByCourseSubject(long courseId, long subjectId) {
+        try {
+            return classGroupDAO.findByCourseAndSubject(courseId, subjectId);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load subject class groups", exception);
         }
     }
 
@@ -754,6 +1154,9 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         request.setAttribute("adminSubjectContextId", subject.getId());
         request.setAttribute("adminSubjectContextName", subject.getName());
         request.setAttribute("adminSubjectActiveChild", activeChild);
+        request.setAttribute("coordinatorSubjectContextId", subject.getId());
+        request.setAttribute("coordinatorSubjectContextName", subject.getName());
+        request.setAttribute("coordinatorSubjectActiveChild", activeChild);
     }
 
     private static Set<Long> selectedCoordinator(String value) {

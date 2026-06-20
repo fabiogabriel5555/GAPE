@@ -4,11 +4,13 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 import pt.isel.gape.access.dao.PermissionDAO;
+import pt.isel.gape.access.model.AdministratorPermissionAssignment;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.validation.AcademicTextValidator;
@@ -37,6 +39,7 @@ public final class OrganicUnitService {
     private final ConnectionProvider connectionProvider;
     private final OrganicUnitDAO organicUnitDAO;
     private final OrganizationDAO organizationDAO;
+    private final PermissionDAO permissionDAO;
     private final PermissionChecker permissionChecker;
     private final AuditService auditService;
 
@@ -50,6 +53,7 @@ public final class OrganicUnitService {
         this.connectionProvider = Objects.requireNonNull(connectionProvider, "connectionProvider is required");
         this.organicUnitDAO = Objects.requireNonNull(organicUnitDAO, "organicUnitDAO is required");
         this.organizationDAO = Objects.requireNonNull(organizationDAO, "organizationDAO is required");
+        this.permissionDAO = new PermissionDAO(connectionProvider);
         this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
     }
@@ -146,8 +150,28 @@ public final class OrganicUnitService {
             String sourceIp
     ) {
         try {
-            requireOrganizationManager(actorUserId, sessionId, actorProfileType, organizationId, sourceIp);
-            return organicUnitDAO.findByOrganization(organizationId);
+            if (organizationManagerDecision(actorUserId, sessionId, actorProfileType, organizationId, sourceIp).allowed()) {
+                return organicUnitDAO.findByOrganization(organizationId);
+            }
+            try (Connection connection = connectionProvider.getConnection()) {
+                requireOrganization(connection, organizationId);
+            }
+            return organicUnitDAO.findByOrganization(organizationId)
+                    .stream()
+                    .filter(unit -> organicUnitAccessDecision(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            unit.id(),
+                            sourceIp
+                    ).allowed() || organicUnitMutationDecision(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            unit.id(),
+                            sourceIp
+                    ).allowed())
+                    .toList();
         } catch (RuntimeException | SQLException exception) {
             throw wrap(exception, "Failed to list organic units");
         }
@@ -309,6 +333,177 @@ public final class OrganicUnitService {
         return organicUnitMutationDecision(actorUserId, sessionId, actorProfileType, organicUnitId, sourceIp).allowed();
     }
 
+    public Set<Long> listDirectOrganicUnitAdministratorIds(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organicUnitId,
+            String sourceIp
+    ) {
+        try {
+            requireOrganicUnitAccess(actorUserId, sessionId, actorProfileType, organicUnitId, sourceIp);
+            try (Connection connection = connectionProvider.getConnection()) {
+                return permissionDAO.findActiveAdministratorUserIdsByExactContext(
+                        connection,
+                        AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE,
+                        AccessEntityType.ORGANIC_UNIT,
+                        organicUnitId
+                );
+            }
+        } catch (RuntimeException | SQLException exception) {
+            throw wrap(exception, "Failed to list organic unit administrators");
+        }
+    }
+
+    public Set<Long> listEligibleOrganicUnitAdministratorIds(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organicUnitId,
+            String sourceIp
+    ) {
+        try {
+            OrganicUnit unit = organicUnitDAO.findById(organicUnitId)
+                    .orElseThrow(() -> new IllegalArgumentException("Organic unit not found: " + organicUnitId));
+            requireOrganicUnitGrantDelegation(actorUserId, sessionId, actorProfileType, organicUnitId, sourceIp);
+            try (Connection connection = connectionProvider.getConnection()) {
+                Organization organization = requireOrganization(connection, unit.organizationId());
+                requireOrganizationNotArchived(organization);
+                requireOrganicUnitNotArchived(unit);
+                Set<Long> eligible = new LinkedHashSet<>();
+                for (Long adminUserId : permissionDAO.findActiveAdministratorUserIds(connection)) {
+                    Set<AdministratorPermissionAssignment> assignments =
+                            permissionDAO.findActiveAdministratorAssignments(connection, adminUserId);
+                    if (permissionDAO.hasExactAdministratorContextGrant(
+                            connection,
+                            adminUserId,
+                            AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE,
+                            AccessEntityType.ORGANIC_UNIT,
+                            organicUnitId
+                    )) {
+                        continue;
+                    }
+                    if (assignments.stream().allMatch(OrganicUnitService::isOrganizationStructureAssignment)) {
+                        eligible.add(adminUserId);
+                    }
+                }
+                return java.util.Collections.unmodifiableSet(eligible);
+            }
+        } catch (RuntimeException | SQLException exception) {
+            throw wrap(exception, "Failed to list eligible organic unit administrators");
+        }
+    }
+
+    public boolean canRevokeOrganicUnitAdministrator(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organicUnitId,
+            long adminUserId,
+            String sourceIp
+    ) {
+        try (Connection connection = connectionProvider.getConnection()) {
+            requireOrganicUnitGrantDelegation(actorUserId, sessionId, actorProfileType, organicUnitId, sourceIp);
+            return permissionDAO.hasExactAdministratorContextGrant(
+                    connection,
+                    adminUserId,
+                    AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE,
+                    AccessEntityType.ORGANIC_UNIT,
+                    organicUnitId
+            ) && permissionDAO.findActiveAdministratorAssignments(connection, adminUserId).size() > 1;
+        } catch (RuntimeException | SQLException exception) {
+            return false;
+        }
+    }
+
+    public void assignOrganicUnitAdministrator(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organicUnitId,
+            long adminUserId,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    OrganicUnit unit = requireOrganicUnit(connection, organicUnitId);
+                    requireOrganicUnitGrantDelegation(actorUserId, sessionId, actorProfileType, organicUnitId, sourceIp);
+                    Organization organization = requireOrganization(connection, unit.organizationId());
+                    requireOrganizationNotArchived(organization);
+                    requireOrganicUnitNotArchived(unit);
+                    requireAssignableOrganicUnitAdministrator(connection, adminUserId, organicUnitId);
+                    permissionDAO.grantAdministratorPermission(
+                            connection,
+                            adminUserId,
+                            organicUnitAdministratorAssignment(organicUnitId)
+                    );
+                    auditService.record(connection, actorUserId, sessionId, "ORGANIC_UNIT_ADMIN_ASSIGN",
+                            "organic_unit", Long.toString(organicUnitId), "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "ORGANIC_UNIT_ADMIN_ASSIGN", Long.toString(organicUnitId), sourceIp);
+            throw wrap(exception, "Failed to assign organic unit administrator");
+        }
+    }
+
+    public void revokeOrganicUnitAdministrator(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organicUnitId,
+            long adminUserId,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    OrganicUnit unit = requireOrganicUnit(connection, organicUnitId);
+                    requireOrganicUnitGrantDelegation(actorUserId, sessionId, actorProfileType, organicUnitId, sourceIp);
+                    Organization organization = requireOrganization(connection, unit.organizationId());
+                    requireOrganizationNotArchived(organization);
+                    requireOrganicUnitNotArchived(unit);
+                    AdministratorPermissionAssignment assignment = organicUnitAdministratorAssignment(organicUnitId);
+                    if (!permissionDAO.hasExactAdministratorContextGrant(
+                            connection,
+                            adminUserId,
+                            AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE,
+                            AccessEntityType.ORGANIC_UNIT,
+                            organicUnitId
+                    )) {
+                        throw new IllegalArgumentException("Administrator does not manage this organic unit");
+                    }
+                    if (permissionDAO.findActiveAdministratorAssignments(connection, adminUserId).size() <= 1) {
+                        throw new IllegalStateException("Administrator profile must keep at least one permission assignment");
+                    }
+                    permissionDAO.deleteAdministratorAssignment(connection, adminUserId, assignment);
+                    auditService.record(connection, actorUserId, sessionId, "ORGANIC_UNIT_ADMIN_REVOKE",
+                            "organic_unit", Long.toString(organicUnitId), "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "ORGANIC_UNIT_ADMIN_REVOKE", Long.toString(organicUnitId), sourceIp);
+            throw wrap(exception, "Failed to revoke organic unit administrator");
+        }
+    }
+
     private void validateParent(
             Connection connection,
             Long organicUnitId,
@@ -347,7 +542,26 @@ public final class OrganicUnitService {
             long organizationId,
             String sourceIp
     ) {
-        AuthorizationDecision decision = permissionChecker.check(new AccessContext(
+        AuthorizationDecision decision = organizationManagerDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                organizationId,
+                sourceIp
+        );
+        if (!decision.allowed()) {
+            throw new SecurityException("Missing organization management context: " + decision.reason());
+        }
+    }
+
+    private AuthorizationDecision organizationManagerDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organizationId,
+            String sourceIp
+    ) {
+        return permissionChecker.check(new AccessContext(
                 actorUserId,
                 sessionId,
                 actorProfileType,
@@ -356,9 +570,6 @@ public final class OrganicUnitService {
                 organizationId,
                 sourceIp
         ));
-        if (!decision.allowed()) {
-            throw new SecurityException("Missing organization management context: " + decision.reason());
-        }
     }
 
     private void requireOrganicUnitCreateContext(
@@ -389,7 +600,26 @@ public final class OrganicUnitService {
             long organicUnitId,
             String sourceIp
     ) {
-        AuthorizationDecision decision = permissionChecker.check(new AccessContext(
+        AuthorizationDecision decision = organicUnitAccessDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                organicUnitId,
+                sourceIp
+        );
+        if (!decision.allowed()) {
+            throw new SecurityException("Missing organic unit management context: " + decision.reason());
+        }
+    }
+
+    private AuthorizationDecision organicUnitAccessDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organicUnitId,
+            String sourceIp
+    ) {
+        AuthorizationDecision directDecision = permissionChecker.check(new AccessContext(
                 actorUserId,
                 sessionId,
                 actorProfileType,
@@ -398,9 +628,19 @@ public final class OrganicUnitService {
                 organicUnitId,
                 sourceIp
         ));
-        if (!decision.allowed()) {
-            throw new SecurityException("Missing organic unit management context: " + decision.reason());
+        if (directDecision.allowed()) {
+            return directDecision;
         }
+        AuthorizationDecision descendantDecision = organicUnitMutationDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                organicUnitId,
+                sourceIp
+        );
+        return descendantDecision.allowed()
+                ? descendantDecision
+                : AuthorizationDecision.deny(directDecision.reason() + "/" + descendantDecision.reason());
     }
 
     private AuthorizationDecision organicUnitCreateDecision(
@@ -461,6 +701,64 @@ public final class OrganicUnitService {
                 organicUnitId,
                 sourceIp
         ));
+    }
+
+    private void requireOrganicUnitGrantDelegation(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organicUnitId,
+            String sourceIp
+    ) {
+        AuthorizationDecision decision = permissionChecker.check(new AccessContext(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE,
+                AccessEntityType.ORGANIC_UNIT,
+                organicUnitId,
+                sourceIp
+        ));
+        if (!decision.allowed()) {
+            throw new SecurityException("Administrator cannot manage organic unit administrators outside own context: "
+                    + decision.reason());
+        }
+    }
+
+    private void requireAssignableOrganicUnitAdministrator(
+            Connection connection,
+            long adminUserId,
+            long organicUnitId
+    ) throws SQLException {
+        if (!permissionDAO.findActiveAdministratorUserIds(connection).contains(adminUserId)) {
+            throw new IllegalArgumentException("Organic unit administrator must be an active administrator");
+        }
+        if (permissionDAO.hasExactAdministratorContextGrant(
+                connection,
+                adminUserId,
+                AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE,
+                AccessEntityType.ORGANIC_UNIT,
+                organicUnitId
+        )) {
+            throw new IllegalArgumentException("Administrator already manages this organic unit");
+        }
+        Set<AdministratorPermissionAssignment> assignments =
+                permissionDAO.findActiveAdministratorAssignments(connection, adminUserId);
+        if (!assignments.stream().allMatch(OrganicUnitService::isOrganizationStructureAssignment)) {
+            throw new IllegalArgumentException("Administrator already has a different administrator permission scope");
+        }
+    }
+
+    private static boolean isOrganizationStructureAssignment(AdministratorPermissionAssignment assignment) {
+        return AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE.equals(assignment.permissionCode());
+    }
+
+    private static AdministratorPermissionAssignment organicUnitAdministratorAssignment(long organicUnitId) {
+        return new AdministratorPermissionAssignment(
+                AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE,
+                AccessEntityType.ORGANIC_UNIT,
+                organicUnitId
+        );
     }
 
     private Organization requireOrganization(Connection connection, long organizationId) throws SQLException {

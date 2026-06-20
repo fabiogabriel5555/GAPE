@@ -30,7 +30,7 @@ class SchemaIntegrityTest {
                 "organization", "organic_unit", "course", "subject", "class_group", "content_block",
                 "integrate_subject", "manage_organization", "coordinate_subject", "teach_class_group",
                 "enroll_course", "enroll_subject", "enroll_class_group",
-                "content_item", "physical_room", "lesson", "assessment", "question", "question_option",
+                "content_item", "content_file", "physical_room", "lesson", "assessment", "question", "question_option",
                 "attempt", "response", "response_option",
                 "associate_organization_content", "associate_organic_unit_content", "associate_course_content",
                 "associate_subject_content", "associate_class_group_content", "associate_block_content",
@@ -95,6 +95,7 @@ class SchemaIntegrityTest {
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "user_account", "ck_user_account_document_pair", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "user_session", "ck_user_session_last_activity_end", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "class_group", "ck_class_group_modality", "CHECK"));
+            assertTrue(DatabaseTestSupport.existsConstraint(connection, "class_group", "ck_class_group_shift", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "class_group", "ck_class_group_students_range", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "content_block", "ck_content_block_scheduled_access", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "message", "ck_message_attachment_type", "CHECK"));

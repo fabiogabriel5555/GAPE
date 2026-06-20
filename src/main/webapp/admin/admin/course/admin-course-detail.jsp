@@ -86,12 +86,12 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-12 flex-wrap">
-                            <a href="${pageContext.request.contextPath}/admin/courses" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03">Back</a>
+                            <a href="${pageContext.request.contextPath}${courseBasePath}" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03">Back</a>
                             <c:if test="${not course.archived and canModifyCourse}">
-                                <a href="${pageContext.request.contextPath}/admin/courses/${course.id}/edit" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">Edit</a>
+                                <a href="${pageContext.request.contextPath}${courseBasePath}/${course.id}/edit" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">Edit</a>
                             </c:if>
                             <c:if test="${course.archived and canModifyCourse}">
-                                <form action="${pageContext.request.contextPath}/admin/courses/${course.id}/unarchive" method="post" class="m-0">
+                                <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/unarchive" method="post" class="m-0">
                                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                     <button type="submit" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03 border-0">Unarchive</button>
                                 </form>
@@ -138,7 +138,7 @@
                             <span class="text-14 text-neutral-500">Position, mandatory state and active associations.</span>
                         </div>
                         <c:if test="${not course.archived and canManageCourseChildren}">
-                            <a href="${pageContext.request.contextPath}/admin/courses/${course.id}/subjects/new" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
+                            <a href="${pageContext.request.contextPath}${courseBasePath}/${course.id}/subjects/new" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
                                 <i class="ph ph-plus-circle me-8"></i>Associate Subject
                             </a>
                         </c:if>
@@ -158,7 +158,7 @@
                             <c:forEach var="association" items="${courseSubjects}">
                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                     <td class="py-20 px-20">
-                                        <a href="${pageContext.request.contextPath}/admin/subjects/${association.subjectId}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                        <a href="${pageContext.request.contextPath}${subjectBasePath}/${association.subjectId}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
                                             <c:out value="${association.subjectName}"/>
                                         </a>
                                         <span class="d-block text-12 text-neutral-500">
@@ -176,7 +176,7 @@
                                     <td class="py-20 px-20">
                                         <div class="d-flex align-items-center gap-12 justify-content-end">
                                             <c:if test="${not association.archived and canManageCourseChildren}">
-                                                <a href="${pageContext.request.contextPath}/admin/courses/${course.id}/subjects/new" class="text-22 text-neutral-500 hover-text-main-600" title="Edit associations">
+                                                <a href="${pageContext.request.contextPath}${courseBasePath}/${course.id}/subjects/new" class="text-22 text-neutral-500 hover-text-main-600" title="Edit associations">
                                                     <i class="ph ph-pencil-simple-line"></i>
                                                 </a>
                                                 <button type="button" class="text-22 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Archive" data-bs-toggle="modal" data-bs-target="#archiveAssociation${association.subjectId}">
@@ -201,7 +201,7 @@
                                                     </div>
                                                     <div class="modal-footer border-neutral-30">
                                                         <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
-                                                        <form action="${pageContext.request.contextPath}/admin/courses/${course.id}/subjects/${association.subjectId}/archive" method="post" class="m-0">
+                                                        <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/subjects/${association.subjectId}/archive" method="post" class="m-0">
                                                             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                                             <button type="submit" class="gape-action-button gape-action-archive px-20 py-10 rounded-12 fw-semibold transition-03">Archive</button>
                                                         </form>
@@ -222,7 +222,7 @@
                                                     </div>
                                                     <div class="modal-footer border-neutral-30">
                                                         <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
-                                                        <form action="${pageContext.request.contextPath}/admin/courses/${course.id}/subjects/${association.subjectId}/delete" method="post" class="m-0">
+                                                        <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/subjects/${association.subjectId}/delete" method="post" class="m-0">
                                                             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                                             <button type="submit" class="gape-action-button gape-action-delete px-20 py-10 rounded-12 fw-semibold transition-03">Delete</button>
                                                         </form>
@@ -237,6 +237,67 @@
                             <c:if test="${empty courseSubjects}">
                                 <tr>
                                     <td colspan="5" class="py-32 px-20 text-center text-14 text-neutral-500">No subjects associated with this course.</td>
+                                </tr>
+                            </c:if>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-10 px-24 py-24 mb-24">
+                    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
+                        <div>
+                            <h3 class="text-18 fw-medium text-neutral-700 mb-4">Class Groups</h3>
+                            <span class="text-14 text-neutral-500">Groups created for this course and its subjects.</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-12 flex-wrap">
+                            <a href="${pageContext.request.contextPath}/learning/class-groups?courseId=${course.id}" class="border-main-600 border px-16 py-8 fw-semibold rounded-12 hover-bg-main-50 transition-03">Open Groups</a>
+                            <c:if test="${not course.archived and canManageCourseChildren}">
+                                <a href="${pageContext.request.contextPath}/learning/class-groups/new?courseId=${course.id}" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
+                                    <i class="ph ph-plus-circle me-8"></i>New Group
+                                </a>
+                            </c:if>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="table mb-0">
+                            <thead>
+                            <tr>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Group</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Subject</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Capacity</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Blocks</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <c:forEach var="classGroup" items="${classGroups}">
+                                <tr class="hover-bg-neutral-20 border-bottom transition-03">
+                                    <td class="py-20 px-20">
+                                        <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                            <c:out value="${classGroup.code}"/>
+                                        </a>
+                                        <span class="d-block text-12 text-neutral-500"><c:out value="${classGroup.modalityLabel}"/> | <c:out value="${classGroup.shift}"/></span>
+                                    </td>
+                                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${classGroup.subjectName}"/></td>
+                                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${classGroup.activeEnrollmentCount}"/> enrolled | <c:out value="${classGroup.capacityLabel}"/></td>
+                                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${classGroup.blockCount}"/></td>
+                                    <td class="py-20 px-20">
+                                        <span class="${classGroup.stateBadgeClass} px-16 py-8 border-neutral-30 border rounded-pill text-14">
+                                            <c:out value="${classGroup.stateLabel}"/>
+                                        </span>
+                                    </td>
+                                    <td class="py-20 px-20 text-end">
+                                        <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="text-22 text-neutral-500 hover-text-main-600" title="Detail">
+                                            <i class="ph ph-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            </c:forEach>
+                            <c:if test="${empty classGroups}">
+                                <tr>
+                                    <td colspan="6" class="py-32 px-20 text-center text-14 text-neutral-500">No class groups created for this course.</td>
                                 </tr>
                             </c:if>
                             </tbody>
@@ -272,7 +333,7 @@
             </div>
             <div class="modal-footer border-neutral-30">
                 <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
-                <form action="${pageContext.request.contextPath}/admin/courses/${course.id}/archive" method="post" class="m-0">
+                <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/archive" method="post" class="m-0">
                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                     <button type="submit" class="gape-action-button gape-action-archive px-20 py-10 rounded-12 fw-semibold transition-03">Archive</button>
                 </form>
@@ -293,7 +354,7 @@
             </div>
             <div class="modal-footer border-neutral-30">
                 <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
-                <form action="${pageContext.request.contextPath}/admin/courses/${course.id}/delete" method="post" class="m-0">
+                <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/delete" method="post" class="m-0">
                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                     <button type="submit" class="gape-action-button gape-action-delete px-20 py-10 rounded-12 fw-semibold transition-03">Delete</button>
                 </form>

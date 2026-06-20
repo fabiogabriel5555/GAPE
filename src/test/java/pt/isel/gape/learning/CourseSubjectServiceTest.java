@@ -1,7 +1,9 @@
 package pt.isel.gape.learning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -225,6 +227,65 @@ class CourseSubjectServiceTest {
         );
     }
 
+    @Test
+    void coordinatorLearningCanManageOnlyAssignedSubjectAssociations() {
+        assertTrue(courseSubjectService.canManageAssociation(
+                2L,
+                null,
+                AccessProfileType.COORDINATOR,
+                30L,
+                40L,
+                "127.0.0.1"
+        ));
+        assertFalse(courseSubjectService.canManageAssociation(
+                2L,
+                null,
+                AccessProfileType.COORDINATOR,
+                30L,
+                41L,
+                "127.0.0.1"
+        ));
+    }
+
+    @Test
+    void legacySubjectScopedLearningAdministratorCannotManageSubjectAssociations() throws Exception {
+        addAdministrator(101L, "ADM-SUBJECT-ASSOC", "MANAGE_LEARNING", "SUBJECT", 40L);
+
+        assertFalse(courseSubjectService.canManageAssociation(
+                101L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                30L,
+                40L,
+                "127.0.0.1"
+        ));
+        assertFalse(courseSubjectService.canManageAssociation(
+                101L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                30L,
+                41L,
+                "127.0.0.1"
+        ));
+        assertThrows(
+                SecurityException.class,
+                () -> courseSubjectService.updateAssociation(
+                        101L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        new CourseSubjectAssociationCommand(
+                                30L,
+                                41L,
+                                1,
+                                CurricularTerm.SEMESTER_1,
+                                true,
+                                CourseSubjectState.ACTIVE
+                        ),
+                        "127.0.0.1"
+                )
+        );
+    }
+
     private static void insertSubject(Connection connection, long subjectId, long organizationId, String name)
             throws Exception {
         try (PreparedStatement statement = connection.prepareStatement("""
@@ -237,6 +298,45 @@ class CourseSubjectServiceTest {
             statement.setString(3, name);
             statement.setString(4, "S" + subjectId);
             statement.executeUpdate();
+        }
+    }
+
+    private void addAdministrator(
+            long userId,
+            String administratorCode,
+            String permissionCode,
+            String contextType,
+            long contextId
+    ) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            try (PreparedStatement user = connection.prepareStatement("""
+                    INSERT INTO user_account (
+                        id_user, name, email, state, language, photo, created_at, credential_hash, credential_salt
+                    ) VALUES (?, ?, ?, 'active', 'pt-PT', NULL, '2026-01-01 10:00:00', 'hash', 'salt')
+                    """)) {
+                user.setLong(1, userId);
+                user.setString(2, "Scoped Association Admin");
+                user.setString(3, "scoped.association.admin@gape.local");
+                user.executeUpdate();
+            }
+            try (PreparedStatement profile = connection.prepareStatement("""
+                    INSERT INTO administrator_profile (id_user, cod_administrator)
+                    VALUES (?, ?)
+                    """)) {
+                profile.setLong(1, userId);
+                profile.setString(2, administratorCode);
+                profile.executeUpdate();
+            }
+            try (PreparedStatement grant = connection.prepareStatement("""
+                    INSERT INTO grant_administrator (id_admin_user, cod_permission, context_type, context_id)
+                    VALUES (?, ?, ?, ?)
+                    """)) {
+                grant.setLong(1, userId);
+                grant.setString(2, permissionCode);
+                grant.setString(3, contextType);
+                grant.setLong(4, contextId);
+                grant.executeUpdate();
+            }
         }
     }
 }

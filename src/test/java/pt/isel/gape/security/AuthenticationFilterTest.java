@@ -122,8 +122,8 @@ class AuthenticationFilterTest {
         TestHttpSession httpSession = authenticatedHttpSession(persisted, AccessProfileType.STUDENT);
 
         assertAllowed("/admin/admin-dashbord.jsp", httpSession);
-        assertAllowed("/coordinator/coordinator-home.jsp", httpSession);
-        assertAllowed("/instructor/instructor-home.jsp", httpSession);
+        assertAllowed("/coordinator/coordinator-dashbord.jsp", httpSession);
+        assertAllowed("/instructor/instructor-dashbord.jsp", httpSession);
         assertAllowed("/student/student-home.jsp", httpSession);
     }
 

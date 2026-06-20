@@ -271,7 +271,7 @@ class UserServiceTest {
                         List.of(
                                 AdministratorPermissionAssignment.manageAll(),
                                 new AdministratorPermissionAssignment(
-                                        AuthorizationPolicy.MANAGE_LEARNING,
+                                        AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE,
                                         AccessEntityType.ORGANIZATION,
                                         10L
                                 )

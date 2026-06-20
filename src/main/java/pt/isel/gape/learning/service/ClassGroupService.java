@@ -17,6 +17,7 @@ import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupCreateCommand;
+import pt.isel.gape.learning.model.ClassGroupShift;
 import pt.isel.gape.learning.model.ClassGroupState;
 import pt.isel.gape.learning.model.ClassGroupUpdateCommand;
 import pt.isel.gape.learning.model.Course;
@@ -275,13 +276,13 @@ public final class ClassGroupService {
                     ClassGroup current = requireClassGroup(connection, classGroupId);
                     requireClassGroupOperationalManager(actorUserId, sessionId, actorProfileType, current, sourceIp);
                     requireNotArchived(current);
-                    requireSameClassGroupContext(current, command);
-                    Course course = requireCourse(connection, current.courseId());
-                    Subject subject = requireSubject(connection, current.subjectId());
+                    requireClassGroupContextChangeAllowed(actorProfileType, current, command);
+                    Course course = requireCourse(connection, command.courseId());
+                    Subject subject = requireSubject(connection, command.subjectId());
                     CourseSubjectAssociation association = requireAssociation(
                             connection,
-                            current.courseId(),
-                            current.subjectId()
+                            command.courseId(),
+                            command.subjectId()
                     );
                     validateActiveContext(course, subject, association);
                     long activeEnrollments = classGroupDAO.countActiveEnrollments(connection, classGroupId);
@@ -411,6 +412,44 @@ public final class ClassGroupService {
             auditFailure(actorUserId, sessionId, "CLASS_GROUP_ASSIGN_TEACHER",
                     classGroupId + ":" + teacherUserId, sourceIp);
             throw wrap(exception, "Failed to assign teacher to class group");
+        }
+    }
+
+    public void removeTeacherFromClassGroup(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long classGroupId,
+            long teacherUserId,
+            LocalDate endDate,
+            String sourceIp
+    ) {
+        try {
+            LocalDate removalDate = endDate == null ? LocalDate.now() : endDate;
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    ClassGroup current = requireClassGroup(connection, classGroupId);
+                    requireClassGroupStructuralManager(actorUserId, sessionId, actorProfileType, current, sourceIp);
+                    requireNotArchived(current);
+                    if (!teachClassGroupDAO.deactivate(connection, teacherUserId, classGroupId, removalDate)) {
+                        throw new IllegalArgumentException("Teacher assignment not found");
+                    }
+                    auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_REMOVE_TEACHER",
+                            "class_group_teacher", classGroupId + ":" + teacherUserId, "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "CLASS_GROUP_REMOVE_TEACHER",
+                    classGroupId + ":" + teacherUserId, sourceIp);
+            throw wrap(exception, "Failed to remove teacher from class group");
         }
     }
 
@@ -774,9 +813,15 @@ public final class ClassGroupService {
         );
     }
 
-    private static void requireSameClassGroupContext(ClassGroup current, ClassGroupUpdateCommand command) {
+    private static void requireClassGroupContextChangeAllowed(
+            AccessProfileType actorProfileType,
+            ClassGroup current,
+            ClassGroupUpdateCommand command
+    ) {
         if (current.courseId() != command.courseId() || current.subjectId() != command.subjectId()) {
-            throw new IllegalArgumentException("Class group course and subject cannot be changed after creation");
+            if (actorProfileType != AccessProfileType.ADMINISTRATOR) {
+                throw new SecurityException("Only administrators can change class group course and subject");
+            }
         }
     }
 
@@ -790,7 +835,7 @@ public final class ClassGroupService {
             Integer maxStudents,
             LocalDate startsAt,
             LocalDate endsAt,
-            String shift
+            ClassGroupShift shift
     ) {
         if (courseId <= 0) {
             throw new IllegalArgumentException("Class group course is required");
@@ -802,12 +847,12 @@ public final class ClassGroupService {
         AcademicTextValidator.rejectContextSeparator(code, "Class group code");
         Objects.requireNonNull(modality, "class group modality is required");
         Objects.requireNonNull(state, "class group state is required");
+        Objects.requireNonNull(shift, "class group shift is required");
         if (state == ClassGroupState.ARCHIVED) {
             throw new IllegalArgumentException("Use the archive operation to archive class groups");
         }
         requireStudentRange(minStudents, maxStudents);
         requireValidDates(startsAt, endsAt, "Class group end date cannot be before start date");
-        AcademicTextValidator.rejectContextSeparator(shift, "Class group shift");
     }
 
     private static void requireStudentRange(Integer minStudents, Integer maxStudents) {

@@ -1,14 +1,19 @@
 package pt.isel.gape.learning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -258,6 +263,112 @@ class CourseServiceTest {
         );
     }
 
+    @Test
+    void organizationStructureAdministratorDoesNotListCourses() throws Exception {
+        addAdministrator(100L, "ADM-COURSE-UNIT", "MANAGE_ORGANIZATION_STRUCTURE", "ORGANIC_UNIT", 20L);
+
+        Set<Long> courseIds = courseService.listCourses(
+                        100L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        10L,
+                        "127.0.0.1"
+                )
+                .stream()
+                .map(Course::id)
+                .collect(Collectors.toSet());
+
+        assertEquals(Set.of(), courseIds);
+    }
+
+    @Test
+    void coordinatorLearningListsOnlyCoursesContainingAssignedSubjects() {
+        Set<Long> courseIds = courseService.listCourses(
+                        2L,
+                        null,
+                        AccessProfileType.COORDINATOR,
+                        10L,
+                        "127.0.0.1"
+                )
+                .stream()
+                .map(Course::id)
+                .collect(Collectors.toSet());
+
+        assertEquals(Set.of(30L), courseIds);
+        assertEquals(30L, courseService.getCourse(
+                2L,
+                null,
+                AccessProfileType.COORDINATOR,
+                30L,
+                "127.0.0.1"
+        ).id());
+        assertThrows(SecurityException.class, () -> courseService.getCourse(
+                2L,
+                null,
+                AccessProfileType.COORDINATOR,
+                31L,
+                "127.0.0.1"
+        ));
+        assertFalse(courseService.canManageCourseChildren(
+                2L,
+                null,
+                AccessProfileType.COORDINATOR,
+                30L,
+                "127.0.0.1"
+        ));
+    }
+
+    @Test
+    void legacyLearningAdministratorDoesNotListAssociatedCourses() throws Exception {
+        addAdministrator(101L, "ADM-COURSE-SUBJECT", "MANAGE_LEARNING", "SUBJECT", 40L);
+
+        Set<Long> courseIds = courseService.listCourses(
+                        101L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        10L,
+                        "127.0.0.1"
+                )
+                .stream()
+                .map(Course::id)
+                .collect(Collectors.toSet());
+
+        assertEquals(Set.of(), courseIds);
+    }
+
+    @Test
+    void legacyCourseScopedLearningAdministratorCannotManageCourseChildren() throws Exception {
+        addAdministrator(102L, "ADM-COURSE-EXACT", "MANAGE_LEARNING", "COURSE", 30L);
+
+        assertFalse(courseService.canModifyCourse(
+                102L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                30L,
+                "127.0.0.1"
+        ));
+        assertFalse(courseService.canManageCourseChildren(
+                102L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                30L,
+                "127.0.0.1"
+        ));
+    }
+
+    @Test
+    void subjectScopedAdministratorCannotModifyAssociatedCourse() throws Exception {
+        addAdministrator(103L, "ADM-COURSE-SUBJECT-READ", "MANAGE_LEARNING", "SUBJECT", 40L);
+
+        assertFalse(courseService.canModifyCourse(
+                103L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                30L,
+                "127.0.0.1"
+        ));
+    }
+
     private static CourseCreateCommand validCreateCommand(String name, String acronym) {
         return new CourseCreateCommand(
                 10L,
@@ -271,5 +382,44 @@ class CourseServiceTest {
                 CourseType.SHORT_COURSE,
                 CourseState.ACTIVE
         );
+    }
+
+    private void addAdministrator(
+            long userId,
+            String administratorCode,
+            String permissionCode,
+            String contextType,
+            long contextId
+    ) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            try (PreparedStatement user = connection.prepareStatement("""
+                    INSERT INTO user_account (
+                        id_user, name, email, state, language, photo, created_at, credential_hash, credential_salt
+                    ) VALUES (?, ?, ?, 'active', 'pt-PT', NULL, '2026-01-01 10:00:00', 'hash', 'salt')
+                    """)) {
+                user.setLong(1, userId);
+                user.setString(2, "Scoped Course Admin");
+                user.setString(3, "scoped.course.admin@gape.local");
+                user.executeUpdate();
+            }
+            try (PreparedStatement profile = connection.prepareStatement("""
+                    INSERT INTO administrator_profile (id_user, cod_administrator)
+                    VALUES (?, ?)
+                    """)) {
+                profile.setLong(1, userId);
+                profile.setString(2, administratorCode);
+                profile.executeUpdate();
+            }
+            try (PreparedStatement grant = connection.prepareStatement("""
+                    INSERT INTO grant_administrator (id_admin_user, cod_permission, context_type, context_id)
+                    VALUES (?, ?, ?, ?)
+                    """)) {
+                grant.setLong(1, userId);
+                grant.setString(2, permissionCode);
+                grant.setString(3, contextType);
+                grant.setLong(4, contextId);
+                grant.executeUpdate();
+            }
+        }
     }
 }

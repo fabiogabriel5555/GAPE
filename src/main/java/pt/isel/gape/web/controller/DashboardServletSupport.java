@@ -237,6 +237,54 @@ abstract class DashboardServletSupport extends HttpServlet {
         if (message.contains("Subject is not integrated in the course")) {
             return "This subject is not integrated in the selected course.";
         }
+        if (message.contains("Class group code is required")) {
+            return "Class group code is required.";
+        }
+        if (message.contains("Class group course is required")) {
+            return "Class group course is required.";
+        }
+        if (message.contains("Class group subject is required")) {
+            return "Class group subject is required.";
+        }
+        if (message.contains("Class group course and subject must belong to the same organization")) {
+            return "Class group course and subject must belong to the same organization.";
+        }
+        if (message.contains("Class group min students cannot exceed max students")) {
+            return "Minimum students cannot exceed maximum students.";
+        }
+        if (message.contains("Class group end date cannot be before start date")) {
+            return "Class group end date cannot be before start date.";
+        }
+        if (message.contains("Class group maximum capacity exceeded")) {
+            return "Class group maximum capacity exceeded.";
+        }
+        if (message.contains("Student must be actively enrolled in the subject")) {
+            return "The student must be actively enrolled in this subject before joining the class group.";
+        }
+        if (message.contains("Class group enrollment already exists")) {
+            return "This student already has a class group enrollment.";
+        }
+        if (message.contains("Active class group enrollment overlaps")) {
+            return "There is already an active class group enrollment in the selected period.";
+        }
+        if (message.contains("Content block code is required")) {
+            return "Content block code is required.";
+        }
+        if (message.contains("Content block name is required")) {
+            return "Content block name is required.";
+        }
+        if (message.contains("Content block order must be positive")) {
+            return "Content block order must be positive.";
+        }
+        if (message.contains("Active content block order already exists")) {
+            return "Another active content block already uses this order.";
+        }
+        if (message.contains("Scheduled content blocks require an availability start date")) {
+            return "Scheduled content blocks require an availability start date.";
+        }
+        if (message.contains("Content block availability end cannot be before start")) {
+            return "Content block availability end cannot be before start.";
+        }
         if (message.contains("Unknown")) {
             return "The selected record does not exist.";
         }

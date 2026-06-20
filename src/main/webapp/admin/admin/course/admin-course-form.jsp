@@ -5,9 +5,9 @@
         request.setAttribute("activeMenu", "courses");
     }
 %>
-<c:set var="courseBackHref" value="${pageContext.request.contextPath}/admin/courses"/>
+<c:set var="courseBackHref" value="${pageContext.request.contextPath}${courseBasePath}"/>
 <c:if test="${not creating}">
-    <c:set var="courseBackHref" value="${pageContext.request.contextPath}/admin/courses/${form.id}"/>
+    <c:set var="courseBackHref" value="${pageContext.request.contextPath}${courseBasePath}/${form.id}"/>
 </c:if>
 <c:set var="courseHasPhoto" value="${not empty form.photo}"/>
 <c:set var="coursePhotoUrl" value=""/>

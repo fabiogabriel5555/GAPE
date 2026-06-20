@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -80,7 +81,7 @@ public final class OrganizationDAO {
                   AND o.state <> 'archived'
                   AND (mo.start_date IS NULL OR mo.start_date <= CURRENT_DATE)
                   AND (mo.end_date IS NULL OR mo.end_date >= CURRENT_DATE)
-                ORDER BY o.name
+                ORDER BY o.id_organization
                 """;
 
         try (Connection connection = connectionProvider.getConnection();
@@ -98,6 +99,21 @@ public final class OrganizationDAO {
 
     public List<Organization> findByAdministratorPermissionContexts(long adminUserId, String permissionCode)
             throws SQLException {
+        return findByAdministratorPermissionContexts(adminUserId, List.of(permissionCode));
+    }
+
+    public List<Organization> findByAdministratorPermissionContexts(
+            long adminUserId,
+            Collection<String> permissionCodes
+    )
+            throws SQLException {
+        List<String> codes = permissionCodes == null
+                ? List.of()
+                : permissionCodes.stream().filter(code -> code != null && !code.isBlank()).distinct().toList();
+        if (codes.isEmpty()) {
+            return List.of();
+        }
+        String placeholders = String.join(",", java.util.Collections.nCopies(codes.size(), "?"));
         String sql = """
                 SELECT DISTINCT o.id_organization, o.name, o.acronym, o.photo, o.type, o.state
                 FROM grant_administrator ga
@@ -143,16 +159,19 @@ public final class OrganizationDAO {
                     )
                 )
                 WHERE ga.id_admin_user = ?
-                  AND ga.cod_permission = ?
+                  AND ga.cod_permission IN (%s)
                   AND p.state = 'active'
                   AND o.state <> 'archived'
-                ORDER BY o.name
-                """;
+                ORDER BY o.id_organization
+                """.formatted(placeholders);
 
         try (Connection connection = connectionProvider.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, adminUserId);
-            statement.setString(2, permissionCode);
+            int index = 2;
+            for (String code : codes) {
+                statement.setString(index++, code);
+            }
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<Organization> organizations = new ArrayList<>();
                 while (resultSet.next()) {
@@ -168,7 +187,7 @@ public final class OrganizationDAO {
                 SELECT id_organization, name, acronym, photo, type, state
                 FROM organization
                 WHERE state = 'active'
-                ORDER BY name
+                ORDER BY id_organization
                 """;
 
         try (Connection connection = connectionProvider.getConnection();

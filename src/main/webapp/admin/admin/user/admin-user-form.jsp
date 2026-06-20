@@ -244,7 +244,7 @@
                     <div class="mt-32">
                         <h3 class="text-16 fw-medium text-neutral-700 mb-16">Access Profiles</h3>
                         <div class="row gy-4">
-                            <div class="col-lg-3 col-md-6">
+                            <div class="col-xl-3 col-lg-3 col-md-6">
                                 <div class="border border-neutral-30 rounded-12 px-20 py-20 h-100">
                                     <div class="form-check common-check">
                                         <input class="form-check-input" type="checkbox" id="administratorProfile" name="administratorProfile" ${form.administratorProfile ? 'checked' : ''}>
@@ -252,7 +252,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-lg-3 col-md-6">
+                            <div class="col-xl-3 col-lg-3 col-md-6">
                                 <div class="border border-neutral-30 rounded-12 px-20 py-20 h-100">
                                     <div class="form-check common-check">
                                         <input class="form-check-input" type="checkbox" id="coordinatorProfile" name="coordinatorProfile" ${form.coordinatorProfile ? 'checked' : ''}>
@@ -260,7 +260,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-lg-3 col-md-6">
+                            <div class="col-xl-3 col-lg-3 col-md-6">
                                 <div class="border border-neutral-30 rounded-12 px-20 py-20 h-100">
                                     <div class="form-check common-check">
                                         <input class="form-check-input" type="checkbox" id="teacherProfile" name="teacherProfile" ${form.teacherProfile ? 'checked' : ''}>
@@ -268,7 +268,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-lg-3 col-md-6">
+                            <div class="col-xl-3 col-lg-3 col-md-6">
                                 <div class="border border-neutral-30 rounded-12 px-20 py-20 h-100">
                                     <div class="form-check common-check">
                                         <input class="form-check-input" type="checkbox" id="studentProfile" name="studentProfile" ${form.studentProfile ? 'checked' : ''}>
@@ -437,42 +437,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-lg-3 col-md-6">
-                                <div class="gape-admin-permission-card border border-neutral-30 rounded-12 px-20 py-20 h-100" data-admin-permission-card>
-                                    <div class="form-check common-check">
-                                        <input class="form-check-input"
-                                               type="checkbox"
-                                               id="adminManageLearning"
-                                               data-admin-permission-toggle
-                                               data-admin-permission-choice
-                                               data-admin-permission-section="${manageLearningPermissionCode}"
-                                               ${form.hasAdminPermissionCode(manageLearningPermissionCode) ? 'checked' : ''}>
-                                        <label class="form-check-label fw-medium" for="adminManageLearning">
-                                            Learning
-                                            <span class="d-block text-11 text-neutral-400">MANAGE_LEARNING</span>
-                                            <span class="d-block text-12 text-neutral-500">Courses and units</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-3 col-md-6">
-                                <div class="gape-admin-permission-card border border-neutral-30 rounded-12 px-20 py-20 h-100" data-admin-permission-card>
-                                    <div class="form-check common-check">
-                                        <input class="form-check-input"
-                                               type="checkbox"
-                                               id="adminManageEnrollments"
-                                               data-admin-permission-toggle
-                                               data-admin-permission-choice
-                                               data-admin-permission-section="${manageEnrollmentsPermissionCode}"
-                                               ${form.hasAdminPermissionCode(manageEnrollmentsPermissionCode) ? 'checked' : ''}>
-                                        <label class="form-check-label fw-medium" for="adminManageEnrollments">
-                                            Enrollments
-                                            <span class="d-block text-11 text-neutral-400">MANAGE_ENROLLMENTS</span>
-                                            <span class="d-block text-12 text-neutral-500">Enrollment scopes</span>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
 
                         <c:if test="${not empty organizationStructureContextOptions}">
@@ -512,88 +476,6 @@
                             </div>
                         </c:if>
 
-                        <c:if test="${not empty learningContextOptions}">
-                            <div class="gape-admin-permission-context mt-24 ${form.hasAdminPermissionCode(manageLearningPermissionCode) ? '' : 'd-none'}"
-                                 data-admin-permission-context-section
-                                 data-admin-permission-section="${manageLearningPermissionCode}">
-                                <h4 class="text-16 fw-medium text-neutral-700 mb-16">Learning Context</h4>
-                                <div class="d-flex flex-column gap-12">
-                                <c:forEach var="option" items="${learningContextOptions}">
-                                    <div data-admin-permission-tree-item
-                                         data-permission-section="${manageLearningPermissionCode}"
-                                         data-tree-node-key="${option.nodeKey}"
-                                         data-tree-parent-key="${option.parentKey}"
-                                         style="margin-left: ${option.hierarchyIndent}px;">
-                                        <div class="gape-admin-permission-tree-card border border-neutral-30 rounded-12 px-20 py-16 bg-neutral-10" data-admin-permission-card>
-                                            <div class="form-check common-check">
-                                                <input class="form-check-input"
-                                                       type="checkbox"
-                                                       id="${option.elementId}"
-                                                       name="adminPermissionAssignments"
-                                                       value="${option.value}"
-                                                       data-admin-permission-input
-                                                       data-admin-permission-context
-                                                       data-permission-section="${manageLearningPermissionCode}"
-                                                       data-tree-node-key="${option.nodeKey}"
-                                                       data-tree-parent-key="${option.parentKey}"
-                                                       ${form.hasAdminPermissionAssignment(option.permissionCode, option.contextType, option.contextId) ? 'checked' : ''}>
-                                                <label class="form-check-label fw-medium" for="${option.elementId}">
-                                                    <c:out value="${option.label}"/>
-                                                    <span class="d-block text-12 text-neutral-500"><c:out value="${option.detail}"/></span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </c:forEach>
-                                </div>
-                            </div>
-                        </c:if>
-
-                        <c:if test="${not empty enrollmentContextOptions}">
-                            <div class="gape-admin-permission-context mt-24 ${form.hasAdminPermissionCode(manageEnrollmentsPermissionCode) ? '' : 'd-none'}"
-                                 data-admin-permission-context-section
-                                 data-admin-permission-section="${manageEnrollmentsPermissionCode}"
-                                 data-tree-mode="free">
-                                <h4 class="text-16 fw-medium text-neutral-700 mb-16">Enrollment Context</h4>
-                                <div class="d-flex flex-column gap-12">
-                                <c:forEach var="option" items="${enrollmentContextOptions}">
-                                    <div data-admin-permission-tree-item
-                                         data-permission-section="${manageEnrollmentsPermissionCode}"
-                                         data-tree-node-key="${option.nodeKey}"
-                                         data-tree-parent-key="${option.parentKey}"
-                                         style="margin-left: ${option.hierarchyIndent}px;">
-                                        <div class="gape-admin-permission-tree-card border border-neutral-30 rounded-12 px-20 py-16 bg-neutral-10" data-admin-permission-card>
-                                            <c:choose>
-                                                <c:when test="${option.selectable}">
-                                                    <div class="form-check common-check">
-                                                        <input class="form-check-input"
-                                                               type="checkbox"
-                                                               id="${option.elementId}"
-                                                               name="adminPermissionAssignments"
-                                                               value="${option.value}"
-                                                               data-admin-permission-input
-                                                               data-admin-permission-context
-                                                               data-permission-section="${manageEnrollmentsPermissionCode}"
-                                                               data-tree-node-key="${option.nodeKey}"
-                                                               data-tree-parent-key="${option.parentKey}"
-                                                               ${form.hasAdminPermissionAssignment(option.permissionCode, option.contextType, option.contextId) ? 'checked' : ''}>
-                                                        <label class="form-check-label fw-medium" for="${option.elementId}">
-                                                            <c:out value="${option.label}"/>
-                                                            <span class="d-block text-12 text-neutral-500"><c:out value="${option.detail}"/></span>
-                                                        </label>
-                                                    </div>
-                                                </c:when>
-                                                <c:otherwise>
-                                                    <span class="fw-medium text-14 text-neutral-700"><c:out value="${option.label}"/></span>
-                                                    <span class="d-block text-12 text-neutral-500"><c:out value="${option.detail}"/></span>
-                                                </c:otherwise>
-                                            </c:choose>
-                                        </div>
-                                    </div>
-                                </c:forEach>
-                                </div>
-                            </div>
-                        </c:if>
                     </div>
 
                     <div class="d-flex align-items-center gap-16 flex-wrap mt-32">

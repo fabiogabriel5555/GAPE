@@ -147,14 +147,30 @@ public final class OrganizationService {
             AccessProfileType actorProfileType,
             String sourceIp
     ) {
+        return listManagedOrganizations(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                AuthorizationPolicy.MANAGE_ORGANIZATIONS,
+                sourceIp
+        );
+    }
+
+    public List<Organization> listManagedOrganizations(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            String permissionCode,
+            String sourceIp
+    ) {
         try {
             if (canManageOrganizationRoots(actorUserId, sessionId, actorProfileType, sourceIp)) {
                 return organizationDAO.findActive();
             }
-            requireGlobalOrganizationPermission(actorUserId, sessionId, actorProfileType, sourceIp);
+            requireGlobalPermission(actorUserId, sessionId, actorProfileType, permissionCode, sourceIp);
             return organizationDAO.findByAdministratorPermissionContexts(
                     actorUserId,
-                    AuthorizationPolicy.MANAGE_ORGANIZATIONS
+                    acceptableOrganizationContextPermissions(permissionCode)
             );
         } catch (RuntimeException | SQLException exception) {
             throw wrap(exception, "Failed to list managed organizations");
@@ -360,16 +376,37 @@ public final class OrganizationService {
             AccessProfileType actorProfileType,
             String sourceIp
     ) {
-        AuthorizationDecision decision = permissionChecker.check(AccessContext.global(
+        requireGlobalPermission(
                 actorUserId,
                 sessionId,
                 actorProfileType,
                 AuthorizationPolicy.MANAGE_ORGANIZATIONS,
                 sourceIp
+        );
+    }
+
+    private void requireGlobalPermission(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            String permissionCode,
+            String sourceIp
+    ) {
+        AuthorizationDecision decision = permissionChecker.check(AccessContext.global(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                permissionCode,
+                sourceIp
         ));
         if (!decision.allowed()) {
-            throw new SecurityException("Missing permission to manage organizations: " + decision.reason());
+            throw new SecurityException("Missing administration permission: " + decision.reason());
         }
+    }
+
+    private static Set<String> acceptableOrganizationContextPermissions(String permissionCode) {
+        String canonical = AuthorizationPolicy.canonicalAdminPermission(permissionCode);
+        return Set.of(canonical);
     }
 
     private void requireOrganizationManager(

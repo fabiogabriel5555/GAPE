@@ -12,6 +12,26 @@ import pt.isel.gape.security.session.SessionUser;
 class DashboardNavigationTest {
 
     @Test
+    void landingPageMatchesPrimaryUserProfile() {
+        assertEquals(
+                "/admin/admin-dashbord.jsp",
+                DashboardNavigation.landingPageFor(sessionUserWith(AccessProfileType.ADMINISTRATOR)).orElseThrow()
+        );
+        assertEquals(
+                "/coordinator/coordinator-dashbord.jsp",
+                DashboardNavigation.landingPageFor(sessionUserWith(AccessProfileType.COORDINATOR)).orElseThrow()
+        );
+        assertEquals(
+                "/instructor/instructor-dashbord.jsp",
+                DashboardNavigation.landingPageFor(sessionUserWith(AccessProfileType.TEACHER)).orElseThrow()
+        );
+        assertEquals(
+                "/student/student-home.jsp",
+                DashboardNavigation.landingPageFor(sessionUserWith(AccessProfileType.STUDENT)).orElseThrow()
+        );
+    }
+
+    @Test
     void profilePageMatchesPrimaryUserProfile() {
         assertEquals(
                 "/admin/admin-my-profile.jsp",

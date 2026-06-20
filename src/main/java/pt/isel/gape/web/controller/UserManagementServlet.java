@@ -63,7 +63,7 @@ import pt.isel.gape.web.view.UserFormData;
 import pt.isel.gape.web.view.UserView;
 
 @WebServlet(name = "userManagementServlet", urlPatterns = {"/admin/users", "/admin/users/*"})
-@MultipartConfig(maxFileSize = 10 * 1024 * 1024, maxRequestSize = 12 * 1024 * 1024)
+@MultipartConfig(maxFileSize = 50L * 1024L * 1024L, maxRequestSize = 52L * 1024L * 1024L)
 public final class UserManagementServlet extends DashboardServletSupport {
 
     private static final String USERS_LIST_JSP = "/admin/admin/user/admin-users.jsp";
@@ -531,6 +531,9 @@ public final class UserManagementServlet extends DashboardServletSupport {
                             .thenComparingLong(AdministratorPermissionAssignment::contextId))
                     .toList();
             for (AdministratorPermissionAssignment assignment : assignments) {
+                if (isSubjectAssignmentCoveredByCourseAssignment(assignment, assignments)) {
+                    continue;
+                }
                 details.add(new UserContextAssignmentView(
                             "Administrator Permission",
                             adminPermissionLabel(assignment.permissionCode()),
@@ -541,6 +544,28 @@ public final class UserManagementServlet extends DashboardServletSupport {
         } catch (SQLException exception) {
             throw new ServletException("Could not load administrator permission details", exception);
         }
+    }
+
+    private boolean isSubjectAssignmentCoveredByCourseAssignment(
+            AdministratorPermissionAssignment assignment,
+            List<AdministratorPermissionAssignment> assignments
+    ) throws SQLException {
+        if (assignment.contextType() != AccessEntityType.SUBJECT) {
+            return false;
+        }
+        Set<Long> assignedCourseIds = new HashSet<>();
+        for (AdministratorPermissionAssignment candidate : assignments) {
+            if (candidate.permissionCode().equals(assignment.permissionCode())
+                    && candidate.contextType() == AccessEntityType.COURSE) {
+                assignedCourseIds.add(candidate.contextId());
+            }
+        }
+        if (assignedCourseIds.isEmpty()) {
+            return false;
+        }
+        return courseSubjectDAO.findBySubject(assignment.contextId()).stream()
+                .map(CourseSubjectAssociation::courseId)
+                .anyMatch(assignedCourseIds::contains);
     }
 
     private List<UserContextAssignmentView> profileContextDetails(long userId) throws ServletException {
@@ -749,11 +774,7 @@ public final class UserManagementServlet extends DashboardServletSupport {
         List<Organization> organizations = assignableOrganizations(actor);
         request.setAttribute("manageAllPermissionCode", AuthorizationPolicy.MANAGE_ALL);
         request.setAttribute("manageOrganizationStructurePermissionCode", AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE);
-        request.setAttribute("manageLearningPermissionCode", AuthorizationPolicy.MANAGE_LEARNING);
-        request.setAttribute("manageEnrollmentsPermissionCode", AuthorizationPolicy.MANAGE_ENROLLMENTS);
         request.setAttribute("organizationStructureContextOptions", organizationStructureContextOptions(organizations));
-        request.setAttribute("learningContextOptions", learningContextOptions(organizations));
-        request.setAttribute("enrollmentContextOptions", enrollmentContextOptions(organizations));
     }
 
     private void prepareProfileContextOptions(HttpServletRequest request, SessionUser actor) throws ServletException {
@@ -805,8 +826,10 @@ public final class UserManagementServlet extends DashboardServletSupport {
         try {
             List<ProfileContextOptionView> options = new ArrayList<>();
             for (Organization organization : organizations) {
-                List<Subject> subjects = subjectDAO.findActiveByOrganization(organization.id());
-                if (subjects.isEmpty()) {
+                List<Course> courses = activeProfileCourses(organization.id());
+                Map<Long, List<Subject>> subjectsByCourse = activeSubjectsByCourse(courses);
+                boolean hasSubjects = subjectsByCourse.values().stream().anyMatch(subjects -> !subjects.isEmpty());
+                if (!hasSubjects) {
                     continue;
                 }
                 String organizationKey = profileNodeKey("COORDINATOR_ORGANIZATION", organization.id());
@@ -820,19 +843,36 @@ public final class UserManagementServlet extends DashboardServletSupport {
                         "",
                         0
                 ));
-                for (Subject subject : subjects.stream().sorted(Comparator.comparing(Subject::name)).toList()) {
-                    options.add(new ProfileContextOptionView(
+                for (Course course : courses) {
+                    List<Subject> subjects = subjectsByCourse.getOrDefault(course.id(), List.of());
+                    if (subjects.isEmpty()) {
+                        continue;
+                    }
+                    String courseKey = profileNodeKey("COORDINATOR_COURSE", course.id());
+                    options.add(profileHeading(
                             AccessProfileType.COORDINATOR,
-                            AccessEntityType.SUBJECT,
-                            subject.id(),
-                            null,
-                            subject.name(),
-                            "Subject",
-                            profileNodeKey("COORDINATOR_SUBJECT", subject.id()),
+                            AccessEntityType.COURSE,
+                            course.id(),
+                            courseProfileLabel(course),
+                            "Course",
+                            courseKey,
                             organizationKey,
-                            1,
-                            true
+                            1
                     ));
+                    for (Subject subject : subjects) {
+                        options.add(new ProfileContextOptionView(
+                                AccessProfileType.COORDINATOR,
+                                AccessEntityType.SUBJECT,
+                                subject.id(),
+                                null,
+                                subject.name(),
+                                "Subject",
+                                profileNodeKey("COORDINATOR_COURSE_SUBJECT", course.id() + ":" + subject.id()),
+                                courseKey,
+                                2,
+                                true
+                        ));
+                    }
                 }
             }
             return options;
@@ -974,68 +1014,6 @@ public final class UserManagementServlet extends DashboardServletSupport {
         }
     }
 
-    private List<AdminPermissionContextOptionView> learningContextOptions(
-            List<Organization> organizations
-    ) throws ServletException {
-        try {
-            List<AdminPermissionContextOptionView> options = new ArrayList<>();
-            for (Organization organization : organizations) {
-                List<Course> courses = activeCourses(organization.id());
-                if (courses.isEmpty()) {
-                    continue;
-                }
-                appendOrganizationOption(
-                        options,
-                        AuthorizationPolicy.MANAGE_LEARNING,
-                        organization,
-                        "Organization learning"
-                );
-                appendLearningScopeOptions(
-                        options,
-                        AuthorizationPolicy.MANAGE_LEARNING,
-                        organization.id(),
-                        organicUnitDAO.findByOrganization(organization.id()),
-                        courses
-                );
-            }
-            return options;
-        } catch (SQLException exception) {
-            throw new ServletException("Could not load learning permission contexts", exception);
-        }
-    }
-
-    private List<AdminPermissionContextOptionView> enrollmentContextOptions(
-            List<Organization> organizations
-    ) throws ServletException {
-        try {
-            List<AdminPermissionContextOptionView> options = new ArrayList<>();
-            for (Organization organization : organizations) {
-                List<Course> courses = activeCourses(organization.id());
-                if (courses.isEmpty()) {
-                    continue;
-                }
-                appendOrganizationHeading(
-                        options,
-                        AuthorizationPolicy.MANAGE_ENROLLMENTS,
-                        organization,
-                        "Organization enrollments"
-                );
-                appendEnrollmentScopeOptions(
-                        options,
-                        AuthorizationPolicy.MANAGE_ENROLLMENTS,
-                        organization.id(),
-                        organicUnitDAO.findByOrganization(organization.id()),
-                        courses,
-                        activeSubjectsByCourse(courses),
-                        activeClassGroupsByCourseSubject(List.of(organization.id()))
-                );
-            }
-            return options;
-        } catch (SQLException exception) {
-            throw new ServletException("Could not load enrollment permission contexts", exception);
-        }
-    }
-
     private List<Course> activeCourses(long organizationId) throws SQLException {
         return courseDAO.findByOrganization(organizationId).stream()
                 .filter(course -> course.state() != CourseState.ARCHIVED)
@@ -1063,6 +1041,13 @@ public final class UserManagementServlet extends DashboardServletSupport {
             subjectsByCourse.put(course.id(), subjects);
         }
         return subjectsByCourse;
+    }
+
+    private static String courseProfileLabel(Course course) {
+        if (course.acronym() == null || course.acronym().isBlank()) {
+            return course.name();
+        }
+        return course.name() + " (" + course.acronym() + ")";
     }
 
     private Map<String, List<ClassGroupContext>> activeClassGroupsByCourseSubject(List<Long> organizationIds)

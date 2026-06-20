@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +43,7 @@ import pt.isel.gape.learning.model.EnrollmentState;
 import pt.isel.gape.learning.model.SubjectEnrollment;
 import pt.isel.gape.learning.model.SubjectEnrollmentCommand;
 import pt.isel.gape.learning.service.ClassGroupEnrollmentService;
+import pt.isel.gape.learning.service.ContentAssociationService;
 import pt.isel.gape.learning.service.EnrollmentService;
 import pt.isel.gape.security.session.SessionUser;
 import pt.isel.gape.structure.dao.OrganicUnitDAO;
@@ -49,6 +51,7 @@ import pt.isel.gape.structure.dao.OrganizationDAO;
 import pt.isel.gape.structure.dao.TeachClassGroupDAO;
 import pt.isel.gape.web.view.ClassGroupEnrollmentView;
 import pt.isel.gape.web.view.ClassGroupView;
+import pt.isel.gape.web.view.BlockContentItemView;
 import pt.isel.gape.web.view.ContentBlockView;
 import pt.isel.gape.web.view.CourseSubjectView;
 import pt.isel.gape.web.view.CourseView;
@@ -62,6 +65,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
 
     private final EnrollmentService enrollmentService;
     private final ClassGroupEnrollmentService classGroupEnrollmentService;
+    private final ContentAssociationService contentAssociationService;
     private final CourseDAO courseDAO;
     private final CourseSubjectDAO courseSubjectDAO;
     private final EnrollmentDAO enrollmentDAO;
@@ -79,6 +83,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
         this(
                 new EnrollmentService(connectionProvider, clock),
                 new ClassGroupEnrollmentService(connectionProvider, clock),
+                new ContentAssociationService(connectionProvider, clock),
                 new CourseDAO(connectionProvider),
                 new CourseSubjectDAO(connectionProvider),
                 new EnrollmentDAO(connectionProvider),
@@ -105,6 +110,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
     StudentEnrollmentServlet(
             EnrollmentService enrollmentService,
             ClassGroupEnrollmentService classGroupEnrollmentService,
+            ContentAssociationService contentAssociationService,
             CourseDAO courseDAO,
             CourseSubjectDAO courseSubjectDAO,
             EnrollmentDAO enrollmentDAO,
@@ -116,6 +122,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
     ) {
         this.enrollmentService = enrollmentService;
         this.classGroupEnrollmentService = classGroupEnrollmentService;
+        this.contentAssociationService = contentAssociationService;
         this.courseDAO = courseDAO;
         this.courseSubjectDAO = courseSubjectDAO;
         this.enrollmentDAO = enrollmentDAO;
@@ -201,7 +208,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                 subjectEnrollments.add(EnrollmentView.subject(courseView, subjectView));
             }
 
-            List<StudentClassGroupView> studentClassGroups = studentClassGroupViews(studentUserId);
+            List<StudentClassGroupView> studentClassGroups = studentClassGroupViews(actor, request);
 
             List<CourseView> availableCourses = new ArrayList<>();
             for (Course course : courseDAO.findCatalogCourses(null, null, null)) {
@@ -342,7 +349,8 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
         redirectToReturnPath(request, response, "/student/enrollments");
     }
 
-    private List<StudentClassGroupView> studentClassGroupViews(long studentUserId) throws SQLException {
+    private List<StudentClassGroupView> studentClassGroupViews(SessionUser actor, HttpServletRequest request) throws SQLException {
+        long studentUserId = actor.userId();
         Map<Long, ClassGroupEnrollment> enrollmentsByClassGroup = new HashMap<>();
         for (ClassGroupEnrollment enrollment : classGroupEnrollmentDAO.findByStudent(studentUserId)) {
             enrollmentsByClassGroup.put(enrollment.classGroupId(), enrollment);
@@ -384,6 +392,8 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                         .thenComparing(ClassGroup::subjectId)
                         .thenComparing(ClassGroup::code))
                 .map(classGroup -> studentClassGroupView(
+                        actor,
+                        request,
                         classGroup,
                         enrollmentsByClassGroup.get(classGroup.id()),
                         canEnrollInClassGroupContext(classGroup, activeSubjectContexts, activeClassGroupContexts)
@@ -392,6 +402,8 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
     }
 
     private StudentClassGroupView studentClassGroupView(
+            SessionUser actor,
+            HttpServletRequest request,
             ClassGroup classGroup,
             ClassGroupEnrollment enrollment,
             boolean eligibleForEnrollment
@@ -403,7 +415,39 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
         List<ContentBlockView> contentBlocks = enrollmentView != null && enrollmentView.isActive()
                 ? visibleStudentContentBlocks(classGroup.id())
                 : List.of();
-        return StudentClassGroupView.of(classGroupView, enrollmentView, contentBlocks, eligibleForEnrollment);
+        Map<Long, List<BlockContentItemView>> blockContentsByBlock = enrollmentView != null && enrollmentView.isActive()
+                ? visibleStudentBlockContents(actor, request, contentBlocks)
+                : Map.of();
+        return StudentClassGroupView.of(
+                classGroupView,
+                enrollmentView,
+                contentBlocks,
+                blockContentsByBlock,
+                eligibleForEnrollment
+        );
+    }
+
+    private Map<Long, List<BlockContentItemView>> visibleStudentBlockContents(
+            SessionUser actor,
+            HttpServletRequest request,
+            List<ContentBlockView> contentBlocks
+    ) {
+        Map<Long, List<BlockContentItemView>> result = new LinkedHashMap<>();
+        for (ContentBlockView block : contentBlocks) {
+            List<BlockContentItemView> items = contentAssociationService.listBlockContentItems(
+                            actor.userId(),
+                            currentSessionId(request),
+                            AccessProfileType.STUDENT,
+                            block.getId(),
+                            request.getRemoteAddr()
+                    )
+                    .stream()
+                    .map(BlockContentItemView::from)
+                    .filter(BlockContentItemView::isActive)
+                    .toList();
+            result.put(block.getId(), items);
+        }
+        return result;
     }
 
     private List<ContentBlockView> visibleStudentContentBlocks(long classGroupId) {

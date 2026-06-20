@@ -37,6 +37,16 @@
         <servlet-class>pt.isel.gape.web.controller.ProfileServlet</servlet-class>
     </servlet>
 
+    <servlet>
+        <servlet-name>contentUploadServlet</servlet-name>
+        <servlet-class>pt.isel.gape.web.controller.ContentUploadServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>contentDownloadServlet</servlet-name>
+        <servlet-class>pt.isel.gape.web.controller.ContentDownloadServlet</servlet-class>
+    </servlet>
+
     <servlet-mapping>
         <servlet-name>mediaServlet</servlet-name>
         <url-pattern>/media/*</url-pattern>
@@ -45,6 +55,16 @@
     <servlet-mapping>
         <servlet-name>profileServlet</servlet-name>
         <url-pattern>/profile</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>contentUploadServlet</servlet-name>
+        <url-pattern>/contents/upload</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>contentDownloadServlet</servlet-name>
+        <url-pattern>/contents/download/*</url-pattern>
     </servlet-mapping>
 
     <filter>

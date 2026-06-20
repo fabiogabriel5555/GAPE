@@ -37,17 +37,24 @@
                     </div>
 
                     <div class="row gy-4">
-                        <div class="col-lg-3">
-                            <label for="code" class="fw-medium text-base text-neutral-800 mb-12">Code</label>
-                            <input id="code" name="code" type="text" value="<c:out value='${form.code}'/>" required pattern="[^|]*" title="Codes cannot contain |" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                        <input type="hidden" name="code" value="<c:out value='${form.code}'/>">
+                        <input type="hidden" name="orderNo" value="<c:out value='${form.orderNo}'/>">
+                        <div class="col-lg-4">
+                            <div class="border border-neutral-30 rounded-8 bg-neutral-20 px-20 py-14 h-100">
+                                <span class="text-12 text-neutral-500 d-block mb-6">Automatic identifiers</span>
+                                <c:choose>
+                                    <c:when test="${creating}">
+                                        <strong class="text-14 text-neutral-700">Code and order are generated on save</strong>
+                                    </c:when>
+                                    <c:otherwise>
+                                        <strong class="text-14 text-neutral-700"><c:out value="${form.code}"/> | Order <c:out value="${form.orderNo}"/></strong>
+                                    </c:otherwise>
+                                </c:choose>
+                            </div>
                         </div>
-                        <div class="col-lg-6">
+                        <div class="col-lg-8">
                             <label for="name" class="fw-medium text-base text-neutral-800 mb-12">Name</label>
                             <input id="name" name="name" type="text" value="<c:out value='${form.name}'/>" required pattern="[^|]*" title="Names cannot contain |" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
-                        </div>
-                        <div class="col-lg-3">
-                            <label for="orderNo" class="fw-medium text-base text-neutral-800 mb-12">Order</label>
-                            <input id="orderNo" name="orderNo" type="number" min="1" step="1" value="<c:out value='${form.orderNo}'/>" required class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
                         <div class="col-lg-4 gape-select-field">
                             <label for="accessMode" class="fw-medium text-base text-neutral-800 mb-12">Access Mode</label>

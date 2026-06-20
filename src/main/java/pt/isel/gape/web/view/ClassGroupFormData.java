@@ -16,6 +16,7 @@ public final class ClassGroupFormData {
     private final String startsAt;
     private final String endsAt;
     private final String shift;
+    private final String showContentThumbnails;
 
     private ClassGroupFormData(
             Long id,
@@ -28,7 +29,8 @@ public final class ClassGroupFormData {
             String maxStudents,
             String startsAt,
             String endsAt,
-            String shift
+            String shift,
+            String showContentThumbnails
     ) {
         this.id = id;
         this.courseId = courseId;
@@ -41,6 +43,7 @@ public final class ClassGroupFormData {
         this.startsAt = startsAt;
         this.endsAt = endsAt;
         this.shift = shift;
+        this.showContentThumbnails = "true".equalsIgnoreCase(showContentThumbnails) ? "true" : "false";
     }
 
     public static ClassGroupFormData blank(Long courseId, Long subjectId) {
@@ -55,7 +58,8 @@ public final class ClassGroupFormData {
                 "",
                 "",
                 "",
-                ""
+                "morning",
+                "false"
         );
     }
 
@@ -71,7 +75,8 @@ public final class ClassGroupFormData {
                 stringValue(classGroup.maxStudents()),
                 classGroup.startsAt() == null ? "" : classGroup.startsAt().toString(),
                 classGroup.endsAt() == null ? "" : classGroup.endsAt().toString(),
-                classGroup.shift()
+                classGroup.shift().toDatabaseValue(),
+                Boolean.toString(classGroup.showContentThumbnails())
         );
     }
 
@@ -87,7 +92,8 @@ public final class ClassGroupFormData {
                 text(request, "maxStudents"),
                 text(request, "startsAt"),
                 text(request, "endsAt"),
-                text(request, "shift")
+                text(request, "shift"),
+                Boolean.toString("true".equalsIgnoreCase(request.getParameter("showContentThumbnails")))
         );
     }
 
@@ -133,6 +139,14 @@ public final class ClassGroupFormData {
 
     public String getShift() {
         return shift;
+    }
+
+    public String getShowContentThumbnails() {
+        return showContentThumbnails;
+    }
+
+    public boolean isShowContentThumbnails() {
+        return "true".equals(showContentThumbnails);
     }
 
     private static String text(HttpServletRequest request, String name) {

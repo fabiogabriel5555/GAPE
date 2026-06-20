@@ -126,6 +126,15 @@
     </xs:restriction>
   </xs:simpleType>
 
+  <xs:simpleType name="classShiftCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="morning"/>
+      <xs:enumeration value="afternoon"/>
+      <xs:enumeration value="evening"/>
+      <xs:enumeration value="mixed"/>
+    </xs:restriction>
+  </xs:simpleType>
+
   <xs:simpleType name="draftActiveInactiveArchivedCodeType">
     <xs:restriction base="xs:token">
       <xs:enumeration value="draft"/>
@@ -334,6 +343,11 @@
     <xs:attribute name="code" type="classStateCodeType" use="required"/>
   </xs:complexType>
 
+  <xs:complexType name="classShiftEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="classShiftCodeType" use="required"/>
+  </xs:complexType>
+
   <xs:complexType name="contentBlockStateEntryType">
     <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
     <xs:attribute name="code" type="draftActiveInactiveArchivedCodeType" use="required"/>
@@ -472,6 +486,11 @@
   <xs:element name="classStates">
     <xs:complexType><xs:sequence><xs:element name="state" type="classStateEntryType" minOccurs="4" maxOccurs="4"/></xs:sequence></xs:complexType>
     <xs:unique name="uniqueClassStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="classShifts">
+    <xs:complexType><xs:sequence><xs:element name="shift" type="classShiftEntryType" minOccurs="4" maxOccurs="4"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueClassShiftCode"><xs:selector xpath="shift"/><xs:field xpath="@code"/></xs:unique>
   </xs:element>
 
   <xs:element name="contentBlockStates">

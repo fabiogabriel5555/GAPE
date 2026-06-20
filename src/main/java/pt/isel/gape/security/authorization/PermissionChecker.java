@@ -119,6 +119,45 @@ public final class PermissionChecker {
         }
     }
 
+    public AuthorizationDecision checkExactAdministratorContext(AccessContext context) {
+        Objects.requireNonNull(context, "context is required");
+        try {
+            if (!permissionDAO.activeProfileExists(context.userId(), context.profileType())) {
+                return AuthorizationDecision.deny("inactive_or_missing_profile");
+            }
+            if (context.profileType() != AccessProfileType.ADMINISTRATOR) {
+                return AuthorizationDecision.deny("administrator_profile_required");
+            }
+            if (permissionDAO.hasActiveGlobalAdministratorGrant(context.userId(), AuthorizationPolicy.MANAGE_ALL)) {
+                return AuthorizationDecision.allow();
+            }
+            String canonicalPermission = AuthorizationPolicy.canonicalAdminPermission(context.permissionCode());
+            if (!AuthorizationPolicy.isAdminPermission(canonicalPermission)) {
+                return AuthorizationDecision.deny("missing_permission");
+            }
+            if (context.entityType() == AccessEntityType.GLOBAL || context.entityType() == AccessEntityType.SELF) {
+                return AuthorizationDecision.deny("missing_context_assignment");
+            }
+            Long entityId = context.entityId();
+            if (entityId == null) {
+                return AuthorizationDecision.deny("missing_context_assignment");
+            }
+            for (String permissionCode : acceptablePermissionCodes(canonicalPermission)) {
+                if (permissionDAO.hasExactAdministratorContextGrant(
+                        context.userId(),
+                        permissionCode,
+                        context.entityType(),
+                        entityId
+                )) {
+                    return AuthorizationDecision.allow();
+                }
+            }
+            return AuthorizationDecision.deny("missing_exact_context_assignment");
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to check exact administrator context " + context.permissionCode(), exception);
+        }
+    }
+
     public boolean hasPermission(long userId, AccessProfileType profileType, String permissionCode) {
         return check(AccessContext.global(userId, null, profileType, permissionCode, null)).allowed();
     }
@@ -197,14 +236,6 @@ public final class PermissionChecker {
         return switch (requestedPermissionCode) {
             case AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE ->
                     List.of(AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE);
-            case AuthorizationPolicy.MANAGE_LEARNING ->
-                    List.of(AuthorizationPolicy.MANAGE_LEARNING, AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE);
-            case AuthorizationPolicy.MANAGE_ENROLLMENTS ->
-                    List.of(
-                            AuthorizationPolicy.MANAGE_ENROLLMENTS,
-                            AuthorizationPolicy.MANAGE_LEARNING,
-                            AuthorizationPolicy.MANAGE_ORGANIZATION_STRUCTURE
-                    );
             case AuthorizationPolicy.MANAGE_ALL -> List.of(AuthorizationPolicy.MANAGE_ALL);
             default -> List.of(requestedPermissionCode);
         };

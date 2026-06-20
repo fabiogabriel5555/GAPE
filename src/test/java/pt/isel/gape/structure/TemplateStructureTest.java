@@ -496,10 +496,10 @@ class TemplateStructureTest {
                 "User form must submit selected administrator permissions and contexts");
         assertTrue(form.contains("data-admin-permission-input"),
                 "Administrator permission inputs must be tied to the Administrator profile state");
-        assertTrue(form.contains("MANAGE_ORGANIZATION_STRUCTURE")
-                        && form.contains("MANAGE_LEARNING")
-                        && form.contains("MANAGE_ENROLLMENTS"),
-                "User form must expose the contextual administrator permission groups");
+        assertTrue(form.contains("MANAGE_ORGANIZATION_STRUCTURE"),
+                "User form must expose the organization structure administrator permission group");
+        assertFalse(form.contains("MANAGE_LEARNING") || form.contains("MANAGE_ENROLLMENTS"),
+                "User form must not expose Learning or Enrollment as administrator permissions");
     }
 
     @Test
@@ -544,18 +544,25 @@ class TemplateStructureTest {
                         && sidebar.contains("coordinatorSubjectContextId")
                         && sidebar.contains("coordinatorSubjectActiveChild"),
                 "Coordinator sidebar must expose the admin-like subject navigation under the coordinator route");
-        assertTrue(sidebar.contains("not sessionScope['gape.auth.hasCoordinatorProfile']"),
-                "Coordinator sidebar must not expose the generic courses tab");
+        assertTrue(sidebar.contains("not sessionScope['gape.auth.hasCoordinatorProfile']")
+                        && sidebar.contains("/coordinator/courses"),
+                "Coordinator sidebar must expose coordinator-scoped courses without exposing the generic courses tab");
         assertTrue(sidebar.contains("coordinator/coordinator-reviews.jsp")
                         && sidebar.contains("coordinator/coordinator-quiz-attempts.jsp")
                         && sidebar.contains("${reviewsHref}")
                         && sidebar.contains("${quizAttemptsHref}"),
                 "Coordinator sidebar must route reviews and quiz attempts to coordinator pages");
+        int coordinatorSection = sidebar.indexOf(">Coordinator<");
+        int coordinatorCoursesLink = sidebar.indexOf("/coordinator/courses", coordinatorSection);
+        int coordinatorSubjectsLink = sidebar.indexOf("/coordinator/subjects", coordinatorCoursesLink);
+        int coordinatorClassGroupsLink = sidebar.indexOf("/learning/class-groups", coordinatorSubjectsLink);
         assertTrue(sidebar.indexOf("Message") < sidebar.indexOf("Reviews")
                         && sidebar.indexOf("Reviews") < sidebar.indexOf("Quiz Attempts")
-                        && sidebar.indexOf("Quiz Attempts") < sidebar.indexOf(">Coordinator<")
-                        && sidebar.indexOf(">Coordinator<") < sidebar.indexOf("Class Groups"),
-                "Coordinator sidebar must keep reviews and quiz attempts directly below messages");
+                        && sidebar.indexOf("Quiz Attempts") < coordinatorSection
+                        && coordinatorSection < coordinatorCoursesLink
+                        && coordinatorCoursesLink < coordinatorSubjectsLink
+                        && coordinatorSubjectsLink < coordinatorClassGroupsLink,
+                "Coordinator sidebar must keep reviews, quiz attempts, courses, subjects and class groups in order");
         assertTrue(subjectList.contains("${subjectBasePath}/${subject.id}")
                         && subjectDetail.contains("${subjectBasePath}/${subject.id}/edit")
                         && subjectForm.contains("${subjectBasePath}/${form.id}/courses")
@@ -627,8 +634,22 @@ class TemplateStructureTest {
         assertTrue(organizationList.contains("gape-organization-units-panel")
                         && organizationList.contains("<section class=\"gape-organization-card\">"),
                 "Organic units must render inside the owning organization card");
+        assertTrue(organizationList.contains("data-gape-tree-toggle=\"organizationUnits${organization.id}\"")
+                        && organizationList.contains("data-gape-tree-toggle=\"unitCourses${unit.id}\"")
+                        && organizationList.contains("data-gape-tree-toggle=\"courseSubjects${course.id}\"")
+                        && organizationList.contains("data-gape-tree-toggle=\"subjectClassGroups${course.id}_${subject.subjectId}\"")
+                        && organizationList.contains("items=\"${unit.courses}\"")
+                        && organizationList.contains("items=\"${course.subjects}\"")
+                        && organizationList.contains("items=\"${subject.classGroups}\""),
+                "Organization list must expose show-more toggles for units, courses, subjects and class groups");
         assertFalse(organizationList.contains("gape-organization-units-row"),
                 "Organic units must not render as a separate table row");
+        String organizationServlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/OrganizationManagementServlet.java"));
+        assertTrue(organizationServlet.contains("courseTreesByOrganicUnit")
+                        && organizationServlet.contains("OrganizationCourseTreeView")
+                        && organizationServlet.contains("OrganizationSubjectTreeView")
+                        && organizationServlet.contains("OrganizationClassGroupTreeView"),
+                "Organization servlet must build the organization tree down to class groups");
         assertTrue(organizationDetail.contains("gape-organization-detail-photo"),
                 "Organization detail must render organization photos");
         assertTrue(organizationDetail.contains("Current Administrators"),

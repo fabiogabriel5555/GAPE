@@ -1,10 +1,16 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
     if (request.getAttribute("activeMenu") == null) {
         request.setAttribute("activeMenu", "subjects");
     }
 %>
+<c:if test="${empty subjectBasePath}">
+    <c:set var="subjectBasePath" value="/admin/subjects"/>
+</c:if>
+<c:if test="${empty subjectCourseBasePath}">
+    <c:set var="subjectCourseBasePath" value="/admin/courses"/>
+</c:if>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,6 +38,12 @@
             display: flex;
             min-height: 52px;
         }
+
+        .gape-action-delete {
+            background-color: #dc2626 !important;
+            border-color: #dc2626 !important;
+            color: #fff !important;
+        }
     </style>
 </head>
 <body>
@@ -54,18 +66,18 @@
                             <h2 class="text-18 fw-medium text-neutral-700 mb-4">Associate Courses</h2>
                             <span class="text-14 text-neutral-500"><c:out value="${subject.name}"/></span>
                         </div>
-                        <a href="${pageContext.request.contextPath}/admin/subjects/${subject.id}" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03">Back</a>
+                        <a href="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03">Back</a>
                     </div>
 
                     <h3 class="text-16 fw-medium text-neutral-700 mb-16">Current Associations</h3>
                     <div class="d-flex flex-column gap-16 mb-32">
                         <c:forEach var="association" items="${subjectCourseAssociations}">
-                            <form action="${pageContext.request.contextPath}/admin/subjects/${subject.id}/courses/${association.courseId}" method="post" class="gape-association-form border border-neutral-30 rounded-12 px-20 py-20">
+                            <form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/courses/${association.courseId}" method="post" class="gape-association-form border border-neutral-30 rounded-12 px-20 py-20">
                                 <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                 <div class="row gy-4 align-items-start">
                                     <div class="col-xl-3 col-lg-6">
                                         <span class="text-13 text-neutral-500 d-block mb-8">Course</span>
-                                        <a href="${pageContext.request.contextPath}/admin/courses/${association.courseId}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                        <a href="${pageContext.request.contextPath}${subjectCourseBasePath}/${association.courseId}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
                                             <c:out value="${association.courseName}"/>
                                         </a>
                                         <span class="d-block text-12 text-neutral-500" title="<c:out value='${association.courseContextTitle}'/>"><c:out value="${association.courseContextHtml}" escapeXml="false"/></span>
@@ -100,9 +112,14 @@
                                             <label class="form-check-label fw-medium" for="mandatory${association.courseId}">Mandatory</label>
                                         </div>
                                     </div>
-                                    <div class="col-xl-1 col-lg-3 d-flex flex-column">
+                                    <div class="col-xl-1 col-lg-3 d-flex flex-column gap-8">
                                         <span class="d-block fw-medium text-base text-neutral-800 mb-12 invisible" aria-hidden="true">Action</span>
                                         <button type="submit" class="bg-main-600 px-20 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03 w-100 min-w-86-px">Save</button>
+                                        <button type="submit"
+                                                formaction="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/courses/${association.courseId}/delete"
+                                                class="gape-action-delete px-20 py-12 rounded-12 fw-semibold transition-03 w-100 min-w-86-px">
+                                            Delete
+                                        </button>
                                     </div>
                                 </div>
                             </form>
@@ -112,7 +129,7 @@
                         </c:if>
                     </div>
 
-                    <form action="${pageContext.request.contextPath}/admin/subjects/${subject.id}/courses" method="post" class="gape-association-form border border-neutral-30 rounded-12 px-20 py-20">
+                    <form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/courses" method="post" class="gape-association-form border border-neutral-30 rounded-12 px-20 py-20">
                         <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                         <h3 class="text-16 fw-medium text-neutral-700 mb-20">Add Course</h3>
                         <div class="row gy-4 align-items-start">
@@ -160,7 +177,7 @@
                         </div>
                         <div class="d-flex align-items-center gap-16 flex-wrap mt-24">
                             <button type="submit" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">Add Course</button>
-                            <a href="${pageContext.request.contextPath}/admin/subjects/${subject.id}" class="border-main-600 border px-24 py-12 fw-semibold rounded-12 hover-bg-main-50 transition-03">Done</a>
+                            <a href="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}" class="border-main-600 border px-24 py-12 fw-semibold rounded-12 hover-bg-main-50 transition-03">Done</a>
                         </div>
                     </form>
                 </div>

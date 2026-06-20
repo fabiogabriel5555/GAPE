@@ -67,6 +67,21 @@ public final class AuthorizationPolicy {
                     AccessEntityType.GLOBAL
             ));
         }
+        if (path.startsWith("/learning/")) {
+            return Optional.of(new AuthorizationRule(
+                    Set.of(AccessProfileType.ADMINISTRATOR, AccessProfileType.COORDINATOR, AccessProfileType.TEACHER),
+                    VIEW_REPORTS,
+                    AccessEntityType.GLOBAL
+            ));
+        }
+        if (path.startsWith("/contents/")) {
+            return Optional.of(new AuthorizationRule(
+                    Set.of(AccessProfileType.ADMINISTRATOR, AccessProfileType.COORDINATOR,
+                            AccessProfileType.TEACHER, AccessProfileType.STUDENT),
+                    VIEW_REPORTS,
+                    AccessEntityType.GLOBAL
+            ));
+        }
         if (path.startsWith("/account/")) {
             return Optional.of(new AuthorizationRule(
                     Set.of(AccessProfileType.ADMINISTRATOR, AccessProfileType.COORDINATOR,
@@ -94,13 +109,14 @@ public final class AuthorizationPolicy {
             return MANAGE_ORGANIZATION_STRUCTURE;
         }
         if (containsAny(path, "course", "courses")) {
-            return MANAGE_LEARNING;
+            return MANAGE_ALL;
         }
-        if (containsAny(path, "subject", "subjects", "discipline", "disciplines")) {
-            return MANAGE_LEARNING;
+        if (containsAny(path, "subject", "subjects", "discipline", "disciplines",
+                "class-group", "class-groups", "content-block", "content-blocks")) {
+            return MANAGE_ALL;
         }
         if (containsAny(path, "enrollment", "enrollments")) {
-            return MANAGE_ENROLLMENTS;
+            return MANAGE_ALL;
         }
         if (containsAny(path, "settings", "config", "configuration")) {
             return MANAGE_ALL;
@@ -128,8 +144,7 @@ public final class AuthorizationPolicy {
             case "MANAGE_USERS", "MANAGE_PERMISSIONS", "MANAGE_SETTINGS", "VIEW_PERSONAL_DATA",
                  "MANAGE_PERSONAL_DATA", "PROCESS_DELETION_REQUESTS", MANAGE_ALL -> MANAGE_ALL;
             case "MANAGE_ORGANIZATIONS", MANAGE_ORGANIZATION_STRUCTURE -> MANAGE_ORGANIZATION_STRUCTURE;
-            case "MANAGE_COURSES", "MANAGE_SUBJECTS", MANAGE_LEARNING -> MANAGE_LEARNING;
-            case MANAGE_ENROLLMENTS -> MANAGE_ENROLLMENTS;
+            case "MANAGE_COURSES", "MANAGE_SUBJECTS" -> MANAGE_LEARNING;
             default -> permissionCode;
         };
     }
@@ -137,9 +152,7 @@ public final class AuthorizationPolicy {
     public static boolean isAdminPermission(String permissionCode) {
         String canonical = canonicalAdminPermission(permissionCode);
         return MANAGE_ALL.equals(canonical)
-                || MANAGE_ORGANIZATION_STRUCTURE.equals(canonical)
-                || MANAGE_LEARNING.equals(canonical)
-                || MANAGE_ENROLLMENTS.equals(canonical);
+                || MANAGE_ORGANIZATION_STRUCTURE.equals(canonical);
     }
 
     public static boolean isProtected(String servletPath) {
@@ -162,8 +175,6 @@ public final class AuthorizationPolicy {
                 || path.equals("/course-list-view.jsp")
                 || path.equals("/course-details.jsp")
                 || path.equals("/about-four.jsp")
-                || path.equals("/instructor/instructor.jsp")
-                || path.equals("/instructor/instructor-details.jsp")
                 || path.equals("/tutor.jsp")
                 || path.equals("/tutor-details.jsp")
                 || path.equals("/events.jsp")

@@ -17,7 +17,7 @@ import pt.isel.gape.web.media.ProfilePhotoStorage;
 import pt.isel.gape.web.navigation.DashboardNavigation;
 
 @WebServlet(name = "accountProfileServlet", urlPatterns = "/account/profile")
-@MultipartConfig(maxFileSize = 10 * 1024 * 1024, maxRequestSize = 12 * 1024 * 1024)
+@MultipartConfig(maxFileSize = 50L * 1024L * 1024L, maxRequestSize = 52L * 1024L * 1024L)
 public final class AccountProfileServlet extends DashboardServletSupport {
 
     private final UserService userService;

@@ -153,12 +153,7 @@
       return true;
     }
 
-    var aliasFiles = {
-      "instructor-alt-home.jsp": "instructor-home.jsp",
-      "instructor-home.jsp": "instructor-alt-home.jsp",
-      "coordinator-alt-home.jsp": "coordinator-home.jsp",
-      "coordinator-home.jsp": "coordinator-alt-home.jsp"
-    };
+    var aliasFiles = {};
 
     return aliasFiles[currentFileName] === hrefFileName || aliasFiles[hrefFileName] === currentFileName;
   }
@@ -190,7 +185,9 @@
     });
   }
 
-  dynamicActiveSidebarClass($('.dashboard-sidebar ul, .student-dashboard-sidebar ul'));
+  if ($('.student-dashboard-sidebar').length) {
+    dynamicActiveSidebarClass($('.student-dashboard-sidebar ul'));
+  }
 
   
 

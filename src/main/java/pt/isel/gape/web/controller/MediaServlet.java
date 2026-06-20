@@ -5,7 +5,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Locale;
 import java.util.List;
 
@@ -14,7 +13,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import pt.isel.gape.common.config.DatabaseConfig;
+import pt.isel.gape.common.storage.UploadRootResolver;
 
 public final class MediaServlet extends HttpServlet {
 
@@ -27,7 +26,7 @@ public final class MediaServlet extends HttpServlet {
     private Path webappRoot;
 
     public MediaServlet() {
-        this(DatabaseConfig.getProperty("gape.upload.dir", "uploads"));
+        this(UploadRootResolver.configuredUploadDirectory("gape.upload.dir", "uploads"));
     }
 
     MediaServlet(String configuredUploadDir) {
@@ -89,6 +88,9 @@ public final class MediaServlet extends HttpServlet {
         try {
             String normalizedRelativePath = normalizeMediaRelativePath(rawRelativePath);
             if (normalizedRelativePath.isBlank()) {
+                return null;
+            }
+            if (isPrivateUploadReference(normalizedRelativePath)) {
                 return null;
             }
 
@@ -189,6 +191,15 @@ public final class MediaServlet extends HttpServlet {
         return relativePath.toLowerCase(Locale.ROOT).startsWith(ASSETS_PREFIX);
     }
 
+    private static boolean isPrivateUploadReference(String relativePath) {
+        String normalized = relativePath.toLowerCase(Locale.ROOT);
+        return normalized.startsWith("contents/")
+                || normalized.startsWith("messages/")
+                || normalized.startsWith("justifications/")
+                || normalized.startsWith("quarantine/")
+                || normalized.startsWith("tmp/");
+    }
+
     private static String baseName(String fileName) {
         int extensionIndex = fileName.lastIndexOf('.');
         return extensionIndex <= 0 ? fileName : fileName.substring(0, extensionIndex);
@@ -243,30 +254,8 @@ public final class MediaServlet extends HttpServlet {
     }
 
     private static Path resolveUploadRoot(String configuredPath, ServletContext servletContext) {
-        Path path = Path.of(configuredPath);
-        if (path.isAbsolute()) {
-            return path.normalize();
-        }
-
-        List<Path> candidates = new ArrayList<>();
-        String realPath = servletContext.getRealPath("/");
-        if (realPath != null && !realPath.isBlank()) {
-            Path current = Path.of(realPath).toAbsolutePath().normalize();
-            for (int depth = 0; depth < 8 && current != null; depth++) {
-                candidates.add(current.resolve(path));
-                current = current.getParent();
-            }
-        }
-        candidates.add(Path.of(System.getProperty("user.dir")).resolve(path));
-
-        for (Path candidate : candidates) {
-            Path normalized = candidate.toAbsolutePath().normalize();
-            if (Files.isDirectory(normalized)) {
-                return normalized;
-            }
-        }
-
-        return candidates.getFirst().toAbsolutePath().normalize();
+        String realPath = servletContext == null ? null : servletContext.getRealPath("/");
+        return UploadRootResolver.resolve(configuredPath, realPath);
     }
 
     private static Path resolveWebappRoot(ServletContext servletContext) {

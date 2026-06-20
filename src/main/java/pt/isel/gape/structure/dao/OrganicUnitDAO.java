@@ -80,7 +80,7 @@ public final class OrganicUnitDAO {
                        type, state, parent_organic_unit_id
                 FROM organic_unit
                 WHERE id_organization = ?
-                ORDER BY cod_organic_unit
+                ORDER BY id_organic_unit
                 """;
 
         try (Connection connection = connectionProvider.getConnection();

@@ -98,6 +98,59 @@ public final class UserDAO {
         }
     }
 
+    public List<User> findActiveTeachers() throws SQLException {
+        String sql = """
+                SELECT u.id_user, u.name, u.email, u.state, u.language, u.photo, u.created_at,
+                       u.credential_hash, u.credential_salt, u.document_type, u.document_number
+                FROM user_account u
+                JOIN teacher_profile tp ON tp.id_user = u.id_user
+                WHERE u.state = 'active'
+                ORDER BY u.name, u.email
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            List<User> users = new ArrayList<>();
+            while (resultSet.next()) {
+                long userId = resultSet.getLong("id_user");
+                users.add(mapUser(resultSet, loadProfiles(connection, userId)));
+            }
+            return users;
+        }
+    }
+
+    public List<User> findActiveStudentsEnrolledInSubject(long courseId, long subjectId) throws SQLException {
+        String sql = """
+                SELECT DISTINCT u.id_user, u.name, u.email, u.state, u.language, u.photo, u.created_at,
+                       u.credential_hash, u.credential_salt, u.document_type, u.document_number
+                FROM user_account u
+                JOIN student_profile sp ON sp.id_user = u.id_user
+                JOIN enroll_subject es ON es.id_student_user = u.id_user
+                WHERE u.state = 'active'
+                  AND es.id_course = ?
+                  AND es.id_subject = ?
+                  AND es.state = 'active'
+                  AND (es.start_date IS NULL OR es.start_date <= CURRENT_DATE)
+                  AND (es.end_date IS NULL OR es.end_date >= CURRENT_DATE)
+                ORDER BY u.name, u.email
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, courseId);
+            statement.setLong(2, subjectId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<User> users = new ArrayList<>();
+                while (resultSet.next()) {
+                    long userId = resultSet.getLong("id_user");
+                    users.add(mapUser(resultSet, loadProfiles(connection, userId)));
+                }
+                return users;
+            }
+        }
+    }
+
     public long create(UserCreateCommand command, LocalDateTime createdAt) throws SQLException {
         try (Connection connection = connectionProvider.getConnection()) {
             return create(connection, command, createdAt);

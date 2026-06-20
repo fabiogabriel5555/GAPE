@@ -9,6 +9,7 @@ import java.util.Objects;
 import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.learning.dao.ClassGroupEnrollmentDAO;
 import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.dao.EnrollmentDAO;
@@ -41,6 +42,7 @@ public final class EnrollmentService {
     private final SubjectDAO subjectDAO;
     private final CourseSubjectDAO courseSubjectDAO;
     private final EnrollmentDAO enrollmentDAO;
+    private final ClassGroupEnrollmentDAO classGroupEnrollmentDAO;
     private final PermissionChecker permissionChecker;
     private final AuditService auditService;
     private final Clock clock;
@@ -51,6 +53,7 @@ public final class EnrollmentService {
             SubjectDAO subjectDAO,
             CourseSubjectDAO courseSubjectDAO,
             EnrollmentDAO enrollmentDAO,
+            ClassGroupEnrollmentDAO classGroupEnrollmentDAO,
             PermissionChecker permissionChecker,
             AuditService auditService,
             Clock clock
@@ -60,6 +63,10 @@ public final class EnrollmentService {
         this.subjectDAO = Objects.requireNonNull(subjectDAO, "subjectDAO is required");
         this.courseSubjectDAO = Objects.requireNonNull(courseSubjectDAO, "courseSubjectDAO is required");
         this.enrollmentDAO = Objects.requireNonNull(enrollmentDAO, "enrollmentDAO is required");
+        this.classGroupEnrollmentDAO = Objects.requireNonNull(
+                classGroupEnrollmentDAO,
+                "classGroupEnrollmentDAO is required"
+        );
         this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
         this.clock = Objects.requireNonNull(clock, "clock is required");
@@ -72,6 +79,7 @@ public final class EnrollmentService {
                 new SubjectDAO(connectionProvider),
                 new CourseSubjectDAO(connectionProvider),
                 new EnrollmentDAO(connectionProvider),
+                new ClassGroupEnrollmentDAO(connectionProvider),
                 new PermissionChecker(
                         new PermissionDAO(connectionProvider),
                         new ManageOrganizationDAO(connectionProvider),
@@ -163,6 +171,7 @@ public final class EnrollmentService {
                     if (current.startDate() != null && withdrawalDate.isBefore(current.startDate())) {
                         throw new IllegalArgumentException("Withdrawal date cannot be before enrollment start date");
                     }
+                    classGroupEnrollmentDAO.withdrawActiveInCourse(connection, studentUserId, courseId, withdrawalDate);
                     enrollmentDAO.withdrawActiveSubjectsInCourse(connection, studentUserId, courseId, withdrawalDate);
                     enrollmentDAO.withdrawCourse(connection, studentUserId, courseId, withdrawalDate);
                     auditService.record(connection, actorUserId, sessionId, "COURSE_WITHDRAW",
@@ -300,6 +309,13 @@ public final class EnrollmentService {
                     if (current.startDate() != null && withdrawalDate.isBefore(current.startDate())) {
                         throw new IllegalArgumentException("Withdrawal date cannot be before enrollment start date");
                     }
+                    classGroupEnrollmentDAO.withdrawActiveInSubject(
+                            connection,
+                            studentUserId,
+                            courseId,
+                            subjectId,
+                            withdrawalDate
+                    );
                     enrollmentDAO.withdrawSubject(connection, studentUserId, courseId, subjectId, withdrawalDate);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_WITHDRAW",
                             "subject_enrollment", subjectEnrollmentIdentifier(studentUserId, courseId, subjectId),

@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupModality;
+import pt.isel.gape.learning.model.ClassGroupShift;
 import pt.isel.gape.learning.model.ClassGroupState;
 
 public final class ClassGroupView {
@@ -18,7 +19,8 @@ public final class ClassGroupView {
     private final Integer maxStudents;
     private final LocalDate startsAt;
     private final LocalDate endsAt;
-    private final String shift;
+    private final ClassGroupShift shift;
+    private final boolean showContentThumbnails;
     private final CourseView course;
     private final SubjectView subject;
     private final int activeEnrollmentCount;
@@ -44,6 +46,7 @@ public final class ClassGroupView {
         this.startsAt = classGroup.startsAt();
         this.endsAt = classGroup.endsAt();
         this.shift = classGroup.shift();
+        this.showContentThumbnails = classGroup.showContentThumbnails();
         this.course = course;
         this.subject = subject;
         this.activeEnrollmentCount = activeEnrollmentCount;
@@ -154,7 +157,19 @@ public final class ClassGroupView {
     }
 
     public String getShift() {
-        return shift == null || shift.isBlank() ? "-" : shift;
+        return shift.getLabel();
+    }
+
+    public String getShiftCode() {
+        return shift.toDatabaseValue();
+    }
+
+    public boolean isShowContentThumbnails() {
+        return showContentThumbnails;
+    }
+
+    public String getContentThumbnailsLabel() {
+        return showContentThumbnails ? "Thumbnails" : "Icons";
     }
 
     public CourseView getCourse() {

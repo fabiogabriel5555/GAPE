@@ -1,5 +1,7 @@
 package pt.isel.gape.web.view;
 
+import java.util.List;
+
 import pt.isel.gape.structure.model.OrganicUnit;
 import pt.isel.gape.structure.model.OrganicUnitState;
 import pt.isel.gape.structure.model.OrganicUnitType;
@@ -16,8 +18,14 @@ public final class OrganicUnitView {
     private final Long parentOrganicUnitId;
     private final String parentLabel;
     private final int hierarchyDepth;
+    private final List<OrganizationCourseTreeView> courses;
 
-    private OrganicUnitView(OrganicUnit unit, String parentLabel, int hierarchyDepth) {
+    private OrganicUnitView(
+            OrganicUnit unit,
+            String parentLabel,
+            int hierarchyDepth,
+            List<OrganizationCourseTreeView> courses
+    ) {
         this.id = unit.id();
         this.organizationId = unit.organizationId();
         this.code = unit.code();
@@ -28,10 +36,20 @@ public final class OrganicUnitView {
         this.parentOrganicUnitId = unit.parentOrganicUnitId();
         this.parentLabel = parentLabel;
         this.hierarchyDepth = hierarchyDepth;
+        this.courses = List.copyOf(courses);
     }
 
     public static OrganicUnitView from(OrganicUnit unit, String parentLabel, int hierarchyDepth) {
-        return new OrganicUnitView(unit, parentLabel, hierarchyDepth);
+        return new OrganicUnitView(unit, parentLabel, hierarchyDepth, List.of());
+    }
+
+    public static OrganicUnitView from(
+            OrganicUnit unit,
+            String parentLabel,
+            int hierarchyDepth,
+            List<OrganizationCourseTreeView> courses
+    ) {
+        return new OrganicUnitView(unit, parentLabel, hierarchyDepth, courses);
     }
 
     public long getId() {
@@ -110,5 +128,13 @@ public final class OrganicUnitView {
 
     public int getHierarchyIndent() {
         return hierarchyDepth * 24;
+    }
+
+    public int getCourseCount() {
+        return courses.size();
+    }
+
+    public List<OrganizationCourseTreeView> getCourses() {
+        return courses;
     }
 }

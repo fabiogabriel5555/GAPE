@@ -1535,6 +1535,10 @@ public final class UserService {
         Set<AdministratorPermissionAssignment> normalized = new LinkedHashSet<>();
         for (AdministratorPermissionAssignment assignment : assignments) {
             if (assignment != null) {
+                if (!AuthorizationPolicy.isAdminPermission(assignment.permissionCode())) {
+                    throw new IllegalArgumentException("Unsupported administrator permission: "
+                            + assignment.permissionCode());
+                }
                 normalized.add(assignment);
             }
         }

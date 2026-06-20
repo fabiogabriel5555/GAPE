@@ -1,13 +1,19 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
     if (request.getAttribute("activeMenu") == null) {
         request.setAttribute("activeMenu", "subjects");
     }
 %>
-<c:set var="subjectBackHref" value="${pageContext.request.contextPath}/admin/subjects"/>
+<c:if test="${empty subjectBasePath}">
+    <c:set var="subjectBasePath" value="/admin/subjects"/>
+</c:if>
+<c:if test="${empty subjectCourseBasePath}">
+    <c:set var="subjectCourseBasePath" value="/admin/courses"/>
+</c:if>
+<c:set var="subjectBackHref" value="${pageContext.request.contextPath}${subjectBasePath}"/>
 <c:if test="${not creating}">
-    <c:set var="subjectBackHref" value="${pageContext.request.contextPath}/admin/subjects/${form.id}"/>
+    <c:set var="subjectBackHref" value="${pageContext.request.contextPath}${subjectBasePath}/${form.id}"/>
 </c:if>
 <c:set var="subjectHasPhoto" value="${not empty form.photo}"/>
 <c:set var="subjectPhotoUrl" value=""/>
@@ -188,7 +194,7 @@
                     </div>
                 </form>
 
-                <c:if test="${not creating}">
+                <c:if test="${not creating and canAssignSubjectCoordinators}">
                     <div class="bg-white rounded-10 px-40 py-40 mt-24">
                         <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap border-bottom-dashed pb-24 mb-24">
                             <div>
@@ -196,7 +202,7 @@
                                 <span class="text-14 text-neutral-500">Assign an active coordinator to this subject.</span>
                             </div>
                         </div>
-                        <form action="${pageContext.request.contextPath}/admin/subjects/${form.id}/assign-coordinator" method="post">
+                        <form action="${pageContext.request.contextPath}${subjectBasePath}/${form.id}/assign-coordinator" method="post">
                             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                             <div class="row gy-4">
                                 <div class="col-lg-6 gape-select-field">
@@ -246,7 +252,7 @@
                                 <c:forEach var="association" items="${subjectCourseAssociations}">
                                     <tr class="border-bottom">
                                         <td class="py-16 px-16">
-                                            <a href="${pageContext.request.contextPath}/admin/courses/${association.courseId}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                            <a href="${pageContext.request.contextPath}${subjectCourseBasePath}/${association.courseId}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
                                                 <c:out value="${association.courseName}"/>
                                             </a>
                                             <span class="d-block text-12 text-neutral-500" title="<c:out value='${association.courseContextTitle}'/>"><c:out value="${association.courseContextHtml}" escapeXml="false"/></span>
@@ -262,7 +268,7 @@
                                             <div class="d-flex align-items-center justify-content-end">
                                                 <c:choose>
                                                     <c:when test="${not association.archived}">
-                                                        <form action="${pageContext.request.contextPath}/admin/subjects/${form.id}/courses/${association.courseId}/delete" method="post" class="m-0">
+                                                        <form action="${pageContext.request.contextPath}${subjectBasePath}/${form.id}/courses/${association.courseId}/delete" method="post" class="m-0">
                                                             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                                             <button type="submit" class="text-22 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Remove">
                                                                 <i class="ph ph-trash"></i>
@@ -286,7 +292,7 @@
                             </table>
                         </div>
 
-                        <form action="${pageContext.request.contextPath}/admin/subjects/${form.id}/courses" method="post" class="border border-neutral-30 rounded-12 px-20 py-20">
+                        <form action="${pageContext.request.contextPath}${subjectBasePath}/${form.id}/courses" method="post" class="border border-neutral-30 rounded-12 px-20 py-20">
                             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                             <div class="row gy-4">
                                 <div class="col-lg-6 gape-select-field">

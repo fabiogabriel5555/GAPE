@@ -30,6 +30,7 @@ import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupCreateCommand;
 import pt.isel.gape.learning.model.ClassGroupModality;
+import pt.isel.gape.learning.model.ClassGroupShift;
 import pt.isel.gape.learning.model.ClassGroupState;
 import pt.isel.gape.learning.model.ClassGroupUpdateCommand;
 import pt.isel.gape.learning.service.ClassGroupService;
@@ -76,7 +77,7 @@ class ClassGroupServiceTest {
                         25,
                         LocalDate.of(2026, 3, 1),
                         null,
-                        "afternoon"
+                        ClassGroupShift.AFTERNOON
                 ),
                 "127.0.0.1"
         );
@@ -85,6 +86,7 @@ class ClassGroupServiceTest {
         assertEquals(41L, classGroup.subjectId());
         assertNull(classGroup.minStudents());
         assertEquals(25, classGroup.maxStudents());
+        assertFalse(classGroup.showContentThumbnails());
     }
 
     @Test
@@ -105,7 +107,7 @@ class ClassGroupServiceTest {
                                 20,
                                 LocalDate.of(2026, 3, 1),
                                 LocalDate.of(2026, 6, 30),
-                                "night"
+                                ClassGroupShift.EVENING
                         ),
                         "127.0.0.1"
                 )
@@ -130,7 +132,7 @@ class ClassGroupServiceTest {
                                 10,
                                 null,
                                 null,
-                                null
+                                ClassGroupShift.MORNING
                         ),
                         "127.0.0.1"
                 )
@@ -155,7 +157,7 @@ class ClassGroupServiceTest {
                                 25,
                                 LocalDate.of(2026, 6, 30),
                                 LocalDate.of(2026, 3, 1),
-                                "afternoon"
+                                ClassGroupShift.AFTERNOON
                         ),
                         "127.0.0.1"
                 )
@@ -169,7 +171,7 @@ class ClassGroupServiceTest {
                 null,
                 AccessProfileType.COORDINATOR,
                 50L,
-                updatePrjCommand(ClassGroupModality.HYBRID, "evening"),
+                updatePrjCommand(ClassGroupModality.HYBRID, ClassGroupShift.EVENING),
                 "127.0.0.1"
         );
 
@@ -177,13 +179,41 @@ class ClassGroupServiceTest {
     }
 
     @Test
-    void classGroupCourseAndSubjectCannotChangeAfterCreation() {
+    void administratorCanChangeClassGroupCourseAndSubject() {
+        ClassGroup classGroup = classGroupService.updateClassGroup(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                50L,
+                new ClassGroupUpdateCommand(
+                        41L,
+                        31L,
+                        "PRJ-T1",
+                        ClassGroupModality.HYBRID,
+                        ClassGroupState.ACTIVE,
+                        5,
+                        30,
+                        LocalDate.of(2026, 2, 1),
+                        LocalDate.of(2026, 6, 30),
+                        ClassGroupShift.EVENING,
+                        false
+                ),
+                "127.0.0.1"
+        );
+
+        assertEquals(31L, classGroup.courseId());
+        assertEquals(41L, classGroup.subjectId());
+        assertEquals(ClassGroupModality.HYBRID, classGroup.modality());
+    }
+
+    @Test
+    void nonAdministratorCannotChangeClassGroupCourseAndSubject() {
         assertThrows(
-                IllegalArgumentException.class,
+                SecurityException.class,
                 () -> classGroupService.updateClassGroup(
-                        1L,
+                        2L,
                         null,
-                        AccessProfileType.ADMINISTRATOR,
+                        AccessProfileType.COORDINATOR,
                         50L,
                         new ClassGroupUpdateCommand(
                                 41L,
@@ -195,7 +225,8 @@ class ClassGroupServiceTest {
                                 30,
                                 LocalDate.of(2026, 2, 1),
                                 LocalDate.of(2026, 6, 30),
-                                "evening"
+                                ClassGroupShift.EVENING,
+                                false
                         ),
                         "127.0.0.1"
                 )
@@ -209,11 +240,37 @@ class ClassGroupServiceTest {
                 null,
                 AccessProfileType.TEACHER,
                 50L,
-                updatePrjCommand(ClassGroupModality.ONSITE, "late_evening"),
+                updatePrjCommand(ClassGroupModality.ONSITE, ClassGroupShift.MIXED),
                 "127.0.0.1"
         );
 
-        assertEquals("late_evening", classGroup.shift());
+        assertEquals(ClassGroupShift.MIXED, classGroup.shift());
+    }
+
+    @Test
+    void classGroupUpdateCanEnableContentThumbnails() {
+        ClassGroup classGroup = classGroupService.updateClassGroup(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                50L,
+                new ClassGroupUpdateCommand(
+                        40L,
+                        30L,
+                        "PRJ-T1",
+                        ClassGroupModality.ONSITE,
+                        ClassGroupState.ACTIVE,
+                        5,
+                        30,
+                        LocalDate.of(2026, 2, 1),
+                        LocalDate.of(2026, 6, 30),
+                        ClassGroupShift.EVENING,
+                        true
+                ),
+                "127.0.0.1"
+        );
+
+        assertTrue(classGroup.showContentThumbnails());
     }
 
     @Test
@@ -247,6 +304,34 @@ class ClassGroupServiceTest {
     }
 
     @Test
+    void administratorCanRemoveTeacherFromClassGroup() throws Exception {
+        classGroupService.assignTeacherToClassGroup(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                52L,
+                3L,
+                LocalDate.of(2026, 2, 1),
+                null,
+                "127.0.0.1"
+        );
+
+        classGroupService.removeTeacherFromClassGroup(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                52L,
+                3L,
+                LocalDate.of(2026, 4, 15),
+                "127.0.0.1"
+        );
+
+        assertFalse(hasActiveTeacherAssignment(3L, 52L));
+        assertEquals("inactive", teacherAssignmentState(3L, 52L));
+        assertEquals(LocalDate.of(2026, 4, 15), teacherAssignmentEndDate(3L, 52L));
+    }
+
+    @Test
     void archivedClassGroupCannotBeUpdated() {
         classGroupService.archiveClassGroup(
                 1L,
@@ -263,7 +348,7 @@ class ClassGroupServiceTest {
                         null,
                         AccessProfileType.ADMINISTRATOR,
                         50L,
-                        updatePrjCommand(ClassGroupModality.ONSITE, "evening"),
+                        updatePrjCommand(ClassGroupModality.ONSITE, ClassGroupShift.EVENING),
                         "127.0.0.1"
                 )
         );
@@ -285,7 +370,7 @@ class ClassGroupServiceTest {
                         25,
                         LocalDate.of(2026, 3, 1),
                         null,
-                        "afternoon"
+                        ClassGroupShift.AFTERNOON
                 ),
                 "127.0.0.1"
         );
@@ -331,7 +416,7 @@ class ClassGroupServiceTest {
                         25,
                         LocalDate.of(2026, 3, 1),
                         null,
-                        "afternoon"
+                        ClassGroupShift.AFTERNOON
                 ),
                 "127.0.0.1"
         );
@@ -365,7 +450,7 @@ class ClassGroupServiceTest {
                                 30,
                                 LocalDate.of(2026, 2, 1),
                                 LocalDate.of(2026, 6, 30),
-                                "evening"
+                                ClassGroupShift.EVENING
                         ),
                         "127.0.0.1"
                 )
@@ -373,13 +458,11 @@ class ClassGroupServiceTest {
     }
 
     @Test
-    void subjectScopedAdministratorListsOnlySubjectClassGroupsByCourse() throws Exception {
-        addAdministrator(100L, "ADM-CLASS-SUBJECT", "MANAGE_LEARNING", "SUBJECT", 40L);
-
+    void coordinatorLearningListsClassGroupsByCourse() {
         Set<Long> classGroupIds = classGroupService.listClassGroupsByCourse(
-                        100L,
+                        2L,
                         null,
-                        AccessProfileType.ADMINISTRATOR,
+                        AccessProfileType.COORDINATOR,
                         30L,
                         "127.0.0.1"
                 )
@@ -391,35 +474,33 @@ class ClassGroupServiceTest {
     }
 
     @Test
-    void enrollmentScopedAdministratorCanReadClassGroupAndManageOnlyEnrollments() throws Exception {
-        addAdministrator(101L, "ADM-CLASS-ENROLL", "MANAGE_ENROLLMENTS", "CLASS_GROUP", 50L);
-
+    void coordinatorLearningCanReadAndManageClassGroup() {
         assertTrue(classGroupService.canReadClassGroup(
-                101L,
+                2L,
                 null,
-                AccessProfileType.ADMINISTRATOR,
+                AccessProfileType.COORDINATOR,
                 50L,
                 "127.0.0.1"
         ));
         assertTrue(classGroupService.canManageClassGroupEnrollments(
-                101L,
+                2L,
                 null,
-                AccessProfileType.ADMINISTRATOR,
+                AccessProfileType.COORDINATOR,
                 50L,
                 "127.0.0.1"
         ));
-        assertFalse(classGroupService.canModifyClassGroup(
-                101L,
+        assertTrue(classGroupService.canModifyClassGroup(
+                2L,
                 null,
-                AccessProfileType.ADMINISTRATOR,
+                AccessProfileType.COORDINATOR,
                 50L,
                 "127.0.0.1"
         ));
 
         Set<Long> classGroupIds = classGroupService.listClassGroupsByCourse(
-                        101L,
+                        2L,
                         null,
-                        AccessProfileType.ADMINISTRATOR,
+                        AccessProfileType.COORDINATOR,
                         30L,
                         "127.0.0.1"
                 )
@@ -430,7 +511,7 @@ class ClassGroupServiceTest {
         assertEquals(Set.of(50L), classGroupIds);
     }
 
-    private static ClassGroupUpdateCommand updatePrjCommand(ClassGroupModality modality, String shift) {
+    private static ClassGroupUpdateCommand updatePrjCommand(ClassGroupModality modality, ClassGroupShift shift) {
         return new ClassGroupUpdateCommand(
                 40L,
                 30L,
@@ -441,7 +522,8 @@ class ClassGroupServiceTest {
                 30,
                 LocalDate.of(2026, 2, 1),
                 LocalDate.of(2026, 6, 30),
-                shift
+                shift,
+                false
         );
     }
 
@@ -459,6 +541,40 @@ class ClassGroupServiceTest {
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 return resultSet.getInt(1) == 1;
+            }
+        }
+    }
+
+    private static String teacherAssignmentState(long teacherUserId, long classGroupId) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT state
+                     FROM teach_class_group
+                     WHERE id_teacher_user = ?
+                       AND id_class_group = ?
+                     """)) {
+            statement.setLong(1, teacherUserId);
+            statement.setLong(2, classGroupId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getString("state");
+            }
+        }
+    }
+
+    private static LocalDate teacherAssignmentEndDate(long teacherUserId, long classGroupId) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT end_date
+                     FROM teach_class_group
+                     WHERE id_teacher_user = ?
+                       AND id_class_group = ?
+                     """)) {
+            statement.setLong(1, teacherUserId);
+            statement.setLong(2, classGroupId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getDate("end_date").toLocalDate();
             }
         }
     }

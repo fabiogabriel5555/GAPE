@@ -323,7 +323,8 @@ CREATE TABLE IF NOT EXISTS class_group (
     max_students INT NULL,
     starts_at DATE NULL,
     ends_at DATE NULL,
-    shift VARCHAR(30) NULL,
+    shift VARCHAR(30) NOT NULL,
+    show_content_thumbnails BOOLEAN NOT NULL DEFAULT FALSE,
     PRIMARY KEY (id_class_group),
     UNIQUE KEY uq_class_group_subject_code (id_subject, cod_class_group),
     KEY idx_class_group_course (id_course),
@@ -338,6 +339,8 @@ CREATE TABLE IF NOT EXISTS class_group (
         CHECK (modality IN ('onsite', 'online', 'hybrid')),
     CONSTRAINT ck_class_group_state
         CHECK (state IN ('active', 'inactive', 'closed', 'archived')),
+    CONSTRAINT ck_class_group_shift
+        CHECK (shift IN ('morning', 'afternoon', 'evening', 'mixed')),
     CONSTRAINT ck_class_group_students_range
         CHECK (
             (min_students IS NULL OR min_students >= 0)
@@ -578,6 +581,43 @@ CREATE TABLE IF NOT EXISTS content_item (
         CHECK (state IN ('draft', 'active', 'inactive', 'archived')),
     CONSTRAINT ck_content_item_updated
         CHECK (updated_at IS NULL OR updated_at >= created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS content_file (
+    id_content_file BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    id_content_item BIGINT UNSIGNED NOT NULL,
+    original_filename VARCHAR(255) NOT NULL,
+    original_mime_type VARCHAR(120) NOT NULL,
+    final_mime_type VARCHAR(120) NOT NULL,
+    original_bytes BIGINT UNSIGNED NOT NULL,
+    final_bytes BIGINT UNSIGNED NOT NULL,
+    sha256 CHAR(64) NULL,
+    original_path VARCHAR(500) NULL,
+    final_path VARCHAR(500) NOT NULL,
+    thumbnail_path VARCHAR(500) NULL,
+    duration_seconds INT UNSIGNED NULL,
+    width INT UNSIGNED NULL,
+    height INT UNSIGNED NULL,
+    page_count INT UNSIGNED NULL,
+    processing_state VARCHAR(20) NOT NULL,
+    processing_error VARCHAR(500) NULL,
+    created_at DATETIME NOT NULL,
+    processed_at DATETIME NULL,
+    PRIMARY KEY (id_content_file),
+    UNIQUE KEY uq_content_file_item_final_path (id_content_item, final_path),
+    KEY idx_content_file_item (id_content_item),
+    KEY idx_content_file_processing_state (processing_state),
+    CONSTRAINT fk_content_file_item
+        FOREIGN KEY (id_content_item) REFERENCES content_item (id_content_item)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT ck_content_file_sizes
+        CHECK (original_bytes > 0 AND final_bytes > 0),
+    CONSTRAINT ck_content_file_dimensions
+        CHECK ((width IS NULL OR width > 0) AND (height IS NULL OR height > 0)),
+    CONSTRAINT ck_content_file_processing_state
+        CHECK (processing_state IN ('processing', 'ready', 'failed')),
+    CONSTRAINT ck_content_file_processed
+        CHECK (processed_at IS NULL OR processed_at >= created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS physical_room (
@@ -2181,10 +2221,6 @@ BEGIN
     DECLARE v_subject_state VARCHAR(20);
     DECLARE v_association_state VARCHAR(20);
     DECLARE v_active_enrollments INT DEFAULT 0;
-
-    IF NEW.id_course <> OLD.id_course OR NEW.id_subject <> OLD.id_subject THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group Course and Subject cannot be changed after creation';
-    END IF;
 
     SELECT c.state, s.state, isub.state
     INTO v_course_state, v_subject_state, v_association_state

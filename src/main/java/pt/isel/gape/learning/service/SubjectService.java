@@ -18,6 +18,7 @@ import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseState;
+import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.CourseSubjectAssociationCommand;
 import pt.isel.gape.learning.model.CourseSubjectState;
 import pt.isel.gape.learning.model.Subject;
@@ -177,11 +178,47 @@ public final class SubjectService {
             String sourceIp
     ) {
         try {
-            requireSubjectAdministrator(actorUserId, sessionId, actorProfileType, organizationId, sourceIp);
-            return subjectDAO.findByOrganization(organizationId);
+            if (subjectAdministrationDecision(actorUserId, sessionId, actorProfileType, organizationId, sourceIp).allowed()) {
+                return subjectDAO.findByOrganization(organizationId);
+            }
+            try (Connection connection = connectionProvider.getConnection()) {
+                validateOrganization(connection, organizationId);
+            }
+            return subjectDAO.findByOrganization(organizationId)
+                    .stream()
+                    .filter(subject -> subjectAccessDecision(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            subject,
+                            sourceIp
+                    ).allowed() || subjectMutationDecision(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            subject,
+                            sourceIp
+                    ).allowed())
+                    .toList();
         } catch (RuntimeException | SQLException exception) {
             throw wrap(exception, "Failed to list subjects");
         }
+    }
+
+    public boolean canCreateSubject(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organizationId,
+            String sourceIp
+    ) {
+        return subjectAdministrationDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                organizationId,
+                sourceIp
+        ).allowed();
     }
 
     public Subject updateSubject(
@@ -424,17 +461,40 @@ public final class SubjectService {
             Subject subject,
             String sourceIp
     ) {
+        AuthorizationDecision decision = subjectAccessDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                subject,
+                sourceIp
+        );
+        if (decision.allowed()) {
+            return;
+        }
+        throw new SecurityException("Missing subject management context: " + decision.reason());
+    }
+
+    private AuthorizationDecision subjectAccessDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            Subject subject,
+            String sourceIp
+    ) {
         AuthorizationDecision adminDecision = permissionChecker.check(new AccessContext(
                 actorUserId,
                 sessionId,
                 actorProfileType,
                 AuthorizationPolicy.MANAGE_SUBJECTS,
-                AccessEntityType.ORGANIZATION,
-                subject.organizationId(),
+                AccessEntityType.SUBJECT,
+                subject.id(),
                 sourceIp
         ));
         if (adminDecision.allowed()) {
-            return;
+            return adminDecision;
+        }
+        if (actorProfileType != AccessProfileType.COORDINATOR) {
+            return adminDecision;
         }
         AuthorizationDecision coordinatorDecision = permissionChecker.check(new AccessContext(
                 actorUserId,
@@ -445,11 +505,9 @@ public final class SubjectService {
                 subject.id(),
                 sourceIp
         ));
-        if (coordinatorDecision.allowed()) {
-            return;
-        }
-        throw new SecurityException("Missing subject management context: "
-                + adminDecision.reason() + "/" + coordinatorDecision.reason());
+        return coordinatorDecision.allowed()
+                ? coordinatorDecision
+                : AuthorizationDecision.deny(adminDecision.reason() + "/" + coordinatorDecision.reason());
     }
 
     private void requireSubjectMutationManager(
@@ -478,7 +536,24 @@ public final class SubjectService {
             Subject subject,
             String sourceIp
     ) {
-        AuthorizationDecision administratorDecision = permissionChecker.checkDescendant(new AccessContext(
+        if (actorProfileType == AccessProfileType.COORDINATOR) {
+            AuthorizationDecision coordinatorDecision = permissionChecker.check(new AccessContext(
+                    actorUserId,
+                    sessionId,
+                    actorProfileType,
+                    AuthorizationPolicy.MANAGE_SUBJECTS,
+                    AccessEntityType.SUBJECT,
+                    subject.id(),
+                    sourceIp
+            ));
+            return coordinatorDecision.allowed()
+                    ? coordinatorDecision
+                    : AuthorizationDecision.deny(coordinatorDecision.reason());
+        }
+        if (actorProfileType != AccessProfileType.ADMINISTRATOR) {
+            return AuthorizationDecision.deny("administrator_profile_required_for_subject_mutation");
+        }
+        AuthorizationDecision descendantDecision = permissionChecker.checkDescendant(new AccessContext(
                 actorUserId,
                 sessionId,
                 actorProfileType,
@@ -487,13 +562,10 @@ public final class SubjectService {
                 subject.id(),
                 sourceIp
         ));
-        if (administratorDecision.allowed()) {
-            return administratorDecision;
+        if (descendantDecision.allowed()) {
+            return descendantDecision;
         }
-        if (actorProfileType != AccessProfileType.COORDINATOR) {
-            return administratorDecision;
-        }
-        AuthorizationDecision coordinatorDecision = permissionChecker.check(new AccessContext(
+        AuthorizationDecision exactSubjectDecision = permissionChecker.checkExactAdministratorContext(new AccessContext(
                 actorUserId,
                 sessionId,
                 actorProfileType,
@@ -502,9 +574,89 @@ public final class SubjectService {
                 subject.id(),
                 sourceIp
         ));
-        return coordinatorDecision.allowed()
-                ? coordinatorDecision
-                : AuthorizationDecision.deny(administratorDecision.reason() + "/" + coordinatorDecision.reason());
+        if (exactSubjectDecision.allowed()) {
+            return exactSubjectDecision;
+        }
+        AuthorizationDecision exclusiveCourseDecision = exclusiveCourseSubjectMutationDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                subject.id(),
+                sourceIp
+        );
+        return exclusiveCourseDecision.allowed()
+                ? exclusiveCourseDecision
+                : AuthorizationDecision.deny(descendantDecision.reason()
+                + "/" + exactSubjectDecision.reason()
+                + "/" + exclusiveCourseDecision.reason());
+    }
+
+    private AuthorizationDecision exclusiveCourseSubjectMutationDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long subjectId,
+            String sourceIp
+    ) {
+        try {
+            boolean hasActiveAssociation = false;
+            AuthorizationDecision lastDeniedDecision = AuthorizationDecision.deny("no_active_subject_course_association");
+            for (CourseSubjectAssociation association : courseSubjectDAO.findBySubject(subjectId)) {
+                if (association.state() == CourseSubjectState.ARCHIVED) {
+                    continue;
+                }
+                hasActiveAssociation = true;
+                AuthorizationDecision courseDecision = courseMutationContextDecision(
+                        actorUserId,
+                        sessionId,
+                        actorProfileType,
+                        association.courseId(),
+                        sourceIp
+                );
+                if (!courseDecision.allowed()) {
+                    return AuthorizationDecision.deny("subject_association_outside_context/" + courseDecision.reason());
+                }
+                lastDeniedDecision = courseDecision;
+            }
+            return hasActiveAssociation
+                    ? lastDeniedDecision
+                    : AuthorizationDecision.deny("no_active_subject_course_association");
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to check subject course context", exception);
+        }
+    }
+
+    private AuthorizationDecision courseMutationContextDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long courseId,
+            String sourceIp
+    ) {
+        AuthorizationDecision descendantDecision = permissionChecker.checkDescendant(new AccessContext(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                AuthorizationPolicy.MANAGE_COURSES,
+                AccessEntityType.COURSE,
+                courseId,
+                sourceIp
+        ));
+        if (descendantDecision.allowed()) {
+            return descendantDecision;
+        }
+        AuthorizationDecision exactDecision = permissionChecker.checkExactAdministratorContext(new AccessContext(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                AuthorizationPolicy.MANAGE_COURSES,
+                AccessEntityType.COURSE,
+                courseId,
+                sourceIp
+        ));
+        return exactDecision.allowed()
+                ? exactDecision
+                : AuthorizationDecision.deny(descendantDecision.reason() + "/" + exactDecision.reason());
     }
 
     private void requireSubjectAdministrator(
@@ -514,7 +666,26 @@ public final class SubjectService {
             long organizationId,
             String sourceIp
     ) {
-        AuthorizationDecision decision = permissionChecker.check(new AccessContext(
+        AuthorizationDecision decision = subjectAdministrationDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                organizationId,
+                sourceIp
+        );
+        if (!decision.allowed()) {
+            throw new SecurityException("Missing subject administration context: " + decision.reason());
+        }
+    }
+
+    private AuthorizationDecision subjectAdministrationDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long organizationId,
+            String sourceIp
+    ) {
+        return permissionChecker.check(new AccessContext(
                 actorUserId,
                 sessionId,
                 actorProfileType,
@@ -523,9 +694,6 @@ public final class SubjectService {
                 organizationId,
                 sourceIp
         ));
-        if (!decision.allowed()) {
-            throw new SecurityException("Missing subject administration context: " + decision.reason());
-        }
     }
 
     private Subject requireSubject(long subjectId) throws SQLException {

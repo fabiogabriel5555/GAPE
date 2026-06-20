@@ -43,7 +43,7 @@ INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_da
 INSERT INTO content_item (
     id_content_item, author_user_id, title, description, format, source, state, created_at, updated_at
 ) VALUES
-    (73, 6, 'Video de apoio', 'Video de planeamento da iteracao', 'video', 'https://example.local/video/planning', 'active',
+    (73, 6, 'Video de apoio', 'Video de planeamento da iteracao', 'video', 'contents/videos/planning.mp4', 'active',
      '2026-02-15 09:00:00', NULL);
 
 INSERT INTO associate_class_group_content (id_class_group, id_content_item, role) VALUES
@@ -167,10 +167,10 @@ INSERT INTO user_account (
      '2026-01-03 09:00:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-ORG-008'),
     (9, 'Organic Unit Scoped Admin', 'admin.unit@gape.local', 'active', 'pt-PT', 'users/9/profile.webp',
      '2026-01-03 09:05:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-UNIT-009'),
-    (10, 'Learning Scoped Admin', 'admin.learning@gape.local', 'active', 'pt-PT', 'users/10/profile.webp',
-     '2026-01-03 09:10:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'PASSPORT', 'PASS-LRN-010'),
-    (11, 'Enrollment Scoped Admin', 'admin.enroll@gape.local', 'active', 'pt-PT', 'users/11/profile.webp',
-     '2026-01-03 09:15:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'PASSPORT', 'PASS-ENR-011'),
+    (10, 'Structure Demo Admin', 'admin.structure.demo@gape.local', 'active', 'pt-PT', 'users/10/profile.webp',
+     '2026-01-03 09:10:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'PASSPORT', 'PASS-STR-010'),
+    (11, 'Unit Structure Demo Admin', 'admin.structure.unit@gape.local', 'active', 'pt-PT', 'users/11/profile.webp',
+     '2026-01-03 09:15:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'PASSPORT', 'PASS-UNI-011'),
     (12, 'Multi Profile User', 'multi@gape.local', 'active', 'pt-PT', 'users/12/profile.webp',
      '2026-01-03 09:20:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-MULTI-012'),
     (13, 'Blocked Demo User', 'blocked.full@gape.local', 'blocked', 'pt-PT', 'users/13/profile.webp',
@@ -185,8 +185,8 @@ INSERT INTO user_account (
 INSERT INTO administrator_profile (id_user, cod_administrator) VALUES
     (8, 'ADM-ORG'),
     (9, 'ADM-UNIT'),
-    (10, 'ADM-LRN'),
-    (11, 'ADM-ENR'),
+    (10, 'ADM-STR-DEMO'),
+    (11, 'ADM-UNIT-DEMO'),
     (16, 'ADM-COMP');
 
 INSERT INTO coordinator_profile (id_user, cod_coordinator) VALUES
@@ -215,9 +215,8 @@ INSERT INTO permission (cod_permission, name, state) VALUES
 INSERT INTO grant_administrator (id_admin_user, cod_permission, context_type, context_id) VALUES
     (8, 'MANAGE_ORGANIZATION_STRUCTURE', 'ORGANIZATION', 10),
     (9, 'MANAGE_ORGANIZATION_STRUCTURE', 'ORGANIC_UNIT', 20),
-    (10, 'MANAGE_LEARNING', 'COURSE', 30),
-    (10, 'MANAGE_LEARNING', 'SUBJECT', 40),
-    (11, 'MANAGE_ENROLLMENTS', 'CLASS_GROUP', 50),
+    (10, 'MANAGE_ORGANIZATION_STRUCTURE', 'ORGANIZATION', 10),
+    (11, 'MANAGE_ORGANIZATION_STRUCTURE', 'ORGANIC_UNIT', 20),
     (16, 'MANAGE_ORGANIZATION_STRUCTURE', 'ORGANIZATION', 12);
 
 INSERT INTO grant_coordinator (id_coordinator_user, cod_permission) VALUES
@@ -230,7 +229,9 @@ INSERT INTO grant_coordinator (id_coordinator_user, cod_permission) VALUES
 INSERT INTO grant_teacher (id_teacher_user, cod_permission) VALUES
     (3, 'VIEW_REPORTS'),
     (6, 'VIEW_REPORTS'),
-    (12, 'VIEW_REPORTS');
+    (6, 'MANAGE_LEARNING'),
+    (12, 'VIEW_REPORTS'),
+    (12, 'MANAGE_LEARNING');
 
 INSERT INTO grant_student (id_student_user, cod_permission) VALUES
     (4, 'VIEW_REPORTS'),
@@ -303,7 +304,7 @@ INSERT INTO class_group (
     (53, 42, 30, 'BD-T1', 'hybrid', 'active', 8, 35, '2026-03-01', '2026-06-30', 'evening'),
     (54, 43, 32, 'RC-T1', 'onsite', 'closed', 6, 25, '2026-03-01', '2026-05-31', 'morning'),
     (55, 44, 33, 'SI-T1', 'online', 'active', 4, 20, '2026-04-01', '2026-05-31', 'afternoon'),
-    (56, 42, 32, 'BD-ARCH', 'online', 'archived', 5, 20, '2025-02-01', '2025-06-30', 'night');
+    (56, 42, 32, 'BD-ARCH', 'online', 'archived', 5, 20, '2025-02-01', '2025-06-30', 'mixed');
 
 INSERT INTO content_block (
     id_content_block, id_class_group, cod_content_block, name, description, order_no,
@@ -332,7 +333,8 @@ INSERT INTO enroll_course (id_student_user, id_course, state, start_date, end_da
     (15, 33, 'active', '2026-04-01', NULL);
 
 INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date) VALUES
-    (4, 32, 42, 'active', '2026-03-01', NULL),
+    (4, 32, 42, 'withdrawn', '2026-03-01', '2026-03-01'),
+    (4, 30, 42, 'active', '2026-03-01', NULL),
     (12, 33, 44, 'active', '2026-04-01', NULL),
     (15, 30, 40, 'active', '2026-03-01', NULL),
     (15, 30, 42, 'active', '2026-03-01', NULL),
@@ -349,21 +351,21 @@ INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_da
 INSERT INTO content_item (
     id_content_item, author_user_id, title, description, format, source, state, created_at, updated_at
 ) VALUES
-    (74, 3, 'Diagrama Entidade Relacao', 'Imagem de apoio ao modelo relacional', 'image', '/content/bd/er.png', 'active',
+    (74, 3, 'Diagrama Entidade Relacao', 'Imagem de apoio ao modelo relacional', 'image', 'contents/images/er.webp', 'active',
      '2026-03-02 09:00:00', NULL),
-    (75, 3, 'Video Normalizacao', 'Video demonstrativo de normalizacao', 'video', 'https://video.example.local/bd/normalizacao', 'active',
+    (75, 3, 'Video Normalizacao', 'Video demonstrativo de normalizacao', 'video', 'contents/videos/normalizacao.mp4', 'active',
      '2026-03-02 09:10:00', NULL),
     (76, 14, 'Ligacao Biblioteca Digital', 'Recurso externo para pesquisa', 'url', 'https://biblioteca.example.local', 'active',
      '2026-03-02 09:20:00', NULL),
-    (77, 12, 'Slides Seguranca', 'Apresentacao de seguranca industrial', 'presentation', '/content/si/slides.pptx', 'draft',
+    (77, 12, 'Slides Seguranca', 'Apresentacao de seguranca industrial', 'presentation', 'contents/presentations/slides-seguranca.pdf', 'draft',
      '2026-04-02 09:00:00', NULL),
-    (78, 12, 'Pacote SCORM Qualidade', 'Modulo SCORM importado', 'scorm', '/content/qas/scorm.zip', 'inactive',
+    (78, 12, 'Pacote SCORM Qualidade', 'Modulo SCORM importado', 'scorm', 'contents/packages/scorm-qualidade.zip', 'inactive',
      '2026-04-02 09:15:00', '2026-04-03 11:00:00'),
-    (79, 12, 'Pacote xAPI Auditoria', 'Experiencia xAPI para auditoria', 'xapi', '/content/qas/xapi.zip', 'active',
+    (79, 12, 'Pacote xAPI Auditoria', 'Experiencia xAPI para auditoria', 'xapi', 'contents/packages/xapi-auditoria.zip', 'active',
      '2026-04-02 09:30:00', NULL),
     (80, 12, 'Simulador Embebido', 'Ferramenta externa incorporada', 'embed', 'https://tools.example.local/embed/safety', 'active',
      '2026-04-02 09:45:00', NULL),
-    (81, 6, 'Audio de Revisao', 'Resumo audio da aula', 'audio', '/content/bd/revisao.mp3', 'active',
+    (81, 6, 'Audio de Revisao', 'Resumo audio da aula', 'audio', 'contents/audio/revisao.m4a', 'active',
      '2026-03-03 12:00:00', NULL),
     (82, 6, 'Objeto Historico', 'Item sem formato especifico para arquivo', 'other', NULL, 'archived',
      '2026-01-01 12:00:00', NULL);

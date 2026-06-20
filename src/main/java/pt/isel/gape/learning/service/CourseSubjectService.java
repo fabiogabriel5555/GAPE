@@ -226,6 +226,40 @@ public final class CourseSubjectService {
         }
     }
 
+    public boolean canManageAssociation(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long courseId,
+            long subjectId,
+            String sourceIp
+    ) {
+        return courseSubjectManagementDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                courseId,
+                subjectId,
+                sourceIp
+        ).allowed();
+    }
+
+    public boolean canManageSubjectAssociations(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long subjectId,
+            String sourceIp
+    ) {
+        return subjectAssociationManagementDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                subjectId,
+                sourceIp
+        ).allowed();
+    }
+
     private void validateActiveContext(Course course, Subject subject) {
         if (course.organizationId() != subject.organizationId()) {
             throw new IllegalArgumentException("Course and subject must belong to the same organization");
@@ -246,7 +280,60 @@ public final class CourseSubjectService {
             long subjectId,
             String sourceIp
     ) {
-        AuthorizationDecision courseDecision = permissionChecker.check(new AccessContext(
+        AuthorizationDecision decision = courseSubjectManagementDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                courseId,
+                subjectId,
+                sourceIp
+        );
+        if (!decision.allowed()) {
+            throw new SecurityException("Missing course-subject management context: " + decision.reason());
+        }
+    }
+
+    private AuthorizationDecision courseSubjectManagementDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long courseId,
+            long subjectId,
+            String sourceIp
+    ) {
+        AuthorizationDecision courseDecision = courseAssociationManagementDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                courseId,
+                sourceIp
+        );
+        if (courseDecision.allowed()) {
+            return courseDecision;
+        }
+        AuthorizationDecision subjectDecision = subjectAssociationManagementDecision(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                subjectId,
+                sourceIp
+        );
+        return subjectDecision.allowed()
+                ? subjectDecision
+                : AuthorizationDecision.deny(courseDecision.reason() + "/" + subjectDecision.reason());
+    }
+
+    private AuthorizationDecision courseAssociationManagementDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long courseId,
+            String sourceIp
+    ) {
+        if (actorProfileType != AccessProfileType.ADMINISTRATOR) {
+            return AuthorizationDecision.deny("administrator_profile_required");
+        }
+        AuthorizationDecision descendantDecision = permissionChecker.checkDescendant(new AccessContext(
                 actorUserId,
                 sessionId,
                 actorProfileType,
@@ -255,10 +342,57 @@ public final class CourseSubjectService {
                 courseId,
                 sourceIp
         ));
-        if (courseDecision.allowed()) {
-            return;
+        if (descendantDecision.allowed()) {
+            return descendantDecision;
         }
-        AuthorizationDecision subjectDecision = permissionChecker.check(new AccessContext(
+        AuthorizationDecision exactDecision = permissionChecker.checkExactAdministratorContext(new AccessContext(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                AuthorizationPolicy.MANAGE_COURSES,
+                AccessEntityType.COURSE,
+                courseId,
+                sourceIp
+        ));
+        return exactDecision.allowed()
+                ? exactDecision
+                : AuthorizationDecision.deny(descendantDecision.reason() + "/" + exactDecision.reason());
+    }
+
+    private AuthorizationDecision subjectAssociationManagementDecision(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long subjectId,
+            String sourceIp
+    ) {
+        if (actorProfileType == AccessProfileType.ADMINISTRATOR) {
+            AuthorizationDecision descendantDecision = permissionChecker.checkDescendant(new AccessContext(
+                    actorUserId,
+                    sessionId,
+                    actorProfileType,
+                    AuthorizationPolicy.MANAGE_SUBJECTS,
+                    AccessEntityType.SUBJECT,
+                    subjectId,
+                    sourceIp
+            ));
+            if (descendantDecision.allowed()) {
+                return descendantDecision;
+            }
+            AuthorizationDecision exactDecision = permissionChecker.checkExactAdministratorContext(new AccessContext(
+                    actorUserId,
+                    sessionId,
+                    actorProfileType,
+                    AuthorizationPolicy.MANAGE_SUBJECTS,
+                    AccessEntityType.SUBJECT,
+                    subjectId,
+                    sourceIp
+            ));
+            return exactDecision.allowed()
+                    ? exactDecision
+                    : AuthorizationDecision.deny(descendantDecision.reason() + "/" + exactDecision.reason());
+        }
+        AuthorizationDecision coordinatorDecision = permissionChecker.check(new AccessContext(
                 actorUserId,
                 sessionId,
                 actorProfileType,
@@ -267,11 +401,9 @@ public final class CourseSubjectService {
                 subjectId,
                 sourceIp
         ));
-        if (subjectDecision.allowed()) {
-            return;
-        }
-        throw new SecurityException("Missing course-subject management context: "
-                + courseDecision.reason() + "/" + subjectDecision.reason());
+        return coordinatorDecision.allowed()
+                ? coordinatorDecision
+                : AuthorizationDecision.deny(coordinatorDecision.reason());
     }
 
     private Course requireCourse(Connection connection, long courseId) throws SQLException {

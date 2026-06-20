@@ -13,19 +13,19 @@ INSERT INTO integrate_subject (
 ) VALUES
     (31, 40, 1, NULL, 1, 'active');
 
--- min_students e max_students devem coexistir
+-- min_students nao pode exceder max_students quando ambos estao preenchidos
 INSERT INTO class_group (
     id_class_group, id_subject, id_course, cod_class_group, modality, state,
     min_students, max_students, starts_at, ends_at, shift
 ) VALUES
-    (9026, 40, 30, 'PRJ-RANGE', 'onsite', 'active', 10, NULL, '2026-02-01', '2026-06-30', 'night');
+    (9026, 40, 30, 'PRJ-RANGE', 'onsite', 'active', 10, 5, '2026-02-01', '2026-06-30', 'evening');
 
--- starts_at e ends_at devem coexistir
+-- ends_at nao pode ser anterior a starts_at quando ambos estao preenchidos
 INSERT INTO class_group (
     id_class_group, id_subject, id_course, cod_class_group, modality, state,
     min_students, max_students, starts_at, ends_at, shift
 ) VALUES
-    (9027, 40, 30, 'PRJ-DATES', 'onsite', 'active', 5, 20, '2026-02-01', NULL, 'night');
+    (9027, 40, 30, 'PRJ-DATES', 'onsite', 'active', 5, 20, '2026-06-30', '2026-02-01', 'evening');
 
 -- bloco scheduled exige available_from
 INSERT INTO content_block (

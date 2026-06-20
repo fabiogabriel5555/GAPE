@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -16,11 +15,15 @@ import javax.imageio.stream.MemoryCacheImageInputStream;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.Part;
 import pt.isel.gape.common.config.DatabaseConfig;
+import pt.isel.gape.common.storage.UploadRootResolver;
 
 public final class ProfilePhotoStorage {
 
     private static final int PROFILE_SIZE = 200;
+    private static final int ENTITY_IMAGE_SIZE = 800;
+    private static final long DEFAULT_MAX_IMAGE_BYTES = 50L * 1024L * 1024L;
     private static final String UPLOAD_DIR_PROPERTY = "gape.upload.dir";
+    private static final String MAX_IMAGE_BYTES_PROPERTY = "gape.media.image.max-bytes";
     private static final String WEBP_NATIVE_DIR_PROPERTY = "gape.webp.native.dir";
     private static final String STORED_PROFILE_FILE_NAME = "profile.webp";
     private static final List<String> PROFILE_IMAGE_FILE_NAMES = List.of(
@@ -34,35 +37,53 @@ public final class ProfilePhotoStorage {
     private static boolean imageIoPluginsScanned;
 
     private final String configuredUploadDir;
+    private final long maxImageBytes;
 
     public ProfilePhotoStorage() {
-        this(DatabaseConfig.getProperty(UPLOAD_DIR_PROPERTY, "uploads"));
+        this(UploadRootResolver.configuredUploadDirectory(UPLOAD_DIR_PROPERTY, "uploads"));
     }
 
     ProfilePhotoStorage(String configuredUploadDir) {
+        this(configuredUploadDir, configuredMaxImageBytes());
+    }
+
+    ProfilePhotoStorage(String configuredUploadDir, long maxImageBytes) {
+        if (maxImageBytes <= 0L) {
+            throw new IllegalArgumentException("max image size must be positive");
+        }
         this.configuredUploadDir = configuredUploadDir;
+        this.maxImageBytes = maxImageBytes;
     }
 
     public String saveProfilePhoto(long userId, Part imagePart, ServletContext servletContext) throws IOException {
-        return savePhoto("users", userId, imagePart, servletContext);
+        return savePhoto("users", userId, imagePart, servletContext, PROFILE_SIZE);
     }
 
     public String saveOrganizationPhoto(long organizationId, Part imagePart, ServletContext servletContext) throws IOException {
-        return savePhoto("organizations", organizationId, imagePart, servletContext);
+        return savePhoto("organizations", organizationId, imagePart, servletContext, ENTITY_IMAGE_SIZE);
     }
 
     public String saveCoursePhoto(long courseId, Part imagePart, ServletContext servletContext) throws IOException {
-        return savePhoto("courses", courseId, imagePart, servletContext);
+        return savePhoto("courses", courseId, imagePart, servletContext, ENTITY_IMAGE_SIZE);
     }
 
     public String saveSubjectPhoto(long subjectId, Part imagePart, ServletContext servletContext) throws IOException {
-        return savePhoto("subjects", subjectId, imagePart, servletContext);
+        return savePhoto("subjects", subjectId, imagePart, servletContext, ENTITY_IMAGE_SIZE);
     }
 
-    private String savePhoto(String entityDirectoryName, long entityId, Part imagePart, ServletContext servletContext)
+    private String savePhoto(
+            String entityDirectoryName,
+            long entityId,
+            Part imagePart,
+            ServletContext servletContext,
+            int targetSize
+    )
             throws IOException {
         if (imagePart == null || imagePart.getSize() <= 0) {
             return null;
+        }
+        if (imagePart.getSize() > maxImageBytes) {
+            throw new IllegalArgumentException("The uploaded image exceeds the maximum allowed size.");
         }
 
         Path uploadRoot = resolveUploadRoot(servletContext);
@@ -72,7 +93,7 @@ public final class ProfilePhotoStorage {
             throw new IllegalArgumentException("The uploaded file is not a supported image.");
         }
 
-        BufferedImage resizedImage = resizeToSquare(uploadedImage);
+        BufferedImage resizedImage = resizeToSquare(uploadedImage, targetSize);
         Path entityDirectory = uploadRoot.resolve(entityDirectoryName).resolve(Long.toString(entityId)).normalize();
         if (!entityDirectory.startsWith(uploadRoot)) {
             throw new IOException("Invalid upload target");
@@ -103,6 +124,14 @@ public final class ProfilePhotoStorage {
     }
 
     private static Path resolveWebpNativeDirectory(Path uploadRoot) {
+        String configuredDirectory = System.getProperty(WEBP_NATIVE_DIR_PROPERTY);
+        if (configuredDirectory == null || configuredDirectory.isBlank()) {
+            configuredDirectory = DatabaseConfig.getProperty(WEBP_NATIVE_DIR_PROPERTY, "");
+        }
+        if (configuredDirectory != null && !configuredDirectory.isBlank()) {
+            return Path.of(configuredDirectory).toAbsolutePath().normalize();
+        }
+
         Path normalizedUploadRoot = uploadRoot.toAbsolutePath().normalize();
         Path parentDirectory = normalizedUploadRoot.getParent();
         Path baseDirectory = parentDirectory == null ? normalizedUploadRoot : parentDirectory;
@@ -136,25 +165,25 @@ public final class ProfilePhotoStorage {
         }
     }
 
-    private static BufferedImage resizeToSquare(BufferedImage source) {
+    private static BufferedImage resizeToSquare(BufferedImage source, int targetSize) {
         int sourceWidth = source.getWidth();
         int sourceHeight = source.getHeight();
         int squareSize = Math.min(sourceWidth, sourceHeight);
         int cropX = (sourceWidth - squareSize) / 2;
         int cropY = (sourceHeight - squareSize) / 2;
 
-        BufferedImage target = new BufferedImage(PROFILE_SIZE, PROFILE_SIZE, BufferedImage.TYPE_INT_RGB);
+        BufferedImage target = new BufferedImage(targetSize, targetSize, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics = target.createGraphics();
         try {
             graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
             graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             graphics.drawImage(
-                    source,
-                    0,
-                    0,
-                    PROFILE_SIZE,
-                    PROFILE_SIZE,
+                source,
+                0,
+                0,
+                targetSize,
+                targetSize,
                     cropX,
                     cropY,
                     cropX + squareSize,
@@ -167,29 +196,17 @@ public final class ProfilePhotoStorage {
         return target;
     }
 
+    private static long configuredMaxImageBytes() {
+        String configuredValue = DatabaseConfig.getProperty(MAX_IMAGE_BYTES_PROPERTY, Long.toString(DEFAULT_MAX_IMAGE_BYTES));
+        try {
+            return Long.parseLong(configuredValue);
+        } catch (NumberFormatException exception) {
+            return DEFAULT_MAX_IMAGE_BYTES;
+        }
+    }
+
     private Path resolveUploadRoot(ServletContext servletContext) {
-        Path configuredPath = Path.of(configuredUploadDir);
-        if (configuredPath.isAbsolute()) {
-            return configuredPath.normalize();
-        }
-
-        List<Path> candidates = new ArrayList<>();
         String realPath = servletContext == null ? null : servletContext.getRealPath("/");
-        if (realPath != null && !realPath.isBlank()) {
-            Path current = Path.of(realPath).toAbsolutePath().normalize();
-            for (int depth = 0; depth < 8 && current != null; depth++) {
-                candidates.add(current.resolve(configuredPath));
-                current = current.getParent();
-            }
-        }
-        candidates.add(Path.of(System.getProperty("user.dir")).resolve(configuredPath));
-
-        for (Path candidate : candidates) {
-            Path normalized = candidate.toAbsolutePath().normalize();
-            if (Files.isDirectory(normalized)) {
-                return normalized;
-            }
-        }
-        return candidates.getFirst().toAbsolutePath().normalize();
+        return UploadRootResolver.resolve(configuredUploadDir, realPath);
     }
 }

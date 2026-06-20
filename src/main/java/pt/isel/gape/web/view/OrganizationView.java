@@ -1,5 +1,7 @@
 package pt.isel.gape.web.view;
 
+import java.util.List;
+
 import pt.isel.gape.structure.model.Organization;
 import pt.isel.gape.structure.model.OrganizationState;
 import pt.isel.gape.structure.model.OrganizationType;
@@ -13,19 +15,25 @@ public final class OrganizationView {
     private final OrganizationType type;
     private final OrganizationState state;
     private final int organicUnitCount;
+    private final List<OrganicUnitView> organicUnits;
 
-    private OrganizationView(Organization organization, int organicUnitCount) {
+    private OrganizationView(Organization organization, int organicUnitCount, List<OrganicUnitView> organicUnits) {
         this.id = organization.id();
         this.name = organization.name();
         this.acronym = organization.acronym();
         this.photo = organization.photo();
         this.type = organization.type();
         this.state = organization.state();
+        this.organicUnits = List.copyOf(organicUnits);
         this.organicUnitCount = organicUnitCount;
     }
 
     public static OrganizationView from(Organization organization, int organicUnitCount) {
-        return new OrganizationView(organization, organicUnitCount);
+        return new OrganizationView(organization, organicUnitCount, List.of());
+    }
+
+    public static OrganizationView from(Organization organization, List<OrganicUnitView> organicUnits) {
+        return new OrganizationView(organization, organicUnits.size(), organicUnits);
     }
 
     public long getId() {
@@ -99,5 +107,9 @@ public final class OrganizationView {
 
     public int getOrganicUnitCount() {
         return organicUnitCount;
+    }
+
+    public List<OrganicUnitView> getOrganicUnits() {
+        return organicUnits;
     }
 }

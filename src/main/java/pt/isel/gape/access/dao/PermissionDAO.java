@@ -299,6 +299,59 @@ public final class PermissionDAO {
         return Set.copyOf(assignments);
     }
 
+    public Set<Long> findActiveAdministratorUserIds(Connection connection) throws SQLException {
+        String sql = """
+                SELECT ap.id_user
+                FROM administrator_profile ap
+                JOIN user_account u ON u.id_user = ap.id_user
+                WHERE u.state = 'active'
+                ORDER BY u.name, u.email, ap.id_user
+                """;
+
+        Set<Long> adminUserIds = new LinkedHashSet<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                adminUserIds.add(resultSet.getLong("id_user"));
+            }
+        }
+        return java.util.Collections.unmodifiableSet(adminUserIds);
+    }
+
+    public Set<Long> findActiveAdministratorUserIdsByExactContext(
+            Connection connection,
+            String permissionCode,
+            AccessEntityType contextType,
+            long contextId
+    ) throws SQLException {
+        String sql = """
+                SELECT grant_table.id_admin_user
+                FROM grant_administrator grant_table
+                JOIN administrator_profile ap ON ap.id_user = grant_table.id_admin_user
+                JOIN user_account u ON u.id_user = ap.id_user
+                JOIN permission p ON p.cod_permission = grant_table.cod_permission
+                WHERE grant_table.cod_permission = ?
+                  AND grant_table.context_type = ?
+                  AND grant_table.context_id = ?
+                  AND u.state = 'active'
+                  AND p.state = 'active'
+                ORDER BY u.name, u.email, grant_table.id_admin_user
+                """;
+
+        Set<Long> adminUserIds = new LinkedHashSet<>();
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, AuthorizationPolicy.canonicalAdminPermission(permissionCode));
+            statement.setString(2, contextType.name());
+            statement.setLong(3, contextId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    adminUserIds.add(resultSet.getLong("id_admin_user"));
+                }
+            }
+        }
+        return java.util.Collections.unmodifiableSet(adminUserIds);
+    }
+
     public boolean hasAnyActiveAdministratorGrant(long adminUserId, Collection<String> permissionCodes)
             throws SQLException {
         Set<String> canonicalCodes = canonicalAdminCodes(permissionCodes);
@@ -384,6 +437,24 @@ public final class PermissionDAO {
             AccessEntityType contextType,
             long contextId
     ) throws SQLException {
+        try (Connection connection = connectionProvider.getConnection()) {
+            return hasExactAdministratorContextGrant(
+                    connection,
+                    adminUserId,
+                    permissionCode,
+                    contextType,
+                    contextId
+            );
+        }
+    }
+
+    public boolean hasExactAdministratorContextGrant(
+            Connection connection,
+            long adminUserId,
+            String permissionCode,
+            AccessEntityType contextType,
+            long contextId
+    ) throws SQLException {
         String sql = """
                 SELECT COUNT(*)
                 FROM grant_administrator grant_table
@@ -395,8 +466,7 @@ public final class PermissionDAO {
                   AND p.state = 'active'
                 """;
 
-        try (Connection connection = connectionProvider.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, adminUserId);
             statement.setString(2, AuthorizationPolicy.canonicalAdminPermission(permissionCode));
             statement.setString(3, contextType.name());
@@ -439,7 +509,7 @@ public final class PermissionDAO {
         }
     }
 
-    private void deleteAdministratorAssignment(
+    public void deleteAdministratorAssignment(
             Connection connection,
             long adminUserId,
             AdministratorPermissionAssignment assignment
@@ -535,16 +605,38 @@ public final class PermissionDAO {
 
     private boolean hasCourseContextGrant(long adminUserId, String permissionCode, long courseId) throws SQLException {
         String sql = """
+                WITH RECURSIVE target_course AS (
+                    SELECT id_course, id_organization, id_organic_unit
+                    FROM course
+                    WHERE id_course = ?
+                ),
+                unit_ancestors AS (
+                    SELECT id_organic_unit
+                    FROM target_course
+                    WHERE id_organic_unit IS NOT NULL
+                    UNION ALL
+                    SELECT ou.parent_organic_unit_id
+                    FROM organic_unit ou
+                    JOIN unit_ancestors a ON a.id_organic_unit = ou.id_organic_unit
+                    WHERE ou.parent_organic_unit_id IS NOT NULL
+                )
                 SELECT COUNT(*)
                 FROM grant_administrator grant_table
                 JOIN permission p ON p.cod_permission = grant_table.cod_permission
-                JOIN course c ON c.id_course = ?
+                JOIN target_course c
                 WHERE grant_table.id_admin_user = ?
                   AND grant_table.cod_permission = ?
                   AND p.state = 'active'
                   AND (
                         (grant_table.context_type = 'COURSE' AND grant_table.context_id = c.id_course)
-                        OR (grant_table.context_type = 'ORGANIC_UNIT' AND grant_table.context_id = c.id_organic_unit)
+                        OR (grant_table.context_type = 'SUBJECT'
+                            AND grant_table.context_id IN (
+                                SELECT isub.id_subject
+                                FROM integrate_subject isub
+                                WHERE isub.id_course = c.id_course
+                            ))
+                        OR (grant_table.context_type = 'ORGANIC_UNIT'
+                            AND grant_table.context_id IN (SELECT id_organic_unit FROM unit_ancestors))
                         OR (grant_table.context_type = 'ORGANIZATION' AND grant_table.context_id = c.id_organization)
                   )
                 """;
@@ -588,6 +680,22 @@ public final class PermissionDAO {
     private boolean hasSubjectContextGrant(long adminUserId, String permissionCode, long subjectId)
             throws SQLException {
         String sql = """
+                WITH RECURSIVE subject_courses AS (
+                    SELECT c.id_course, c.id_organization, c.id_organic_unit
+                    FROM integrate_subject isub
+                    JOIN course c ON c.id_course = isub.id_course
+                    WHERE isub.id_subject = ?
+                ),
+                unit_ancestors AS (
+                    SELECT id_organic_unit
+                    FROM subject_courses
+                    WHERE id_organic_unit IS NOT NULL
+                    UNION
+                    SELECT ou.parent_organic_unit_id
+                    FROM organic_unit ou
+                    JOIN unit_ancestors a ON a.id_organic_unit = ou.id_organic_unit
+                    WHERE ou.parent_organic_unit_id IS NOT NULL
+                )
                 SELECT COUNT(*)
                 FROM grant_administrator grant_table
                 JOIN permission p ON p.cod_permission = grant_table.cod_permission
@@ -597,10 +705,24 @@ public final class PermissionDAO {
                   AND p.state = 'active'
                   AND (
                         (grant_table.context_type = 'SUBJECT' AND grant_table.context_id = s.id_subject)
+                        OR (grant_table.context_type = 'COURSE'
+                            AND grant_table.context_id IN (SELECT id_course FROM subject_courses))
+                        OR (grant_table.context_type = 'ORGANIC_UNIT'
+                            AND grant_table.context_id IN (SELECT id_organic_unit FROM unit_ancestors))
                         OR (grant_table.context_type = 'ORGANIZATION' AND grant_table.context_id = s.id_organization)
                   )
                 """;
-        return existsByEntity(sql, subjectId, adminUserId, permissionCode);
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, subjectId);
+            statement.setLong(2, subjectId);
+            statement.setLong(3, adminUserId);
+            statement.setString(4, permissionCode);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getLong(1) > 0;
+            }
+        }
     }
 
     private boolean hasSubjectDescendantGrant(long adminUserId, String permissionCode, long subjectId)
@@ -622,11 +744,28 @@ public final class PermissionDAO {
     private boolean hasClassGroupContextGrant(long adminUserId, String permissionCode, long classGroupId)
             throws SQLException {
         String sql = """
+                WITH RECURSIVE target_class_group AS (
+                    SELECT cg.id_class_group, cg.id_course, cg.id_subject,
+                           c.id_organization AS course_organization_id,
+                           c.id_organic_unit
+                    FROM class_group cg
+                    JOIN course c ON c.id_course = cg.id_course
+                    WHERE cg.id_class_group = ?
+                ),
+                unit_ancestors AS (
+                    SELECT id_organic_unit
+                    FROM target_class_group
+                    WHERE id_organic_unit IS NOT NULL
+                    UNION ALL
+                    SELECT ou.parent_organic_unit_id
+                    FROM organic_unit ou
+                    JOIN unit_ancestors a ON a.id_organic_unit = ou.id_organic_unit
+                    WHERE ou.parent_organic_unit_id IS NOT NULL
+                )
                 SELECT COUNT(*)
                 FROM grant_administrator grant_table
                 JOIN permission p ON p.cod_permission = grant_table.cod_permission
-                JOIN class_group cg ON cg.id_class_group = ?
-                JOIN course c ON c.id_course = cg.id_course
+                JOIN target_class_group cg
                 JOIN subject s ON s.id_subject = cg.id_subject
                 WHERE grant_table.id_admin_user = ?
                   AND grant_table.cod_permission = ?
@@ -635,8 +774,10 @@ public final class PermissionDAO {
                         (grant_table.context_type = 'CLASS_GROUP' AND grant_table.context_id = cg.id_class_group)
                         OR (grant_table.context_type = 'COURSE' AND grant_table.context_id = cg.id_course)
                         OR (grant_table.context_type = 'SUBJECT' AND grant_table.context_id = cg.id_subject)
-                        OR (grant_table.context_type = 'ORGANIC_UNIT' AND grant_table.context_id = c.id_organic_unit)
-                        OR (grant_table.context_type = 'ORGANIZATION' AND grant_table.context_id IN (c.id_organization, s.id_organization))
+                        OR (grant_table.context_type = 'ORGANIC_UNIT'
+                            AND grant_table.context_id IN (SELECT id_organic_unit FROM unit_ancestors))
+                        OR (grant_table.context_type = 'ORGANIZATION'
+                            AND grant_table.context_id IN (cg.course_organization_id, s.id_organization))
                   )
                 """;
         return existsByEntity(sql, classGroupId, adminUserId, permissionCode);

@@ -12,6 +12,7 @@ public record ClassGroupUpdateCommand(
         Integer maxStudents,
         LocalDate startsAt,
         LocalDate endsAt,
-        String shift
+        ClassGroupShift shift,
+        boolean showContentThumbnails
 ) {
 }

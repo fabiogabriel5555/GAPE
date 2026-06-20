@@ -99,10 +99,10 @@ if (!DashboardMyProfilePageData.prepare(request, response)) {
                 <a href="about-four.jsp" class="nav-submenu__link hover-bg-neutral-30"> About Four</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
+                <a href="${pageContext.request.contextPath}/tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
+                <a href="${pageContext.request.contextPath}/tutor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Premium Tutors</a>
@@ -170,7 +170,7 @@ if (!DashboardMyProfilePageData.prepare(request, response)) {
                 <a href="${pageContext.request.contextPath}/student/student-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-home.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
+                <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Profile</a>
@@ -179,31 +179,31 @@ if (!DashboardMyProfilePageData.prepare(request, response)) {
                 <a href="${pageContext.request.contextPath}/instructor/instructor-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Message</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-enrolled-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Enrolled Courses</a>
+                <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Enrolled Courses</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-order-history.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
+                <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-my-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Courses</a>
+                <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor My Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-announcements.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Announcements</a>
+                <a href="${pageContext.request.contextPath}/instructor/instructor-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Announcements</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
+                <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-account-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
+                <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
             </li>
         </ul>
     </li>
@@ -305,10 +305,10 @@ if (!DashboardMyProfilePageData.prepare(request, response)) {
                 <a href="about-four.jsp" class="nav-submenu__link hover-bg-neutral-30"> About Four</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
+                <a href="${pageContext.request.contextPath}/tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
+                <a href="${pageContext.request.contextPath}/tutor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Premium Tutors</a>
@@ -376,7 +376,7 @@ if (!DashboardMyProfilePageData.prepare(request, response)) {
                 <a href="${pageContext.request.contextPath}/student/student-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-home.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
+                <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Profile</a>
@@ -385,31 +385,31 @@ if (!DashboardMyProfilePageData.prepare(request, response)) {
                 <a href="${pageContext.request.contextPath}/instructor/instructor-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Message</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-enrolled-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Enrolled Courses</a>
+                <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Enrolled Courses</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-order-history.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
+                <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-my-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Courses</a>
+                <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor My Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-announcements.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Announcements</a>
+                <a href="${pageContext.request.contextPath}/instructor/instructor-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Announcements</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
+                <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-account-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
+                <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
             </li>
         </ul>
     </li>
@@ -557,7 +557,7 @@ if (!DashboardMyProfilePageData.prepare(request, response)) {
                 </ul>
             </div>
             <div>
-                <a href="${pageContext.request.contextPath}/instructor/instructor.jsp" class="border-warning-800 border px-32 py-16 rounded-pill text-warning-800 hover-bg-warning-900 hover-text-white">Become an Instructor</a>
+                <a href="${pageContext.request.contextPath}/tutor.jsp" class="border-warning-800 border px-32 py-16 rounded-pill text-warning-800 hover-bg-warning-900 hover-text-white">Become an Instructor</a>
             </div>
         </div>
     </div>

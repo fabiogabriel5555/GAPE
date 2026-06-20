@@ -89,6 +89,10 @@ public final class GrantService {
         if (!permissionDAO.activeProfileExists(targetUserId, targetProfileType)) {
             throw new IllegalArgumentException("Permission can only be assigned to an active user profile");
         }
+        if (targetProfileType == AccessProfileType.ADMINISTRATOR
+                && !AuthorizationPolicy.isAdminPermission(permissionCode)) {
+            throw new SecurityException("Administrators can only receive administrator permissions");
+        }
         if (AuthorizationPolicy.isAdminPermission(permissionCode)
                 && targetProfileType != AccessProfileType.ADMINISTRATOR) {
             throw new SecurityException("Administrator permissions can only be assigned to administrators");

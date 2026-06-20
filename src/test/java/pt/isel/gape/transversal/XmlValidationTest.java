@@ -221,6 +221,23 @@ class XmlValidationTest {
                 """,
                 """
                 <?xml version="1.0" encoding="UTF-8"?>
+                <classShifts>
+                  <shift code="morning">
+                    <label>Morning</label>
+                  </shift>
+                  <shift code="afternoon">
+                    <label>Afternoon</label>
+                  </shift>
+                  <shift code="night">
+                    <label>Night</label>
+                  </shift>
+                  <shift code="mixed">
+                    <label>Mixed</label>
+                  </shift>
+                </classShifts>
+                """,
+                """
+                <?xml version="1.0" encoding="UTF-8"?>
                 <permissionStates>
                   <state code="active">
                     <label>A</label>

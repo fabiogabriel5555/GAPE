@@ -25,6 +25,9 @@
         <glassfish.jstl.version>3.0.1</glassfish.jstl.version>
         <mysql.connector.version>9.1.0</mysql.connector.version>
         <webp.imageio.version>0.1.6</webp.imageio.version>
+        <jave.version>3.5.0</jave.version>
+        <pdfbox.version>3.0.7</pdfbox.version>
+        <slf4j.version>1.7.36</slf4j.version>
         <junit.version>5.11.3</junit.version>
     </properties>
 
@@ -69,6 +72,26 @@
             <groupId>org.sejda.imageio</groupId>
             <artifactId>webp-imageio</artifactId>
             <version>${webp.imageio.version}</version>
+        </dependency>
+
+        <!-- Processamento portavel de audio/video com binarios nativos empacotados -->
+        <dependency>
+            <groupId>ws.schild</groupId>
+            <artifactId>jave-all-deps</artifactId>
+            <version>${jave.version}</version>
+        </dependency>
+
+        <!-- Processamento portavel de PDFs sem depender de ferramentas do sistema -->
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-nop</artifactId>
+            <version>${slf4j.version}</version>
         </dependency>
 
         <!-- Testes -->

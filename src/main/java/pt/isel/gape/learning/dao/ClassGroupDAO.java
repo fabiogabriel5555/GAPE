@@ -15,6 +15,7 @@ import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupCreateCommand;
 import pt.isel.gape.learning.model.ClassGroupModality;
+import pt.isel.gape.learning.model.ClassGroupShift;
 import pt.isel.gape.learning.model.ClassGroupState;
 import pt.isel.gape.learning.model.ClassGroupUpdateCommand;
 
@@ -44,7 +45,7 @@ public final class ClassGroupDAO {
             setNullableInteger(statement, 7, command.maxStudents());
             setDate(statement, 8, command.startsAt());
             setDate(statement, 9, command.endsAt());
-            setNullableString(statement, 10, command.shift());
+            statement.setString(10, command.shift().toDatabaseValue());
             statement.executeUpdate();
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (!generatedKeys.next()) {
@@ -64,7 +65,7 @@ public final class ClassGroupDAO {
     public Optional<ClassGroup> findById(Connection connection, long classGroupId) throws SQLException {
         String sql = """
                 SELECT id_class_group, id_subject, id_course, cod_class_group, modality, state,
-                       min_students, max_students, starts_at, ends_at, shift
+                       min_students, max_students, starts_at, ends_at, shift, show_content_thumbnails
                 FROM class_group
                 WHERE id_class_group = ?
                 """;
@@ -83,9 +84,9 @@ public final class ClassGroupDAO {
     public List<ClassGroup> findAll() throws SQLException {
         String sql = """
                 SELECT id_class_group, id_subject, id_course, cod_class_group, modality, state,
-                       min_students, max_students, starts_at, ends_at, shift
+                       min_students, max_students, starts_at, ends_at, shift, show_content_thumbnails
                 FROM class_group
-                ORDER BY id_course, id_subject, cod_class_group
+                ORDER BY id_class_group
                 """;
 
         try (Connection connection = connectionProvider.getConnection();
@@ -98,7 +99,7 @@ public final class ClassGroupDAO {
     public Optional<ClassGroup> lockById(Connection connection, long classGroupId) throws SQLException {
         String sql = """
                 SELECT id_class_group, id_subject, id_course, cod_class_group, modality, state,
-                       min_students, max_students, starts_at, ends_at, shift
+                       min_students, max_students, starts_at, ends_at, shift, show_content_thumbnails
                 FROM class_group
                 WHERE id_class_group = ?
                 FOR UPDATE
@@ -118,10 +119,10 @@ public final class ClassGroupDAO {
     public List<ClassGroup> findByCourse(long courseId) throws SQLException {
         String sql = """
                 SELECT id_class_group, id_subject, id_course, cod_class_group, modality, state,
-                       min_students, max_students, starts_at, ends_at, shift
+                       min_students, max_students, starts_at, ends_at, shift, show_content_thumbnails
                 FROM class_group
                 WHERE id_course = ?
-                ORDER BY id_subject, cod_class_group
+                ORDER BY id_class_group
                 """;
 
         try (Connection connection = connectionProvider.getConnection();
@@ -136,10 +137,10 @@ public final class ClassGroupDAO {
     public List<ClassGroup> findBySubject(long subjectId) throws SQLException {
         String sql = """
                 SELECT id_class_group, id_subject, id_course, cod_class_group, modality, state,
-                       min_students, max_students, starts_at, ends_at, shift
+                       min_students, max_students, starts_at, ends_at, shift, show_content_thumbnails
                 FROM class_group
                 WHERE id_subject = ?
-                ORDER BY id_course, cod_class_group
+                ORDER BY id_class_group
                 """;
 
         try (Connection connection = connectionProvider.getConnection();
@@ -154,11 +155,11 @@ public final class ClassGroupDAO {
     public List<ClassGroup> findByCourseAndSubject(long courseId, long subjectId) throws SQLException {
         String sql = """
                 SELECT id_class_group, id_subject, id_course, cod_class_group, modality, state,
-                       min_students, max_students, starts_at, ends_at, shift
+                       min_students, max_students, starts_at, ends_at, shift, show_content_thumbnails
                 FROM class_group
                 WHERE id_course = ?
                   AND id_subject = ?
-                ORDER BY cod_class_group
+                ORDER BY id_class_group
                 """;
 
         try (Connection connection = connectionProvider.getConnection();
@@ -174,21 +175,25 @@ public final class ClassGroupDAO {
     public void update(Connection connection, long classGroupId, ClassGroupUpdateCommand command) throws SQLException {
         String sql = """
                 UPDATE class_group
-                SET cod_class_group = ?, modality = ?, state = ?,
-                    min_students = ?, max_students = ?, starts_at = ?, ends_at = ?, shift = ?
+                SET id_subject = ?, id_course = ?, cod_class_group = ?, modality = ?, state = ?,
+                    min_students = ?, max_students = ?, starts_at = ?, ends_at = ?, shift = ?,
+                    show_content_thumbnails = ?
                 WHERE id_class_group = ?
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, command.code().trim());
-            statement.setString(2, command.modality().toDatabaseValue());
-            statement.setString(3, command.state().toDatabaseValue());
-            setNullableInteger(statement, 4, command.minStudents());
-            setNullableInteger(statement, 5, command.maxStudents());
-            setDate(statement, 6, command.startsAt());
-            setDate(statement, 7, command.endsAt());
-            setNullableString(statement, 8, command.shift());
-            statement.setLong(9, classGroupId);
+            statement.setLong(1, command.subjectId());
+            statement.setLong(2, command.courseId());
+            statement.setString(3, command.code().trim());
+            statement.setString(4, command.modality().toDatabaseValue());
+            statement.setString(5, command.state().toDatabaseValue());
+            setNullableInteger(statement, 6, command.minStudents());
+            setNullableInteger(statement, 7, command.maxStudents());
+            setDate(statement, 8, command.startsAt());
+            setDate(statement, 9, command.endsAt());
+            statement.setString(10, command.shift().toDatabaseValue());
+            statement.setBoolean(11, command.showContentThumbnails());
+            statement.setLong(12, classGroupId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Class group not found: " + classGroupId);
             }
@@ -289,7 +294,8 @@ public final class ClassGroupDAO {
                 maxWasNull ? null : maxStudents,
                 startsAt == null ? null : startsAt.toLocalDate(),
                 endsAt == null ? null : endsAt.toLocalDate(),
-                resultSet.getString("shift")
+                ClassGroupShift.fromDatabaseValue(resultSet.getString("shift")),
+                resultSet.getBoolean("show_content_thumbnails")
         );
     }
 

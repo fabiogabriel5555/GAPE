@@ -32,6 +32,9 @@ INSERT INTO grant_administrator (id_admin_user, cod_permission, context_type, co
 INSERT INTO grant_coordinator (id_coordinator_user, cod_permission) VALUES
     (2, 'MANAGE_LEARNING');
 
+INSERT INTO grant_teacher (id_teacher_user, cod_permission) VALUES
+    (3, 'MANAGE_LEARNING');
+
 INSERT INTO organization (id_organization, name, acronym, photo, type, state) VALUES
     (10, 'Instituto Superior GAPE', 'ISG', 'organizations/10/profile.webp', 'educational_institution', 'inactive'),
     (11, 'Organizacao Externa', 'ORGX', 'organizations/11/profile.webp', 'training_company', 'inactive');
@@ -101,9 +104,9 @@ INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_da
 INSERT INTO content_item (
     id_content_item, author_user_id, title, description, format, source, state, created_at
 ) VALUES
-    (70, 3, 'Guia da UC', 'Guia introdutorio', 'pdf', '/content/guia-prj.pdf', 'active', '2026-02-02 10:00:00'),
-    (71, 3, 'Apontamentos', 'Texto de apoio', 'text', 'Texto integral da aula', 'active', '2026-02-03 10:00:00'),
-    (72, 3, 'Conteudo Arquivado', 'Nao deve ser reutilizado em novos contextos ativos', 'pdf', '/content/legacy.pdf', 'archived', '2026-01-15 08:00:00');
+    (70, 3, 'Guia da UC', 'Guia introdutorio', 'pdf', 'contents/guia-prj.pdf', 'active', '2026-02-02 10:00:00'),
+    (71, 3, 'Apontamentos', 'Texto de apoio', 'text', 'contents/texto-integral-aula.txt', 'active', '2026-02-03 10:00:00'),
+    (72, 3, 'Conteudo Arquivado', 'Nao deve ser reutilizado em novos contextos ativos', 'pdf', 'contents/legacy.pdf', 'archived', '2026-01-15 08:00:00');
 
 INSERT INTO associate_class_group_content (id_class_group, id_content_item, role) VALUES
     (50, 70, 'support');

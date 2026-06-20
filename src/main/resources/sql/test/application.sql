@@ -56,11 +56,28 @@ INSERT INTO class_group (
     id_class_group, id_subject, id_course, cod_class_group, modality, state,
     min_students, max_students, starts_at, ends_at, shift
 ) VALUES
-    (9102, 40, 31, 'CG-NAO-INTEGRADA', 'onsite', 'active', 5, 20, '2026-02-01', '2026-06-30', 'night');
+    (9102, 40, 31, 'CG-NAO-INTEGRADA', 'onsite', 'active', 5, 20, '2026-02-01', '2026-06-30', 'mixed');
 
 -- Enroll_Subject tem de estar coberta pelo periodo completo da inscricao no Course
 INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date)
 VALUES (4, 30, 41, 'active', '2026-01-01', NULL);
+
+-- Enroll_Class_Group exige inscricao ativa na disciplina da turma
+INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date)
+VALUES (4, 52, 'active', '2026-02-01', NULL);
+
+-- Class_Group nao pode baixar max_students abaixo das inscricoes ativas
+UPDATE class_group
+SET min_students = 0,
+    max_students = 0
+WHERE id_class_group = 50;
+
+-- Ordem de Content_Block ativa tem de ser unica na turma
+INSERT INTO content_block (
+    id_content_block, id_class_group, cod_content_block, name, description, order_no,
+    access_mode, state, available_from, available_until
+) VALUES
+    (9124, 50, 'BLK-ACTIVE-ORDER', 'Ordem ativa duplicada', NULL, 1, 'open', 'active', NULL, NULL);
 
 -- Physical_Room Organic_Unit tem de pertencer a mesma Organization
 INSERT INTO physical_room (

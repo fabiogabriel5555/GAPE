@@ -15,6 +15,7 @@ import java.util.Set;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.structure.model.ClassGroupContext;
 import pt.isel.gape.structure.model.RoleAssignmentState;
+import pt.isel.gape.structure.model.TeacherClassGroupAssignment;
 
 public final class TeachClassGroupDAO {
 
@@ -138,6 +139,85 @@ public final class TeachClassGroupDAO {
         }
     }
 
+    public long countActiveAssignments(long classGroupId) throws SQLException {
+        String sql = """
+                SELECT COUNT(*)
+                FROM teach_class_group tcg
+                JOIN teacher_profile tp ON tp.id_user = tcg.id_teacher_user
+                JOIN user_account u ON u.id_user = tp.id_user
+                WHERE tcg.id_class_group = ?
+                  AND tcg.state = 'active'
+                  AND u.state = 'active'
+                  AND (tcg.start_date IS NULL OR tcg.start_date <= CURRENT_DATE)
+                  AND (tcg.end_date IS NULL OR tcg.end_date >= CURRENT_DATE)
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, classGroupId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getLong(1);
+            }
+        }
+    }
+
+    public List<TeacherClassGroupAssignment> findByClassGroup(long classGroupId) throws SQLException {
+        String sql = """
+                SELECT tcg.id_teacher_user, tcg.id_class_group, tcg.state, tcg.start_date, tcg.end_date,
+                       u.name AS teacher_name, u.email AS teacher_email
+                FROM teach_class_group tcg
+                JOIN teacher_profile tp ON tp.id_user = tcg.id_teacher_user
+                JOIN user_account u ON u.id_user = tp.id_user
+                WHERE tcg.id_class_group = ?
+                ORDER BY CASE tcg.state WHEN 'active' THEN 0 ELSE 1 END,
+                         u.name,
+                         tcg.id_teacher_user
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, classGroupId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<TeacherClassGroupAssignment> assignments = new ArrayList<>();
+                while (resultSet.next()) {
+                    assignments.add(new TeacherClassGroupAssignment(
+                            resultSet.getLong("id_teacher_user"),
+                            resultSet.getLong("id_class_group"),
+                            RoleAssignmentState.fromDatabaseValue(resultSet.getString("state")),
+                            nullableDate(resultSet, "start_date"),
+                            nullableDate(resultSet, "end_date"),
+                            resultSet.getString("teacher_name"),
+                            resultSet.getString("teacher_email")
+                    ));
+                }
+                return assignments;
+            }
+        }
+    }
+
+    public boolean deactivate(
+            Connection connection,
+            long teacherUserId,
+            long classGroupId,
+            LocalDate endDate
+    ) throws SQLException {
+        String sql = """
+                UPDATE teach_class_group
+                SET state = ?, end_date = ?
+                WHERE id_teacher_user = ?
+                  AND id_class_group = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, RoleAssignmentState.INACTIVE.toDatabaseValue());
+            setDate(statement, 2, endDate);
+            statement.setLong(3, teacherUserId);
+            statement.setLong(4, classGroupId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
     public List<ClassGroupContext> findActiveByOrganizations(Collection<Long> organizationIds) throws SQLException {
         if (organizationIds == null || organizationIds.isEmpty()) {
             return List.of();
@@ -250,6 +330,11 @@ public final class TeachClassGroupDAO {
     private static Long nullableLong(ResultSet resultSet, String column) throws SQLException {
         long value = resultSet.getLong(column);
         return resultSet.wasNull() ? null : value;
+    }
+
+    private static LocalDate nullableDate(ResultSet resultSet, String column) throws SQLException {
+        Date value = resultSet.getDate(column);
+        return value == null ? null : value.toLocalDate();
     }
 
     private static void setDate(PreparedStatement statement, int index, LocalDate value) throws SQLException {

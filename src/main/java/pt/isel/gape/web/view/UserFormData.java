@@ -366,8 +366,12 @@ public final class UserFormData {
             if (parts.length != 3) {
                 throw new IllegalArgumentException("Invalid administrator permission assignment");
             }
+            String permissionCode = AuthorizationPolicy.canonicalAdminPermission(parts[0]);
+            if (!AuthorizationPolicy.isAdminPermission(permissionCode)) {
+                throw new IllegalArgumentException("Invalid administrator permission assignment");
+            }
             assignments.add(new AdministratorPermissionAssignment(
-                    parts[0],
+                    permissionCode,
                     AccessEntityType.valueOf(parts[1]),
                     Long.parseLong(parts[2])
             ));

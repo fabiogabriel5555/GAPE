@@ -1,9 +1,13 @@
 package pt.isel.gape.structure;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
@@ -258,5 +262,189 @@ class OrganicUnitServiceTest {
                         "127.0.0.1"
                 )
         );
+    }
+
+    @Test
+    void assignOrganicUnitAdministratorCreatesDirectUnitGrantForEligibleAdministrator() throws Exception {
+        addAdministrator(100L, "ADM-UNIT-100", "MANAGE_ORGANIZATION_STRUCTURE", "ORGANIZATION", 10L);
+
+        organicUnitService.assignOrganicUnitAdministrator(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                20L,
+                100L,
+                "127.0.0.1"
+        );
+
+        assertTrue(organicUnitService.listDirectOrganicUnitAdministratorIds(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                20L,
+                "127.0.0.1"
+        ).contains(100L));
+        assertTrue(hasAdministratorGrant(100L, "MANAGE_ORGANIZATION_STRUCTURE", "ORGANIC_UNIT", 20L));
+    }
+
+    @Test
+    void assignOrganicUnitAdministratorRejectsNonAdministratorUsers() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> organicUnitService.assignOrganicUnitAdministrator(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        20L,
+                        4L,
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void assignOrganicUnitAdministratorRejectsAdministratorWithDifferentPermissionScope() throws Exception {
+        addAdministrator(101L, "ADM-UNIT-101", "MANAGE_LEARNING", "COURSE", 30L);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> organicUnitService.assignOrganicUnitAdministrator(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        20L,
+                        101L,
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void revokeOrganicUnitAdministratorKeepsAtLeastOneAdministratorAssignment() throws Exception {
+        addAdministrator(102L, "ADM-UNIT-102", "MANAGE_ORGANIZATION_STRUCTURE", "ORGANIC_UNIT", 20L);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> organicUnitService.revokeOrganicUnitAdministrator(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        20L,
+                        102L,
+                        "127.0.0.1"
+                )
+        );
+        assertTrue(hasAdministratorGrant(102L, "MANAGE_ORGANIZATION_STRUCTURE", "ORGANIC_UNIT", 20L));
+    }
+
+    @Test
+    void revokeOrganicUnitAdministratorRemovesOnlyDirectUnitGrant() throws Exception {
+        addAdministrator(103L, "ADM-UNIT-103", "MANAGE_ORGANIZATION_STRUCTURE", "ORGANIZATION", 10L);
+        addAdministratorGrant(103L, "MANAGE_ORGANIZATION_STRUCTURE", "ORGANIC_UNIT", 20L);
+
+        organicUnitService.revokeOrganicUnitAdministrator(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                20L,
+                103L,
+                "127.0.0.1"
+        );
+
+        assertTrue(hasAdministratorGrant(103L, "MANAGE_ORGANIZATION_STRUCTURE", "ORGANIZATION", 10L));
+        assertFalse(hasAdministratorGrant(103L, "MANAGE_ORGANIZATION_STRUCTURE", "ORGANIC_UNIT", 20L));
+    }
+
+    @Test
+    void organicUnitScopedAdministratorListsOwnUnitAndDescendants() throws Exception {
+        addAdministrator(104L, "ADM-UNIT-104", "MANAGE_ORGANIZATION_STRUCTURE", "ORGANIC_UNIT", 20L);
+
+        java.util.Set<Long> unitIds = organicUnitService.listOrganicUnits(
+                        104L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        10L,
+                        "127.0.0.1"
+                )
+                .stream()
+                .map(OrganicUnit::id)
+                .collect(java.util.stream.Collectors.toSet());
+
+        assertEquals(java.util.Set.of(20L, 22L), unitIds);
+    }
+
+    private void addAdministrator(
+            long userId,
+            String administratorCode,
+            String permissionCode,
+            String contextType,
+            long contextId
+    ) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            try (PreparedStatement user = connection.prepareStatement("""
+                    INSERT INTO user_account (
+                        id_user, name, email, state, language, photo, created_at, credential_hash, credential_salt
+                    ) VALUES (?, ?, ?, 'active', 'pt-PT', NULL, '2026-01-01 10:00:00', 'hash', 'salt')
+                    """)) {
+                user.setLong(1, userId);
+                user.setString(2, "Unit Admin " + userId);
+                user.setString(3, "unit.admin." + userId + "@gape.local");
+                user.executeUpdate();
+            }
+            try (PreparedStatement profile = connection.prepareStatement("""
+                    INSERT INTO administrator_profile (id_user, cod_administrator)
+                    VALUES (?, ?)
+                    """)) {
+                profile.setLong(1, userId);
+                profile.setString(2, administratorCode);
+                profile.executeUpdate();
+            }
+        }
+        addAdministratorGrant(userId, permissionCode, contextType, contextId);
+    }
+
+    private void addAdministratorGrant(
+            long userId,
+            String permissionCode,
+            String contextType,
+            long contextId
+    ) throws SQLException {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement grant = connection.prepareStatement("""
+                     INSERT INTO grant_administrator (id_admin_user, cod_permission, context_type, context_id)
+                     VALUES (?, ?, ?, ?)
+                     """)) {
+            grant.setLong(1, userId);
+            grant.setString(2, permissionCode);
+            grant.setString(3, contextType);
+            grant.setLong(4, contextId);
+            grant.executeUpdate();
+        }
+    }
+
+    private boolean hasAdministratorGrant(
+            long userId,
+            String permissionCode,
+            String contextType,
+            long contextId
+    ) throws SQLException {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT COUNT(*)
+                     FROM grant_administrator
+                     WHERE id_admin_user = ?
+                       AND cod_permission = ?
+                       AND context_type = ?
+                       AND context_id = ?
+                     """)) {
+            statement.setLong(1, userId);
+            statement.setString(2, permissionCode);
+            statement.setString(3, contextType);
+            statement.setLong(4, contextId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1) > 0;
+            }
+        }
     }
 }

@@ -227,6 +227,50 @@ public final class ContentBlockService {
         }
     }
 
+    public void unarchiveContentBlock(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long contentBlockId,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    ContentBlock current = requireContentBlock(connection, contentBlockId);
+                    if (current.state() != ContentBlockState.ARCHIVED) {
+                        throw new IllegalStateException("Only archived content blocks can be restored");
+                    }
+                    ClassGroup classGroup = requireClassGroup(connection, current.classGroupId());
+                    requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
+                    requireNotArchived(classGroup);
+                    if (contentBlockDAO.activeOrderExists(
+                            connection,
+                            current.classGroupId(),
+                            current.orderNo(),
+                            contentBlockId
+                    )) {
+                        throw new IllegalStateException("Another active content block already uses this order");
+                    }
+                    contentBlockDAO.updateState(connection, contentBlockId, ContentBlockState.ACTIVE);
+                    auditService.record(connection, actorUserId, sessionId, "CONTENT_BLOCK_UNARCHIVE",
+                            "content_block", Long.toString(contentBlockId), "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "CONTENT_BLOCK_UNARCHIVE", Long.toString(contentBlockId), sourceIp);
+            throw wrap(exception, "Failed to unarchive content block");
+        }
+    }
+
     public void deleteContentBlock(
             long actorUserId,
             Long sessionId,
