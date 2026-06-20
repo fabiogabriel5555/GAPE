@@ -34,8 +34,10 @@ uploads/**
 !uploads/README.md
 !uploads/**/
 !uploads/**/.gitkeep
+!uploads/contents/guia-prj.pdf
 gape/uploads/**
 .gape-webp-native/
+docs/dev/.gape-webp-native/
 
 # Templates originais/intactos (staging - integram-se a partir daqui; versiona-se so o que for copiado para webapp/)
 docs/templates/

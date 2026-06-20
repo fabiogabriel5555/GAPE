@@ -3,7 +3,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$workspace = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
+$workspace = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..\..\..")).Path
 $expectedBase = Join-Path $workspace "target\browser-tomcat10"
 
 $listeners = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)

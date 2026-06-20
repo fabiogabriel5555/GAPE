@@ -192,7 +192,7 @@ function New-AuthenticatedBrowserUrls {
     }
 }
 
-$workspace = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..")).Path
+$workspace = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..\..\..")).Path
 $tomcatHome = Join-Path $workspace "target\tools\apache-tomcat-10.1.24"
 $tomcatBase = Join-Path $workspace "target\browser-tomcat10"
 $baseUrl = "http://localhost:$Port/$ContextPath"
@@ -211,7 +211,7 @@ $launcherPath = Join-Path $tomcatBase "bin\run-browser-gape.ps1"
 $stdoutPath = Join-Path $tomcatBase "logs\browser-stdout.log"
 $stderrPath = Join-Path $tomcatBase "logs\browser-stderr.log"
 $uploadDir = Join-Path $workspace "uploads"
-$webpDir = Join-Path $workspace ".gape-webp-native"
+$webpDir = Join-Path $workspace "docs\dev\.gape-webp-native"
 $javaHome = Resolve-JavaHome
 New-Item -ItemType Directory -Path $uploadDir -Force | Out-Null
 New-Item -ItemType Directory -Path $webpDir -Force | Out-Null
