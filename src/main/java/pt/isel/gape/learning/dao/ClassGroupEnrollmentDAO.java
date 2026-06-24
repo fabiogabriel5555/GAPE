@@ -24,17 +24,85 @@ public final class ClassGroupEnrollmentDAO {
     }
 
     public void enroll(Connection connection, ClassGroupEnrollmentCommand command) throws SQLException {
+        save(connection, command, EnrollmentState.ACTIVE);
+    }
+
+    public void request(Connection connection, ClassGroupEnrollmentCommand command) throws SQLException {
+        save(connection, command, EnrollmentState.PENDING);
+    }
+
+    private void save(
+            Connection connection,
+            ClassGroupEnrollmentCommand command,
+            EnrollmentState state
+    ) throws SQLException {
         String sql = """
                 INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date)
-                VALUES (?, ?, 'active', ?, ?)
+                VALUES (?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, command.studentUserId());
             statement.setLong(2, command.classGroupId());
-            setDate(statement, 3, command.startDate());
-            setDate(statement, 4, command.endDate());
+            statement.setString(3, state.toDatabaseValue());
+            setDate(statement, 4, command.startDate());
+            setDate(statement, 5, command.endDate());
             statement.executeUpdate();
+        }
+    }
+
+    public void updateState(
+            Connection connection,
+            long studentUserId,
+            long classGroupId,
+            EnrollmentState expectedState,
+            EnrollmentState newState,
+            LocalDate startDate,
+            LocalDate endDate
+    ) throws SQLException {
+        String sql = """
+                UPDATE enroll_class_group
+                SET state = ?, start_date = ?, end_date = ?
+                WHERE id_student_user = ?
+                  AND id_class_group = ?
+                  AND state = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, newState.toDatabaseValue());
+            setDate(statement, 2, startDate);
+            setDate(statement, 3, endDate);
+            statement.setLong(4, studentUserId);
+            statement.setLong(5, classGroupId);
+            statement.setString(6, expectedState.toDatabaseValue());
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Expected class group enrollment state not found");
+            }
+        }
+    }
+
+    public void reactivateRequest(
+            Connection connection,
+            ClassGroupEnrollmentCommand command,
+            EnrollmentState newState
+    ) throws SQLException {
+        String sql = """
+                UPDATE enroll_class_group
+                SET state = ?, start_date = ?, end_date = ?
+                WHERE id_student_user = ?
+                  AND id_class_group = ?
+                  AND state IN ('inactive', 'rejected', 'withdrawn', 'archived')
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, newState.toDatabaseValue());
+            setDate(statement, 2, command.startDate());
+            setDate(statement, 3, command.endDate());
+            statement.setLong(4, command.studentUserId());
+            statement.setLong(5, command.classGroupId());
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Reusable class group enrollment not found");
+            }
         }
     }
 
@@ -58,6 +126,53 @@ public final class ClassGroupEnrollmentDAO {
             statement.setLong(3, classGroupId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Active class group enrollment not found");
+            }
+        }
+    }
+
+    public void updateEnrollment(
+            Connection connection,
+            long studentUserId,
+            long classGroupId,
+            EnrollmentState state,
+            LocalDate startDate,
+            LocalDate endDate
+    ) throws SQLException {
+        String sql = """
+                UPDATE enroll_class_group
+                SET state = ?, start_date = ?, end_date = ?
+                WHERE id_student_user = ?
+                  AND id_class_group = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, state.toDatabaseValue());
+            setDate(statement, 2, startDate);
+            setDate(statement, 3, endDate);
+            statement.setLong(4, studentUserId);
+            statement.setLong(5, classGroupId);
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Class group enrollment not found");
+            }
+        }
+    }
+
+    public void deleteEnrollment(
+            Connection connection,
+            long studentUserId,
+            long classGroupId
+    ) throws SQLException {
+        String sql = """
+                DELETE FROM enroll_class_group
+                WHERE id_student_user = ?
+                  AND id_class_group = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, studentUserId);
+            statement.setLong(2, classGroupId);
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Class group enrollment not found");
             }
         }
     }
@@ -91,6 +206,26 @@ public final class ClassGroupEnrollmentDAO {
         }
     }
 
+    public void deleteInCourse(
+            Connection connection,
+            long studentUserId,
+            long courseId
+    ) throws SQLException {
+        String sql = """
+                DELETE ecg
+                FROM enroll_class_group ecg
+                JOIN class_group cg ON cg.id_class_group = ecg.id_class_group
+                WHERE ecg.id_student_user = ?
+                  AND cg.id_course = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, studentUserId);
+            statement.setLong(2, courseId);
+            statement.executeUpdate();
+        }
+    }
+
     public void withdrawActiveInSubject(
             Connection connection,
             long studentUserId,
@@ -119,6 +254,29 @@ public final class ClassGroupEnrollmentDAO {
             statement.setLong(4, studentUserId);
             statement.setLong(5, courseId);
             statement.setLong(6, subjectId);
+            statement.executeUpdate();
+        }
+    }
+
+    public void deleteInSubject(
+            Connection connection,
+            long studentUserId,
+            long courseId,
+            long subjectId
+    ) throws SQLException {
+        String sql = """
+                DELETE ecg
+                FROM enroll_class_group ecg
+                JOIN class_group cg ON cg.id_class_group = ecg.id_class_group
+                WHERE ecg.id_student_user = ?
+                  AND cg.id_course = ?
+                  AND cg.id_subject = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, studentUserId);
+            statement.setLong(2, courseId);
+            statement.setLong(3, subjectId);
             statement.executeUpdate();
         }
     }
@@ -211,6 +369,41 @@ public final class ClassGroupEnrollmentDAO {
                   AND cg.id_course = ?
                   AND cg.id_subject = ?
                   AND ecg.state = 'active'
+                  AND (ecg.start_date IS NULL OR ? IS NULL OR ecg.start_date <= ?)
+                  AND (ecg.end_date IS NULL OR ? IS NULL OR ecg.end_date >= ?)
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, studentUserId);
+            statement.setLong(2, courseId);
+            statement.setLong(3, subjectId);
+            setDate(statement, 4, endDate);
+            setDate(statement, 5, endDate);
+            setDate(statement, 6, startDate);
+            setDate(statement, 7, startDate);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1) > 0;
+            }
+        }
+    }
+
+    public boolean hasOpenEnrollmentInContext(
+            Connection connection,
+            long studentUserId,
+            long courseId,
+            long subjectId,
+            LocalDate startDate,
+            LocalDate endDate
+    ) throws SQLException {
+        String sql = """
+                SELECT COUNT(*)
+                FROM enroll_class_group ecg
+                JOIN class_group cg ON cg.id_class_group = ecg.id_class_group
+                WHERE ecg.id_student_user = ?
+                  AND cg.id_course = ?
+                  AND cg.id_subject = ?
+                  AND ecg.state IN ('active', 'pending')
                   AND (ecg.start_date IS NULL OR ? IS NULL OR ecg.start_date <= ?)
                   AND (ecg.end_date IS NULL OR ? IS NULL OR ecg.end_date >= ?)
                 """;

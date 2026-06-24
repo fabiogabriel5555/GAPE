@@ -104,19 +104,21 @@ class ProfilePhotoStorageTest {
     }
 
     @Test
-    void storesRelativeUploadDirectoryUnderWebappRootWhenDirectoryDoesNotExist() throws Exception {
+    void storesRelativeUploadDirectoryUnderProjectRootWhenDirectoryDoesNotExist() throws Exception {
         Path webappRoot = Files.createTempDirectory("profile-photo-storage-webapp-");
+        Path projectUploadRoot = Path.of("test-uploads-does-not-exist");
         try {
             ProfilePhotoStorage storage = new ProfilePhotoStorage("test-uploads-does-not-exist");
 
             String storedPath = storage.saveOrganizationPhoto(43L, new ImagePart(pngImageBytes()), servletContext(webappRoot));
 
             assertEquals("organizations/43/profile.webp", storedPath);
-            Path storedFile = webappRoot.resolve("test-uploads-does-not-exist/organizations/43/profile.webp");
+            Path storedFile = projectUploadRoot.resolve("organizations/43/profile.webp");
             assertTrue(Files.exists(storedFile));
             assertTrue(Files.size(storedFile) > 0);
             assertWebpFile(storedFile);
         } finally {
+            deleteDirectory(projectUploadRoot);
             deleteDirectory(webappRoot);
         }
     }

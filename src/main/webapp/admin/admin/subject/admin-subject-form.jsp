@@ -146,7 +146,15 @@
                                     <option value="TRIMESTER_3" ${form.initialTerm == 'TRIMESTER_3' ? 'selected' : ''}>3rd trimester</option>
                                 </select>
                             </div>
-                            <div class="col-lg-6 d-flex align-items-end">
+                            <div class="col-lg-4 gape-select-field">
+                                <label for="initialApprovalMode" class="fw-medium text-base text-neutral-800 mb-12">Enrollment</label>
+                                <select id="initialApprovalMode" name="initialApprovalMode" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
+                                    <option value="">Select mode</option>
+                                    <option value="manual">Manual approval</option>
+                                    <option value="auto_approve">Auto approve</option>
+                                </select>
+                            </div>
+                            <div class="col-lg-4 d-flex align-items-end">
                                 <div class="form-check common-check">
                                     <input class="form-check-input" type="checkbox" id="initialMandatory" name="initialMandatory" value="true" ${form.initialMandatory ? 'checked' : ''}>
                                     <label class="form-check-label fw-medium" for="initialMandatory">Mandatory subject</label>
@@ -229,110 +237,14 @@
                         </form>
                     </div>
 
-                    <div class="bg-white rounded-10 px-40 py-40 mt-24">
-                        <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap border-bottom-dashed pb-24 mb-24">
-                            <div>
-                                <h3 class="text-18 fw-medium text-neutral-700 mb-4">Course Associations</h3>
-                                <span class="text-14 text-neutral-500">Courses linked to this subject.</span>
-                            </div>
-                        </div>
+                    <div class="mt-24">
+                        <%@ include file="/WEB-INF/fragments/subject-course-associations-panel.jspf" %>
+                    </div>
+                </c:if>
 
-                        <div class="overflow-x-auto mb-24">
-                            <table class="table mb-0">
-                                <thead>
-                                <tr>
-                                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Course</th>
-                                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Position</th>
-                                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Requirement</th>
-                                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600">State</th>
-                                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600 text-end">Actions</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <c:forEach var="association" items="${subjectCourseAssociations}">
-                                    <tr class="border-bottom">
-                                        <td class="py-16 px-16">
-                                            <a href="${pageContext.request.contextPath}${subjectCourseBasePath}/${association.courseId}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
-                                                <c:out value="${association.courseName}"/>
-                                            </a>
-                                            <span class="d-block text-12 text-neutral-500" title="<c:out value='${association.courseContextTitle}'/>"><c:out value="${association.courseContextHtml}" escapeXml="false"/></span>
-                                        </td>
-                                        <td class="py-16 px-16 text-14 text-neutral-500"><c:out value="${association.curricularPositionLabel}"/></td>
-                                        <td class="py-16 px-16 text-14 text-neutral-500"><c:out value="${association.mandatoryLabel}"/></td>
-                                        <td class="py-16 px-16">
-                                            <span class="${association.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-14">
-                                                <c:out value="${association.stateLabel}"/>
-                                            </span>
-                                        </td>
-                                        <td class="py-16 px-16">
-                                            <div class="d-flex align-items-center justify-content-end">
-                                                <c:choose>
-                                                    <c:when test="${not association.archived}">
-                                                        <form action="${pageContext.request.contextPath}${subjectBasePath}/${form.id}/courses/${association.courseId}/delete" method="post" class="m-0">
-                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                            <button type="submit" class="text-22 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Remove">
-                                                                <i class="ph ph-trash"></i>
-                                                            </button>
-                                                        </form>
-                                                    </c:when>
-                                                    <c:otherwise>
-                                                        <span class="text-14 text-neutral-500">-</span>
-                                                    </c:otherwise>
-                                                </c:choose>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </c:forEach>
-                                <c:if test="${empty subjectCourseAssociations}">
-                                    <tr>
-                                        <td colspan="5" class="py-24 px-16 text-center text-14 text-neutral-500">No associated courses found.</td>
-                                    </tr>
-                                </c:if>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <form action="${pageContext.request.contextPath}${subjectBasePath}/${form.id}/courses" method="post" class="border border-neutral-30 rounded-12 px-20 py-20">
-                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                            <div class="row gy-4">
-                                <div class="col-lg-6 gape-select-field">
-                                    <label for="courseId" class="fw-medium text-base text-neutral-800 mb-12">Course</label>
-                                    <select id="courseId" name="courseId" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
-                                        <option value="">Select course</option>
-                                        <c:forEach var="course" items="${availableCourseOptions}">
-                                            <option value="${course.id}" title="<c:out value='${course.courseManagementContextTitle}'/>">
-                                                <c:out value="${course.name}"/> | <c:out value="${course.courseManagementContextLabel}"/>
-                                            </option>
-                                        </c:forEach>
-                                    </select>
-                                </div>
-                                <div class="col-lg-2">
-                                    <label for="curricularYear" class="fw-medium text-base text-neutral-800 mb-12">Year</label>
-                                    <input id="curricularYear" name="curricularYear" type="number" min="1" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
-                                </div>
-                                <div class="col-lg-4 gape-select-field">
-                                    <label for="term" class="fw-medium text-base text-neutral-800 mb-12">Period</label>
-                                    <select id="term" name="term" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
-                                        <option value="">No period</option>
-                                        <option value="ANNUAL">Annual</option>
-                                        <option value="SEMESTER_1">1st semester</option>
-                                        <option value="SEMESTER_2">2nd semester</option>
-                                        <option value="TRIMESTER_1">1st trimester</option>
-                                        <option value="TRIMESTER_2">2nd trimester</option>
-                                        <option value="TRIMESTER_3">3rd trimester</option>
-                                    </select>
-                                </div>
-                                <div class="col-lg-8 d-flex align-items-end">
-                                    <div class="form-check common-check">
-                                        <input class="form-check-input" type="checkbox" id="mandatory" name="mandatory" value="true" checked>
-                                        <label class="form-check-label fw-medium" for="mandatory">Mandatory subject in this course</label>
-                                    </div>
-                                </div>
-                                <div class="col-lg-4 d-flex align-items-end justify-content-lg-end">
-                                    <button type="submit" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">Add Course</button>
-                                </div>
-                            </div>
-                        </form>
+                <c:if test="${not creating}">
+                    <div class="mt-24">
+                        <%@ include file="/WEB-INF/fragments/subject-enrollment-management.jspf" %>
                     </div>
                 </c:if>
             </div>

@@ -12,6 +12,7 @@ public record ClassGroupCreateCommand(
         Integer maxStudents,
         LocalDate startsAt,
         LocalDate endsAt,
-        ClassGroupShift shift
+        ClassGroupShift shift,
+        boolean showContentThumbnails
 ) {
 }

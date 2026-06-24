@@ -77,7 +77,8 @@ class ClassGroupServiceTest {
                         25,
                         LocalDate.of(2026, 3, 1),
                         null,
-                        ClassGroupShift.AFTERNOON
+                        ClassGroupShift.AFTERNOON,
+                        false
                 ),
                 "127.0.0.1"
         );
@@ -87,6 +88,31 @@ class ClassGroupServiceTest {
         assertNull(classGroup.minStudents());
         assertEquals(25, classGroup.maxStudents());
         assertFalse(classGroup.showContentThumbnails());
+    }
+
+    @Test
+    void administratorCanCreateClassGroupWithThumbnailsEnabled() {
+        ClassGroup classGroup = classGroupService.createClassGroup(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new ClassGroupCreateCommand(
+                        41L,
+                        31L,
+                        "MAT-AD-TN",
+                        ClassGroupModality.ONLINE,
+                        ClassGroupState.ACTIVE,
+                        null,
+                        25,
+                        LocalDate.of(2026, 3, 1),
+                        null,
+                        ClassGroupShift.AFTERNOON,
+                        true
+                ),
+                "127.0.0.1"
+        );
+
+        assertTrue(classGroup.showContentThumbnails());
     }
 
     @Test
@@ -107,7 +133,8 @@ class ClassGroupServiceTest {
                                 20,
                                 LocalDate.of(2026, 3, 1),
                                 LocalDate.of(2026, 6, 30),
-                                ClassGroupShift.EVENING
+                                ClassGroupShift.EVENING,
+                                false
                         ),
                         "127.0.0.1"
                 )
@@ -132,7 +159,8 @@ class ClassGroupServiceTest {
                                 10,
                                 null,
                                 null,
-                                ClassGroupShift.MORNING
+                                ClassGroupShift.MORNING,
+                                false
                         ),
                         "127.0.0.1"
                 )
@@ -157,7 +185,8 @@ class ClassGroupServiceTest {
                                 25,
                                 LocalDate.of(2026, 6, 30),
                                 LocalDate.of(2026, 3, 1),
-                                ClassGroupShift.AFTERNOON
+                                ClassGroupShift.AFTERNOON,
+                                false
                         ),
                         "127.0.0.1"
                 )
@@ -370,7 +399,8 @@ class ClassGroupServiceTest {
                         25,
                         LocalDate.of(2026, 3, 1),
                         null,
-                        ClassGroupShift.AFTERNOON
+                        ClassGroupShift.AFTERNOON,
+                        false
                 ),
                 "127.0.0.1"
         );
@@ -416,7 +446,8 @@ class ClassGroupServiceTest {
                         25,
                         LocalDate.of(2026, 3, 1),
                         null,
-                        ClassGroupShift.AFTERNOON
+                        ClassGroupShift.AFTERNOON,
+                        false
                 ),
                 "127.0.0.1"
         );
@@ -450,7 +481,8 @@ class ClassGroupServiceTest {
                                 30,
                                 LocalDate.of(2026, 2, 1),
                                 LocalDate.of(2026, 6, 30),
-                                ClassGroupShift.EVENING
+                                ClassGroupShift.EVENING,
+                                false
                         ),
                         "127.0.0.1"
                 )

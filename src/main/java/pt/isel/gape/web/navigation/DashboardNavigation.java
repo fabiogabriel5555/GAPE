@@ -23,7 +23,7 @@ public final class DashboardNavigation {
             case ADMINISTRATOR -> "/admin/admin-dashbord.jsp";
             case COORDINATOR -> "/coordinator/coordinator-dashbord.jsp";
             case TEACHER -> "/instructor/instructor-dashbord.jsp";
-            case STUDENT -> "/student/student-home.jsp";
+            case STUDENT -> "/student/student/dashboard/student-dashboard.jsp";
         };
     }
 
@@ -32,7 +32,7 @@ public final class DashboardNavigation {
             case ADMINISTRATOR -> "/admin/admin-my-profile.jsp";
             case COORDINATOR -> "/coordinator/coordinator-my-profile.jsp";
             case TEACHER -> "/instructor/instructor-my-profile.jsp";
-            case STUDENT -> "/student/student-my-profile.jsp";
+            case STUDENT -> "/student/student/profile/student-profile.jsp";
         };
     }
 }

@@ -49,20 +49,28 @@ public final class ClassGroupEnrollmentView {
         return state.name();
     }
 
+    public String getStateValue() {
+        return state.toDatabaseValue();
+    }
+
     public String getStateLabel() {
         return switch (state) {
+            case PENDING -> "Pending approval";
             case ACTIVE -> "Active";
             case INACTIVE -> "Inactive";
+            case REJECTED -> "Rejected";
             case COMPLETED -> "Completed";
-            case WITHDRAWN -> "Withdrawn";
+            case WITHDRAWN -> "Left";
             case ARCHIVED -> "Archived";
         };
     }
 
     public String getStateBadgeClass() {
         return switch (state) {
+            case PENDING -> "bg-warning-30 text-warning-600";
             case ACTIVE -> "bg-success-50 text-success-600";
             case INACTIVE -> "bg-warning-30 text-warning-600";
+            case REJECTED -> "bg-danger-50 text-danger-600";
             case COMPLETED -> "bg-info-50 text-info-600";
             case WITHDRAWN -> "bg-warning-30 text-warning-600";
             case ARCHIVED -> "bg-danger-50 text-danger-600";
@@ -73,12 +81,24 @@ public final class ClassGroupEnrollmentView {
         return state == EnrollmentState.ACTIVE;
     }
 
+    public boolean isPending() {
+        return state == EnrollmentState.PENDING;
+    }
+
     public String getStartDate() {
         return startDate == null ? "-" : startDate.toString();
     }
 
+    public String getStartDateValue() {
+        return startDate == null ? "" : startDate.toString();
+    }
+
     public String getEndDate() {
         return endDate == null ? "-" : endDate.toString();
+    }
+
+    public String getEndDateValue() {
+        return endDate == null ? "" : endDate.toString();
     }
 
     public String getStudentName() {

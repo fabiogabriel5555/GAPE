@@ -34,9 +34,9 @@ public final class UploadRootResolver {
 
         List<Path> candidates = new ArrayList<>();
         configuredUploadBaseDirectory().ifPresent(base -> candidates.add(base.resolve(configured)));
-        addWebappCandidates(candidates, webappRealPath, configured);
         projectRootFromCodeSource().ifPresent(projectRoot -> candidates.add(projectRoot.resolve(configured)));
         addUserDirCandidate(candidates, configured);
+        addWebappCandidates(candidates, webappRealPath, configured);
         localAppDataDirectory().ifPresent(localAppData -> candidates.add(localAppData.resolve("GAPE").resolve(configured)));
         candidates.add(Path.of(System.getProperty("user.home", ".")).resolve(".gape").resolve(configured));
 

@@ -37,6 +37,7 @@ import pt.isel.gape.structure.dao.OrganizationDAO;
 import pt.isel.gape.structure.dao.TeachClassGroupDAO;
 import pt.isel.gape.structure.model.Organization;
 import pt.isel.gape.structure.model.OrganizationState;
+import pt.isel.gape.structure.model.RoleAssignmentState;
 import pt.isel.gape.transversal.dao.ActivityLogDAO;
 import pt.isel.gape.transversal.service.AuditService;
 
@@ -337,6 +338,48 @@ public final class SubjectService {
         }
     }
 
+    public void updateCoordinatorAssignment(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long subjectId,
+            long coordinatorUserId,
+            RoleAssignmentState state,
+            LocalDate startDate,
+            LocalDate endDate,
+            String sourceIp
+    ) {
+        Objects.requireNonNull(state, "state is required");
+        try {
+            requireValidDates(startDate, endDate);
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Subject subject = requireSubject(connection, subjectId);
+                    requireSubjectAdministrator(actorUserId, sessionId, actorProfileType, subject.organizationId(), sourceIp);
+                    requireNotArchived(subject);
+                    if (!coordinateSubjectDAO.canAssign(connection, coordinatorUserId, subjectId)) {
+                        throw new IllegalArgumentException("Subject assignment requires active coordinator and non-archived subject");
+                    }
+                    coordinateSubjectDAO.updateAssignment(connection, coordinatorUserId, subjectId, state, startDate, endDate);
+                    auditService.record(connection, actorUserId, sessionId, "SUBJECT_COORDINATOR_UPDATE",
+                            "subject", subjectId + ":" + coordinatorUserId, "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "SUBJECT_COORDINATOR_UPDATE",
+                    subjectId + ":" + coordinatorUserId, sourceIp);
+            throw wrap(exception, "Failed to update coordinator assignment");
+        }
+    }
+
     public void archiveSubject(
             long actorUserId,
             Long sessionId,
@@ -493,21 +536,30 @@ public final class SubjectService {
         if (adminDecision.allowed()) {
             return adminDecision;
         }
-        if (actorProfileType != AccessProfileType.COORDINATOR) {
-            return adminDecision;
+        if (actorProfileType == AccessProfileType.COORDINATOR) {
+            AuthorizationDecision coordinatorDecision = permissionChecker.check(new AccessContext(
+                    actorUserId,
+                    sessionId,
+                    actorProfileType,
+                    AuthorizationPolicy.MANAGE_SUBJECTS,
+                    AccessEntityType.SUBJECT,
+                    subject.id(),
+                    sourceIp
+            ));
+            return coordinatorDecision.allowed()
+                    ? coordinatorDecision
+                    : AuthorizationDecision.deny(adminDecision.reason() + "/" + coordinatorDecision.reason());
         }
-        AuthorizationDecision coordinatorDecision = permissionChecker.check(new AccessContext(
-                actorUserId,
-                sessionId,
-                actorProfileType,
-                AuthorizationPolicy.MANAGE_SUBJECTS,
-                AccessEntityType.SUBJECT,
-                subject.id(),
-                sourceIp
-        ));
-        return coordinatorDecision.allowed()
-                ? coordinatorDecision
-                : AuthorizationDecision.deny(adminDecision.reason() + "/" + coordinatorDecision.reason());
+        if (actorProfileType == AccessProfileType.TEACHER) {
+            try (Connection connection = connectionProvider.getConnection()) {
+                return subjectDAO.teacherCanReadSubject(connection, actorUserId, subject.id())
+                        ? AuthorizationDecision.allow()
+                        : AuthorizationDecision.deny(adminDecision.reason() + "/teacher_subject_context_required");
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to check teacher subject context", exception);
+            }
+        }
+        return adminDecision;
     }
 
     private void requireSubjectMutationManager(
@@ -732,6 +784,7 @@ public final class SubjectService {
             if (assignment.curricularYear() != null && assignment.curricularYear() <= 0) {
                 throw new IllegalArgumentException("Curricular year must be positive");
             }
+            Objects.requireNonNull(assignment.approvalMode(), "Initial enrollment approval mode is required");
         }
     }
 

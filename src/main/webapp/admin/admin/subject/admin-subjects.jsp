@@ -9,6 +9,9 @@
 <c:if test="${empty subjectBasePath}">
     <c:set var="subjectBasePath" value="/admin/subjects"/>
 </c:if>
+<c:if test="${empty subjectCourseBasePath}">
+    <c:set var="subjectCourseBasePath" value="/admin/courses"/>
+</c:if>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,12 +68,35 @@
             padding: 14px;
         }
 
-        .gape-course-node {
-            border-inline-start: 3px solid #2563eb;
+        .gape-class-activities-panel {
+            margin-inline-start: 28px;
+            position: relative;
+        }
+
+        .gape-class-activities-panel::before {
+            background-color: #d9e2ef;
+            bottom: 12px;
+            content: "";
+            left: -16px;
+            position: absolute;
+            top: 12px;
+            width: 2px;
+        }
+
+        .gape-subject-node {
+            border-inline-start: 3px solid #16a34a;
         }
 
         .gape-class-group-node {
             border-inline-start: 3px solid #7c3aed;
+        }
+
+        .gape-lesson-node {
+            border-inline-start: 3px solid #2563eb;
+        }
+
+        .gape-room-node {
+            border-inline-start: 3px solid #16a34a;
         }
 
         .gape-node-meta {
@@ -78,6 +104,16 @@
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+        }
+
+        @media (max-width: 575.98px) {
+            .gape-class-activities-panel {
+                margin-inline-start: 0;
+            }
+
+            .gape-class-activities-panel::before {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -145,6 +181,7 @@
                                 <c:set var="canModifySubjectRow" value="${canModifySubjectById[subject.id]}" />
                                 <c:set var="canManageSubjectAssociationsRow" value="${canManageSubjectAssociationsById[subject.id]}" />
                                 <c:set var="subjectCourses" value="${subjectCoursesBySubject[subject.id]}"/>
+                                <c:set var="subjectClassGroups" value="${classGroupsBySubject[subject.id]}"/>
                                 <c:set var="subjectPhotoUrl" value=""/>
                                 <c:if test="${subject.hasPhoto}">
                                     <c:set var="subjectPhotoUrl" value="${pageContext.request.contextPath}/media/${subject.photo}?v=${mediaCacheVersion}"/>
@@ -201,13 +238,13 @@
                                         <div class="d-flex align-items-center gap-12 justify-content-end">
                                             <button type="button"
                                                     class="gape-tree-toggle text-22 text-neutral-500 hover-text-main-600"
-                                                    title="Show courses"
-                                                    aria-label="Show courses"
+                                                    title="Show class groups"
+                                                    aria-label="Show class groups"
                                                     aria-expanded="false"
-                                                    aria-controls="subjectCourses${subject.id}"
-                                                    data-gape-tree-toggle="subjectCourses${subject.id}"
-                                                    data-gape-open-title="Hide courses"
-                                                    data-gape-closed-title="Show courses">
+                                                    aria-controls="subjectClassGroups${subject.id}"
+                                                    data-gape-tree-toggle="subjectClassGroups${subject.id}"
+                                                    data-gape-open-title="Hide class groups"
+                                                    data-gape-closed-title="Show class groups">
                                                 <i class="ph ph-caret-down"></i>
                                             </button>
                                             <a href="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}" class="text-22 text-neutral-500 hover-text-main-600" title="Detail">
@@ -219,7 +256,7 @@
                                                 </a>
                                             </c:if>
                                             <c:if test="${not subject.archived and canManageSubjectAssociationsRow}">
-                                                <a href="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/courses" class="text-22 text-neutral-500 hover-text-main-600" title="Associate courses">
+                                                <a href="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/edit#course-associations" class="text-22 text-neutral-500 hover-text-main-600" title="Course Associations">
                                                     <i class="ph ph-link-simple"></i>
                                                 </a>
                                             </c:if>
@@ -254,98 +291,107 @@
                                         </c:if>
                                     </td>
                                 </tr>
-                                <tr id="subjectCourses${subject.id}" class="d-none">
+                                <tr id="subjectClassGroups${subject.id}" class="d-none">
                                     <td colspan="6" class="py-0 px-20 bg-neutral-20">
-                                        <div class="gape-structure-panel">
+                                        <div class="gape-subject-node border border-neutral-30 rounded-8 px-16 py-14 bg-white my-14">
+                                            <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap">
+                                                <div class="d-flex align-items-start gap-10">
+                                                    <span class="text-20 text-success-600 line-height-1"><i class="ph ph-book-open-text"></i></span>
+                                                    <div>
+                                                        <a href="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                                            <span class="gape-acronym-token" tabindex="0" title="<c:out value='${subject.name}'/>"><c:out value="${subject.acronym}"/></span>
+                                                            <span class="ms-4"><c:out value="${subject.name}"/></span>
+                                                        </a>
+                                                        <span class="gape-node-meta text-12">
+                                                            <span><c:out value="${fn:length(subjectCourses)}"/> courses</span>
+                                                            <span><c:out value="${fn:length(subjectClassGroups)}"/> class groups</span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <span class="${subject.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
+                                                    <c:out value="${subject.stateLabel}"/>
+                                                </span>
+                                            </div>
+
+                                            <div class="gape-structure-panel">
                                             <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mb-12">
                                                 <div>
-                                                    <h3 class="text-16 fw-medium text-neutral-700 mb-4">Courses</h3>
+                                                    <h3 class="text-16 fw-medium text-neutral-700 mb-4">Class Groups</h3>
                                                     <span class="text-13 text-neutral-500">
-                                                        <c:out value="${subject.name}"/> &middot; <c:out value="${fn:length(subjectCourses)}"/> courses
+                                                        <c:out value="${subject.name}"/> &middot; <c:out value="${fn:length(subjectClassGroups)}"/> class groups
                                                     </span>
                                                 </div>
                                             </div>
                                             <div class="d-flex flex-column gap-10">
-                                                <c:forEach var="association" items="${subjectCourses}">
-                                                    <c:set var="course" value="${association.course}" />
-                                                    <c:set var="classGroups" value="${subjectCourseClassGroupsBySubjectAndCourse[subject.id][course.id]}" />
-                                                    <c:set var="canModifyCourse" value="${canModifyCourseById[course.id]}" />
-                                                    <c:set var="canManageCourseChildren" value="${canManageCourseChildrenById[course.id]}" />
-                                                    <div class="gape-course-node border border-neutral-30 rounded-8 px-16 py-14 bg-white">
+                                                <c:forEach var="classGroup" items="${subjectClassGroups}">
+                                                    <c:set var="canModifyClassGroup" value="${canModifyClassGroupById[classGroup.id]}" />
+                                                    <c:set var="canManageClassGroupStructure" value="${canManageClassGroupStructureById[classGroup.id]}" />
+                                                    <c:set var="course" value="${classGroup.course}" />
+                                                    <c:set var="activityPanelId" value="subjectClassGroupActivities${subject.id}_${course.id}_${classGroup.id}" />
+                                                    <div class="gape-class-group-node border border-neutral-30 rounded-8 px-16 py-12 bg-white">
                                                         <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap">
                                                             <div class="d-flex align-items-start gap-10">
-                                                                <span class="text-20 text-main-600 line-height-1"><i class="ph ph-graduation-cap"></i></span>
+                                                                <span class="text-20 text-warning-600 line-height-1"><i class="ph ph-users-three"></i></span>
                                                                 <div>
-                                                                    <a href="${pageContext.request.contextPath}/admin/courses/${course.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
-                                                                        <span class="gape-acronym-token" tabindex="0" title="<c:out value='${course.name}'/>"><c:out value="${course.acronym}"/></span>
-                                                                        <span class="ms-4"><c:out value="${course.name}"/></span>
+                                                                    <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                                                        <c:out value="${classGroup.code}"/>
                                                                     </a>
                                                                     <span class="gape-node-meta text-12">
-                                                                        <span><c:out value="${course.typeLabel}"/></span>
-                                                                        <span><c:out value="${association.curricularPositionLabel}"/></span>
-                                                                        <span><c:out value="${association.mandatoryLabel}"/></span>
-                                                                        <span><c:out value="${fn:length(classGroups)}"/> class groups</span>
+                                                                        <span title="<c:out value='${classGroup.course.subjectManagementContextTitle}'/>">
+                                                                            <c:out value="${classGroup.course.subjectManagementContextHtml}" escapeXml="false"/>
+                                                                        </span>
+                                                                        <span><c:out value="${classGroup.modalityLabel}"/></span>
+                                                                        <span><c:out value="${classGroup.shift}"/></span>
+                                                                        <span><c:out value="${classGroup.dateRangeLabel}"/></span>
+                                                                        <span><c:out value="${classGroup.activeEnrollmentCountLabel}"/></span>
                                                                     </span>
                                                                 </div>
                                                             </div>
                                                             <div class="d-flex align-items-center gap-10 flex-wrap">
-                                                                <span class="${association.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
-                                                                    <c:out value="${association.stateLabel}"/>
+                                                                <span class="${classGroup.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
+                                                                    <c:out value="${classGroup.stateLabel}"/>
                                                                 </span>
                                                                 <button type="button"
                                                                         class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600"
-                                                                        title="Show class groups"
-                                                                        aria-label="Show class groups"
+                                                                        title="Show Activities"
+                                                                        aria-label="Show Activities"
                                                                         aria-expanded="false"
-                                                                        aria-controls="subjectCourseClassGroups${subject.id}_${course.id}"
-                                                                        data-gape-tree-toggle="subjectCourseClassGroups${subject.id}_${course.id}"
-                                                                        data-gape-open-title="Hide class groups"
-                                                                        data-gape-closed-title="Show class groups">
+                                                                        aria-controls="${activityPanelId}"
+                                                                        data-gape-tree-toggle="${activityPanelId}"
+                                                                        data-gape-open-title="Hide Activities"
+                                                                        data-gape-closed-title="Show Activities">
                                                                     <i class="ph ph-caret-down"></i>
                                                                 </button>
-                                                                <a href="${pageContext.request.contextPath}/admin/courses/${course.id}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail">
+                                                                <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail">
                                                                     <i class="ph ph-eye"></i>
                                                                 </a>
-                                                                <c:if test="${not course.archived and canModifyCourse}">
-                                                                    <a href="${pageContext.request.contextPath}/admin/courses/${course.id}/edit" class="text-20 text-neutral-500 hover-text-main-600" title="Edit">
+                                                                <c:if test="${not classGroup.archived and canModifyClassGroup}">
+                                                                    <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/edit" class="text-20 text-neutral-500 hover-text-main-600" title="Edit">
                                                                         <i class="ph ph-pencil-simple-line"></i>
                                                                     </a>
                                                                 </c:if>
-                                                                <c:if test="${not course.archived and canManageCourseChildren}">
-                                                                    <a href="${pageContext.request.contextPath}/admin/courses/${course.id}/subjects/new" class="text-20 text-neutral-500 hover-text-main-600" title="Associate subject">
-                                                                        <i class="ph ph-link-simple"></i>
-                                                                    </a>
-                                                                </c:if>
-                                                                <c:if test="${not course.archived and canModifyCourse}">
-                                                                    <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteSubjectPanelCourse${subject.id}_${course.id}">
+                                                                <c:if test="${not classGroup.archived and canManageClassGroupStructure}">
+                                                                    <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteSubjectPanelClassGroup${subject.id}_${classGroup.id}">
                                                                         <i class="ph ph-trash"></i>
                                                                     </button>
-                                                                </c:if>
-                                                                <c:if test="${course.archived and canModifyCourse}">
-                                                                    <form action="${pageContext.request.contextPath}/admin/courses/${course.id}/unarchive" method="post" class="m-0">
-                                                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                                        <button type="submit" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Unarchive">
-                                                                            <i class="ph ph-arrow-u-up-left"></i>
-                                                                        </button>
-                                                                    </form>
                                                                 </c:if>
                                                             </div>
                                                         </div>
 
-                                                        <c:if test="${not course.archived and canModifyCourse}">
-                                                        <div class="modal fade" id="deleteSubjectPanelCourse${subject.id}_${course.id}" tabindex="-1" aria-hidden="true">
+                                                        <c:if test="${not classGroup.archived and canManageClassGroupStructure}">
+                                                        <div class="modal fade" id="deleteSubjectPanelClassGroup${subject.id}_${classGroup.id}" tabindex="-1" aria-hidden="true">
                                                             <div class="modal-dialog modal-dialog-centered">
                                                                 <div class="modal-content rounded-12 border-0">
                                                                     <div class="modal-header border-neutral-30">
-                                                                        <h5 class="modal-title text-18 fw-semibold">Delete Course</h5>
+                                                                        <h5 class="modal-title text-18 fw-semibold">Delete Class Group</h5>
                                                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                                     </div>
                                                                     <div class="modal-body">
-                                                                        <p class="text-14 text-neutral-600 mb-0">This action removes <strong><c:out value="${course.name}"/></strong> if it has no dependencies.</p>
+                                                                        <p class="text-14 text-neutral-600 mb-0">This action removes <strong><c:out value="${classGroup.code}"/></strong> if it has no dependencies.</p>
                                                                     </div>
                                                                     <div class="modal-footer border-neutral-30">
                                                                         <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
-                                                                        <form action="${pageContext.request.contextPath}/admin/courses/${course.id}/delete" method="post" class="m-0">
+                                                                        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/delete" method="post" class="m-0">
                                                                             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                                                             <button type="submit" class="gape-action-button gape-action-delete px-20 py-10 rounded-12 fw-semibold transition-03">Delete</button>
                                                                         </form>
@@ -354,96 +400,17 @@
                                                             </div>
                                                         </div>
                                                         </c:if>
-
-                                                        <div id="subjectCourseClassGroups${subject.id}_${course.id}" class="gape-structure-panel d-none">
-                                                            <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mb-12">
-                                                                <div>
-                                                                    <h4 class="text-14 fw-medium text-neutral-700 mb-2">Class Groups</h4>
-                                                                    <span class="text-12 text-neutral-500">
-                                                                        <c:out value="${course.name}"/> &middot; <c:out value="${fn:length(classGroups)}"/> class groups
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                            <div class="d-flex flex-column gap-10">
-                                                                <c:forEach var="classGroup" items="${classGroups}">
-                                                                    <c:set var="canModifyClassGroup" value="${canModifyClassGroupById[classGroup.id]}" />
-                                                                    <c:set var="canManageClassGroupStructure" value="${canManageClassGroupStructureById[classGroup.id]}" />
-                                                                    <div class="gape-class-group-node border border-neutral-30 rounded-8 px-16 py-12 bg-white">
-                                                                        <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap">
-                                                                            <div class="d-flex align-items-start gap-10">
-                                                                                <span class="text-20 text-warning-600 line-height-1"><i class="ph ph-users-three"></i></span>
-                                                                                <div>
-                                                                                    <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
-                                                                                        <c:out value="${classGroup.code}"/>
-                                                                                    </a>
-                                                                                    <span class="gape-node-meta text-12">
-                                                                                        <span><c:out value="${classGroup.modalityLabel}"/></span>
-                                                                                        <span><c:out value="${classGroup.shift}"/></span>
-                                                                                        <span><c:out value="${classGroup.dateRangeLabel}"/></span>
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="d-flex align-items-center gap-10 flex-wrap">
-                                                                                <span class="${classGroup.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
-                                                                                    <c:out value="${classGroup.stateLabel}"/>
-                                                                                </span>
-                                                                                <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail">
-                                                                                    <i class="ph ph-eye"></i>
-                                                                                </a>
-                                                                                <c:if test="${not classGroup.archived and canModifyClassGroup}">
-                                                                                    <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/edit" class="text-20 text-neutral-500 hover-text-main-600" title="Edit">
-                                                                                        <i class="ph ph-pencil-simple-line"></i>
-                                                                                    </a>
-                                                                                    <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/new" class="text-20 text-neutral-500 hover-text-main-600" title="New content block">
-                                                                                        <i class="ph ph-stack-plus"></i>
-                                                                                    </a>
-                                                                                </c:if>
-                                                                                <c:if test="${not classGroup.archived and canManageClassGroupStructure}">
-                                                                                    <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteSubjectPanelClassGroup${subject.id}_${course.id}_${classGroup.id}">
-                                                                                        <i class="ph ph-trash"></i>
-                                                                                    </button>
-                                                                                </c:if>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <c:if test="${not classGroup.archived and canManageClassGroupStructure}">
-                                                                        <div class="modal fade" id="deleteSubjectPanelClassGroup${subject.id}_${course.id}_${classGroup.id}" tabindex="-1" aria-hidden="true">
-                                                                            <div class="modal-dialog modal-dialog-centered">
-                                                                                <div class="modal-content rounded-12 border-0">
-                                                                                    <div class="modal-header border-neutral-30">
-                                                                                        <h5 class="modal-title text-18 fw-semibold">Delete Class Group</h5>
-                                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                                                    </div>
-                                                                                    <div class="modal-body">
-                                                                                        <p class="text-14 text-neutral-600 mb-0">This action removes <strong><c:out value="${classGroup.code}"/></strong> if it has no dependencies.</p>
-                                                                                    </div>
-                                                                                    <div class="modal-footer border-neutral-30">
-                                                                                        <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
-                                                                                        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/delete" method="post" class="m-0">
-                                                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                                                            <button type="submit" class="gape-action-button gape-action-delete px-20 py-10 rounded-12 fw-semibold transition-03">Delete</button>
-                                                                                        </form>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                        </c:if>
-                                                                    </div>
-                                                                </c:forEach>
-                                                                <c:if test="${empty classGroups}">
-                                                                    <div class="border border-neutral-30 rounded-8 px-16 py-18 text-center text-13 text-neutral-500 bg-white">
-                                                                        No class groups registered for this subject in this course.
-                                                                    </div>
-                                                                </c:if>
-                                                            </div>
+                                                        <div id="${activityPanelId}" class="d-none">
+                                                            <%@ include file="/WEB-INF/fragments/class-group-activities-panel.jspf" %>
                                                         </div>
                                                     </div>
                                                 </c:forEach>
-                                                <c:if test="${empty subjectCourses}">
+                                                <c:if test="${empty subjectClassGroups}">
                                                     <div class="border border-neutral-30 rounded-8 px-16 py-18 text-center text-13 text-neutral-500 bg-white">
-                                                        No courses associated with this subject.
+                                                        No class groups registered for this subject.
                                                     </div>
                                                 </c:if>
+                                            </div>
                                             </div>
                                         </div>
                                     </td>

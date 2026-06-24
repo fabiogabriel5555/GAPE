@@ -1,0 +1,908 @@
+package pt.isel.gape.learning;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
+
+import pt.isel.gape.access.model.AccessProfileType;
+import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.learning.model.Lesson;
+import pt.isel.gape.learning.model.LessonCreateCommand;
+import pt.isel.gape.learning.model.LessonState;
+import pt.isel.gape.learning.model.LessonType;
+import pt.isel.gape.learning.model.LessonUpdateCommand;
+import pt.isel.gape.learning.service.LessonService;
+import pt.isel.gape.transversal.DatabaseTestSupport;
+
+@Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock("gape-db")
+class LessonServiceTest {
+
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-06-20T10:15:30Z"), ZoneOffset.UTC);
+    private static final LocalDateTime FUTURE_START = LocalDateTime.of(2026, 7, 6, 18, 0);
+
+    private LessonService lessonService;
+
+    @BeforeAll
+    static void initializeDatabase() throws Exception {
+        DatabaseTestSupport.resetDatabaseWithBaseSeed();
+    }
+
+    @BeforeEach
+    void setUp() throws SQLException {
+        DatabaseTestSupport.beginTestTransaction();
+        ConnectionProvider connectionProvider = DatabaseTestSupport::openConnection;
+        lessonService = new LessonService(connectionProvider, FIXED_CLOCK);
+    }
+
+    @AfterEach
+    void tearDown() throws SQLException {
+        DatabaseTestSupport.rollbackTestTransaction();
+    }
+
+    @Test
+    void assignedTeacherCanCreateValidOnlineLesson() {
+        Lesson lesson = lessonService.createLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                onlineLesson("Aula Online Valida", "https://meet.google.com/abc-defg-hij"),
+                "127.0.0.1"
+        );
+
+        assertEquals(LessonType.ONLINE, lesson.type());
+        assertEquals("https://meet.google.com/abc-defg-hij", lesson.accessUrl());
+        assertEquals(LessonState.SCHEDULED, lesson.state());
+    }
+
+    @Test
+    void coordinatorCanCreateLessonForCoordinatedSubject() {
+        Lesson lesson = lessonService.createLesson(
+                2L,
+                null,
+                AccessProfileType.COORDINATOR,
+                onlineLesson("Aula Coordenador", "Teams", "https://teams.microsoft.com/l/meetup-join/abc"),
+                "127.0.0.1"
+        );
+
+        assertEquals(50L, lesson.classGroupId());
+    }
+
+    @Test
+    void scopedLearningAdministratorCanCreateLessonForClassGroup() throws Exception {
+        addAdministrator(101L, "ADM-LESSON-CLASS", "MANAGE_LEARNING", "CLASS_GROUP", 50L);
+
+        Lesson lesson = lessonService.createLesson(
+                101L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                onlineLesson("Aula Admin Scoped", "https://meet.google.com/scoped-admin"),
+                "127.0.0.1"
+        );
+
+        assertEquals(50L, lesson.classGroupId());
+    }
+
+    @Test
+    void onlineLessonRequiresAccessUrl() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        onlineLesson("Aula Sem Ligacao", null),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void onlineLessonRejectsInvalidAccessUrl() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        onlineLesson("Aula Link Invalido", "http://meet.google.com/abc-defg-hij"),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void onlineLessonRejectsLocalhostAccessUrl() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        onlineLesson("Aula Localhost", "https://localhost/meeting"),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void onlineLessonRequiresProvider() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        new LessonCreateCommand(
+                                50L,
+                                60L,
+                                null,
+                                "Aula Sem Provider",
+                                null,
+                                LessonType.ONLINE,
+                                null,
+                                "https://meet.google.com/abc-defg-hij",
+                                true,
+                                LessonState.SCHEDULED,
+                                FUTURE_START,
+                                FUTURE_START.plusHours(1)
+                        ),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void onlineLessonRejectsProviderLinkMismatch() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        onlineLesson("Aula Provider Errado", "Zoom", "https://meet.google.com/abc-defg-hij"),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void lessonStartCannotBeInThePast() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        new LessonCreateCommand(
+                                50L,
+                                60L,
+                                null,
+                                "Aula No Passado",
+                                null,
+                                LessonType.ONLINE,
+                                "Meet",
+                                "https://meet.google.com/past-date",
+                                true,
+                                LessonState.SCHEDULED,
+                                LocalDateTime.of(2026, 6, 20, 10, 0),
+                                LocalDateTime.of(2026, 6, 20, 11, 0)
+                        ),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void lessonCreatedForCurrentSlotIsActive() {
+        LocalDateTime currentMinute = LocalDateTime.of(2026, 6, 20, 10, 15);
+
+        Lesson lesson = lessonService.createLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                new LessonCreateCommand(
+                        50L,
+                        60L,
+                        null,
+                        "Aula A Comecar Agora",
+                        null,
+                        LessonType.ONLINE,
+                        "Meet",
+                        "https://meet.google.com/current-slot",
+                        true,
+                        LessonState.SCHEDULED,
+                        currentMinute,
+                        currentMinute.plusHours(1)
+                ),
+                "127.0.0.1"
+        );
+
+        assertEquals(LessonState.ACTIVE, lesson.state());
+    }
+
+    @Test
+    void futureLessonSubmittedAsActiveIsSavedScheduled() {
+        Lesson lesson = lessonService.createLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                new LessonCreateCommand(
+                        50L,
+                        60L,
+                        null,
+                        "Aula Futura Com Estado Manual",
+                        null,
+                        LessonType.ONLINE,
+                        "Meet",
+                        "https://meet.google.com/future-manual-state",
+                        true,
+                        LessonState.ACTIVE,
+                        FUTURE_START.plusDays(5),
+                        FUTURE_START.plusDays(5).plusHours(1)
+                ),
+                "127.0.0.1"
+        );
+
+        assertEquals(LessonState.SCHEDULED, lesson.state());
+    }
+
+    @Test
+    void scheduledLessonBecomesActiveWhenCurrentTimeIsInsideLessonWindow() throws Exception {
+        long lessonId = insertStoredOnlineLesson(
+                "Aula Scheduled Para Active",
+                LessonState.SCHEDULED,
+                LocalDateTime.of(2026, 6, 20, 10, 0),
+                LocalDateTime.of(2026, 6, 20, 11, 0)
+        );
+
+        Lesson lesson = lessonService.getLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                lessonId,
+                "127.0.0.1"
+        );
+
+        assertEquals(LessonState.ACTIVE, lesson.state());
+    }
+
+    @Test
+    void activeLessonBecomesCompletedWhenEndTimeIsReached() throws Exception {
+        long lessonId = insertStoredOnlineLesson(
+                "Aula Active Para Completed",
+                LessonState.ACTIVE,
+                LocalDateTime.of(2026, 6, 20, 9, 0),
+                LocalDateTime.of(2026, 6, 20, 10, 15)
+        );
+
+        Lesson lesson = lessonService.getLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                lessonId,
+                "127.0.0.1"
+        );
+
+        assertEquals(LessonState.COMPLETED, lesson.state());
+    }
+
+    @Test
+    void onsiteLessonRequiresPhysicalRoom() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        onsiteLesson("Aula Sem Sala", null, FUTURE_START),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void onsiteLessonRequiresExistingPhysicalRoom() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        onsiteLesson("Aula Sala Inexistente", "SALA-NONE", FUTURE_START),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void onsiteLessonRejectsRoomFromAnotherOrganization() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        onsiteLesson("Aula Sala Externa", "SALA-X1", FUTURE_START),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void onsiteLessonRejectsOverlappingRoomReservation() {
+        lessonService.createLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                onsiteLesson("Aula Original", "SALA-A1", FUTURE_START),
+                "127.0.0.1"
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        onsiteLesson("Aula Sobreposta", "SALA-A1", FUTURE_START.plusMinutes(30)),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void onsiteLessonCanUseAvailableActiveRoom() {
+        Lesson lesson = lessonService.createLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                onsiteLesson("Aula Presencial Valida", "SALA-A1", FUTURE_START.plusHours(2)),
+                "127.0.0.1"
+        );
+
+        assertEquals(LessonType.ONSITE, lesson.type());
+        assertEquals("SALA-A1", lesson.physicalRoomCode());
+    }
+
+    @Test
+    void onsiteLessonRejectsRoomBelowActiveEnrollmentCount() throws Exception {
+        insertPhysicalRoom("SALA-SMALL", 1);
+        addActiveStudentEnrollment(6L, 50L);
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        onsiteLesson("Aula Sala Pequena", "SALA-SMALL", FUTURE_START.plusHours(4)),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void hybridLessonRequiresPhysicalRoom() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        hybridLesson(
+                                "Aula Hibrida Sem Sala",
+                                null,
+                                "https://meet.google.com/hybrid-no-room",
+                                FUTURE_START.plusHours(2)
+                        ),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void hybridLessonRequiresAccessUrl() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        hybridLesson(
+                                "Aula Hibrida Sem Link",
+                                "SALA-A1",
+                                null,
+                                FUTURE_START.plusHours(2)
+                        ),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void hybridLessonCanUseMeetingLinkAndPhysicalRoom() {
+        Lesson lesson = lessonService.createLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                hybridLesson(
+                        "Aula Hibrida Valida",
+                        "SALA-A1",
+                        "https://meet.google.com/hybrid-valid",
+                        FUTURE_START.plusHours(2)
+                ),
+                "127.0.0.1"
+        );
+
+        assertEquals(LessonType.HYBRID, lesson.type());
+        assertEquals("SALA-A1", lesson.physicalRoomCode());
+        assertEquals("https://meet.google.com/hybrid-valid", lesson.accessUrl());
+    }
+
+    @Test
+    void lessonEndMustBeAfterStart() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        new LessonCreateCommand(
+                                50L,
+                                60L,
+                                null,
+                                "Aula Datas Invalidas",
+                                null,
+                                LessonType.ONLINE,
+                                "meet",
+                                "https://meet.google.com/abc-defg-hij",
+                                true,
+                                LessonState.SCHEDULED,
+                                FUTURE_START.plusDays(1),
+                                FUTURE_START.plusDays(1)
+                        ),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void lessonContentBlockMustBelongToSameClassGroup() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        new LessonCreateCommand(
+                                50L,
+                                62L,
+                                null,
+                                "Aula Bloco Errado",
+                                null,
+                                LessonType.ONLINE,
+                                "meet",
+                                "https://meet.google.com/abc-defg-hij",
+                                true,
+                                LessonState.SCHEDULED,
+                                FUTURE_START.plusDays(1),
+                                FUTURE_START.plusDays(1).plusHours(1)
+                        ),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void studentCanListLessonsForActiveEnrollment() {
+        List<Lesson> lessons = lessonService.listLessonsForStudent(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                "127.0.0.1"
+        );
+
+        assertTrue(lessons.stream().anyMatch(lesson -> lesson.id() == 80L));
+        assertTrue(lessons.stream().allMatch(lesson -> lesson.classGroupId() == 50L));
+    }
+
+    @Test
+    void studentCannotReadLessonWithoutClassGroupEnrollment() {
+        Lesson otherClassGroupLesson = lessonService.createLesson(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new LessonCreateCommand(
+                        52L,
+                        62L,
+                        null,
+                        "Aula Turma Sem Inscricao",
+                        null,
+                        LessonType.ONLINE,
+                        "meet",
+                        "https://meet.google.com/no-enrollment",
+                        true,
+                        LessonState.SCHEDULED,
+                        FUTURE_START,
+                        FUTURE_START.plusHours(1)
+                ),
+                "127.0.0.1"
+        );
+
+        assertThrows(
+                SecurityException.class,
+                () -> lessonService.getLesson(
+                        4L,
+                        null,
+                        AccessProfileType.STUDENT,
+                        otherClassGroupLesson.id(),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void lessonCanBeUpdated() {
+        Lesson created = lessonService.createLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                onlineLesson("Aula Para Atualizar", "https://meet.google.com/abc-defg-hij"),
+                "127.0.0.1"
+        );
+
+        Lesson updated = lessonService.updateLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                created.id(),
+                new LessonUpdateCommand(
+                        50L,
+                        60L,
+                        null,
+                        "Aula Atualizada",
+                        "Descricao atualizada",
+                        LessonType.ONLINE,
+                        "meet",
+                        "https://meet.google.com/xyz-abcd-efg",
+                        true,
+                        LessonState.ACTIVE,
+                        FUTURE_START,
+                        FUTURE_START.plusHours(1)
+                ),
+                "127.0.0.1"
+        );
+
+        assertEquals("Aula Atualizada", updated.title());
+        assertEquals(LessonState.SCHEDULED, updated.state());
+    }
+
+    @Test
+    void lessonWithoutDependenciesCanBeDeleted() throws Exception {
+        Lesson created = lessonService.createLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                onlineLesson("Aula Para Apagar", "https://meet.google.com/abc-defg-hij"),
+                "127.0.0.1"
+        );
+
+        lessonService.deleteLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                created.id(),
+                "127.0.0.1"
+        );
+
+        assertFalse(lessonExists(created.id()));
+    }
+
+    @Test
+    void lessonWithScheduleOrAttendanceCannotBeDeleted() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> lessonService.deleteLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        80L,
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void personalCalendarDoesNotUseAdministratorManagementScope() {
+        Lesson otherClassGroupLesson = createOtherClassGroupLesson();
+
+        List<Lesson> adminCalendar = lessonService.listPersonalCalendarLessons(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                "127.0.0.1"
+        );
+
+        assertTrue(adminCalendar.isEmpty());
+        assertFalse(adminCalendar.stream().anyMatch(lesson -> lesson.id() == 80L));
+        assertFalse(adminCalendar.stream().anyMatch(lesson -> lesson.id() == otherClassGroupLesson.id()));
+    }
+
+    @Test
+    void personalCalendarUsesTeacherCoordinatorAndStudentContext() {
+        Lesson otherClassGroupLesson = createOtherClassGroupLesson();
+
+        List<Lesson> teacherCalendar = lessonService.listPersonalCalendarLessons(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                "127.0.0.1"
+        );
+        List<Lesson> coordinatorCalendar = lessonService.listPersonalCalendarLessons(
+                2L,
+                null,
+                AccessProfileType.COORDINATOR,
+                "127.0.0.1"
+        );
+        List<Lesson> studentCalendar = lessonService.listPersonalCalendarLessons(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                "127.0.0.1"
+        );
+
+        assertTrue(teacherCalendar.stream().anyMatch(lesson -> lesson.id() == 80L));
+        assertFalse(teacherCalendar.stream().anyMatch(lesson -> lesson.id() == otherClassGroupLesson.id()));
+        assertTrue(coordinatorCalendar.stream().anyMatch(lesson -> lesson.id() == 80L));
+        assertFalse(coordinatorCalendar.stream().anyMatch(lesson -> lesson.id() == otherClassGroupLesson.id()));
+        assertTrue(studentCalendar.stream().anyMatch(lesson -> lesson.id() == 80L));
+        assertFalse(studentCalendar.stream().anyMatch(lesson -> lesson.id() == otherClassGroupLesson.id()));
+    }
+
+    private static LessonCreateCommand onlineLesson(String title, String accessUrl) {
+        return onlineLesson(title, "Meet", accessUrl);
+    }
+
+    private static LessonCreateCommand onlineLesson(String title, String provider, String accessUrl) {
+        return new LessonCreateCommand(
+                50L,
+                60L,
+                null,
+                title,
+                "Sessao online criada por teste",
+                LessonType.ONLINE,
+                provider,
+                accessUrl,
+                true,
+                LessonState.SCHEDULED,
+                FUTURE_START,
+                FUTURE_START.plusHours(1)
+        );
+    }
+
+    private static LessonCreateCommand onsiteLesson(String title, String roomCode, LocalDateTime startsAt) {
+        return new LessonCreateCommand(
+                50L,
+                60L,
+                roomCode,
+                title,
+                "Sessao presencial criada por teste",
+                LessonType.ONSITE,
+                null,
+                null,
+                true,
+                LessonState.SCHEDULED,
+                startsAt,
+                startsAt.plusHours(1)
+        );
+    }
+
+    private static LessonCreateCommand hybridLesson(
+            String title,
+            String roomCode,
+            String accessUrl,
+            LocalDateTime startsAt
+    ) {
+        return new LessonCreateCommand(
+                50L,
+                60L,
+                roomCode,
+                title,
+                "Sessao hibrida criada por teste",
+                LessonType.HYBRID,
+                "meet",
+                accessUrl,
+                true,
+                LessonState.SCHEDULED,
+                startsAt,
+                startsAt.plusHours(1)
+        );
+    }
+
+    private Lesson createOtherClassGroupLesson() {
+        return lessonService.createLesson(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new LessonCreateCommand(
+                        52L,
+                        62L,
+                        null,
+                        "Aula Fora Do Contexto Pessoal",
+                        null,
+                        LessonType.ONLINE,
+                        "meet",
+                        "https://meet.google.com/out-context",
+                        true,
+                        LessonState.SCHEDULED,
+                        FUTURE_START.plusDays(2),
+                        FUTURE_START.plusDays(2).plusHours(1)
+                ),
+                "127.0.0.1"
+        );
+    }
+
+    private static boolean lessonExists(long lessonId) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT COUNT(*)
+                     FROM lesson
+                     WHERE id_lesson = ?
+                     """)) {
+            statement.setLong(1, lessonId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1) == 1;
+            }
+        }
+    }
+
+    private static long insertStoredOnlineLesson(
+            String title,
+            LessonState state,
+            LocalDateTime startsAt,
+            LocalDateTime endsAt
+    ) throws SQLException {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     INSERT INTO lesson (
+                         id_class_group, id_content_block, cod_physical_room, title, description,
+                         type, provider, access_url, attendance_required, state, starts_at, ends_at
+                     ) VALUES (50, 60, NULL, ?, ?, 'online', 'Meet', ?, 1, ?, ?, ?)
+                     """, Statement.RETURN_GENERATED_KEYS)) {
+            statement.setString(1, title);
+            statement.setString(2, "Sessao online inserida por teste");
+            statement.setString(3, "https://meet.google.com/" + title.toLowerCase().replace(' ', '-'));
+            statement.setString(4, state.toDatabaseValue());
+            statement.setTimestamp(5, java.sql.Timestamp.valueOf(startsAt));
+            statement.setTimestamp(6, java.sql.Timestamp.valueOf(endsAt));
+            statement.executeUpdate();
+            try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                if (!generatedKeys.next()) {
+                    throw new SQLException("Creating test lesson failed, no id generated");
+                }
+                return generatedKeys.getLong(1);
+            }
+        }
+    }
+
+    private static void insertPhysicalRoom(String code, int capacity) throws SQLException {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     INSERT INTO physical_room (
+                         cod_physical_room, id_organization, id_organic_unit, name,
+                         description, capacity, location, state
+                     ) VALUES (?, 10, 20, ?, 'Sala pequena de teste', ?, 'Edificio T', 'active')
+                     """)) {
+            statement.setString(1, code);
+            statement.setString(2, "Sala " + code);
+            statement.setInt(3, capacity);
+            statement.executeUpdate();
+        }
+    }
+
+    private static void addActiveStudentEnrollment(long userId, long classGroupId) throws SQLException {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            try (PreparedStatement user = connection.prepareStatement("""
+                    INSERT INTO user_account (
+                        id_user, name, email, state, language, photo, created_at, credential_hash, credential_salt
+                    ) VALUES (?, ?, ?, 'active', 'pt-PT', NULL, '2026-01-01 10:00:00', 'hash', 'salt')
+                    """)) {
+                user.setLong(1, userId);
+                user.setString(2, "Capacity Student");
+                user.setString(3, "capacity.student" + userId + "@gape.local");
+                user.executeUpdate();
+            }
+            try (PreparedStatement profile = connection.prepareStatement("""
+                    INSERT INTO student_profile (id_user, cod_student)
+                    VALUES (?, ?)
+                    """)) {
+                profile.setLong(1, userId);
+                profile.setString(2, "STD-CAP-" + userId);
+                profile.executeUpdate();
+            }
+            try (PreparedStatement course = connection.prepareStatement("""
+                    INSERT INTO enroll_course (id_student_user, id_course, state, start_date, end_date)
+                    VALUES (?, 30, 'active', '2026-02-01', NULL)
+                    """)) {
+                course.setLong(1, userId);
+                course.executeUpdate();
+            }
+            try (PreparedStatement subject = connection.prepareStatement("""
+                    INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date)
+                    VALUES (?, 30, 40, 'active', '2026-02-01', NULL)
+                    """)) {
+                subject.setLong(1, userId);
+                subject.executeUpdate();
+            }
+            try (PreparedStatement classGroup = connection.prepareStatement("""
+                    INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date)
+                    VALUES (?, ?, 'active', '2026-02-01', NULL)
+                    """)) {
+                classGroup.setLong(1, userId);
+                classGroup.setLong(2, classGroupId);
+                classGroup.executeUpdate();
+            }
+        }
+    }
+
+    private static void addAdministrator(
+            long userId,
+            String administratorCode,
+            String permissionCode,
+            String contextType,
+            long contextId
+    ) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            try (PreparedStatement user = connection.prepareStatement("""
+                    INSERT INTO user_account (
+                        id_user, name, email, state, language, photo, created_at, credential_hash, credential_salt
+                    ) VALUES (?, ?, ?, 'active', 'pt-PT', NULL, '2026-01-01 10:00:00', 'hash', 'salt')
+                    """)) {
+                user.setLong(1, userId);
+                user.setString(2, "Scoped Lesson Admin");
+                user.setString(3, "scoped.lesson.admin@gape.local");
+                user.executeUpdate();
+            }
+            try (PreparedStatement profile = connection.prepareStatement("""
+                    INSERT INTO administrator_profile (id_user, cod_administrator)
+                    VALUES (?, ?)
+                    """)) {
+                profile.setLong(1, userId);
+                profile.setString(2, administratorCode);
+                profile.executeUpdate();
+            }
+            try (PreparedStatement grant = connection.prepareStatement("""
+                    INSERT INTO grant_administrator (id_admin_user, cod_permission, context_type, context_id)
+                    VALUES (?, ?, ?, ?)
+                    """)) {
+                grant.setLong(1, userId);
+                grant.setString(2, permissionCode);
+                grant.setString(3, contextType);
+                grant.setLong(4, contextId);
+                grant.executeUpdate();
+            }
+        }
+    }
+}

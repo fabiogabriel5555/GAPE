@@ -15,6 +15,7 @@ import pt.isel.gape.learning.model.Subject;
 import pt.isel.gape.learning.model.SubjectCreateCommand;
 import pt.isel.gape.learning.model.SubjectState;
 import pt.isel.gape.learning.model.SubjectUpdateCommand;
+import pt.isel.gape.security.authorization.AuthorizationPolicy;
 
 public final class SubjectDAO {
 
@@ -141,6 +142,84 @@ public final class SubjectDAO {
                     subjects.add(mapSubject(resultSet));
                 }
                 return subjects;
+            }
+        }
+    }
+
+    public List<Subject> findByTeacher(long teacherUserId) throws SQLException {
+        String sql = """
+                SELECT DISTINCT s.id_subject, s.id_organization, s.name, s.acronym, s.photo, s.description,
+                       s.ects, s.workload_hours, s.state
+                FROM subject s
+                JOIN class_group cg ON cg.id_subject = s.id_subject
+                JOIN course c ON c.id_course = cg.id_course
+                JOIN teach_class_group tcg ON tcg.id_class_group = cg.id_class_group
+                JOIN teacher_profile tp ON tp.id_user = tcg.id_teacher_user
+                JOIN user_account u ON u.id_user = tp.id_user
+                JOIN grant_teacher gt ON gt.id_teacher_user = tcg.id_teacher_user
+                JOIN permission p ON p.cod_permission = gt.cod_permission
+                WHERE tcg.id_teacher_user = ?
+                  AND tcg.state = 'active'
+                  AND cg.state = 'active'
+                  AND c.state = 'active'
+                  AND s.state <> 'archived'
+                  AND u.state = 'active'
+                  AND gt.cod_permission = ?
+                  AND p.state = 'active'
+                  AND (tcg.start_date IS NULL OR tcg.start_date <= CURRENT_DATE)
+                  AND (tcg.end_date IS NULL OR tcg.end_date >= CURRENT_DATE)
+                ORDER BY s.id_subject
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, teacherUserId);
+            statement.setString(2, AuthorizationPolicy.MANAGE_LEARNING);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<Subject> subjects = new ArrayList<>();
+                while (resultSet.next()) {
+                    subjects.add(mapSubject(resultSet));
+                }
+                return subjects;
+            }
+        }
+    }
+
+    public boolean teacherCanReadSubject(
+            Connection connection,
+            long teacherUserId,
+            long subjectId
+    ) throws SQLException {
+        String sql = """
+                SELECT COUNT(*)
+                FROM subject s
+                JOIN class_group cg ON cg.id_subject = s.id_subject
+                JOIN course c ON c.id_course = cg.id_course
+                JOIN teach_class_group tcg ON tcg.id_class_group = cg.id_class_group
+                JOIN teacher_profile tp ON tp.id_user = tcg.id_teacher_user
+                JOIN user_account u ON u.id_user = tp.id_user
+                JOIN grant_teacher gt ON gt.id_teacher_user = tcg.id_teacher_user
+                JOIN permission p ON p.cod_permission = gt.cod_permission
+                WHERE tcg.id_teacher_user = ?
+                  AND s.id_subject = ?
+                  AND tcg.state = 'active'
+                  AND cg.state = 'active'
+                  AND c.state = 'active'
+                  AND s.state <> 'archived'
+                  AND u.state = 'active'
+                  AND gt.cod_permission = ?
+                  AND p.state = 'active'
+                  AND (tcg.start_date IS NULL OR tcg.start_date <= CURRENT_DATE)
+                  AND (tcg.end_date IS NULL OR tcg.end_date >= CURRENT_DATE)
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, teacherUserId);
+            statement.setLong(2, subjectId);
+            statement.setString(3, AuthorizationPolicy.MANAGE_LEARNING);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getLong(1) > 0;
             }
         }
     }

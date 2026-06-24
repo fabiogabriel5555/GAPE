@@ -7,9 +7,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.LinkedHashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.structure.model.CoordinateSubjectAssignment;
 import pt.isel.gape.structure.model.RoleAssignmentState;
 
 public final class CoordinateSubjectDAO {
@@ -108,6 +111,68 @@ public final class CoordinateSubjectDAO {
         }
     }
 
+    public List<CoordinateSubjectAssignment> findBySubject(long subjectId) throws SQLException {
+        String sql = """
+                SELECT cs.id_coordinator_user,
+                       cs.id_subject,
+                       cs.state,
+                       cs.start_date,
+                       cs.end_date,
+                       u.name AS coordinator_name,
+                       u.email AS coordinator_email
+                FROM coordinate_subject cs
+                JOIN user_account u ON u.id_user = cs.id_coordinator_user
+                WHERE cs.id_subject = ?
+                ORDER BY
+                    CASE cs.state
+                        WHEN 'active' THEN 0
+                        WHEN 'inactive' THEN 1
+                        ELSE 2
+                    END,
+                    cs.start_date DESC,
+                    u.name
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, subjectId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<CoordinateSubjectAssignment> assignments = new ArrayList<>();
+                while (resultSet.next()) {
+                    assignments.add(mapAssignment(resultSet));
+                }
+                return assignments;
+            }
+        }
+    }
+
+    public void updateAssignment(
+            Connection connection,
+            long coordinatorUserId,
+            long subjectId,
+            RoleAssignmentState state,
+            LocalDate startDate,
+            LocalDate endDate
+    ) throws SQLException {
+        String sql = """
+                UPDATE coordinate_subject
+                SET state = ?, start_date = ?, end_date = ?
+                WHERE id_coordinator_user = ?
+                  AND id_subject = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, state.toDatabaseValue());
+            setDate(statement, 2, startDate);
+            setDate(statement, 3, endDate);
+            statement.setLong(4, coordinatorUserId);
+            statement.setLong(5, subjectId);
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Coordinator assignment not found");
+            }
+        }
+    }
+
     public Set<Long> findActiveSubjectIdsByCoordinator(long coordinatorUserId) throws SQLException {
         String sql = """
                 SELECT cs.id_subject
@@ -158,5 +223,19 @@ public final class CoordinateSubjectDAO {
         } else {
             statement.setDate(index, Date.valueOf(value));
         }
+    }
+
+    private static CoordinateSubjectAssignment mapAssignment(ResultSet resultSet) throws SQLException {
+        Date startDate = resultSet.getDate("start_date");
+        Date endDate = resultSet.getDate("end_date");
+        return new CoordinateSubjectAssignment(
+                resultSet.getLong("id_coordinator_user"),
+                resultSet.getLong("id_subject"),
+                RoleAssignmentState.fromDatabaseValue(resultSet.getString("state")),
+                startDate == null ? null : startDate.toLocalDate(),
+                endDate == null ? null : endDate.toLocalDate(),
+                resultSet.getString("coordinator_name"),
+                resultSet.getString("coordinator_email")
+        );
     }
 }

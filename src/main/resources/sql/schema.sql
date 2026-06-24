@@ -531,7 +531,7 @@ CREATE TABLE IF NOT EXISTS enroll_subject (
     CONSTRAINT ck_enroll_subject_dates
         CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
     CONSTRAINT ck_enroll_subject_state
-        CHECK (state IN ('active', 'inactive', 'completed', 'withdrawn', 'archived'))
+        CHECK (state IN ('pending', 'active', 'inactive', 'rejected', 'completed', 'withdrawn', 'archived'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS enroll_class_group (
@@ -551,7 +551,30 @@ CREATE TABLE IF NOT EXISTS enroll_class_group (
     CONSTRAINT ck_enroll_class_group_dates
         CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
     CONSTRAINT ck_enroll_class_group_state
-        CHECK (state IN ('active', 'inactive', 'completed', 'withdrawn', 'archived'))
+        CHECK (state IN ('pending', 'active', 'inactive', 'rejected', 'completed', 'withdrawn', 'archived'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS subject_enrollment_policy (
+    id_course BIGINT UNSIGNED NOT NULL,
+    id_subject BIGINT UNSIGNED NOT NULL,
+    approval_mode VARCHAR(30) NOT NULL DEFAULT 'manual',
+    PRIMARY KEY (id_course, id_subject),
+    CONSTRAINT fk_subject_enrollment_policy_integrate
+        FOREIGN KEY (id_course, id_subject) REFERENCES integrate_subject (id_course, id_subject)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT ck_subject_enrollment_policy_mode
+        CHECK (approval_mode IN ('manual', 'auto_approve'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS class_group_enrollment_policy (
+    id_class_group BIGINT UNSIGNED NOT NULL,
+    approval_mode VARCHAR(30) NOT NULL DEFAULT 'manual',
+    PRIMARY KEY (id_class_group),
+    CONSTRAINT fk_class_group_enrollment_policy_class_group
+        FOREIGN KEY (id_class_group) REFERENCES class_group (id_class_group)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT ck_class_group_enrollment_policy_mode
+        CHECK (approval_mode IN ('manual', 'auto_approve'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- =========================================================
@@ -626,7 +649,7 @@ CREATE TABLE IF NOT EXISTS physical_room (
     id_organic_unit BIGINT UNSIGNED NULL,
     name VARCHAR(120) NOT NULL,
     description VARCHAR(500) NULL,
-    capacity INT NULL,
+    capacity INT NOT NULL,
     location VARCHAR(255) NULL,
     state VARCHAR(20) NOT NULL,
     PRIMARY KEY (cod_physical_room),
@@ -640,7 +663,9 @@ CREATE TABLE IF NOT EXISTS physical_room (
         FOREIGN KEY (id_organic_unit) REFERENCES organic_unit (id_organic_unit)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT ck_physical_room_capacity
-        CHECK (capacity IS NULL OR capacity > 0)
+        CHECK (capacity > 0),
+    CONSTRAINT ck_physical_room_state
+        CHECK (state IN ('active', 'inactive', 'unavailable', 'archived'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS lesson (
@@ -661,6 +686,7 @@ CREATE TABLE IF NOT EXISTS lesson (
     KEY idx_lesson_class_group (id_class_group),
     KEY idx_lesson_content_block (id_content_block),
     KEY idx_lesson_room (cod_physical_room),
+    KEY idx_lesson_room_state_dates (cod_physical_room, state, starts_at, ends_at),
     KEY idx_lesson_state (state),
     CONSTRAINT fk_lesson_class_group
         FOREIGN KEY (id_class_group) REFERENCES class_group (id_class_group)
@@ -676,7 +702,7 @@ CREATE TABLE IF NOT EXISTS lesson (
     CONSTRAINT ck_lesson_state
         CHECK (state IN ('scheduled', 'active', 'completed', 'cancelled')),
     CONSTRAINT ck_lesson_dates
-        CHECK (ends_at >= starts_at)
+        CHECK (ends_at > starts_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS assessment (
@@ -2085,7 +2111,6 @@ BEGIN
     DECLARE v_subject_state VARCHAR(20);
     DECLARE v_association_state VARCHAR(20);
     DECLARE v_course_enrollment_count INT DEFAULT 0;
-    DECLARE v_subject_enrollment_overlap INT DEFAULT 0;
 
     SELECT c.state, s.state, isub.state
     INTO v_course_state, v_subject_state, v_association_state
@@ -2105,15 +2130,6 @@ BEGIN
       AND (NEW.end_date IS NOT NULL OR end_date IS NULL)
       AND (NEW.end_date IS NULL OR end_date IS NULL OR end_date >= NEW.end_date);
 
-    SELECT COUNT(*)
-    INTO v_subject_enrollment_overlap
-    FROM enroll_subject
-    WHERE id_student_user = NEW.id_student_user
-      AND id_subject = NEW.id_subject
-      AND state = 'active'
-      AND (start_date IS NULL OR NEW.end_date IS NULL OR start_date <= NEW.end_date)
-      AND (end_date IS NULL OR NEW.start_date IS NULL OR end_date >= NEW.start_date);
-
     IF NEW.state = 'active'
        AND (v_course_state <> 'active' OR v_subject_state <> 'active' OR v_association_state <> 'active') THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Subject enrollment requires active Course, Subject and association';
@@ -2121,10 +2137,6 @@ BEGIN
 
     IF NEW.state = 'active' AND v_course_enrollment_count = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Subject enrollment requires active Course enrollment for the full period';
-    END IF;
-
-    IF NEW.state = 'active' AND v_subject_enrollment_overlap > 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Student already has an overlapping active enrollment in this Subject';
     END IF;
 END$$
 
@@ -2137,7 +2149,6 @@ BEGIN
     DECLARE v_subject_state VARCHAR(20);
     DECLARE v_association_state VARCHAR(20);
     DECLARE v_course_enrollment_count INT DEFAULT 0;
-    DECLARE v_subject_enrollment_overlap INT DEFAULT 0;
 
     SELECT c.state, s.state, isub.state
     INTO v_course_state, v_subject_state, v_association_state
@@ -2157,20 +2168,6 @@ BEGIN
       AND (NEW.end_date IS NOT NULL OR end_date IS NULL)
       AND (NEW.end_date IS NULL OR end_date IS NULL OR end_date >= NEW.end_date);
 
-    SELECT COUNT(*)
-    INTO v_subject_enrollment_overlap
-    FROM enroll_subject
-    WHERE id_student_user = NEW.id_student_user
-      AND id_subject = NEW.id_subject
-      AND state = 'active'
-      AND NOT (
-          id_student_user = OLD.id_student_user
-          AND id_course = OLD.id_course
-          AND id_subject = OLD.id_subject
-      )
-      AND (start_date IS NULL OR NEW.end_date IS NULL OR start_date <= NEW.end_date)
-      AND (end_date IS NULL OR NEW.start_date IS NULL OR end_date >= NEW.start_date);
-
     IF NEW.state = 'active'
        AND (v_course_state <> 'active' OR v_subject_state <> 'active' OR v_association_state <> 'active') THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Subject enrollment requires active Course, Subject and association';
@@ -2178,10 +2175,6 @@ BEGIN
 
     IF NEW.state = 'active' AND v_course_enrollment_count = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Subject enrollment requires active Course enrollment for the full period';
-    END IF;
-
-    IF NEW.state = 'active' AND v_subject_enrollment_overlap > 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Student already has an overlapping active enrollment in this Subject';
     END IF;
 END$$
 
@@ -2560,6 +2553,7 @@ BEFORE UPDATE ON physical_room
 FOR EACH ROW
 BEGIN
     DECLARE v_organic_unit_org BIGINT UNSIGNED;
+    DECLARE v_oversized_reserved_lessons INT DEFAULT 0;
 
     IF NEW.id_organic_unit IS NOT NULL THEN
         SELECT id_organization
@@ -2570,6 +2564,25 @@ BEGIN
         IF v_organic_unit_org IS NULL OR v_organic_unit_org <> NEW.id_organization THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Physical_Room Organic_Unit must belong to the same Organization';
         END IF;
+    END IF;
+
+    SELECT COUNT(*)
+    INTO v_oversized_reserved_lessons
+    FROM lesson l
+    WHERE l.cod_physical_room = NEW.cod_physical_room
+      AND l.state IN ('scheduled', 'active')
+      AND l.type IN ('onsite', 'hybrid')
+      AND (
+          SELECT COUNT(*)
+          FROM enroll_class_group ecg
+          WHERE ecg.id_class_group = l.id_class_group
+            AND ecg.state = 'active'
+            AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
+            AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
+      ) > NEW.capacity;
+
+    IF v_oversized_reserved_lessons > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Physical_Room capacity is below active Class_Group enrollments';
     END IF;
 END$$
 
@@ -2604,6 +2617,8 @@ BEGIN
     DECLARE v_class_org BIGINT UNSIGNED;
     DECLARE v_room_org BIGINT UNSIGNED;
     DECLARE v_room_state VARCHAR(20);
+    DECLARE v_room_capacity INT DEFAULT 0;
+    DECLARE v_active_enrollments INT DEFAULT 0;
     DECLARE v_overlap_count INT DEFAULT 0;
 
     SELECT id_class_group
@@ -2628,8 +2643,8 @@ BEGIN
     END IF;
 
     IF NEW.cod_physical_room IS NOT NULL THEN
-        SELECT state, id_organization
-        INTO v_room_state, v_room_org
+        SELECT state, id_organization, capacity
+        INTO v_room_state, v_room_org, v_room_capacity
         FROM physical_room
         WHERE cod_physical_room = NEW.cod_physical_room;
 
@@ -2647,12 +2662,24 @@ BEGIN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lesson Physical_Room must belong to the same Organization context';
         END IF;
 
-        IF NEW.state = 'active' AND NEW.type IN ('onsite', 'hybrid') THEN
+        SELECT COUNT(*)
+        INTO v_active_enrollments
+        FROM enroll_class_group
+        WHERE id_class_group = NEW.id_class_group
+          AND state = 'active'
+          AND (start_date IS NULL OR start_date <= CURRENT_DATE)
+          AND (end_date IS NULL OR end_date >= CURRENT_DATE);
+
+        IF v_room_capacity < v_active_enrollments THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Physical_Room capacity is below active Class_Group enrollments';
+        END IF;
+
+        IF NEW.state IN ('scheduled', 'active') AND NEW.type IN ('onsite', 'hybrid') THEN
             SELECT COUNT(*)
             INTO v_overlap_count
             FROM lesson l
             WHERE l.cod_physical_room = NEW.cod_physical_room
-              AND l.state = 'active'
+              AND l.state IN ('scheduled', 'active')
               AND l.type IN ('onsite', 'hybrid')
               AND NOT (NEW.ends_at <= l.starts_at OR NEW.starts_at >= l.ends_at);
 
@@ -2672,6 +2699,8 @@ BEGIN
     DECLARE v_class_org BIGINT UNSIGNED;
     DECLARE v_room_org BIGINT UNSIGNED;
     DECLARE v_room_state VARCHAR(20);
+    DECLARE v_room_capacity INT DEFAULT 0;
+    DECLARE v_active_enrollments INT DEFAULT 0;
     DECLARE v_overlap_count INT DEFAULT 0;
 
     SELECT id_class_group
@@ -2696,8 +2725,8 @@ BEGIN
     END IF;
 
     IF NEW.cod_physical_room IS NOT NULL THEN
-        SELECT state, id_organization
-        INTO v_room_state, v_room_org
+        SELECT state, id_organization, capacity
+        INTO v_room_state, v_room_org, v_room_capacity
         FROM physical_room
         WHERE cod_physical_room = NEW.cod_physical_room;
 
@@ -2715,12 +2744,24 @@ BEGIN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lesson Physical_Room must belong to the same Organization context';
         END IF;
 
-        IF NEW.state = 'active' AND NEW.type IN ('onsite', 'hybrid') THEN
+        SELECT COUNT(*)
+        INTO v_active_enrollments
+        FROM enroll_class_group
+        WHERE id_class_group = NEW.id_class_group
+          AND state = 'active'
+          AND (start_date IS NULL OR start_date <= CURRENT_DATE)
+          AND (end_date IS NULL OR end_date >= CURRENT_DATE);
+
+        IF v_room_capacity < v_active_enrollments THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Physical_Room capacity is below active Class_Group enrollments';
+        END IF;
+
+        IF NEW.state IN ('scheduled', 'active') AND NEW.type IN ('onsite', 'hybrid') THEN
             SELECT COUNT(*)
             INTO v_overlap_count
             FROM lesson l
             WHERE l.cod_physical_room = NEW.cod_physical_room
-              AND l.state = 'active'
+              AND l.state IN ('scheduled', 'active')
               AND l.type IN ('onsite', 'hybrid')
               AND l.id_lesson <> NEW.id_lesson
               AND NOT (NEW.ends_at <= l.starts_at OR NEW.starts_at >= l.ends_at);

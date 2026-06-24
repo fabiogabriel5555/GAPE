@@ -208,7 +208,7 @@ class AuthorizationFilterTest {
         );
 
         assertFalse(chainState.called);
-        assertEquals("/ctx/student/student-home.jsp", responseState.redirectLocation);
+        assertEquals("/ctx/student/student/dashboard/student-dashboard.jsp", responseState.redirectLocation);
         assertEquals(null, responseState.errorStatus);
     }
 
@@ -273,7 +273,7 @@ class AuthorizationFilterTest {
         );
 
         assertFalse(chainState.called);
-        assertEquals("/ctx/student/student-home.jsp", responseState.redirectLocation);
+        assertEquals("/ctx/student/student/dashboard/student-dashboard.jsp", responseState.redirectLocation);
         assertEquals(null, responseState.errorStatus);
         assertEquals(1, countAuthorizationRedirectedAudits());
     }

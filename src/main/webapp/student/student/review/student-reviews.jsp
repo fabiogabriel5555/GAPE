@@ -1,0 +1,44 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%
+    request.setAttribute("activeMenu", "reviews");
+    request.setAttribute("pageTitle", "Reviews");
+    request.setAttribute("studentPageTitle", "Reviews");
+    request.setAttribute("studentPageDescription", "A friendly feedback space for completed lessons and class group learning experience.");
+%>
+<%@ include file="/WEB-INF/fragments/student-dashboard-start.jspf" %>
+
+<section class="gape-student-panel bg-white rounded-10 px-24 py-24 border border-neutral-30">
+    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-24">
+        <div>
+            <h3 class="text-20 fw-semibold text-neutral-800 mb-4">Your learning reviews</h3>
+            <span class="text-14 text-neutral-500">A student-focused place for feedback about lessons and class groups.</span>
+        </div>
+        <span class="bg-success-50 text-success-600 px-14 py-8 rounded-pill text-13 fw-semibold">
+            <i class="ph ph-sparkle me-6"></i>Feedback
+        </span>
+    </div>
+    <div class="row gy-4">
+        <div class="col-md-6">
+            <div class="gape-student-card px-24 py-24 h-100">
+                <span class="gape-student-icon gape-student-soft-green text-24 mb-18"><i class="ph ph-star"></i></span>
+                <h4 class="text-18 fw-semibold text-neutral-800 mb-8">Lesson experience</h4>
+                <p class="text-14 text-neutral-500 mb-0">Review completed lessons after they become available for student feedback.</p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="gape-student-card px-24 py-24 h-100">
+                <span class="gape-student-icon gape-student-soft-violet text-24 mb-18"><i class="ph ph-graduation-cap"></i></span>
+                <h4 class="text-18 fw-semibold text-neutral-800 mb-8">Class group feedback</h4>
+                <p class="text-14 text-neutral-500 mb-0">Keep class group feedback separate from administrative review screens.</p>
+            </div>
+        </div>
+    </div>
+    <div class="gape-student-empty text-center px-24 py-40 mt-24">
+        <span class="gape-student-icon gape-student-soft-green text-28 mb-16"><i class="ph ph-check-circle"></i></span>
+        <h4 class="text-18 fw-semibold text-neutral-800 mb-8">No reviews pending</h4>
+        <p class="text-14 text-neutral-500 mb-0">Completed lessons and feedback requests will be listed here.</p>
+    </div>
+</section>
+
+<%@ include file="/WEB-INF/fragments/student-dashboard-end.jspf" %>

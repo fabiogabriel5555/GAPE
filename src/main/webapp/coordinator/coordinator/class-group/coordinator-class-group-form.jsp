@@ -124,17 +124,15 @@
                             <label for="endsAt" class="fw-medium text-base text-neutral-800 mb-12">End Date</label>
                             <input id="endsAt" name="endsAt" type="date" value="<c:out value='${form.endsAt}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
-                        <c:if test="${not creating}">
-                            <div class="col-12">
-                                <label class="d-flex align-items-start gap-12 border border-neutral-30 rounded-12 px-20 py-16 bg-neutral-20">
-                                    <input type="checkbox" name="showContentThumbnails" value="true" class="mt-4" ${form.showContentThumbnails == 'true' ? 'checked' : ''}>
-                                    <span>
-                                        <span class="d-block fw-semibold text-neutral-800 mb-4">Show file thumbnails</span>
-                                        <span class="d-block text-13 text-neutral-500">Display generated media previews inside pedagogical blocks when available.</span>
-                                    </span>
-                                </label>
-                            </div>
-                        </c:if>
+                        <div class="col-12">
+                            <label class="d-flex align-items-start gap-12 border border-neutral-30 rounded-12 px-20 py-16 bg-neutral-20">
+                                <input type="checkbox" name="showContentThumbnails" value="true" class="mt-4" ${form.showContentThumbnails == 'true' ? 'checked' : ''}>
+                                <span>
+                                    <span class="d-block fw-semibold text-neutral-800 mb-4">Show file thumbnails</span>
+                                    <span class="d-block text-13 text-neutral-500">Display generated media previews inside pedagogical blocks when available.</span>
+                                </span>
+                            </label>
+                        </div>
                     </div>
 
                     <div class="d-flex align-items-center gap-16 flex-wrap mt-32">
@@ -142,6 +140,12 @@
                         <a href="${classGroupBackHref}" class="border-main-600 border px-24 py-12 fw-semibold rounded-12 hover-bg-main-50 transition-03">Cancel</a>
                     </div>
                 </form>
+                <c:if test="${not creating}">
+                    <div class="mt-24">
+                        <%@ include file="/WEB-INF/fragments/class-group-enrollment-management.jspf" %>
+                        <%@ include file="/WEB-INF/fragments/class-group-teacher-management.jspf" %>
+                    </div>
+                </c:if>
             </div>
             <%@ include file="/WEB-INF/fragments/dashboard-footer.jspf" %>
         </div>

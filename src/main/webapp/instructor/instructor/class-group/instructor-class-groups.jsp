@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
     if (request.getAttribute("activeMenu") == null) {
         request.setAttribute("activeMenu", "class-groups");
@@ -26,6 +27,72 @@
             background-color: #dc2626 !important;
             border-color: #dc2626 !important;
             color: #fff !important;
+        }
+
+        .gape-tree-toggle {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-radius: 8px;
+            display: inline-flex;
+            height: 32px;
+            justify-content: center;
+            padding: 0;
+            width: 32px;
+        }
+
+        .gape-tree-toggle:hover,
+        .gape-tree-toggle:focus-visible {
+            background-color: var(--main-50);
+            text-decoration: none;
+        }
+
+        .gape-structure-panel {
+            background-color: #f8fbff;
+            border: 1px solid #d9e2ef;
+            border-radius: 8px;
+            margin-block: 14px;
+            padding: 14px;
+        }
+
+        .gape-class-activities-panel {
+            margin-inline-start: 28px;
+            position: relative;
+        }
+
+        .gape-class-activities-panel::before {
+            background-color: #d9e2ef;
+            bottom: 12px;
+            content: "";
+            left: -16px;
+            position: absolute;
+            top: 12px;
+            width: 2px;
+        }
+
+        .gape-lesson-node {
+            border-inline-start: 3px solid #2563eb;
+        }
+
+        .gape-room-node {
+            border-inline-start: 3px solid #16a34a;
+        }
+
+        .gape-node-meta {
+            color: #64748b;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        @media (max-width: 575.98px) {
+            .gape-class-activities-panel {
+                margin-inline-start: 0;
+            }
+
+            .gape-class-activities-panel::before {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -92,6 +159,8 @@
                             <c:forEach var="classGroup" items="${classGroups}">
                                 <c:set var="canModifyClassGroupRow" value="${canModifyClassGroupById[classGroup.id]}" />
                                 <c:set var="canManageClassGroupStructureRow" value="${canManageClassGroupStructureById[classGroup.id]}" />
+                                <c:set var="classGroupLessons" value="${classGroupLessonsByClassGroup[classGroup.id]}" />
+                                <c:set var="classGroupRooms" value="${classGroupRoomsByClassGroup[classGroup.id]}" />
                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                     <td class="py-20 px-20">
                                         <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
@@ -112,15 +181,23 @@
                                     </td>
                                     <td class="py-20 px-20">
                                         <div class="d-flex align-items-center gap-12 justify-content-end">
+                                            <button type="button"
+                                                    class="gape-tree-toggle text-22 text-neutral-500 hover-text-main-600"
+                                                    title="Show Activities"
+                                                    aria-label="Show Activities"
+                                                    aria-expanded="false"
+                                                    aria-controls="classGroupStructure${classGroup.id}"
+                                                    data-gape-tree-toggle="classGroupStructure${classGroup.id}"
+                                                    data-gape-open-title="Hide Activities"
+                                                    data-gape-closed-title="Show Activities">
+                                                <i class="ph ph-caret-down"></i>
+                                            </button>
                                             <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="text-22 text-neutral-500 hover-text-main-600" title="Detail">
                                                 <i class="ph ph-eye"></i>
                                             </a>
                                             <c:if test="${canModifyClassGroupRow}">
                                                 <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/edit" class="text-22 text-neutral-500 hover-text-main-600" title="Edit">
                                                     <i class="ph ph-pencil-simple-line"></i>
-                                                </a>
-                                                <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/new" class="text-22 text-neutral-500 hover-text-main-600" title="New content block">
-                                                    <i class="ph ph-stack-plus"></i>
                                                 </a>
                                             </c:if>
                                             <c:if test="${canManageClassGroupStructureRow}">
@@ -154,6 +231,12 @@
                                         </c:if>
                                     </td>
                                 </tr>
+                                <tr id="classGroupStructure${classGroup.id}" class="d-none">
+                                    <td colspan="6" class="py-0 px-20 bg-white">
+                                        <c:set var="canModifyClassGroup" value="${canModifyClassGroupRow}" />
+                                        <%@ include file="/WEB-INF/fragments/class-group-activities-panel.jspf" %>
+                                    </td>
+                                </tr>
                             </c:forEach>
                             <c:if test="${empty classGroups}">
                                 <tr>
@@ -170,5 +253,25 @@
     </div>
 </div>
 <%@ include file="/WEB-INF/fragments/template-base-scripts.jspf" %>
+<script>
+    document.querySelectorAll('[data-gape-tree-toggle]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var target = document.getElementById(button.dataset.gapeTreeToggle);
+            if (!target) {
+                return;
+            }
+            var isHidden = target.classList.toggle('d-none');
+            var isExpanded = !isHidden;
+            var icon = button.querySelector('i');
+            button.setAttribute('aria-expanded', String(isExpanded));
+            button.setAttribute('title', isExpanded ? button.dataset.gapeOpenTitle : button.dataset.gapeClosedTitle);
+            button.setAttribute('aria-label', isExpanded ? button.dataset.gapeOpenTitle : button.dataset.gapeClosedTitle);
+            if (icon) {
+                icon.classList.toggle('ph-caret-down', !isExpanded);
+                icon.classList.toggle('ph-caret-up', isExpanded);
+            }
+        });
+    });
+</script>
 </body>
 </html>

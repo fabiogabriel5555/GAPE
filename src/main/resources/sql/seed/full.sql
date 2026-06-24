@@ -56,8 +56,8 @@ INSERT INTO lesson (
     id_lesson, id_class_group, id_content_block, cod_physical_room, title, description, type, provider,
     access_url, attendance_required, state, starts_at, ends_at
 ) VALUES
-    (81, 51, 61, NULL, 'Aula Online 1', 'Aula de planeamento remoto', 'online', 'microsoft_teams',
-     'https://teams.example.local/prj', 1, 'active', '2026-02-18 09:00:00', '2026-02-18 11:00:00');
+    (81, 51, 61, NULL, 'Aula Online 1', 'Aula de planeamento remoto', 'online', 'Teams',
+     'https://teams.microsoft.com/l/meetup-join/prj-pl2', 1, 'active', '2026-02-18 09:00:00', '2026-02-18 11:00:00');
 
 INSERT INTO assessment (
     id_assessment, id_subject, id_content_block, title, description, type, mode, correction_mode,
@@ -410,11 +410,11 @@ INSERT INTO lesson (
     provider, access_url, attendance_required, state, starts_at, ends_at
 ) VALUES
     (82, 53, 63, 'SALA-HYB', 'Aula Hibrida BD', 'Sessao sobre modelo relacional', 'hybrid',
-     'zoom', 'https://zoom.example.local/bd-t1', 1, 'active', '2026-03-05 18:00:00', '2026-03-05 20:00:00'),
+     'Zoom', 'https://zoom.us/j/98765432101', 1, 'active', '2026-03-05 18:00:00', '2026-03-05 20:00:00'),
     (83, 53, 64, 'SALA-B1', 'Laboratorio SQL', 'Sessao presencial calendarizada', 'onsite',
      NULL, NULL, 1, 'scheduled', '2026-04-10 18:00:00', '2026-04-10 20:00:00'),
     (84, 55, 65, NULL, 'Aula Online Seguranca', 'Formacao online de seguranca', 'online',
-     'microsoft_teams', 'https://teams.example.local/si-t1', 1, 'active', '2026-04-08 15:00:00', '2026-04-08 17:00:00'),
+     'Teams', 'https://teams.microsoft.com/l/meetup-join/si-t1', 1, 'active', '2026-04-08 15:00:00', '2026-04-08 17:00:00'),
     (85, 54, 66, 'SALA-B1', 'Laboratorio Encerrado RC', 'Sessao historica de redes', 'onsite',
      NULL, NULL, 0, 'completed', '2026-03-15 09:00:00', '2026-03-15 11:00:00');
 
@@ -683,6 +683,86 @@ INSERT INTO receive_message (
     (15, 229, NULL, NULL, 'both', 'failed'),
     (15, 230, NULL, NULL, 'internal', 'pending'),
     (1, 232, '2026-03-05 10:00:20', NULL, 'internal', 'archived');
+
+-- Cobertura final de funcionalidades adicionadas:
+-- politicas de inscricao, processamento de ficheiros de conteudo,
+-- preferencias visuais das turmas e estados historicos de inscricoes.
+
+INSERT INTO subject_enrollment_policy (id_course, id_subject, approval_mode) VALUES
+    (30, 40, 'manual'),
+    (30, 42, 'auto_approve'),
+    (32, 43, 'manual'),
+    (33, 44, 'auto_approve');
+
+INSERT INTO class_group_enrollment_policy (id_class_group, approval_mode) VALUES
+    (50, 'manual'),
+    (51, 'auto_approve'),
+    (53, 'manual'),
+    (55, 'auto_approve');
+
+UPDATE class_group
+SET show_content_thumbnails = 1
+WHERE id_class_group IN (51, 53, 55);
+
+INSERT INTO content_file (
+    id_content_file, id_content_item, original_filename, original_mime_type, final_mime_type,
+    original_bytes, final_bytes, sha256, original_path, final_path, thumbnail_path,
+    duration_seconds, width, height, page_count, processing_state, processing_error,
+    created_at, processed_at
+) VALUES
+    (300, 74, 'er.webp', 'image/webp', 'image/webp',
+     24556, 24556, '0418d158c1615be1e381d1ff37bf8aaf577532c5e3216f0d694eac2fd9b7fc40', NULL, 'contents/images/er.webp', 'contents/thumbs/er.webp',
+     NULL, 1280, 720, NULL, 'ready', NULL, '2026-03-02 09:00:00', '2026-03-02 09:02:00'),
+    (301, 75, 'normalizacao.mp4', 'video/mp4', 'video/mp4',
+     42655, 42655, 'a1a8410841a09cc131ee75836134f019598e6b754dc7ad090e11a513a77b8d99', NULL, 'contents/videos/normalizacao.mp4', 'contents/thumbs/normalizacao.webp',
+     3, 1280, 720, NULL, 'ready', NULL, '2026-03-02 09:10:00', '2026-03-02 09:18:00'),
+    (302, 77, 'slides-seguranca.pdf', 'application/pdf', 'application/pdf',
+     934, 934, '46b5108bca98b12950aae7ffb73e370c8ce0c67234a8017dff7895f39bcec052', NULL, 'contents/presentations/slides-seguranca.pdf', NULL,
+     NULL, NULL, NULL, 1, 'ready', NULL, '2026-04-02 09:00:00', '2026-04-02 09:02:00'),
+    (303, 78, 'scorm-qualidade.zip', 'application/zip', 'application/zip',
+     718, 718, '3fff3833010a0e4b06e0bd51b0b6b40d8e20aef851ca49cd8aa70b76bb59b804', NULL, 'contents/packages/scorm-qualidade.zip', NULL,
+     NULL, NULL, NULL, NULL, 'ready', NULL, '2026-04-02 09:15:00', '2026-04-02 09:20:00'),
+    (305, 79, 'xapi-auditoria.zip', 'application/zip', 'application/zip',
+     662, 662, '2a4037531c445614c9e17e9abf2a07bfe25a14c9b9d5aea2a4036b4fbf795274', NULL, 'contents/packages/xapi-auditoria.zip', NULL,
+     NULL, NULL, NULL, NULL, 'ready', NULL, '2026-04-02 09:30:00', '2026-04-02 09:32:00'),
+    (304, 81, 'revisao.m4a', 'audio/mp4', 'audio/mp4',
+     230080, 230080, '3c8fc73b947ada2b40f4dc020894c71bb2043fafbdc63359d00e6b2ff9dc511f', NULL, 'contents/audio/revisao.m4a', NULL,
+     21, NULL, NULL, NULL, 'ready', NULL, '2026-03-03 12:00:00', '2026-03-03 12:04:00');
+
+INSERT INTO user_account (
+    id_user, name, email, state, language, photo, created_at, credential_hash, credential_salt, document_type, document_number
+) VALUES
+    (17, 'Student Four Enrollment Matrix', 'student4@gape.local', 'active', 'pt-PT', 'users/17/profile.webp',
+     '2026-01-03 09:45:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-STD-017');
+
+INSERT INTO student_profile (id_user, cod_student) VALUES
+    (17, 'STD-017');
+
+INSERT INTO grant_student (id_student_user, cod_permission) VALUES
+    (17, 'VIEW_REPORTS');
+
+INSERT INTO enroll_course (id_student_user, id_course, state, start_date, end_date) VALUES
+    (17, 30, 'active', '2026-03-01', NULL),
+    (17, 31, 'completed', '2026-01-01', '2026-02-01'),
+    (17, 32, 'active', '2026-03-01', NULL),
+    (17, 33, 'inactive', '2026-04-01', NULL),
+    (17, 34, 'archived', '2025-02-01', '2025-06-30');
+
+INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date) VALUES
+    (17, 30, 40, 'active', '2026-03-01', NULL),
+    (17, 30, 42, 'active', '2026-03-01', NULL),
+    (17, 32, 43, 'pending', '2026-03-01', NULL),
+    (17, 33, 44, 'rejected', '2026-04-01', '2026-04-02'),
+    (17, 31, 41, 'completed', '2026-01-01', '2026-02-01'),
+    (17, 32, 42, 'inactive', '2026-03-01', NULL),
+    (17, 34, 42, 'archived', '2025-02-01', '2025-06-30');
+
+INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date) VALUES
+    (17, 53, 'pending', '2026-03-01', NULL),
+    (17, 50, 'rejected', '2026-02-01', '2026-02-02'),
+    (17, 51, 'completed', '2026-02-01', '2026-06-30'),
+    (17, 54, 'inactive', '2026-03-01', NULL),
+    (17, 56, 'archived', '2025-02-01', '2025-06-30');
 
 INSERT INTO activity_log (
     id_activity_log, id_user, id_session, operation_type, affected_entity_type,

@@ -136,12 +136,42 @@
     return value
       .split("?")[0]
       .split("#")[0]
-      .split(";")[0]
       .replace(/\\/g, "/")
       .split("/")
       .filter(Boolean)
+      .map(function (part) {
+        return part.split(";")[0];
+      })
+      .filter(Boolean)
       .pop()
       .toLowerCase();
+  }
+
+  function normalizeSidebarPath(value) {
+    if (!value) {
+      return "";
+    }
+
+    var normalized = value
+      .split("?")[0]
+      .split("#")[0]
+      .replace(/\\/g, "/");
+    var origin = window.location.origin.toLowerCase();
+    if (normalized.toLowerCase().indexOf(origin) === 0) {
+      normalized = normalized.slice(origin.length);
+    }
+
+    normalized = normalized
+      .split("/")
+      .filter(Boolean)
+      .map(function (part) {
+        return part.split(";")[0];
+      })
+      .filter(Boolean)
+      .join("/")
+      .toLowerCase();
+
+    return normalized ? "/" + normalized.replace(/\/+$/, "") : "";
   }
 
   function isActiveSidebarFile(currentFileName, hrefFileName) {
@@ -158,21 +188,147 @@
     return aliasFiles[currentFileName] === hrefFileName || aliasFiles[hrefFileName] === currentFileName;
   }
 
+  function isActiveSidebarPath(currentPath, hrefPath) {
+    if (!currentPath || !hrefPath) {
+      return false;
+    }
+
+    if (currentPath === hrefPath) {
+      return true;
+    }
+
+    return hrefPath.indexOf(".jsp") === -1 && currentPath.indexOf(hrefPath + "/") === 0;
+  }
+
+  function normalizeStudentSidebarMenuKey(value) {
+    if (!value) {
+      return "";
+    }
+
+    var normalized = String(value).trim().toLowerCase();
+    var aliases = {
+      "my-profile": "profile",
+      "classgroups": "class-groups",
+      "class_group": "class-groups",
+      "class-groups-detail": "class-groups",
+      "course-detail": "courses",
+      "subject-detail": "subjects",
+      "lesson-detail": "lessons"
+    };
+
+    return aliases[normalized] || normalized;
+  }
+
+  function isCurrentSidebarSectionPath(currentPath, sectionPath) {
+    if (!currentPath || !sectionPath) {
+      return false;
+    }
+
+    var index = currentPath.indexOf(sectionPath);
+    if (index === -1) {
+      return false;
+    }
+
+    var nextCharacter = currentPath.charAt(index + sectionPath.length);
+    return !nextCharacter || nextCharacter === "/";
+  }
+
+  function studentSidebarMenuKeyForPath(currentPath, currentFileName) {
+    var sectionPaths = [
+      { key: "courses", paths: ["/student/courses"] },
+      { key: "subjects", paths: ["/student/subjects"] },
+      { key: "class-groups", paths: ["/student/class-groups"] },
+      { key: "lessons", paths: ["/student/lessons"] },
+      { key: "calendar", paths: ["/student/calendar"] },
+      { key: "profile", paths: ["/student/student/profile"] },
+      { key: "message", paths: ["/student/student/message"] },
+      { key: "reviews", paths: ["/student/student/review"] },
+      { key: "dashboard", paths: ["/student/student/dashboard"] }
+    ];
+    var fileAliases = {
+      "student-enrolled-courses.jsp": "courses",
+      "student-my-profile.jsp": "profile",
+      "student-message.jsp": "message",
+      "student-reviews.jsp": "reviews",
+      "student-home.jsp": "dashboard",
+      "student-assignment.jsp": "dashboard",
+      "student-my-quiz-attempts.jsp": "dashboard",
+      "student-settings.jsp": "profile"
+    };
+
+    for (var index = 0; index < sectionPaths.length; index += 1) {
+      var section = sectionPaths[index];
+      for (var pathIndex = 0; pathIndex < section.paths.length; pathIndex += 1) {
+        if (isCurrentSidebarSectionPath(currentPath, section.paths[pathIndex])) {
+          return section.key;
+        }
+      }
+    }
+
+    return fileAliases[currentFileName] || "";
+  }
+
+  function revealActiveSidebarItem($list) {
+    var activeItem = $list.children("li.activePage").first().get(0);
+    var scrollContainer = $list.closest(".student-dashbord-scrollbar").get(0);
+
+    if (!activeItem || !scrollContainer) {
+      return;
+    }
+
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    var initialContainerRect = scrollContainer.getBoundingClientRect();
+    var availableHeight = viewportHeight - initialContainerRect.top - 16;
+    if (availableHeight > 140) {
+      scrollContainer.style.height = availableHeight + "px";
+      scrollContainer.style.maxHeight = availableHeight + "px";
+    }
+
+    var itemRect = activeItem.getBoundingClientRect();
+    var containerRect = scrollContainer.getBoundingClientRect();
+    var visibleTop = Math.max(containerRect.top, 0);
+    var visibleBottom = Math.min(containerRect.bottom, viewportHeight);
+    var topOverflow = itemRect.top - visibleTop;
+    var bottomOverflow = itemRect.bottom - visibleBottom;
+    var scrollPadding = 12;
+    var visibleHeight = visibleBottom - visibleTop;
+    var itemCenter = itemRect.top + (itemRect.height / 2);
+    var visibleCenter = visibleTop + (visibleHeight / 2);
+
+    if (topOverflow < scrollPadding || bottomOverflow > -scrollPadding) {
+      scrollContainer.scrollTop += itemCenter - visibleCenter;
+    }
+  }
+
   function dynamicActiveSidebarClass(selector) {
     var currentFileName = normalizeSidebarFileName(window.location.pathname);
+    var currentPath = normalizeSidebarPath(window.location.pathname);
+    var routeMenuKey = studentSidebarMenuKeyForPath(currentPath, currentFileName);
 
     selector.each(function () {
       var $list = $(this);
+      var explicitMenuKey = normalizeStudentSidebarMenuKey(
+        $list.closest(".student-dashboard-sidebar").attr("data-active-menu")
+      );
+      var targetMenuKey = explicitMenuKey || routeMenuKey;
 
       $list.find("li").removeClass("activePage");
+      $list.find("li > a[aria-current]").attr("aria-current", "false");
 
       $list.find("li").each(function () {
         var $item = $(this);
         var $anchor = $item.children("a.item-hover[href]").first();
+        var itemMenuKey = normalizeStudentSidebarMenuKey($item.attr("data-menu-key"));
         var hrefFileName = normalizeSidebarFileName($anchor.attr("href"));
+        var hrefPath = normalizeSidebarPath($anchor.attr("href"));
 
-        if (isActiveSidebarFile(currentFileName, hrefFileName)) {
+        if (
+          (itemMenuKey && itemMenuKey === targetMenuKey) ||
+          isActiveSidebarPath(currentPath, hrefPath) ||
+          isActiveSidebarFile(currentFileName, hrefFileName)
+        ) {
           $item.addClass("activePage");
+          $anchor.attr("aria-current", "page");
         }
       });
 
@@ -182,11 +338,23 @@
           $item.addClass("activePage");
         }
       });
+
+      revealActiveSidebarItem($list);
     });
   }
 
   if ($('.student-dashboard-sidebar').length) {
-    dynamicActiveSidebarClass($('.student-dashboard-sidebar ul'));
+    var $studentSidebarLists = $('.student-dashboard-sidebar ul');
+    dynamicActiveSidebarClass($studentSidebarLists);
+    window.setTimeout(function () {
+      dynamicActiveSidebarClass($studentSidebarLists);
+    }, 160);
+    $(window).on("load.studentSidebarActive", function () {
+      dynamicActiveSidebarClass($studentSidebarLists);
+      window.setTimeout(function () {
+        dynamicActiveSidebarClass($studentSidebarLists);
+      }, 160);
+    });
   }
 
   
@@ -1291,9 +1459,12 @@ if ($('.nav-menu').length) {
   // ==========================================
 
   // ========================= Preloader Js Start =====================
-    $(window).on("load", function(){
-      $('.preloader').fadeOut(); 
-    })
+    function hidePreloader() {
+      $('.preloader').fadeOut(200);
+    }
+
+    $(window).on("load", hidePreloader);
+    setTimeout(hidePreloader, 2500);
     // ========================= Preloader Js End=====================
 
     // ========================= Header Sticky Js Start ==============

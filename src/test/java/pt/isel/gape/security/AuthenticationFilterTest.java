@@ -88,7 +88,7 @@ class AuthenticationFilterTest {
         TestFilterChain chainState = new TestFilterChain();
 
         filter.doFilter(
-                requestProxy("/student/student-home.jsp", httpSession),
+                requestProxy("/student/student/dashboard/student-dashboard.jsp", httpSession),
                 responseProxy(responseState),
                 chainProxy(chainState)
         );
@@ -124,7 +124,7 @@ class AuthenticationFilterTest {
         assertAllowed("/admin/admin-dashbord.jsp", httpSession);
         assertAllowed("/coordinator/coordinator-dashbord.jsp", httpSession);
         assertAllowed("/instructor/instructor-dashbord.jsp", httpSession);
-        assertAllowed("/student/student-home.jsp", httpSession);
+        assertAllowed("/student/student/dashboard/student-dashboard.jsp", httpSession);
     }
 
     @Test
@@ -135,7 +135,7 @@ class AuthenticationFilterTest {
                 Set.of(AccessProfileType.ADMINISTRATOR, AccessProfileType.STUDENT)
         );
 
-        assertAllowed("/student/student-home.jsp", httpSession);
+        assertAllowed("/student/student/dashboard/student-dashboard.jsp", httpSession);
         assertAllowed("/admin/admin-dashbord.jsp", httpSession);
     }
 

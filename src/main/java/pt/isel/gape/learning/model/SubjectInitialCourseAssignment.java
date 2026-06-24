@@ -4,6 +4,16 @@ public record SubjectInitialCourseAssignment(
         long courseId,
         Integer curricularYear,
         CurricularTerm term,
-        boolean mandatory
+        boolean mandatory,
+        EnrollmentApprovalMode approvalMode
 ) {
+
+    public SubjectInitialCourseAssignment(
+            long courseId,
+            Integer curricularYear,
+            CurricularTerm term,
+            boolean mandatory
+    ) {
+        this(courseId, curricularYear, term, mandatory, EnrollmentApprovalMode.MANUAL);
+    }
 }

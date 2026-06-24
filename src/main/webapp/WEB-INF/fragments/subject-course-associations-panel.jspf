@@ -1,0 +1,185 @@
+<div class="bg-white rounded-10 px-24 py-24 h-100" id="course-associations">
+    <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-20">
+        <div>
+            <h3 class="text-18 fw-medium text-neutral-700 mb-4">Course Associations</h3>
+            <span class="text-14 text-neutral-500">Courses linked to this subject and their enrollment approval rules.</span>
+        </div>
+    </div>
+
+    <div class="d-flex flex-column gap-12 mb-20">
+        <c:forEach var="association" items="${subjectCourseAssociations}">
+            <c:set var="associationPolicy" value="${subjectEnrollmentPolicyByCourseId[association.courseId]}"/>
+            <div class="border border-neutral-30 rounded-12 px-16 py-14">
+                <div class="d-flex align-items-start justify-content-between gap-12 flex-wrap">
+                    <div>
+                        <a href="${pageContext.request.contextPath}${subjectCourseBasePath}/${association.courseId}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                            <c:out value="${association.courseName}"/>
+                        </a>
+                        <span class="d-block text-12 text-neutral-500" title="<c:out value='${association.courseContextTitle}'/>"><c:out value="${association.courseContextHtml}" escapeXml="false"/></span>
+                        <span class="d-block text-12 text-neutral-500"><c:out value="${association.curricularPositionLabel}"/> | <c:out value="${association.mandatoryLabel}"/></span>
+                        <span class="d-block text-12 text-neutral-500">
+                            Enrollment: <c:choose><c:when test="${associationPolicy eq 'auto_approve'}">Auto approve</c:when><c:otherwise>Manual approval</c:otherwise></c:choose>
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center gap-10 flex-wrap">
+                        <span class="${association.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-14">
+                            <c:out value="${association.stateLabel}"/>
+                        </span>
+                        <c:if test="${not subject.archived and canManageSubjectAssociations}">
+                            <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Edit association" data-bs-toggle="modal" data-bs-target="#editSubjectCourseAssociation${subject.id}_${association.courseId}">
+                                <i class="ph ph-pencil-simple-line"></i>
+                            </button>
+                            <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Remove association" data-bs-toggle="modal" data-bs-target="#deleteSubjectCourseAssociation${subject.id}_${association.courseId}">
+                                <i class="ph ph-trash"></i>
+                            </button>
+                        </c:if>
+                    </div>
+                </div>
+            </div>
+
+            <c:if test="${not subject.archived and canManageSubjectAssociations}">
+                <div class="modal fade" id="editSubjectCourseAssociation${subject.id}_${association.courseId}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content rounded-12 border-0">
+                            <div class="modal-header border-neutral-30">
+                                <h5 class="modal-title text-18 fw-semibold">Edit Course Association</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/courses/${association.courseId}" method="post">
+                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                <input type="hidden" name="returnTo" value="${currentReturnTo}#course-associations">
+                                <div class="modal-body">
+                                    <p class="text-14 text-neutral-600 mb-20">
+                                        <strong><c:out value="${association.courseName}"/></strong>
+                                        <span class="d-block text-12 text-neutral-500"><c:out value="${association.courseContextHtml}" escapeXml="false"/></span>
+                                    </p>
+                                    <div class="row gy-3">
+                                        <div class="col-md-3">
+                                            <label for="editAssociationYear${subject.id}_${association.courseId}" class="fw-medium text-base text-neutral-800 mb-12">Year</label>
+                                            <input id="editAssociationYear${subject.id}_${association.courseId}" name="curricularYear" type="number" min="1" value="<c:out value='${association.curricularYear}'/>" class="form-control px-16 py-10 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
+                                        </div>
+                                        <div class="col-md-3 gape-select-field">
+                                            <label for="editAssociationTerm${subject.id}_${association.courseId}" class="fw-medium text-base text-neutral-800 mb-12">Period</label>
+                                            <select id="editAssociationTerm${subject.id}_${association.courseId}" name="term" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                                <option value="" ${empty association.term ? 'selected' : ''}>No period</option>
+                                                <option value="ANNUAL" ${association.term == 'ANNUAL' ? 'selected' : ''}>Annual</option>
+                                                <option value="SEMESTER_1" ${association.term == 'SEMESTER_1' ? 'selected' : ''}>1st semester</option>
+                                                <option value="SEMESTER_2" ${association.term == 'SEMESTER_2' ? 'selected' : ''}>2nd semester</option>
+                                                <option value="TRIMESTER_1" ${association.term == 'TRIMESTER_1' ? 'selected' : ''}>1st trimester</option>
+                                                <option value="TRIMESTER_2" ${association.term == 'TRIMESTER_2' ? 'selected' : ''}>2nd trimester</option>
+                                                <option value="TRIMESTER_3" ${association.term == 'TRIMESTER_3' ? 'selected' : ''}>3rd trimester</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 gape-select-field">
+                                            <label for="editAssociationState${subject.id}_${association.courseId}" class="fw-medium text-base text-neutral-800 mb-12">State</label>
+                                            <select id="editAssociationState${subject.id}_${association.courseId}" name="state" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                                <option value="ACTIVE" ${association.state == 'ACTIVE' ? 'selected' : ''}>Active</option>
+                                                <option value="INACTIVE" ${association.state == 'INACTIVE' ? 'selected' : ''}>Inactive</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 gape-select-field">
+                                            <label for="editAssociationApproval${subject.id}_${association.courseId}" class="fw-medium text-base text-neutral-800 mb-12">Enrollment</label>
+                                            <select id="editAssociationApproval${subject.id}_${association.courseId}" name="approvalMode" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                                <option value="">Select mode</option>
+                                                <option value="manual" <c:if test="${associationPolicy ne 'auto_approve'}">selected</c:if>>Manual approval</option>
+                                                <option value="auto_approve" <c:if test="${associationPolicy eq 'auto_approve'}">selected</c:if>>Auto approve</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="form-check common-check">
+                                                <input class="form-check-input" type="checkbox" id="editAssociationMandatory${subject.id}_${association.courseId}" name="mandatory" value="true" ${association.mandatory ? 'checked' : ''}>
+                                                <label class="form-check-label fw-medium" for="editAssociationMandatory${subject.id}_${association.courseId}">Mandatory subject in this course</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer border-neutral-30">
+                                    <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03 border-0">Save</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="deleteSubjectCourseAssociation${subject.id}_${association.courseId}" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-12 border-0">
+                            <div class="modal-header border-neutral-30">
+                                <h5 class="modal-title text-18 fw-semibold">Remove Course Association</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="text-14 text-neutral-600 mb-0">This action removes the association with <strong><c:out value="${association.courseName}"/></strong> if the database allows it.</p>
+                            </div>
+                            <div class="modal-footer border-neutral-30">
+                                <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
+                                <form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/courses/${association.courseId}/delete" method="post" class="m-0">
+                                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                    <input type="hidden" name="returnTo" value="${currentReturnTo}#course-associations">
+                                    <button type="submit" class="gape-action-button gape-action-delete px-20 py-10 rounded-12 fw-semibold transition-03">Remove</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </c:if>
+        </c:forEach>
+        <c:if test="${empty subjectCourseAssociations}">
+            <p class="text-14 text-neutral-500 mb-0">No associated courses found.</p>
+        </c:if>
+    </div>
+
+    <c:if test="${not subject.archived and canManageSubjectAssociations}">
+        <form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/courses" method="post" class="border border-neutral-30 rounded-12 px-20 py-20">
+            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+            <input type="hidden" name="returnTo" value="${currentReturnTo}#course-associations">
+            <div class="row gy-4">
+                <div class="col-12 gape-select-field">
+                    <label for="courseId" class="fw-medium text-base text-neutral-800 mb-12">Course</label>
+                    <select id="courseId" name="courseId" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
+                        <option value="">Select course</option>
+                        <c:forEach var="course" items="${availableCourseOptions}">
+                            <option value="${course.id}" title="<c:out value='${course.courseManagementContextTitle}'/>">
+                                <c:out value="${course.name}"/> | <c:out value="${course.courseManagementContextLabel}"/>
+                            </option>
+                        </c:forEach>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="curricularYear" class="fw-medium text-base text-neutral-800 mb-12">Year</label>
+                    <input id="curricularYear" name="curricularYear" type="number" min="1" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                </div>
+                <div class="col-md-4 gape-select-field">
+                    <label for="term" class="fw-medium text-base text-neutral-800 mb-12">Period</label>
+                    <select id="term" name="term" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
+                        <option value="">No period</option>
+                        <option value="ANNUAL">Annual</option>
+                        <option value="SEMESTER_1">1st semester</option>
+                        <option value="SEMESTER_2">2nd semester</option>
+                        <option value="TRIMESTER_1">1st trimester</option>
+                        <option value="TRIMESTER_2">2nd trimester</option>
+                        <option value="TRIMESTER_3">3rd trimester</option>
+                    </select>
+                </div>
+                <div class="col-md-4 gape-select-field">
+                    <label for="approvalMode" class="fw-medium text-base text-neutral-800 mb-12">Enrollment</label>
+                    <select id="approvalMode" name="approvalMode" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
+                        <option value="">Select mode</option>
+                        <option value="manual">Manual approval</option>
+                        <option value="auto_approve">Auto approve</option>
+                    </select>
+                </div>
+                <div class="col-lg-8 d-flex align-items-center">
+                    <div class="form-check common-check">
+                        <input class="form-check-input" type="checkbox" id="mandatory" name="mandatory" value="true" checked>
+                        <label class="form-check-label fw-medium" for="mandatory">Mandatory subject in this course</label>
+                    </div>
+                </div>
+                <div class="col-lg-4 d-flex align-items-end justify-content-lg-end">
+                    <button type="submit" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">Add Course</button>
+                </div>
+            </div>
+        </form>
+    </c:if>
+</div>

@@ -26,7 +26,7 @@ class DashboardNavigationTest {
                 DashboardNavigation.landingPageFor(sessionUserWith(AccessProfileType.TEACHER)).orElseThrow()
         );
         assertEquals(
-                "/student/student-home.jsp",
+                "/student/student/dashboard/student-dashboard.jsp",
                 DashboardNavigation.landingPageFor(sessionUserWith(AccessProfileType.STUDENT)).orElseThrow()
         );
     }
@@ -46,7 +46,7 @@ class DashboardNavigationTest {
                 DashboardNavigation.profilePageFor(sessionUserWith(AccessProfileType.TEACHER)).orElseThrow()
         );
         assertEquals(
-                "/student/student-my-profile.jsp",
+                "/student/student/profile/student-profile.jsp",
                 DashboardNavigation.profilePageFor(sessionUserWith(AccessProfileType.STUDENT)).orElseThrow()
         );
     }

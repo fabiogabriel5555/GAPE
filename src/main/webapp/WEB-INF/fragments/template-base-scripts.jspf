@@ -18,3 +18,5 @@
 <script src="${pageContext.request.contextPath}/assets/js/main.js?v=20260616-sidebar"></script>
 <script src="${pageContext.request.contextPath}/assets/js/gape-document-validation.js"></script>
 <script src="${pageContext.request.contextPath}/assets/js/gape-dependent-selects.js?v=20260612-dependent-selects"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-smart-navigation.js?v=20260621-smart-back"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-student-enrollment-auto-update.js?v=20260623-student-enrollment-live"></script>

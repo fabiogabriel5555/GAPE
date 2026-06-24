@@ -1,0 +1,99 @@
+<div class="bg-white rounded-10 px-24 py-24 mb-24" id="course-students">
+    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
+        <div>
+            <h3 class="text-18 fw-medium text-neutral-700 mb-4">Students</h3>
+            <span class="text-14 text-neutral-500">Course enrollment is managed by authorized profiles.</span>
+        </div>
+        <span class="bg-success-50 text-success-600 px-14 py-8 rounded-pill text-13 fw-semibold">
+            ${activeCourseEnrollmentCount} active students
+        </span>
+    </div>
+
+    <c:if test="${not course.archived and canManageCourseEnrollments}">
+        <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/enrollments" method="post" class="border border-neutral-30 rounded-12 px-20 py-18 mb-20">
+            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+            <input type="hidden" name="returnTo" value="${currentReturnTo}#course-students">
+            <div class="row gy-3 align-items-start">
+                <div class="col-lg-8 gape-select-field">
+                    <label for="studentUserId" class="fw-medium text-base text-neutral-800 mb-12">Student</label>
+                    <select id="studentUserId" name="studentUserId" required class="form-select px-20 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                        <option value="">Select student</option>
+                        <c:forEach var="student" items="${studentOptions}">
+                            <c:if test="${not activeEnrollmentByStudent[student.id]}">
+                                <option value="${student.id}"><c:out value="${student.name}"/> - <c:out value="${student.email}"/></option>
+                            </c:if>
+                        </c:forEach>
+                    </select>
+                </div>
+                <div class="col-lg-4">
+                    <label for="courseEnrollmentEndDate" class="fw-medium text-base text-neutral-800 mb-12">End</label>
+                    <input id="courseEnrollmentEndDate" name="endDate" type="date" class="form-control px-20 py-12 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03 border-0">Enroll Student</button>
+                </div>
+            </div>
+        </form>
+    </c:if>
+
+    <div class="border border-neutral-30 rounded-12 overflow-hidden mb-16">
+        <div class="bg-main-25 px-20 py-14 border-bottom border-neutral-30">
+            <h4 class="text-16 fw-semibold text-neutral-800 mb-0">Active enrollments</h4>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table mb-0">
+                <thead>
+                <tr>
+                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Student</th>
+                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Period</th>
+                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
+                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <c:forEach var="enrollment" items="${activeCourseEnrollments}">
+                    <%@ include file="/WEB-INF/fragments/course-enrollment-row.jspf" %>
+                </c:forEach>
+                <c:if test="${empty activeCourseEnrollments}">
+                    <tr>
+                        <td colspan="4" class="py-28 px-20 text-center text-14 text-neutral-500">No active students enrolled in this course.</td>
+                    </tr>
+                </c:if>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <button type="button" class="border-main-600 border px-16 py-9 rounded-10 text-14 fw-semibold text-main-600 hover-bg-main-50 transition-03 mb-14" data-bs-toggle="collapse" data-bs-target="#courseEnrollmentHistory" aria-expanded="false" aria-controls="courseEnrollmentHistory">
+        Show audit enrollments
+    </button>
+    <div class="collapse" id="courseEnrollmentHistory">
+        <div class="border border-neutral-30 rounded-12 overflow-hidden">
+            <div class="bg-neutral-20 px-20 py-14 border-bottom border-neutral-30">
+                <h4 class="text-16 fw-semibold text-neutral-700 mb-0">Audit history</h4>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table mb-0">
+                    <thead>
+                    <tr>
+                        <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Student</th>
+                        <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Period</th>
+                        <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
+                        <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <c:forEach var="enrollment" items="${otherCourseEnrollments}">
+                        <%@ include file="/WEB-INF/fragments/course-enrollment-row.jspf" %>
+                    </c:forEach>
+                    <c:if test="${empty otherCourseEnrollments}">
+                        <tr>
+                            <td colspan="4" class="py-28 px-20 text-center text-14 text-neutral-500">No audit enrollment records found.</td>
+                        </tr>
+                    </c:if>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

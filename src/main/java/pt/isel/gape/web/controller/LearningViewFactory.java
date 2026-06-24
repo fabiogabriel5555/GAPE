@@ -18,6 +18,8 @@ import pt.isel.gape.learning.model.ContentBlock;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseEnrollment;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
+import pt.isel.gape.learning.model.Lesson;
+import pt.isel.gape.learning.model.PhysicalRoom;
 import pt.isel.gape.learning.model.Subject;
 import pt.isel.gape.learning.model.SubjectEnrollment;
 import pt.isel.gape.structure.dao.TeachClassGroupDAO;
@@ -31,6 +33,9 @@ import pt.isel.gape.web.view.ClassGroupView;
 import pt.isel.gape.web.view.ContentBlockView;
 import pt.isel.gape.web.view.CourseSubjectView;
 import pt.isel.gape.web.view.CourseView;
+import pt.isel.gape.web.view.EnrollmentManagementView;
+import pt.isel.gape.web.view.LessonView;
+import pt.isel.gape.web.view.PhysicalRoomView;
 import pt.isel.gape.web.view.SubjectView;
 import pt.isel.gape.web.view.UserOptionView;
 
@@ -198,6 +203,34 @@ final class LearningViewFactory {
         return ContentBlockView.from(contentBlock);
     }
 
+    LessonView lessonView(Lesson lesson) {
+        return LessonView.from(lesson);
+    }
+
+    List<LessonView> lessonViews(List<Lesson> lessons) {
+        return lessons.stream()
+                .map(this::lessonView)
+                .toList();
+    }
+
+    PhysicalRoomView physicalRoomView(PhysicalRoom room) {
+        try {
+            Organization organization = organizationDAO.findById(room.organizationId()).orElse(null);
+            OrganicUnit organicUnit = room.organicUnitId() == null
+                    ? null
+                    : organicUnitDAO.findById(room.organicUnitId()).orElse(null);
+            return PhysicalRoomView.from(room, organization, organicUnit);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to build physical room view", exception);
+        }
+    }
+
+    List<PhysicalRoomView> physicalRoomViews(List<PhysicalRoom> rooms) {
+        return rooms.stream()
+                .map(this::physicalRoomView)
+                .toList();
+    }
+
     List<ClassGroupEnrollmentView> classGroupEnrollmentViews(long classGroupId) {
         requireClassGroupSupport();
         try {
@@ -206,6 +239,52 @@ final class LearningViewFactory {
                     .toList();
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to build class group enrollment views", exception);
+        }
+    }
+
+    List<EnrollmentManagementView> courseEnrollmentViews(long courseId) {
+        requireClassGroupSupport();
+        try {
+            return enrollmentDAO.findCourseEnrollmentsByCourse(courseId).stream()
+                    .map(enrollment -> {
+                        try {
+                            User user = userDAO.findById(enrollment.studentUserId()).orElse(null);
+                            return EnrollmentManagementView.course(
+                                    enrollment,
+                                    user == null ? "Unknown student" : user.name(),
+                                    user == null ? "" : user.email()
+                            );
+                        } catch (SQLException exception) {
+                            throw new IllegalStateException("Failed to load course enrollment user", exception);
+                        }
+                    })
+                    .toList();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to build course enrollment views", exception);
+        }
+    }
+
+    List<EnrollmentManagementView> subjectEnrollmentViews(long subjectId) {
+        requireClassGroupSupport();
+        try {
+            return enrollmentDAO.findSubjectEnrollmentsBySubject(subjectId).stream()
+                    .map(enrollment -> {
+                        try {
+                            User user = userDAO.findById(enrollment.studentUserId()).orElse(null);
+                            Course course = courseDAO.findById(enrollment.courseId()).orElse(null);
+                            return EnrollmentManagementView.subject(
+                                    enrollment,
+                                    user == null ? "Unknown student" : user.name(),
+                                    user == null ? "" : user.email(),
+                                    course == null ? "" : course.name()
+                            );
+                        } catch (SQLException exception) {
+                            throw new IllegalStateException("Failed to load subject enrollment context", exception);
+                        }
+                    })
+                    .toList();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to build subject enrollment views", exception);
         }
     }
 
@@ -228,6 +307,28 @@ final class LearningViewFactory {
                     .toList();
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load teacher options", exception);
+        }
+    }
+
+    List<UserOptionView> activeStudentOptions(Long selectedId) {
+        requireClassGroupSupport();
+        try {
+            return userDAO.findActiveStudents().stream()
+                    .map(user -> UserOptionView.from(user, selectedId != null && selectedId == user.id()))
+                    .toList();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load student options", exception);
+        }
+    }
+
+    List<UserOptionView> activeStudentsEnrolledInCourseOptions(long courseId, Long selectedId) {
+        requireClassGroupSupport();
+        try {
+            return userDAO.findActiveStudentsEnrolledInCourse(courseId).stream()
+                    .map(user -> UserOptionView.from(user, selectedId != null && selectedId == user.id()))
+                    .toList();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load course student options", exception);
         }
     }
 

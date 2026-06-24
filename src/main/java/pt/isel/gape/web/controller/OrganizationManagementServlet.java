@@ -83,6 +83,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
     private final SubjectService subjectService;
     private final CourseSubjectService courseSubjectService;
     private final ClassGroupService classGroupService;
+    private final ClassGroupActivityViewSupport activityViewSupport;
 
     public OrganizationManagementServlet() {
         this(
@@ -97,7 +98,8 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 new CourseService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new SubjectService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new CourseSubjectService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new ClassGroupService(ConnectionProvider.defaultProvider(), ApplicationClock.system())
+                new ClassGroupService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
+                new ClassGroupActivityViewSupport(ConnectionProvider.defaultProvider(), ApplicationClock.system())
         );
     }
 
@@ -123,7 +125,8 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 new CourseService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new SubjectService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new CourseSubjectService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new ClassGroupService(ConnectionProvider.defaultProvider(), ApplicationClock.system())
+                new ClassGroupService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
+                new ClassGroupActivityViewSupport(ConnectionProvider.defaultProvider(), ApplicationClock.system())
         );
     }
 
@@ -139,7 +142,8 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
             CourseService courseService,
             SubjectService subjectService,
             CourseSubjectService courseSubjectService,
-            ClassGroupService classGroupService
+            ClassGroupService classGroupService,
+            ClassGroupActivityViewSupport activityViewSupport
     ) {
         this.organizationService = organizationService;
         this.organicUnitService = organicUnitService;
@@ -153,6 +157,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         this.subjectService = subjectService;
         this.courseSubjectService = courseSubjectService;
         this.classGroupService = classGroupService;
+        this.activityViewSupport = activityViewSupport;
     }
 
     @Override
@@ -286,6 +291,13 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         request.setAttribute("canModifyClassGroupById", canModifyClassGroupById(actor, classGroupIds, request));
         request.setAttribute("canManageClassGroupStructureById",
                 canManageClassGroupStructureById(actor, classGroupIds, request));
+        activityViewSupport.exposeClassGroupActivities(
+                request,
+                actor,
+                currentSessionId(request),
+                primaryProfile(actor),
+                classGroupIds
+        );
         request.setAttribute("organizationCount", views.size());
         request.setAttribute("activeOrganizations", views.stream().filter(OrganizationView::isActive).count());
         request.setAttribute("inactiveOrganizations", views.stream().filter(OrganizationView::isInactive).count());

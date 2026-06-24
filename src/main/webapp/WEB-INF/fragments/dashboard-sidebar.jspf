@@ -10,12 +10,19 @@
 <c:set var="isTeacherDashboard" value="${sessionScope['gape.auth.hasTeacherProfile']
         or fn:contains(currentRequestUri, '/instructor/')
         or fn:startsWith(currentServletPath, '/instructor/')}" />
-<c:set var="dashboardHref" value="${isAdminDashboard ? '/admin/admin-dashbord.jsp' : '/dashboard'}" />
+<c:set var="isStudentOnlyDashboard" value="${sessionScope['gape.auth.hasStudentProfile'] and not isAdminDashboard and not isCoordinatorDashboard and not isTeacherDashboard}" />
+<c:set var="dashboardHref" value="${isAdminDashboard ? '/admin/admin-dashbord.jsp' : (isStudentOnlyDashboard ? '/student/student/dashboard/student-dashboard.jsp' : '/dashboard')}" />
 <c:set var="siteHomeHref" value="/index.jsp" />
-<c:set var="profileHref" value="${isAdminDashboard ? '/admin/admin-my-profile.jsp' : '/profile'}" />
+<c:set var="profileHref" value="${isAdminDashboard ? '/admin/admin-my-profile.jsp' : (isStudentOnlyDashboard ? '/student/student/profile/student-profile.jsp' : '/profile')}" />
 <c:set var="messageHref" value="/admin/admin-message.jsp" />
+<c:set var="calendarHref" value="/learning/calendar" />
 <c:set var="reviewsHref" value="/admin/admin-reviews.jsp" />
 <c:set var="quizAttemptsHref" value="/admin/admin-quiz-attempts.jsp" />
+<c:if test="${isStudentOnlyDashboard}">
+    <c:set var="messageHref" value="/student/student/message/student-message.jsp" />
+    <c:set var="calendarHref" value="/student/calendar" />
+    <c:set var="reviewsHref" value="/student/student/review/student-reviews.jsp" />
+</c:if>
 <c:if test="${not sessionScope['gape.auth.hasAdministratorProfile'] and isCoordinatorDashboard}">
     <c:set var="messageHref" value="/coordinator/coordinator-message.jsp" />
     <c:set var="reviewsHref" value="/coordinator/coordinator-reviews.jsp" />
@@ -27,35 +34,58 @@
     <c:set var="quizAttemptsHref" value="/instructor/instructor-quiz-attempts.jsp" />
 </c:if>
 <c:set var="coursesHref" value="/courses" />
-<c:if test="${sessionScope['gape.auth.hasStudentProfile']}">
-    <c:set var="coursesHref" value="/student/enrollments" />
+<c:if test="${isStudentOnlyDashboard}">
+    <c:set var="coursesHref" value="/student/courses" />
 </c:if>
 <c:if test="${sessionScope['gape.auth.hasAdministratorProfile'] and sessionScope['gape.auth.canManageCourses']}">
     <c:set var="coursesHref" value="/admin/courses" />
 </c:if>
 <c:set var="canOpenClassGroups" value="${sessionScope['gape.auth.canManageCourses'] or sessionScope['gape.auth.canManageSubjects'] or isCoordinatorDashboard or isTeacherDashboard}" />
+<c:set var="canOpenLessons" value="${canOpenClassGroups or sessionScope['gape.auth.hasStudentProfile']}" />
+<c:set var="canOpenRooms" value="${sessionScope['gape.auth.canManageOrganizations'] or isCoordinatorDashboard or isTeacherDashboard}" />
 <c:set var="isDashboardActive" value="${activeMenu == 'dashboard'
         or currentServletPath == '/dashboard'
         or fn:contains(currentRequestUri, '/dashboard')
         or fn:endsWith(currentServletPath, '-dashbord.jsp')
         or fn:endsWith(currentRequestUri, '-dashbord.jsp')
+        or fn:contains(currentRequestUri, '/student/student/dashboard/')
         or fn:endsWith(includedServletPath, '-dashbord.jsp')}" />
 <c:set var="isProfileActive" value="${activeMenu == 'profile' or activeMenu == 'my-profile'
         or currentServletPath == '/profile'
         or fn:contains(currentRequestUri, '/profile')
         or fn:endsWith(currentServletPath, '-my-profile.jsp')
         or fn:endsWith(currentRequestUri, '-my-profile.jsp')
+        or fn:contains(currentRequestUri, '/student/student/profile/')
         or fn:endsWith(includedServletPath, '-my-profile.jsp')}" />
 <c:set var="isSubjectsActive" value="${activeMenu == 'subjects'
         or fn:contains(currentRequestUri, '/admin/subjects')
         or fn:contains(currentRequestUri, '/coordinator/subjects')
+        or fn:contains(currentRequestUri, '/instructor/subjects')
+        or fn:contains(currentRequestUri, '/student/subjects')
         or fn:startsWith(currentServletPath, '/admin/subjects')
         or fn:startsWith(currentServletPath, '/coordinator/subjects')
+        or fn:startsWith(currentServletPath, '/instructor/subjects')
+        or fn:startsWith(currentServletPath, '/student/subjects')
         or fn:contains(includedServletPath, '/subject/')}" />
 <c:set var="isClassGroupsActive" value="${activeMenu == 'class-groups'
         or fn:contains(currentRequestUri, '/learning/class-groups')
+        or fn:contains(currentRequestUri, '/student/class-groups')
         or fn:startsWith(currentServletPath, '/learning/class-groups')
+        or fn:startsWith(currentServletPath, '/student/class-groups')
         or fn:contains(includedServletPath, '/class-group/')}" />
+<c:set var="isLessonsActive" value="${activeMenu == 'lessons'
+        or fn:contains(currentRequestUri, '/learning/lessons')
+        or fn:contains(currentRequestUri, '/student/lessons')
+        or fn:startsWith(currentServletPath, '/learning/lessons')
+        or fn:startsWith(currentServletPath, '/student/lessons')}" />
+<c:set var="isRoomsActive" value="${activeMenu == 'rooms'
+        or fn:contains(currentRequestUri, '/learning/rooms')
+        or fn:startsWith(currentServletPath, '/learning/rooms')}" />
+<c:set var="isCalendarActive" value="${activeMenu == 'calendar'
+        or fn:contains(currentRequestUri, '/learning/calendar')
+        or fn:contains(currentRequestUri, '/student/calendar')
+        or fn:startsWith(currentServletPath, '/learning/calendar')
+        or fn:startsWith(currentServletPath, '/student/calendar')}" />
 <c:set var="isQuizAttemptsActive" value="${activeMenu == 'quiz-attempts' or activeMenu == 'quiz'}" />
 <c:set var="dashboardUserName" value="${sessionScope['gape.auth.userName']}" />
 <c:set var="dashboardFirstName" value="" />
@@ -70,6 +100,19 @@
     <div class="overflow-x-auto">
         <div class="scrollbar min-w-max">
             <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome<c:if test="${not empty dashboardFirstName}"> <c:out value="${dashboardFirstName}"/></c:if>,</span>
+            <c:if test="${isStudentOnlyDashboard}">
+                <div class="border border-neutral-30 rounded-12 px-16 py-16 mb-16 bg-neutral-10">
+                    <div class="d-flex align-items-center gap-12">
+                        <div class="w-48 h-48 rounded-circle bg-main-50 text-main-600 d-flex align-items-center justify-content-center overflow-hidden text-24 flex-shrink-0">
+                            <%@ include file="/WEB-INF/fragments/user-avatar-content.jspf" %>
+                        </div>
+                        <div class="min-w-0">
+                            <strong class="d-block text-14 text-neutral-700 text-line-1"><c:out value="${sessionScope['gape.auth.userName']}"/></strong>
+                            <span class="d-block text-12 text-neutral-500 text-line-1"><c:out value="${sessionScope['gape.auth.userEmail']}"/></span>
+                        </div>
+                    </div>
+                </div>
+            </c:if>
             <ul>
                 <li class="mb-8 ${isDashboardActive ? 'activePage' : ''}">
                     <a href="${pageContext.request.contextPath}${dashboardHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
@@ -89,23 +132,63 @@
                         Message
                     </a>
                 </li>
-                <li class="mb-8 ${activeMenu == 'reviews' ? 'activePage' : ''}">
-                    <a href="${pageContext.request.contextPath}${reviewsHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sparkle"></i></span>
-                        Reviews
-                    </a>
-                </li>
-                <li class="mb-8 ${isQuizAttemptsActive ? 'activePage' : ''}">
-                    <a href="${pageContext.request.contextPath}${quizAttemptsHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-seal-question"></i></span>
-                        Quiz Attempts
-                    </a>
-                </li>
-                <c:if test="${not sessionScope['gape.auth.hasAdministratorProfile'] and not sessionScope['gape.auth.hasCoordinatorProfile'] and not isTeacherDashboard}">
+                <c:if test="${isAdminDashboard or isCoordinatorDashboard or isTeacherDashboard or sessionScope['gape.auth.hasStudentProfile']}">
+                    <li class="mb-8 ${isCalendarActive ? 'activePage' : ''}">
+                        <a href="${pageContext.request.contextPath}${calendarHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-dots"></i></span>
+                            Calendar
+                        </a>
+                    </li>
+                </c:if>
+                <c:if test="${not isStudentOnlyDashboard}">
+                    <li class="mb-8 ${activeMenu == 'reviews' ? 'activePage' : ''}">
+                        <a href="${pageContext.request.contextPath}${reviewsHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sparkle"></i></span>
+                            Reviews
+                        </a>
+                    </li>
+                </c:if>
+                <c:if test="${not isStudentOnlyDashboard}">
+                    <li class="mb-8 ${isQuizAttemptsActive ? 'activePage' : ''}">
+                        <a href="${pageContext.request.contextPath}${quizAttemptsHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-seal-question"></i></span>
+                            Quiz Attempts
+                        </a>
+                    </li>
+                </c:if>
+                <c:if test="${isStudentOnlyDashboard}">
+                    <li class="mb-8">
+                        <span class="fw-normal text-14 text-neutral-500">Student</span>
+                    </li>
                     <li class="mb-8 ${activeMenu == 'courses' ? 'activePage' : ''}">
                         <a href="${pageContext.request.contextPath}${coursesHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                             <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-books"></i></span>
-                            Courses
+                            Class Courses
+                        </a>
+                    </li>
+                    <li class="mb-8 ${isSubjectsActive ? 'activePage' : ''}">
+                        <a href="${pageContext.request.contextPath}/student/subjects" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-book-open-text"></i></span>
+                            Subjects
+                        </a>
+                    </li>
+                    <li class="mb-8 ${isClassGroupsActive ? 'activePage' : ''}">
+                        <a href="${pageContext.request.contextPath}/student/class-groups" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-users-three"></i></span>
+                            Class Groups
+                        </a>
+                    </li>
+                    <li class="mb-8 ${isLessonsActive ? 'activePage' : ''}">
+                        <a href="${pageContext.request.contextPath}/student/lessons" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-check"></i></span>
+                            Lessons
+                        </a>
+                        <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
+                    </li>
+                    <li class="mb-8 ${activeMenu == 'reviews' ? 'activePage' : ''}">
+                        <a href="${pageContext.request.contextPath}${reviewsHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sparkle"></i></span>
+                            Reviews
                         </a>
                     </li>
                 </c:if>
@@ -142,9 +225,9 @@
                                 </c:if>
                                 <c:if test="${canManageSubjectAssociations}">
                                     <li class="mb-6 ${coordinatorSubjectActiveChild == 'courses' ? 'activePage' : ''}">
-                                        <a href="${pageContext.request.contextPath}/coordinator/subjects/${coordinatorSubjectContextId}/courses" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                        <a href="${pageContext.request.contextPath}/coordinator/subjects/${coordinatorSubjectContextId}/edit#course-associations" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
                                             <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-link-simple"></i></span>
-                                            Associate
+                                            Course Associations
                                         </a>
                                     </li>
                                 </c:if>
@@ -172,21 +255,49 @@
                                                 Edit
                                             </a>
                                         </li>
-                                        <li class="mb-6 ${learningClassGroupActiveChild == 'block-new' ? 'activePage' : ''}">
-                                            <a href="${pageContext.request.contextPath}/learning/class-groups/${learningClassGroupContextId}/blocks/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
-                                                <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-stack-plus"></i></span>
-                                                New Block
-                                            </a>
-                                        </li>
                                     </c:if>
                                 </ul>
                             </c:if>
+                        </li>
+                    </c:if>
+                    <c:if test="${canOpenLessons}">
+                        <li class="mb-8 ${isLessonsActive ? 'activePage' : ''}">
+                            <a href="${pageContext.request.contextPath}/learning/lessons" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-check"></i></span>
+                                Lessons
+                            </a>
+                            <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
+                        </li>
+                    </c:if>
+                    <c:if test="${canOpenRooms}">
+                        <li class="mb-8 ${isRoomsActive ? 'activePage' : ''}">
+                            <a href="${pageContext.request.contextPath}/learning/rooms" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-door"></i></span>
+                                Rooms
+                            </a>
+                            <%@ include file="/WEB-INF/fragments/dashboard-learning-room-context.jspf" %>
                         </li>
                     </c:if>
                 </c:if>
                 <c:if test="${not sessionScope['gape.auth.hasAdministratorProfile'] and not isCoordinatorDashboard and isTeacherDashboard}">
                     <li class="mb-8">
                         <span class="fw-normal text-14 text-neutral-500">Teacher</span>
+                    </li>
+                    <li class="mb-8 ${isSubjectsActive ? 'activePage' : ''}">
+                        <a href="${pageContext.request.contextPath}/instructor/subjects" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-book-open-text"></i></span>
+                            Subjects
+                        </a>
+                        <c:if test="${not empty teacherSubjectContextId}">
+                            <ul class="mt-8 ps-24">
+                                <li class="mb-6 ${teacherSubjectActiveChild == 'detail' ? 'activePage' : ''}">
+                                    <a href="${pageContext.request.contextPath}/instructor/subjects/${teacherSubjectContextId}" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                        <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-eye"></i></span>
+                                        Detail
+                                    </a>
+                                </li>
+                            </ul>
+                        </c:if>
                     </li>
                     <li class="mb-8 ${isClassGroupsActive ? 'activePage' : ''}">
                         <a href="${pageContext.request.contextPath}/learning/class-groups" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
@@ -208,16 +319,28 @@
                                             Edit
                                         </a>
                                     </li>
-                                    <li class="mb-6 ${learningClassGroupActiveChild == 'block-new' ? 'activePage' : ''}">
-                                        <a href="${pageContext.request.contextPath}/learning/class-groups/${learningClassGroupContextId}/blocks/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
-                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-stack-plus"></i></span>
-                                            New Block
-                                        </a>
-                                    </li>
                                 </c:if>
                             </ul>
                         </c:if>
                     </li>
+                    <c:if test="${canOpenLessons}">
+                        <li class="mb-8 ${isLessonsActive ? 'activePage' : ''}">
+                            <a href="${pageContext.request.contextPath}/learning/lessons" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-check"></i></span>
+                                Lessons
+                            </a>
+                            <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
+                        </li>
+                    </c:if>
+                    <c:if test="${canOpenRooms}">
+                        <li class="mb-8 ${isRoomsActive ? 'activePage' : ''}">
+                            <a href="${pageContext.request.contextPath}/learning/rooms" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-door"></i></span>
+                                Rooms
+                            </a>
+                            <%@ include file="/WEB-INF/fragments/dashboard-learning-room-context.jspf" %>
+                        </li>
+                    </c:if>
                 </c:if>
                 <c:if test="${sessionScope['gape.auth.hasAdministratorProfile']}">
                     <li class="mb-8">
@@ -378,15 +501,27 @@
                                                 Edit
                                             </a>
                                         </li>
-                                        <li class="mb-6 ${learningClassGroupActiveChild == 'block-new' ? 'activePage' : ''}">
-                                            <a href="${pageContext.request.contextPath}/learning/class-groups/${learningClassGroupContextId}/blocks/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
-                                                <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-stack-plus"></i></span>
-                                                New Block
-                                            </a>
-                                        </li>
                                     </c:if>
                                 </ul>
                             </c:if>
+                        </li>
+                    </c:if>
+                    <c:if test="${canOpenLessons}">
+                        <li class="mb-8 ${isLessonsActive ? 'activePage' : ''}">
+                            <a href="${pageContext.request.contextPath}/learning/lessons" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-check"></i></span>
+                                Lessons
+                            </a>
+                            <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
+                        </li>
+                    </c:if>
+                    <c:if test="${canOpenRooms}">
+                        <li class="mb-8 ${isRoomsActive ? 'activePage' : ''}">
+                            <a href="${pageContext.request.contextPath}/learning/rooms" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-door"></i></span>
+                                Rooms
+                            </a>
+                            <%@ include file="/WEB-INF/fragments/dashboard-learning-room-context.jspf" %>
                         </li>
                     </c:if>
                 </c:if>

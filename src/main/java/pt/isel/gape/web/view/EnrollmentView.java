@@ -62,6 +62,11 @@ public final class EnrollmentView {
     }
 
     public EnrollmentState getState() {
-        return isActiveEnrollment() ? EnrollmentState.ACTIVE : EnrollmentState.WITHDRAWN;
+        if (subject != null) {
+            EnrollmentState state = subject.getEnrollmentState();
+            return state == null ? EnrollmentState.WITHDRAWN : state;
+        }
+        EnrollmentState state = course.getEnrollmentState();
+        return state == null ? EnrollmentState.WITHDRAWN : state;
     }
 }

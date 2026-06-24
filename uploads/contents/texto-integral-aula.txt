@@ -1,0 +1,11 @@
+Apontamentos da aula - Normalizacao
+
+1. Identificar entidades e atributos.
+2. Remover grupos repetidos para atingir 1FN.
+3. Separar dependencias parciais para atingir 2FN.
+4. Separar dependencias transitivas para atingir 3FN.
+
+Exemplo:
+Estudante(id, nome)
+Turma(id, codigo)
+Inscricao(id_estudante, id_turma, estado)

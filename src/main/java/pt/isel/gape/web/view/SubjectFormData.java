@@ -60,6 +60,11 @@ public final class SubjectFormData {
     }
 
     public static SubjectFormData blank(Long organizationId) {
+        return blank(organizationId, null);
+    }
+
+    public static SubjectFormData blank(Long organizationId, Long initialCourseId) {
+        String selectedInitialCourseId = initialCourseId == null ? "" : Long.toString(initialCourseId);
         return new SubjectFormData(
                 null,
                 organizationId == null ? "" : Long.toString(organizationId),
@@ -71,8 +76,8 @@ public final class SubjectFormData {
                 "",
                 SubjectState.ACTIVE.name(),
                 "",
-                "",
-                Set.of(),
+                selectedInitialCourseId,
+                selectedInitialCourseId.isBlank() ? Set.of() : Set.of(selectedInitialCourseId),
                 "",
                 "",
                 true

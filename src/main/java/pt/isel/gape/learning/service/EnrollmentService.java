@@ -12,8 +12,11 @@ import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.dao.ClassGroupEnrollmentDAO;
 import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
+import pt.isel.gape.learning.dao.EnrollmentApprovalPolicyDAO;
 import pt.isel.gape.learning.dao.EnrollmentDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
+import pt.isel.gape.learning.model.EnrollmentApprovalMode;
+import pt.isel.gape.learning.model.EnrollmentState;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseEnrollment;
 import pt.isel.gape.learning.model.CourseEnrollmentCommand;
@@ -43,6 +46,7 @@ public final class EnrollmentService {
     private final CourseSubjectDAO courseSubjectDAO;
     private final EnrollmentDAO enrollmentDAO;
     private final ClassGroupEnrollmentDAO classGroupEnrollmentDAO;
+    private final EnrollmentApprovalPolicyDAO enrollmentApprovalPolicyDAO;
     private final PermissionChecker permissionChecker;
     private final AuditService auditService;
     private final Clock clock;
@@ -54,6 +58,7 @@ public final class EnrollmentService {
             CourseSubjectDAO courseSubjectDAO,
             EnrollmentDAO enrollmentDAO,
             ClassGroupEnrollmentDAO classGroupEnrollmentDAO,
+            EnrollmentApprovalPolicyDAO enrollmentApprovalPolicyDAO,
             PermissionChecker permissionChecker,
             AuditService auditService,
             Clock clock
@@ -66,6 +71,10 @@ public final class EnrollmentService {
         this.classGroupEnrollmentDAO = Objects.requireNonNull(
                 classGroupEnrollmentDAO,
                 "classGroupEnrollmentDAO is required"
+        );
+        this.enrollmentApprovalPolicyDAO = Objects.requireNonNull(
+                enrollmentApprovalPolicyDAO,
+                "enrollmentApprovalPolicyDAO is required"
         );
         this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
@@ -80,6 +89,7 @@ public final class EnrollmentService {
                 new CourseSubjectDAO(connectionProvider),
                 new EnrollmentDAO(connectionProvider),
                 new ClassGroupEnrollmentDAO(connectionProvider),
+                new EnrollmentApprovalPolicyDAO(connectionProvider),
                 new PermissionChecker(
                         new PermissionDAO(connectionProvider),
                         new ManageOrganizationDAO(connectionProvider),
@@ -106,7 +116,7 @@ public final class EnrollmentService {
                 try {
                     Course course = requireCourse(connection, normalized.courseId());
                     requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
-                            normalized.studentUserId(), course.organizationId(), course.id(), null, sourceIp);
+                            normalized.studentUserId(), course.organizationId(), course.id(), null, sourceIp, false);
                     validateStudent(connection, normalized.studentUserId());
                     requireActiveCourse(course);
                     if (enrollmentDAO.findCourseEnrollment(
@@ -164,7 +174,7 @@ public final class EnrollmentService {
                 try {
                     Course course = requireCourse(connection, courseId);
                     requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
-                            studentUserId, course.organizationId(), course.id(), null, sourceIp);
+                            studentUserId, course.organizationId(), course.id(), null, sourceIp, false);
                     requireNotArchived(course);
                     CourseEnrollment current = enrollmentDAO.findCourseEnrollment(connection, studentUserId, courseId)
                             .orElseThrow(() -> new IllegalArgumentException("Course enrollment not found"));
@@ -194,6 +204,109 @@ public final class EnrollmentService {
         }
     }
 
+    public CourseEnrollment updateCourseEnrollment(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long studentUserId,
+            long courseId,
+            EnrollmentState state,
+            LocalDate endDate,
+            String sourceIp
+    ) {
+        Objects.requireNonNull(state, "state is required");
+        validateCourseEnrollmentState(state);
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Course course = requireCourse(connection, courseId);
+                    requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
+                            studentUserId, course.organizationId(), course.id(), null, sourceIp, false);
+                    requireNotArchived(course);
+                    CourseEnrollment current = enrollmentDAO.findCourseEnrollment(connection, studentUserId, courseId)
+                            .orElseThrow(() -> new IllegalArgumentException("Course enrollment not found"));
+                    LocalDate effectiveEndDate = effectiveCourseEnrollmentEndDate(state, endDate);
+                    if (current.startDate() != null
+                            && effectiveEndDate != null
+                            && effectiveEndDate.isBefore(current.startDate())) {
+                        throw new IllegalArgumentException("Enrollment end date cannot be before start date");
+                    }
+                    if (state == EnrollmentState.ACTIVE) {
+                        validateStudent(connection, studentUserId);
+                        requireActiveCourse(course);
+                    }
+                    if (state == EnrollmentState.WITHDRAWN) {
+                        classGroupEnrollmentDAO.withdrawActiveInCourse(
+                                connection,
+                                studentUserId,
+                                courseId,
+                                effectiveEndDate
+                        );
+                        enrollmentDAO.withdrawActiveSubjectsInCourse(connection, studentUserId, courseId, effectiveEndDate);
+                    }
+                    enrollmentDAO.updateCourseEnrollment(connection, studentUserId, courseId, state, effectiveEndDate);
+                    auditService.record(connection, actorUserId, sessionId, "COURSE_ENROLL_UPDATE",
+                            "course_enrollment", courseEnrollmentIdentifier(studentUserId, courseId),
+                            "success", sourceIp);
+                    connection.commit();
+                    return enrollmentDAO.findCourseEnrollment(connection, studentUserId, courseId)
+                            .orElseThrow(() -> new IllegalStateException("Updated course enrollment was not found"));
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "COURSE_ENROLL_UPDATE", "course_enrollment",
+                    courseEnrollmentIdentifier(studentUserId, courseId), sourceIp);
+            throw wrap(exception, "Failed to update course enrollment");
+        }
+    }
+
+    public void deleteCourseEnrollment(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long studentUserId,
+            long courseId,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Course course = requireCourse(connection, courseId);
+                    requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
+                            studentUserId, course.organizationId(), course.id(), null, sourceIp, false);
+                    requireNotArchived(course);
+                    enrollmentDAO.findCourseEnrollment(connection, studentUserId, courseId)
+                            .orElseThrow(() -> new IllegalArgumentException("Course enrollment not found"));
+                    classGroupEnrollmentDAO.deleteInCourse(connection, studentUserId, courseId);
+                    enrollmentDAO.deleteSubjectEnrollmentsInCourse(connection, studentUserId, courseId);
+                    enrollmentDAO.deleteCourseEnrollment(connection, studentUserId, courseId);
+                    auditService.record(connection, actorUserId, sessionId, "COURSE_ENROLL_DELETE",
+                            "course_enrollment", courseEnrollmentIdentifier(studentUserId, courseId),
+                            "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "COURSE_ENROLL_DELETE", "course_enrollment",
+                    courseEnrollmentIdentifier(studentUserId, courseId), sourceIp);
+            throw wrap(exception, "Failed to delete course enrollment");
+        }
+    }
+
     public SubjectEnrollment enrollStudentInSubject(
             long actorUserId,
             Long sessionId,
@@ -211,7 +324,7 @@ public final class EnrollmentService {
                     Subject subject = requireSubject(connection, normalized.subjectId());
                     requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
                             normalized.studentUserId(), course.organizationId(),
-                            course.id(), subject.id(), sourceIp);
+                            course.id(), subject.id(), sourceIp, false);
                     validateStudent(connection, normalized.studentUserId());
                     requireActiveCourse(course);
                     requireActiveSubject(subject);
@@ -240,16 +353,6 @@ public final class EnrollmentService {
                             normalized.endDate()
                     )) {
                         throw new IllegalStateException("Student must be actively enrolled in the course for the full subject period");
-                    }
-                    if (enrollmentDAO.hasOverlappingActiveSubjectEnrollment(
-                            connection,
-                            normalized.studentUserId(),
-                            normalized.courseId(),
-                            normalized.subjectId(),
-                            normalized.startDate(),
-                            normalized.endDate()
-                    )) {
-                        throw new IllegalStateException("Active subject enrollment overlaps the requested period");
                     }
                     enrollmentDAO.enrollSubject(connection, normalized);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_ENROLL",
@@ -281,6 +384,396 @@ public final class EnrollmentService {
         }
     }
 
+    public SubjectEnrollment requestStudentInSubject(
+            long actorUserId,
+            Long sessionId,
+            SubjectEnrollmentCommand command,
+            String sourceIp
+    ) {
+        try {
+            SubjectEnrollmentCommand normalized = normalizeSubjectCommand(command);
+            if (actorUserId != normalized.studentUserId()) {
+                throw new SecurityException("Students can only request their own subject enrollments");
+            }
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Course course = requireCourse(connection, normalized.courseId());
+                    Subject subject = requireSubject(connection, normalized.subjectId());
+                    requireStudentSelfAccess(actorUserId, sessionId, normalized.studentUserId(), sourceIp);
+                    EnrollmentApprovalMode mode = enrollmentApprovalPolicyDAO.subjectMode(
+                            connection,
+                            normalized.courseId(),
+                            normalized.subjectId()
+                    );
+                    validateSubjectEnrollmentRequestContext(connection, course, subject, normalized);
+
+                    SubjectEnrollment current = enrollmentDAO
+                            .findSubjectEnrollment(
+                                    connection,
+                                    normalized.studentUserId(),
+                                    normalized.courseId(),
+                                    normalized.subjectId()
+                            )
+                            .orElse(null);
+                    if (current != null
+                            && (current.state() == EnrollmentState.ACTIVE || current.state() == EnrollmentState.PENDING)) {
+                        throw new IllegalStateException("Subject enrollment is already active or pending");
+                    }
+
+                    EnrollmentState targetState = mode == EnrollmentApprovalMode.AUTO_APPROVE
+                            ? EnrollmentState.ACTIVE
+                            : EnrollmentState.PENDING;
+
+                    if (current == null) {
+                        if (targetState == EnrollmentState.ACTIVE) {
+                            enrollmentDAO.enrollSubject(connection, normalized);
+                        } else {
+                            enrollmentDAO.requestSubject(connection, normalized);
+                        }
+                    } else {
+                        enrollmentDAO.reactivateSubjectRequest(connection, normalized, targetState);
+                    }
+
+                    auditService.record(connection, actorUserId, sessionId,
+                            targetState == EnrollmentState.ACTIVE ? "SUBJECT_ENROLL_AUTO_APPROVE" : "SUBJECT_ENROLL_REQUEST",
+                            "subject_enrollment",
+                            subjectEnrollmentIdentifier(
+                                    normalized.studentUserId(),
+                                    normalized.courseId(),
+                                    normalized.subjectId()
+                            ),
+                            "success",
+                            sourceIp);
+                    connection.commit();
+                    return enrollmentDAO.findSubjectEnrollment(
+                                    connection,
+                                    normalized.studentUserId(),
+                                    normalized.courseId(),
+                                    normalized.subjectId()
+                            )
+                            .orElseThrow(() -> new IllegalStateException("Subject enrollment request was not found"));
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "SUBJECT_ENROLL_REQUEST", "subject_enrollment",
+                    command == null
+                            ? "new"
+                            : subjectEnrollmentIdentifier(command.studentUserId(), command.courseId(), command.subjectId()),
+                    sourceIp);
+            throw wrap(exception, "Failed to request subject enrollment");
+        }
+    }
+
+    public SubjectEnrollment approveSubjectEnrollment(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long studentUserId,
+            long courseId,
+            long subjectId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Course course = requireCourse(connection, courseId);
+                    Subject subject = requireSubject(connection, subjectId);
+                    requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
+                            studentUserId, course.organizationId(), course.id(), subject.id(), sourceIp, false);
+                    SubjectEnrollment current = enrollmentDAO.findSubjectEnrollment(
+                                    connection,
+                                    studentUserId,
+                                    courseId,
+                                    subjectId
+                            )
+                            .orElseThrow(() -> new IllegalArgumentException("Subject enrollment request not found"));
+                    if (current.state() != EnrollmentState.PENDING) {
+                        throw new IllegalStateException("Only pending subject enrollment requests can be approved");
+                    }
+                    LocalDate approvedStart = startDate != null
+                            ? startDate
+                            : current.startDate() == null ? LocalDate.now(clock) : current.startDate();
+                    LocalDate approvedEnd = endDate != null ? endDate : current.endDate();
+                    SubjectEnrollmentCommand approval = new SubjectEnrollmentCommand(
+                            studentUserId,
+                            subjectId,
+                            courseId,
+                            approvedStart,
+                            approvedEnd
+                    );
+                    validateSubjectEnrollmentRequestContext(connection, course, subject, approval);
+                    enrollmentDAO.updateSubjectState(
+                            connection,
+                            studentUserId,
+                            courseId,
+                            subjectId,
+                            EnrollmentState.PENDING,
+                            EnrollmentState.ACTIVE,
+                            approvedStart,
+                            approvedEnd
+                    );
+                    auditService.record(connection, actorUserId, sessionId, "SUBJECT_ENROLL_APPROVE",
+                            "subject_enrollment", subjectEnrollmentIdentifier(studentUserId, courseId, subjectId),
+                            "success", sourceIp);
+                    connection.commit();
+                    return enrollmentDAO.findSubjectEnrollment(connection, studentUserId, courseId, subjectId)
+                            .orElseThrow(() -> new IllegalStateException("Approved subject enrollment was not found"));
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "SUBJECT_ENROLL_APPROVE", "subject_enrollment",
+                    subjectEnrollmentIdentifier(studentUserId, courseId, subjectId), sourceIp);
+            throw wrap(exception, "Failed to approve subject enrollment");
+        }
+    }
+
+    public SubjectEnrollment rejectSubjectEnrollment(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long studentUserId,
+            long courseId,
+            long subjectId,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Course course = requireCourse(connection, courseId);
+                    Subject subject = requireSubject(connection, subjectId);
+                    requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
+                            studentUserId, course.organizationId(), course.id(), subject.id(), sourceIp, false);
+                    SubjectEnrollment current = enrollmentDAO.findSubjectEnrollment(
+                                    connection,
+                                    studentUserId,
+                                    courseId,
+                                    subjectId
+                            )
+                            .orElseThrow(() -> new IllegalArgumentException("Subject enrollment request not found"));
+                    if (current.state() != EnrollmentState.PENDING) {
+                        throw new IllegalStateException("Only pending subject enrollment requests can be rejected");
+                    }
+                    enrollmentDAO.updateSubjectState(
+                            connection,
+                            studentUserId,
+                            courseId,
+                            subjectId,
+                            EnrollmentState.PENDING,
+                            EnrollmentState.REJECTED,
+                            current.startDate(),
+                            current.endDate()
+                    );
+                    auditService.record(connection, actorUserId, sessionId, "SUBJECT_ENROLL_REJECT",
+                            "subject_enrollment", subjectEnrollmentIdentifier(studentUserId, courseId, subjectId),
+                            "success", sourceIp);
+                    connection.commit();
+                    return enrollmentDAO.findSubjectEnrollment(connection, studentUserId, courseId, subjectId)
+                            .orElseThrow(() -> new IllegalStateException("Rejected subject enrollment was not found"));
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "SUBJECT_ENROLL_REJECT", "subject_enrollment",
+                    subjectEnrollmentIdentifier(studentUserId, courseId, subjectId), sourceIp);
+            throw wrap(exception, "Failed to reject subject enrollment");
+        }
+    }
+
+    public SubjectEnrollment updateSubjectEnrollment(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long studentUserId,
+            long courseId,
+            long subjectId,
+            EnrollmentState state,
+            LocalDate startDate,
+            LocalDate endDate,
+            String sourceIp
+    ) {
+        Objects.requireNonNull(state, "state is required");
+        try {
+            requireValidDates(startDate, endDate);
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Course course = requireCourse(connection, courseId);
+                    Subject subject = requireSubject(connection, subjectId);
+                    requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
+                            studentUserId, course.organizationId(), course.id(), subject.id(), sourceIp, false);
+                    SubjectEnrollment current = enrollmentDAO.findSubjectEnrollment(
+                                    connection,
+                                    studentUserId,
+                                    courseId,
+                                    subjectId
+                            )
+                            .orElseThrow(() -> new IllegalArgumentException("Subject enrollment not found"));
+                    LocalDate effectiveStartDate = startDate != null ? startDate : current.startDate();
+                    LocalDate effectiveEndDate = effectiveSubjectEnrollmentEndDate(state, endDate);
+                    requireValidDates(effectiveStartDate, effectiveEndDate);
+                    if (state == EnrollmentState.ACTIVE) {
+                        validateStudent(connection, studentUserId);
+                        requireActiveCourse(course);
+                        requireActiveSubject(subject);
+                        CourseSubjectAssociation association = courseSubjectDAO
+                                .findByCourseAndSubject(connection, courseId, subjectId)
+                                .orElseThrow(() -> new IllegalArgumentException("Subject is not integrated in the course"));
+                        if (association.state() != CourseSubjectState.ACTIVE) {
+                            throw new IllegalStateException("Subject-course association must be active");
+                        }
+                        if (course.organizationId() != subject.organizationId()) {
+                            throw new IllegalArgumentException("Course and subject must belong to the same organization");
+                        }
+                        if (!enrollmentDAO.hasActiveCourseEnrollmentCovering(
+                                connection,
+                                studentUserId,
+                                courseId,
+                                effectiveStartDate,
+                                effectiveEndDate
+                        )) {
+                            throw new IllegalStateException("Student must be actively enrolled in the course for the full subject period");
+                        }
+                    }
+                    if (state == EnrollmentState.WITHDRAWN) {
+                        classGroupEnrollmentDAO.withdrawActiveInSubject(
+                                connection,
+                                studentUserId,
+                                courseId,
+                                subjectId,
+                                effectiveEndDate
+                        );
+                    }
+                    enrollmentDAO.updateSubjectEnrollment(
+                            connection,
+                            studentUserId,
+                            courseId,
+                            subjectId,
+                            state,
+                            effectiveStartDate,
+                            effectiveEndDate
+                    );
+                    auditService.record(connection, actorUserId, sessionId, "SUBJECT_ENROLL_UPDATE",
+                            "subject_enrollment", subjectEnrollmentIdentifier(studentUserId, courseId, subjectId),
+                            "success", sourceIp);
+                    connection.commit();
+                    return enrollmentDAO.findSubjectEnrollment(connection, studentUserId, courseId, subjectId)
+                            .orElseThrow(() -> new IllegalStateException("Updated subject enrollment was not found"));
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "SUBJECT_ENROLL_UPDATE", "subject_enrollment",
+                    subjectEnrollmentIdentifier(studentUserId, courseId, subjectId), sourceIp);
+            throw wrap(exception, "Failed to update subject enrollment");
+        }
+    }
+
+    public void deleteSubjectEnrollment(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long studentUserId,
+            long courseId,
+            long subjectId,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Course course = requireCourse(connection, courseId);
+                    Subject subject = requireSubject(connection, subjectId);
+                    requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
+                            studentUserId, course.organizationId(), course.id(), subject.id(), sourceIp, false);
+                    enrollmentDAO.findSubjectEnrollment(connection, studentUserId, courseId, subjectId)
+                            .orElseThrow(() -> new IllegalArgumentException("Subject enrollment not found"));
+                    classGroupEnrollmentDAO.deleteInSubject(connection, studentUserId, courseId, subjectId);
+                    enrollmentDAO.deleteSubjectEnrollment(connection, studentUserId, courseId, subjectId);
+                    auditService.record(connection, actorUserId, sessionId, "SUBJECT_ENROLL_DELETE",
+                            "subject_enrollment", subjectEnrollmentIdentifier(studentUserId, courseId, subjectId),
+                            "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "SUBJECT_ENROLL_DELETE", "subject_enrollment",
+                    subjectEnrollmentIdentifier(studentUserId, courseId, subjectId), sourceIp);
+            throw wrap(exception, "Failed to delete subject enrollment");
+        }
+    }
+
+    public void updateSubjectEnrollmentPolicy(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long courseId,
+            long subjectId,
+            EnrollmentApprovalMode mode,
+            String sourceIp
+    ) {
+        Objects.requireNonNull(mode, "mode is required");
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Course course = requireCourse(connection, courseId);
+                    Subject subject = requireSubject(connection, subjectId);
+                    requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
+                            1L, course.organizationId(), course.id(), subject.id(), sourceIp, false);
+                    courseSubjectDAO.findByCourseAndSubject(connection, courseId, subjectId)
+                            .orElseThrow(() -> new IllegalArgumentException("Subject is not integrated in the course"));
+                    enrollmentApprovalPolicyDAO.upsertSubjectMode(connection, courseId, subjectId, mode);
+                    auditService.record(connection, actorUserId, sessionId, "SUBJECT_ENROLL_POLICY_UPDATE",
+                            "subject_enrollment_policy", courseId + ":" + subjectId, "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "SUBJECT_ENROLL_POLICY_UPDATE", "subject_enrollment_policy",
+                    courseId + ":" + subjectId, sourceIp);
+            throw wrap(exception, "Failed to update subject enrollment policy");
+        }
+    }
+
     public SubjectEnrollment withdrawStudentFromSubject(
             long actorUserId,
             Long sessionId,
@@ -299,7 +792,7 @@ public final class EnrollmentService {
                 try {
                     Course course = requireCourse(connection, courseId);
                     requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
-                            studentUserId, course.organizationId(), course.id(), subjectId, sourceIp);
+                            studentUserId, course.organizationId(), course.id(), subjectId, sourceIp, true);
                     requireNotArchived(course);
                     Subject subject = requireSubject(connection, subjectId);
                     requireNotArchived(subject);
@@ -353,6 +846,58 @@ public final class EnrollmentService {
         }
     }
 
+    private void validateSubjectEnrollmentRequestContext(
+            Connection connection,
+            Course course,
+            Subject subject,
+            SubjectEnrollmentCommand command
+    ) throws SQLException {
+        validateStudent(connection, command.studentUserId());
+        requireActiveCourse(course);
+        requireActiveSubject(subject);
+        CourseSubjectAssociation association = courseSubjectDAO
+                .findByCourseAndSubject(connection, command.courseId(), command.subjectId())
+                .orElseThrow(() -> new IllegalArgumentException("Subject is not integrated in the course"));
+        if (association.state() != CourseSubjectState.ACTIVE) {
+            throw new IllegalStateException("Subject-course association must be active");
+        }
+        if (course.organizationId() != subject.organizationId()) {
+            throw new IllegalArgumentException("Course and subject must belong to the same organization");
+        }
+        if (!enrollmentDAO.hasActiveCourseEnrollmentCovering(
+                connection,
+                command.studentUserId(),
+                command.courseId(),
+                command.startDate(),
+                command.endDate()
+        )) {
+            throw new IllegalStateException("Student must be actively enrolled in the course for the full subject period");
+        }
+    }
+
+    private void requireStudentSelfAccess(
+            long actorUserId,
+            Long sessionId,
+            long studentUserId,
+            String sourceIp
+    ) {
+        if (actorUserId != studentUserId) {
+            throw new SecurityException("Students can only manage their own enrollment requests");
+        }
+        AuthorizationDecision selfDecision = permissionChecker.check(new AccessContext(
+                actorUserId,
+                sessionId,
+                AccessProfileType.STUDENT,
+                AuthorizationPolicy.VIEW_REPORTS,
+                AccessEntityType.SELF,
+                studentUserId,
+                sourceIp
+        ));
+        if (!selfDecision.allowed()) {
+            throw new SecurityException("Missing student self-service context: " + selfDecision.reason());
+        }
+    }
+
     private void requireEnrollmentAccess(
             long actorUserId,
             Long sessionId,
@@ -361,7 +906,8 @@ public final class EnrollmentService {
             long organizationId,
             long courseId,
             Long subjectId,
-            String sourceIp
+            String sourceIp,
+            boolean allowStudentSelf
     ) {
         AuthorizationDecision adminDecision = AuthorizationDecision.deny("administrator_profile_required");
         AuthorizationDecision courseDecision = AuthorizationDecision.deny("administrator_profile_required");
@@ -406,7 +952,22 @@ public final class EnrollmentService {
                 }
             }
         }
-        if (actorProfileType == AccessProfileType.STUDENT && actorUserId == studentUserId) {
+        AuthorizationDecision coordinatorDecision = AuthorizationDecision.deny("coordinator_profile_required");
+        if (subjectId != null && actorProfileType == AccessProfileType.COORDINATOR) {
+            coordinatorDecision = permissionChecker.check(new AccessContext(
+                    actorUserId,
+                    sessionId,
+                    actorProfileType,
+                    AuthorizationPolicy.MANAGE_LEARNING,
+                    AccessEntityType.SUBJECT,
+                    subjectId,
+                    sourceIp
+            ));
+            if (coordinatorDecision.allowed()) {
+                return;
+            }
+        }
+        if (allowStudentSelf && actorProfileType == AccessProfileType.STUDENT && actorUserId == studentUserId) {
             AuthorizationDecision selfDecision = permissionChecker.check(new AccessContext(
                     actorUserId,
                     sessionId,
@@ -422,10 +983,11 @@ public final class EnrollmentService {
             throw new SecurityException("Missing student self-service context: " + selfDecision.reason());
         }
         throw new SecurityException("Missing enrollment management context: "
-                + adminDecision.reason() + "/" + courseDecision.reason() + "/" + subjectDecision.reason());
+                + adminDecision.reason() + "/" + courseDecision.reason() + "/" + subjectDecision.reason()
+                + "/" + coordinatorDecision.reason());
     }
 
-    private static CourseEnrollmentCommand normalizeCourseCommand(CourseEnrollmentCommand command) {
+    private CourseEnrollmentCommand normalizeCourseCommand(CourseEnrollmentCommand command) {
         Objects.requireNonNull(command, "command is required");
         if (command.studentUserId() <= 0) {
             throw new IllegalArgumentException("Enrollment student is required");
@@ -434,7 +996,33 @@ public final class EnrollmentService {
             throw new IllegalArgumentException("Enrollment course is required");
         }
         requireValidDates(command.startDate(), command.endDate());
-        return command;
+        LocalDate startDate = command.startDate() == null ? LocalDate.now(clock) : command.startDate();
+        return new CourseEnrollmentCommand(
+                command.studentUserId(),
+                command.courseId(),
+                startDate,
+                command.endDate()
+        );
+    }
+
+    private static void validateCourseEnrollmentState(EnrollmentState state) {
+        if (state == EnrollmentState.PENDING || state == EnrollmentState.REJECTED) {
+            throw new IllegalArgumentException("Unsupported course enrollment state: " + state);
+        }
+    }
+
+    private LocalDate effectiveCourseEnrollmentEndDate(EnrollmentState state, LocalDate endDate) {
+        if ((state == EnrollmentState.WITHDRAWN || state == EnrollmentState.COMPLETED) && endDate == null) {
+            return LocalDate.now(clock);
+        }
+        return endDate;
+    }
+
+    private LocalDate effectiveSubjectEnrollmentEndDate(EnrollmentState state, LocalDate endDate) {
+        if ((state == EnrollmentState.WITHDRAWN || state == EnrollmentState.COMPLETED) && endDate == null) {
+            return LocalDate.now(clock);
+        }
+        return endDate;
     }
 
     private SubjectEnrollmentCommand normalizeSubjectCommand(SubjectEnrollmentCommand command) {

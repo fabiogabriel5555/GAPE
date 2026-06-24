@@ -428,6 +428,46 @@ class SubjectServiceTest {
         ));
     }
 
+    @Test
+    void teacherCanReadOnlySubjectsWithAssignedClassGroups() {
+        Set<Long> subjectIds = subjectService.listSubjects(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        10L,
+                        "127.0.0.1"
+                )
+                .stream()
+                .map(Subject::id)
+                .collect(java.util.stream.Collectors.toSet());
+
+        assertEquals(Set.of(40L), subjectIds);
+        assertEquals(40L, subjectService.getSubject(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                40L,
+                "127.0.0.1"
+        ).id());
+        assertThrows(
+                SecurityException.class,
+                () -> subjectService.getSubject(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        41L,
+                        "127.0.0.1"
+                )
+        );
+        assertFalse(subjectService.canModifySubject(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                40L,
+                "127.0.0.1"
+        ));
+    }
+
     private static boolean hasActiveCoordinator(long coordinatorUserId, long subjectId) throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement("""

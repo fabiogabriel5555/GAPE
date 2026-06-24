@@ -17,6 +17,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 import pt.isel.gape.common.config.DatabaseBootstrapMode;
 import pt.isel.gape.common.config.DatabaseBootstrapService;
@@ -35,6 +38,8 @@ import pt.isel.gape.transversal.DatabaseTestSupport;
 import pt.isel.gape.transversal.dao.ActivityLogDAO;
 import pt.isel.gape.transversal.service.AuditService;
 
+@Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock("gape-db")
 class AuthServiceTest {
 
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-06-04T10:15:30Z"), ZoneOffset.UTC);
@@ -42,6 +47,7 @@ class AuthServiceTest {
     private ConnectionProvider connectionProvider;
     private PasswordHasher passwordHasher;
     private AuthService authService;
+    private boolean resetSchemaAfterTest;
 
     @BeforeAll
     static void initializeDatabase() throws Exception {
@@ -53,6 +59,10 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() throws SQLException {
         DatabaseTestSupport.beginTestTransaction();
+        createAuthService();
+    }
+
+    private void createAuthService() {
         connectionProvider = DatabaseTestSupport::openConnection;
         passwordHasher = new PasswordHasher();
 
@@ -68,6 +78,17 @@ class AuthServiceTest {
     @AfterEach
     void tearDown() throws SQLException {
         DatabaseTestSupport.rollbackTestTransaction();
+        if (!resetSchemaAfterTest) {
+            return;
+        }
+        resetSchemaAfterTest = false;
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            try {
+                DatabaseTestSupport.resetDatabase(connection);
+            } catch (Exception exception) {
+                throw new SQLException("Failed to reset schema after bootstrap test", exception);
+            }
+        }
     }
 
     @Test
@@ -172,9 +193,13 @@ class AuthServiceTest {
 
     @Test
     void demoSeedUsersAuthenticateWithValidHashes() throws Exception {
+        DatabaseTestSupport.rollbackTestTransaction();
+        resetSchemaAfterTest = true;
         try (Connection connection = DatabaseTestSupport.openConnection()) {
             new DatabaseBootstrapService().initialize(connection, DatabaseBootstrapMode.FULL);
         }
+        DatabaseTestSupport.beginTestTransaction();
+        createAuthService();
 
         AuthService.AuthenticatedSession admin =
                 authService.authenticate("admin@gape.local", "Password#2026", "127.0.0.1");

@@ -16,6 +16,7 @@ param(
     [string[]] $ClickSelector = @(),
     [string[]] $ClickText = @(),
     [string[]] $ExpectSelector = @(),
+    [string[]] $RejectSelector = @(),
     [string[]] $ExpectText = @(),
     [string[]] $RejectText = @("HTTP Status 500", "Internal Server Error", "Exception", "Stacktrace"),
     [int] $WaitBeforeActionsMs = 900,
@@ -206,6 +207,30 @@ try {
     $messageId = 0
     Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Page.enable" | Out-Null
     Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Runtime.enable" | Out-Null
+    Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Page.addScriptToEvaluateOnNewDocument" -Params @{
+        source = @"
+window.__gapeBrowserErrors = [];
+window.addEventListener('error', function (event) {
+  window.__gapeBrowserErrors.push({
+    type: 'error',
+    message: event.message || '',
+    source: event.filename || '',
+    line: event.lineno || 0,
+    column: event.colno || 0
+  });
+});
+window.addEventListener('unhandledrejection', function (event) {
+  var reason = event.reason;
+  window.__gapeBrowserErrors.push({
+    type: 'unhandledrejection',
+    message: reason && (reason.message || reason.toString()) || ''
+  });
+});
+"@
+    } | Out-Null
+    Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Page.reload" -Params @{
+        ignoreCache = $true
+    } | Out-Null
 
     $payload = @{
         preset = $Preset
@@ -213,6 +238,7 @@ try {
         clickSelector = $ClickSelector
         clickText = $ClickText
         expectSelector = $ExpectSelector
+        rejectSelector = $RejectSelector
         expectText = $ExpectText
         rejectText = $RejectText
         waitBeforeActionsMs = $WaitBeforeActionsMs
@@ -225,6 +251,27 @@ try {
   const cfg = $payload;
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const visibleText = () => document.body ? document.body.innerText : '';
+  const isPreloaderVisible = () => {
+    const preloader = document.querySelector('.preloader');
+    if (!preloader) return false;
+    const style = getComputedStyle(preloader);
+    const rect = preloader.getBoundingClientRect();
+    return rect.width > 0
+      && rect.height > 0
+      && style.display !== 'none'
+      && style.visibility !== 'hidden'
+      && style.opacity !== '0';
+  };
+  const waitForPageReady = async (timeoutMs) => {
+    const deadline = Date.now() + timeoutMs;
+    do {
+      if (document.readyState === 'complete' && !isPreloaderVisible()) {
+        return true;
+      }
+      await sleep(250);
+    } while (Date.now() < deadline);
+    return document.readyState === 'complete' && !isPreloaderVisible();
+  };
   const clickBySelector = (selector) => {
     const element = document.querySelector(selector);
     if (!element) return { ok: false, selector };
@@ -239,7 +286,7 @@ try {
     element.click();
     return { ok: true, text };
   };
-  await sleep(cfg.waitBeforeActionsMs);
+  const pageReady = await waitForPageReady(Math.max(cfg.waitBeforeActionsMs, 10000));
   const actions = [];
   if (cfg.preset === 'AddContent') {
     const trigger = document.querySelector('[data-bs-target^="#addContent"]');
@@ -265,9 +312,11 @@ try {
   }
   const bodyText = visibleText();
   const missingSelectors = (cfg.expectSelector || []).filter((selector) => !document.querySelector(selector));
+  const rejectedSelectorsFound = (cfg.rejectSelector || []).filter((selector) => document.querySelector(selector));
   const missingText = (cfg.expectText || []).filter((text) => !bodyText.includes(text));
   const rejectedTextFound = (cfg.rejectText || []).filter((text) => bodyText.includes(text));
   const failedActions = actions.filter((action) => !action.ok);
+  const browserErrors = Array.isArray(window.__gapeBrowserErrors) ? window.__gapeBrowserErrors : [];
   const modal = document.querySelector('.modal.show');
   let modalInfo = null;
   if (modal) {
@@ -325,9 +374,12 @@ try {
   }
   const pageOverflowX = document.documentElement.scrollWidth > innerWidth;
   const passed = failedActions.length === 0
+    && pageReady
     && missingSelectors.length === 0
+    && rejectedSelectorsFound.length === 0
     && missingText.length === 0
     && rejectedTextFound.length === 0
+    && browserErrors.length === 0
     && (cfg.allowHorizontalOverflow || !pageOverflowX)
     && (!modalInfo || modalInfo.footerVisible !== false);
   return {
@@ -335,10 +387,15 @@ try {
     passed,
     url: location.href,
     title: document.title,
+    readyState: document.readyState,
+    preloaderVisible: isPreloaderVisible(),
+    pageReady,
     viewport: { width: innerWidth, height: innerHeight },
     actions,
+    browserErrors,
     pageOverflowX,
     missingSelectors,
+    rejectedSelectorsFound,
     missingText,
     rejectedTextFound,
     modal: modalInfo,
@@ -371,11 +428,15 @@ try {
     }
 } finally {
     if ($socket -and $socket.State -eq [System.Net.WebSockets.WebSocketState]::Open) {
-        $socket.CloseAsync(
-            [System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure,
-            "done",
-            [Threading.CancellationToken]::None
-        ).GetAwaiter().GetResult() | Out-Null
+        try {
+            $socket.CloseOutputAsync(
+                [System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure,
+                "done",
+                [Threading.CancellationToken]::None
+            ).GetAwaiter().GetResult() | Out-Null
+        } catch {
+            # Chromium can send a final CDP notification while the client is closing.
+        }
     }
     if ($process -and -not $process.HasExited) {
         $process.Kill()

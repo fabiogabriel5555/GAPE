@@ -1,0 +1,145 @@
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<div class="bg-white rounded-10 px-24 py-24 mb-24" id="class-group-enrollments">
+    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
+        <div>
+            <h3 class="text-18 fw-medium text-neutral-700 mb-4">Enrollments</h3>
+            <span class="text-14 text-neutral-500">Approve requests and keep active enrollments separate from audit history.</span>
+        </div>
+        <div class="d-flex align-items-center gap-10 flex-wrap">
+            <span class="bg-warning-30 text-warning-600 px-14 py-8 rounded-pill text-13 fw-semibold">
+                ${fn:length(pendingClassGroupEnrollments)} pending
+            </span>
+            <span class="bg-success-50 text-success-600 px-14 py-8 rounded-pill text-13 fw-semibold">
+                ${fn:length(activeClassGroupEnrollments)} active
+            </span>
+        </div>
+    </div>
+
+    <c:if test="${not classGroup.archived and canManageClassGroupEnrollments}">
+        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollment-policy" method="post" class="d-flex align-items-center gap-10 flex-wrap mb-20">
+            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+            <input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-enrollments">
+            <span class="text-14 text-neutral-600 fw-medium">Enrollment policy</span>
+            <select name="approvalMode" class="form-select px-14 py-8 text-13 bg-neutral-20 border-neutral-30 border rounded-8" style="max-width: 190px;">
+                <option value="manual" <c:if test="${classGroupEnrollmentPolicy ne 'auto_approve'}">selected</c:if>>Manual approval</option>
+                <option value="auto_approve" <c:if test="${classGroupEnrollmentPolicy eq 'auto_approve'}">selected</c:if>>Auto approve</option>
+            </select>
+            <button type="submit" class="border-main-600 border bg-white px-14 py-8 rounded-8 text-13 fw-semibold text-main-600 hover-bg-main-50 transition-03">Save policy</button>
+        </form>
+
+        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments" method="post" class="border border-neutral-30 rounded-12 px-20 py-18 mb-20">
+            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+            <input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-enrollments">
+            <div class="row gy-3 align-items-start">
+                <div class="col-lg-8 gape-select-field">
+                    <label for="classGroupEnrollmentStudentUserId" class="fw-medium text-base text-neutral-800 mb-12">Student</label>
+                    <select id="classGroupEnrollmentStudentUserId" name="studentUserId" required class="form-select px-20 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                        <option value="">Select student</option>
+                        <c:forEach var="student" items="${studentOptions}">
+                            <c:if test="${not activeEnrollmentByStudent[student.id]}">
+                                <option value="${student.id}"><c:out value="${student.name}"/> - <c:out value="${student.email}"/></option>
+                            </c:if>
+                        </c:forEach>
+                    </select>
+                </div>
+                <div class="col-lg-4">
+                    <label for="classGroupEnrollmentEndDate" class="fw-medium text-base text-neutral-800 mb-12">End</label>
+                    <input id="classGroupEnrollmentEndDate" name="endDate" type="date" class="form-control px-20 py-12 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03 border-0">Enroll Student</button>
+                </div>
+            </div>
+        </form>
+    </c:if>
+
+    <div class="border border-warning-600 rounded-12 overflow-hidden mb-16">
+        <div class="bg-warning-30 px-20 py-14 border-bottom border-neutral-30">
+            <h4 class="text-16 fw-semibold text-neutral-800 mb-0">Pending approval</h4>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table mb-0">
+                <thead>
+                <tr>
+                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Student</th>
+                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Period</th>
+                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
+                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <c:forEach var="enrollment" items="${pendingClassGroupEnrollments}">
+                    <%@ include file="/WEB-INF/fragments/class-group-enrollment-row.jspf" %>
+                </c:forEach>
+                <c:if test="${empty pendingClassGroupEnrollments}">
+                    <tr>
+                        <td colspan="4" class="py-28 px-20 text-center text-14 text-neutral-500">No pending class group enrollment requests.</td>
+                    </tr>
+                </c:if>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="border border-neutral-30 rounded-12 overflow-hidden mb-16">
+        <div class="bg-main-25 px-20 py-14 border-bottom border-neutral-30">
+            <h4 class="text-16 fw-semibold text-neutral-800 mb-0">Active enrollments</h4>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table mb-0">
+                <thead>
+                <tr>
+                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Student</th>
+                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Period</th>
+                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
+                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <c:forEach var="enrollment" items="${activeClassGroupEnrollments}">
+                    <%@ include file="/WEB-INF/fragments/class-group-enrollment-row.jspf" %>
+                </c:forEach>
+                <c:if test="${empty activeClassGroupEnrollments}">
+                    <tr>
+                        <td colspan="4" class="py-28 px-20 text-center text-14 text-neutral-500">No active students enrolled in this class group.</td>
+                    </tr>
+                </c:if>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <button type="button" class="border-main-600 border px-16 py-9 rounded-10 text-14 fw-semibold text-main-600 hover-bg-main-50 transition-03 mb-14" data-bs-toggle="collapse" data-bs-target="#classGroupEnrollmentHistory" aria-expanded="false" aria-controls="classGroupEnrollmentHistory">
+        Show audit enrollments
+    </button>
+    <div class="collapse" id="classGroupEnrollmentHistory">
+        <div class="border border-neutral-30 rounded-12 overflow-hidden">
+            <div class="bg-neutral-20 px-20 py-14 border-bottom border-neutral-30">
+                <h4 class="text-16 fw-semibold text-neutral-700 mb-0">Audit history</h4>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table mb-0">
+                    <thead>
+                    <tr>
+                        <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Student</th>
+                        <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Period</th>
+                        <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
+                        <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <c:forEach var="enrollment" items="${auditClassGroupEnrollments}">
+                        <%@ include file="/WEB-INF/fragments/class-group-enrollment-row.jspf" %>
+                    </c:forEach>
+                    <c:if test="${empty auditClassGroupEnrollments}">
+                        <tr>
+                            <td colspan="4" class="py-28 px-20 text-center text-14 text-neutral-500">No audit enrollment records found.</td>
+                        </tr>
+                    </c:if>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

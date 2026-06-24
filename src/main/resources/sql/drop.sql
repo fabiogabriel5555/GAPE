@@ -43,6 +43,8 @@ DROP TABLE IF EXISTS physical_room;
 DROP TABLE IF EXISTS content_file;
 DROP TABLE IF EXISTS content_item;
 
+DROP TABLE IF EXISTS class_group_enrollment_policy;
+DROP TABLE IF EXISTS subject_enrollment_policy;
 DROP TABLE IF EXISTS enroll_class_group;
 DROP TABLE IF EXISTS enroll_subject;
 DROP TABLE IF EXISTS enroll_course;

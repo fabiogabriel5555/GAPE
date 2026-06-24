@@ -3,8 +3,10 @@ package pt.isel.gape.learning.model;
 import java.util.Locale;
 
 public enum EnrollmentState {
+    PENDING("pending"),
     ACTIVE("active"),
     INACTIVE("inactive"),
+    REJECTED("rejected"),
     COMPLETED("completed"),
     WITHDRAWN("withdrawn"),
     ARCHIVED("archived");

@@ -13,6 +13,7 @@ import pt.isel.gape.learning.dao.ClassGroupDAO;
 import pt.isel.gape.learning.dao.ClassGroupEnrollmentDAO;
 import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
+import pt.isel.gape.learning.dao.EnrollmentApprovalPolicyDAO;
 import pt.isel.gape.learning.dao.EnrollmentDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.ClassGroup;
@@ -23,6 +24,8 @@ import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseState;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.CourseSubjectState;
+import pt.isel.gape.learning.model.EnrollmentApprovalMode;
+import pt.isel.gape.learning.model.EnrollmentState;
 import pt.isel.gape.learning.model.Subject;
 import pt.isel.gape.learning.model.SubjectState;
 import pt.isel.gape.security.authorization.AccessContext;
@@ -45,6 +48,7 @@ public final class ClassGroupEnrollmentService {
     private final SubjectDAO subjectDAO;
     private final CourseSubjectDAO courseSubjectDAO;
     private final EnrollmentDAO enrollmentDAO;
+    private final EnrollmentApprovalPolicyDAO enrollmentApprovalPolicyDAO;
     private final PermissionChecker permissionChecker;
     private final AuditService auditService;
     private final Clock clock;
@@ -57,6 +61,7 @@ public final class ClassGroupEnrollmentService {
             SubjectDAO subjectDAO,
             CourseSubjectDAO courseSubjectDAO,
             EnrollmentDAO enrollmentDAO,
+            EnrollmentApprovalPolicyDAO enrollmentApprovalPolicyDAO,
             PermissionChecker permissionChecker,
             AuditService auditService,
             Clock clock
@@ -71,6 +76,10 @@ public final class ClassGroupEnrollmentService {
         this.subjectDAO = Objects.requireNonNull(subjectDAO, "subjectDAO is required");
         this.courseSubjectDAO = Objects.requireNonNull(courseSubjectDAO, "courseSubjectDAO is required");
         this.enrollmentDAO = Objects.requireNonNull(enrollmentDAO, "enrollmentDAO is required");
+        this.enrollmentApprovalPolicyDAO = Objects.requireNonNull(
+                enrollmentApprovalPolicyDAO,
+                "enrollmentApprovalPolicyDAO is required"
+        );
         this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
         this.clock = Objects.requireNonNull(clock, "clock is required");
@@ -85,6 +94,7 @@ public final class ClassGroupEnrollmentService {
                 new SubjectDAO(connectionProvider),
                 new CourseSubjectDAO(connectionProvider),
                 new EnrollmentDAO(connectionProvider),
+                new EnrollmentApprovalPolicyDAO(connectionProvider),
                 new PermissionChecker(
                         new PermissionDAO(connectionProvider),
                         new ManageOrganizationDAO(connectionProvider),
@@ -126,7 +136,8 @@ public final class ClassGroupEnrollmentService {
                             actorProfileType,
                             normalized.studentUserId(),
                             classGroup,
-                            sourceIp
+                            sourceIp,
+                            false
                     );
                     validateStudent(connection, normalized.studentUserId());
                     requireActiveContext(classGroup, course, subject, association);
@@ -148,16 +159,6 @@ public final class ClassGroupEnrollmentService {
                         throw new IllegalStateException(
                                 "Student must be actively enrolled in the subject for the full class group period"
                         );
-                    }
-                    if (classGroupEnrollmentDAO.hasOverlappingActiveEnrollment(
-                            connection,
-                            normalized.studentUserId(),
-                            classGroup.courseId(),
-                            classGroup.subjectId(),
-                            normalized.startDate(),
-                            normalized.endDate()
-                    )) {
-                        throw new IllegalStateException("Active class group enrollment overlaps the requested period");
                     }
                     long activeEnrollments = classGroupDAO.countActiveEnrollments(connection, normalized.classGroupId());
                     if (classGroup.maxStudents() != null && activeEnrollments >= classGroup.maxStudents()) {
@@ -194,6 +195,288 @@ public final class ClassGroupEnrollmentService {
         }
     }
 
+    public ClassGroupEnrollment requestStudentInClassGroup(
+            long actorUserId,
+            Long sessionId,
+            ClassGroupEnrollmentCommand command,
+            String sourceIp
+    ) {
+        try {
+            ClassGroupEnrollmentCommand normalized = normalizeCommand(command);
+            if (actorUserId != normalized.studentUserId()) {
+                throw new SecurityException("Students can only request their own class group enrollments");
+            }
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    ClassGroup classGroup = classGroupDAO.lockById(connection, normalized.classGroupId())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Class group not found: " + normalized.classGroupId()
+                            ));
+                    Course course = requireCourse(connection, classGroup.courseId());
+                    Subject subject = requireSubject(connection, classGroup.subjectId());
+                    CourseSubjectAssociation association = requireAssociation(
+                            connection,
+                            classGroup.courseId(),
+                            classGroup.subjectId()
+                    );
+                    requireStudentSelfAccess(actorUserId, sessionId, normalized.studentUserId(), sourceIp);
+                    validateClassGroupRequestContext(connection, classGroup, course, subject, association, normalized);
+
+                    ClassGroupEnrollment current = classGroupEnrollmentDAO
+                            .findEnrollment(connection, normalized.studentUserId(), normalized.classGroupId())
+                            .orElse(null);
+                    if (current != null
+                            && (current.state() == EnrollmentState.ACTIVE || current.state() == EnrollmentState.PENDING)) {
+                        throw new IllegalStateException("Class group enrollment is already active or pending");
+                    }
+
+                    EnrollmentApprovalMode mode = enrollmentApprovalPolicyDAO.classGroupMode(
+                            connection,
+                            normalized.classGroupId()
+                    );
+                    EnrollmentState targetState = mode == EnrollmentApprovalMode.AUTO_APPROVE
+                            ? EnrollmentState.ACTIVE
+                            : EnrollmentState.PENDING;
+
+                    if (targetState == EnrollmentState.ACTIVE) {
+                        validateClassGroupApprovalAvailability(connection, classGroup, normalized);
+                    }
+
+                    if (current == null) {
+                        if (targetState == EnrollmentState.ACTIVE) {
+                            classGroupEnrollmentDAO.enroll(connection, normalized);
+                        } else {
+                            classGroupEnrollmentDAO.request(connection, normalized);
+                        }
+                    } else {
+                        classGroupEnrollmentDAO.reactivateRequest(connection, normalized, targetState);
+                    }
+
+                    auditService.record(connection, actorUserId, sessionId,
+                            targetState == EnrollmentState.ACTIVE ? "CLASS_GROUP_ENROLL_AUTO_APPROVE" : "CLASS_GROUP_ENROLL_REQUEST",
+                            "class_group_enrollment",
+                            enrollmentIdentifier(normalized.studentUserId(), normalized.classGroupId()),
+                            "success", sourceIp);
+                    connection.commit();
+                    return classGroupEnrollmentDAO.findEnrollment(
+                                    connection,
+                                    normalized.studentUserId(),
+                                    normalized.classGroupId()
+                            )
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Class group enrollment request was not found"
+                            ));
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "CLASS_GROUP_ENROLL_REQUEST",
+                    command == null
+                            ? "new"
+                            : enrollmentIdentifier(command.studentUserId(), command.classGroupId()),
+                    sourceIp);
+            throw wrap(exception, "Failed to request class group enrollment");
+        }
+    }
+
+    public ClassGroupEnrollment approveClassGroupEnrollment(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long studentUserId,
+            long classGroupId,
+            LocalDate startDate,
+            LocalDate endDate,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    ClassGroup classGroup = classGroupDAO.lockById(connection, classGroupId)
+                            .orElseThrow(() -> new IllegalArgumentException("Class group not found: " + classGroupId));
+                    Course course = requireCourse(connection, classGroup.courseId());
+                    Subject subject = requireSubject(connection, classGroup.subjectId());
+                    CourseSubjectAssociation association = requireAssociation(
+                            connection,
+                            classGroup.courseId(),
+                            classGroup.subjectId()
+                    );
+                    requireClassGroupEnrollmentAccess(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            studentUserId,
+                            classGroup,
+                            sourceIp,
+                            false
+                    );
+                    ClassGroupEnrollment current = classGroupEnrollmentDAO.findEnrollment(
+                                    connection,
+                                    studentUserId,
+                                    classGroupId
+                            )
+                            .orElseThrow(() -> new IllegalArgumentException("Class group enrollment request not found"));
+                    if (current.state() != EnrollmentState.PENDING) {
+                        throw new IllegalStateException("Only pending class group enrollment requests can be approved");
+                    }
+                    LocalDate approvedStart = startDate != null
+                            ? startDate
+                            : current.startDate() == null ? LocalDate.now(clock) : current.startDate();
+                    LocalDate approvedEnd = endDate != null ? endDate : current.endDate();
+                    ClassGroupEnrollmentCommand approval = new ClassGroupEnrollmentCommand(
+                            studentUserId,
+                            classGroupId,
+                            approvedStart,
+                            approvedEnd
+                    );
+                    validateClassGroupRequestContext(connection, classGroup, course, subject, association, approval);
+                    validateClassGroupApprovalAvailability(connection, classGroup, approval);
+                    classGroupEnrollmentDAO.updateState(
+                            connection,
+                            studentUserId,
+                            classGroupId,
+                            EnrollmentState.PENDING,
+                            EnrollmentState.ACTIVE,
+                            approvedStart,
+                            approvedEnd
+                    );
+                    auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_ENROLL_APPROVE",
+                            "class_group_enrollment",
+                            enrollmentIdentifier(studentUserId, classGroupId),
+                            "success", sourceIp);
+                    connection.commit();
+                    return classGroupEnrollmentDAO.findEnrollment(connection, studentUserId, classGroupId)
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Approved class group enrollment was not found"
+                            ));
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "CLASS_GROUP_ENROLL_APPROVE",
+                    enrollmentIdentifier(studentUserId, classGroupId), sourceIp);
+            throw wrap(exception, "Failed to approve class group enrollment");
+        }
+    }
+
+    public ClassGroupEnrollment rejectClassGroupEnrollment(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long studentUserId,
+            long classGroupId,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    ClassGroup classGroup = requireClassGroup(connection, classGroupId);
+                    requireClassGroupEnrollmentAccess(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            studentUserId,
+                            classGroup,
+                            sourceIp,
+                            false
+                    );
+                    ClassGroupEnrollment current = classGroupEnrollmentDAO.findEnrollment(
+                                    connection,
+                                    studentUserId,
+                                    classGroupId
+                            )
+                            .orElseThrow(() -> new IllegalArgumentException("Class group enrollment request not found"));
+                    if (current.state() != EnrollmentState.PENDING) {
+                        throw new IllegalStateException("Only pending class group enrollment requests can be rejected");
+                    }
+                    classGroupEnrollmentDAO.updateState(
+                            connection,
+                            studentUserId,
+                            classGroupId,
+                            EnrollmentState.PENDING,
+                            EnrollmentState.REJECTED,
+                            current.startDate(),
+                            current.endDate()
+                    );
+                    auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_ENROLL_REJECT",
+                            "class_group_enrollment",
+                            enrollmentIdentifier(studentUserId, classGroupId),
+                            "success", sourceIp);
+                    connection.commit();
+                    return classGroupEnrollmentDAO.findEnrollment(connection, studentUserId, classGroupId)
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Rejected class group enrollment was not found"
+                            ));
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "CLASS_GROUP_ENROLL_REJECT",
+                    enrollmentIdentifier(studentUserId, classGroupId), sourceIp);
+            throw wrap(exception, "Failed to reject class group enrollment");
+        }
+    }
+
+    public void updateClassGroupEnrollmentPolicy(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long classGroupId,
+            EnrollmentApprovalMode mode,
+            String sourceIp
+    ) {
+        Objects.requireNonNull(mode, "mode is required");
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    ClassGroup classGroup = requireClassGroup(connection, classGroupId);
+                    requireClassGroupEnrollmentAccess(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            1L,
+                            classGroup,
+                            sourceIp,
+                            false
+                    );
+                    enrollmentApprovalPolicyDAO.upsertClassGroupMode(connection, classGroupId, mode);
+                    auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_ENROLL_POLICY_UPDATE",
+                            "class_group_enrollment_policy", Long.toString(classGroupId), "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "CLASS_GROUP_ENROLL_POLICY_UPDATE",
+                    Long.toString(classGroupId), sourceIp);
+            throw wrap(exception, "Failed to update class group enrollment policy");
+        }
+    }
+
     public ClassGroupEnrollment withdrawStudentFromClassGroup(
             long actorUserId,
             Long sessionId,
@@ -216,7 +499,8 @@ public final class ClassGroupEnrollmentService {
                             actorProfileType,
                             studentUserId,
                             classGroup,
-                            sourceIp
+                            sourceIp,
+                            true
                     );
                     requireNotArchived(classGroup);
                     ClassGroupEnrollment current = classGroupEnrollmentDAO
@@ -245,6 +529,134 @@ public final class ClassGroupEnrollmentService {
             auditFailure(actorUserId, sessionId, "CLASS_GROUP_WITHDRAW",
                     enrollmentIdentifier(studentUserId, classGroupId), sourceIp);
             throw wrap(exception, "Failed to withdraw student from class group");
+        }
+    }
+
+    public ClassGroupEnrollment updateClassGroupEnrollment(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long studentUserId,
+            long classGroupId,
+            EnrollmentState state,
+            LocalDate startDate,
+            LocalDate endDate,
+            String sourceIp
+    ) {
+        Objects.requireNonNull(state, "state is required");
+        try {
+            requireValidDates(startDate, endDate);
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    ClassGroup classGroup = classGroupDAO.lockById(connection, classGroupId)
+                            .orElseThrow(() -> new IllegalArgumentException("Class group not found: " + classGroupId));
+                    Course course = requireCourse(connection, classGroup.courseId());
+                    Subject subject = requireSubject(connection, classGroup.subjectId());
+                    CourseSubjectAssociation association = requireAssociation(
+                            connection,
+                            classGroup.courseId(),
+                            classGroup.subjectId()
+                    );
+                    requireClassGroupEnrollmentAccess(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            studentUserId,
+                            classGroup,
+                            sourceIp,
+                            false
+                    );
+                    ClassGroupEnrollment current = classGroupEnrollmentDAO
+                            .findEnrollment(connection, studentUserId, classGroupId)
+                            .orElseThrow(() -> new IllegalArgumentException("Class group enrollment not found"));
+                    LocalDate effectiveStartDate = startDate != null ? startDate : current.startDate();
+                    LocalDate effectiveEndDate = effectiveClassGroupEnrollmentEndDate(state, endDate, current.endDate());
+                    requireValidDates(effectiveStartDate, effectiveEndDate);
+                    if (state == EnrollmentState.ACTIVE) {
+                        ClassGroupEnrollmentCommand command = new ClassGroupEnrollmentCommand(
+                                studentUserId,
+                                classGroupId,
+                                effectiveStartDate,
+                                effectiveEndDate
+                        );
+                        validateClassGroupRequestContext(connection, classGroup, course, subject, association, command);
+                        if (current.state() != EnrollmentState.ACTIVE) {
+                            validateClassGroupApprovalAvailability(connection, classGroup, command);
+                        }
+                    }
+                    classGroupEnrollmentDAO.updateEnrollment(
+                            connection,
+                            studentUserId,
+                            classGroupId,
+                            state,
+                            effectiveStartDate,
+                            effectiveEndDate
+                    );
+                    auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_ENROLL_UPDATE",
+                            "class_group_enrollment", enrollmentIdentifier(studentUserId, classGroupId),
+                            "success", sourceIp);
+                    connection.commit();
+                    return classGroupEnrollmentDAO.findEnrollment(connection, studentUserId, classGroupId)
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Updated class group enrollment was not found"
+                            ));
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "CLASS_GROUP_ENROLL_UPDATE",
+                    enrollmentIdentifier(studentUserId, classGroupId), sourceIp);
+            throw wrap(exception, "Failed to update class group enrollment");
+        }
+    }
+
+    public void deleteClassGroupEnrollment(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long studentUserId,
+            long classGroupId,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    ClassGroup classGroup = requireClassGroup(connection, classGroupId);
+                    requireClassGroupEnrollmentAccess(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            studentUserId,
+                            classGroup,
+                            sourceIp,
+                            false
+                    );
+                    classGroupEnrollmentDAO.findEnrollment(connection, studentUserId, classGroupId)
+                            .orElseThrow(() -> new IllegalArgumentException("Class group enrollment not found"));
+                    classGroupEnrollmentDAO.deleteEnrollment(connection, studentUserId, classGroupId);
+                    auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_ENROLL_DELETE",
+                            "class_group_enrollment", enrollmentIdentifier(studentUserId, classGroupId),
+                            "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "CLASS_GROUP_ENROLL_DELETE",
+                    enrollmentIdentifier(studentUserId, classGroupId), sourceIp);
+            throw wrap(exception, "Failed to delete class group enrollment");
         }
     }
 
@@ -278,6 +690,64 @@ public final class ClassGroupEnrollmentService {
         }
     }
 
+    private void validateClassGroupRequestContext(
+            Connection connection,
+            ClassGroup classGroup,
+            Course course,
+            Subject subject,
+            CourseSubjectAssociation association,
+            ClassGroupEnrollmentCommand command
+    ) throws SQLException {
+        validateStudent(connection, command.studentUserId());
+        requireActiveContext(classGroup, course, subject, association);
+        if (!classGroupEnrollmentDAO.lockActiveSubjectEnrollmentCovering(
+                connection,
+                command.studentUserId(),
+                classGroup.courseId(),
+                classGroup.subjectId(),
+                command.startDate(),
+                command.endDate()
+        )) {
+            throw new IllegalStateException(
+                    "Student must be actively enrolled in the subject for the full class group period"
+            );
+        }
+    }
+
+    private void validateClassGroupApprovalAvailability(
+            Connection connection,
+            ClassGroup classGroup,
+            ClassGroupEnrollmentCommand command
+    ) throws SQLException {
+        long activeEnrollments = classGroupDAO.countActiveEnrollments(connection, command.classGroupId());
+        if (classGroup.maxStudents() != null && activeEnrollments >= classGroup.maxStudents()) {
+            throw new IllegalStateException("Class group maximum capacity exceeded");
+        }
+    }
+
+    private void requireStudentSelfAccess(
+            long actorUserId,
+            Long sessionId,
+            long studentUserId,
+            String sourceIp
+    ) {
+        if (actorUserId != studentUserId) {
+            throw new SecurityException("Students can only manage their own class group enrollment requests");
+        }
+        AuthorizationDecision selfDecision = permissionChecker.check(new AccessContext(
+                actorUserId,
+                sessionId,
+                AccessProfileType.STUDENT,
+                AuthorizationPolicy.VIEW_REPORTS,
+                AccessEntityType.SELF,
+                studentUserId,
+                sourceIp
+        ));
+        if (!selfDecision.allowed()) {
+            throw new SecurityException("Missing student self-service context: " + selfDecision.reason());
+        }
+    }
+
     private void requireActiveContext(
             ClassGroup classGroup,
             Course course,
@@ -304,7 +774,8 @@ public final class ClassGroupEnrollmentService {
             AccessProfileType actorProfileType,
             long studentUserId,
             ClassGroup classGroup,
-            String sourceIp
+            String sourceIp,
+            boolean allowStudentSelf
     ) {
         AuthorizationDecision adminDecision = AuthorizationDecision.deny("administrator_profile_required");
         if (actorProfileType == AccessProfileType.ADMINISTRATOR) {
@@ -351,7 +822,7 @@ public final class ClassGroupEnrollmentService {
                 return;
             }
         }
-        if (actorProfileType == AccessProfileType.STUDENT && actorUserId == studentUserId) {
+        if (allowStudentSelf && actorProfileType == AccessProfileType.STUDENT && actorUserId == studentUserId) {
             AuthorizationDecision selfDecision = permissionChecker.check(new AccessContext(
                     actorUserId,
                     sessionId,
@@ -398,6 +869,20 @@ public final class ClassGroupEnrollmentService {
         if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("Class group enrollment end date cannot be before start date");
         }
+    }
+
+    private LocalDate effectiveClassGroupEnrollmentEndDate(
+            EnrollmentState state,
+            LocalDate requestedEndDate,
+            LocalDate currentEndDate
+    ) {
+        if (requestedEndDate != null) {
+            return requestedEndDate;
+        }
+        if (state == EnrollmentState.WITHDRAWN) {
+            return LocalDate.now(clock);
+        }
+        return currentEndDate;
     }
 
     private static String enrollmentIdentifier(long studentUserId, long classGroupId) {

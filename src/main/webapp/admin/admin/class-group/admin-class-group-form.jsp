@@ -605,17 +605,15 @@
                                     </div>
                                 </div>
 
-                                <c:if test="${not creating}">
-                                    <div class="mt-24">
-                                        <label class="gape-choice-card">
-                                            <input type="checkbox" name="showContentThumbnails" value="true" ${form.showContentThumbnails == 'true' ? 'checked' : ''}>
-                                            <span>
-                                                <strong class="gape-choice-title">Show file thumbnails</strong>
-                                                <small>Display generated media previews inside pedagogical blocks when available.</small>
-                                            </span>
-                                        </label>
-                                    </div>
-                                </c:if>
+                                <div class="mt-24">
+                                    <label class="gape-choice-card">
+                                        <input type="checkbox" name="showContentThumbnails" value="true" ${form.showContentThumbnails == 'true' ? 'checked' : ''}>
+                                        <span>
+                                            <strong class="gape-choice-title">Show file thumbnails</strong>
+                                            <small>Display generated media previews inside pedagogical blocks when available.</small>
+                                        </span>
+                                    </label>
+                                </div>
                             </div>
 
                             <div class="gape-step-panel" data-step-panel="3">
@@ -688,12 +686,10 @@
                                                     <span>Dates</span>
                                                     <strong data-review-dates>Not set</strong>
                                                 </div>
-                                                <c:if test="${not creating}">
-                                                    <div class="gape-review-item">
-                                                        <span>Content Preview</span>
-                                                        <strong data-review-thumbnails>Icons</strong>
-                                                    </div>
-                                                </c:if>
+                                                <div class="gape-review-item">
+                                                    <span>Content Preview</span>
+                                                    <strong data-review-thumbnails>Icons</strong>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -709,6 +705,12 @@
                         </section>
                     </div>
                 </form>
+                <c:if test="${not creating}">
+                    <div class="mt-24">
+                        <%@ include file="/WEB-INF/fragments/class-group-enrollment-management.jspf" %>
+                        <%@ include file="/WEB-INF/fragments/class-group-teacher-management.jspf" %>
+                    </div>
+                </c:if>
             </div>
             <%@ include file="/WEB-INF/fragments/dashboard-footer.jspf" %>
         </div>

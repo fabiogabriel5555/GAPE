@@ -1,5 +1,7 @@
 package pt.isel.gape.web.view;
 
+import java.time.LocalDateTime;
+
 import pt.isel.gape.learning.model.BlockContentItem;
 import pt.isel.gape.learning.model.ContentFormat;
 import pt.isel.gape.learning.model.ContentItem;
@@ -13,6 +15,7 @@ public final class BlockContentItemView {
     private final ContentFormat format;
     private final String source;
     private final ContentItemState state;
+    private final LocalDateTime createdAt;
     private final String role;
     private final Integer orderNo;
     private final boolean mandatory;
@@ -26,6 +29,7 @@ public final class BlockContentItemView {
         this.format = contentItem.format();
         this.source = contentItem.source();
         this.state = contentItem.state();
+        this.createdAt = contentItem.createdAt();
         this.role = blockContentItem.role();
         this.orderNo = blockContentItem.orderNo();
         this.mandatory = blockContentItem.mandatory();
@@ -124,6 +128,10 @@ public final class BlockContentItemView {
 
     public String getState() {
         return state.name();
+    }
+
+    public LocalDateTime getCreatedAtRaw() {
+        return createdAt;
     }
 
     public String getStateLabel() {

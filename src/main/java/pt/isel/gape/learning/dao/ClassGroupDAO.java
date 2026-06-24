@@ -31,8 +31,8 @@ public final class ClassGroupDAO {
         String sql = """
                 INSERT INTO class_group (
                     id_subject, id_course, cod_class_group, modality, state,
-                    min_students, max_students, starts_at, ends_at, shift
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    min_students, max_students, starts_at, ends_at, shift, show_content_thumbnails
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -46,6 +46,7 @@ public final class ClassGroupDAO {
             setDate(statement, 8, command.startsAt());
             setDate(statement, 9, command.endsAt());
             statement.setString(10, command.shift().toDatabaseValue());
+            statement.setBoolean(11, command.showContentThumbnails());
             statement.executeUpdate();
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (!generatedKeys.next()) {

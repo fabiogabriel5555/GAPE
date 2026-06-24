@@ -1,6 +1,8 @@
 package pt.isel.gape.web.controller;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.OptionalLong;
@@ -74,6 +76,7 @@ abstract class DashboardServletSupport extends HttpServlet {
         request.setAttribute("topActionHref", topActionHref);
         request.setAttribute("topActionLabel", topActionLabel);
         request.setAttribute("mediaCacheVersion", Long.toString(System.currentTimeMillis()));
+        prepareSmartNavigation(request);
         consumeFlash(request);
     }
 
@@ -95,7 +98,12 @@ abstract class DashboardServletSupport extends HttpServlet {
     }
 
     protected void redirect(HttpServletRequest request, HttpServletResponse response, String path) throws IOException {
-        response.sendRedirect(request.getContextPath() + path);
+        response.sendRedirect(request.getContextPath() + redirectPath(request, path));
+    }
+
+    protected void redirectPreservingReturnTo(HttpServletRequest request, HttpServletResponse response, String path)
+            throws IOException {
+        redirect(request, response, appendReturnTo(path, safeReturnPath(request)));
     }
 
     protected void redirectToReturnPath(HttpServletRequest request, HttpServletResponse response, String defaultPath)
@@ -112,6 +120,53 @@ abstract class DashboardServletSupport extends HttpServlet {
         return isSafeReturnPath(text(request, "returnTo"));
     }
 
+    protected String safeReturnPath(HttpServletRequest request) {
+        String returnTo = text(request, "returnTo");
+        return isSafeReturnPath(returnTo) ? returnTo : null;
+    }
+
+    protected String backHref(HttpServletRequest request, String defaultPath) {
+        String returnTo = safeReturnPath(request);
+        return request.getContextPath() + (returnTo == null ? defaultPath : returnTo);
+    }
+
+    protected String currentRequestPath(HttpServletRequest request) {
+        StringBuilder path = new StringBuilder(request.getServletPath());
+        if (request.getPathInfo() != null) {
+            path.append(request.getPathInfo());
+        }
+        String queryString = request.getQueryString();
+        if (queryString == null || queryString.isBlank()) {
+            return path.toString();
+        }
+        String filteredQuery = java.util.Arrays.stream(queryString.split("&"))
+                .filter(parameter -> !parameter.startsWith("returnTo="))
+                .filter(parameter -> !parameter.isBlank())
+                .collect(java.util.stream.Collectors.joining("&"));
+        if (!filteredQuery.isBlank()) {
+            path.append('?').append(filteredQuery);
+        }
+        return path.toString();
+    }
+
+    protected String appendReturnTo(String path, String returnTo) {
+        if (!isSafeReturnPath(returnTo) || path == null || path.isBlank() || path.contains("returnTo=")) {
+            return path;
+        }
+        return path
+                + (path.contains("?") ? "&" : "?")
+                + "returnTo="
+                + URLEncoder.encode(returnTo, StandardCharsets.UTF_8);
+    }
+
+    private String redirectPath(HttpServletRequest request, String path) {
+        String returnTo = safeReturnPath(request);
+        if (returnTo == null || path == null || path.isBlank() || path.equals(returnTo)) {
+            return path;
+        }
+        return appendReturnTo(path, returnTo);
+    }
+
     protected static String text(HttpServletRequest request, String name) {
         String value = request.getParameter(name);
         if (value == null) {
@@ -121,12 +176,36 @@ abstract class DashboardServletSupport extends HttpServlet {
         return normalized.isEmpty() ? null : normalized;
     }
 
-    private static boolean isSafeReturnPath(String path) {
-        return path != null
-                && path.startsWith("/")
-                && !path.startsWith("//")
-                && !path.contains("\\")
-                && !path.contains(":");
+    static boolean isSafeReturnPath(String path) {
+        if (path == null
+                || !path.startsWith("/")
+                || path.startsWith("//")
+                || path.contains("\\")
+                || path.contains(":")) {
+            return false;
+        }
+        for (int index = 0; index < path.length(); index++) {
+            char current = path.charAt(index);
+            if (current <= 0x1F
+                    || current == 0x7F
+                    || Character.isWhitespace(current)
+                    || current == '"'
+                    || current == '\''
+                    || current == '<'
+                    || current == '>') {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void prepareSmartNavigation(HttpServletRequest request) {
+        String currentPath = currentRequestPath(request);
+        String returnTo = safeReturnPath(request);
+        request.setAttribute("currentReturnTo", currentPath);
+        request.setAttribute("currentReturnToParam", URLEncoder.encode(currentPath, StandardCharsets.UTF_8));
+        request.setAttribute("returnTo", returnTo);
+        request.setAttribute("returnToParam", returnTo == null ? "" : URLEncoder.encode(returnTo, StandardCharsets.UTF_8));
     }
 
     protected static long longParameter(HttpServletRequest request, String name) {
@@ -284,6 +363,81 @@ abstract class DashboardServletSupport extends HttpServlet {
         }
         if (message.contains("Content block availability end cannot be before start")) {
             return "Content block availability end cannot be before start.";
+        }
+        if (message.contains("Lesson title is required")) {
+            return "Lesson title is required.";
+        }
+        if (message.contains("Lesson end date must be after start date")) {
+            return "Lesson end date must be after the start date.";
+        }
+        if (message.contains("Lesson start date cannot be in the past")) {
+            return "Lesson start date cannot be in the past.";
+        }
+        if (message.contains("Online lessons cannot have a physical room")) {
+            return "Online lessons cannot have a physical room.";
+        }
+        if (message.contains("Onsite lessons require a physical room")) {
+            return "Presential lessons require a physical room.";
+        }
+        if (message.contains("Hybrid lessons require a physical room")) {
+            return "Hybrid lessons require a physical room.";
+        }
+        if (message.contains("Onsite lessons cannot have a video conference access URL")
+                || message.contains("Onsite lessons cannot have a video conference provider")) {
+            return "Presential lessons cannot have videoconference data.";
+        }
+        if (message.contains("Video conference access URL is required")) {
+            return "Online and hybrid lessons require a meeting link.";
+        }
+        if (message.contains("Video conference provider is required")) {
+            return "Online and hybrid lessons require Zoom, Teams or Meet as provider.";
+        }
+        if (message.contains("Unsupported video conference provider")) {
+            return "Provider must be Zoom, Teams or Meet.";
+        }
+        if (message.contains("meeting links must use")) {
+            return "The meeting link must match the selected provider.";
+        }
+        if (message.contains("Video conference access URL must use HTTPS")
+                || message.contains("Video conference access URL is invalid")
+                || message.contains("Video conference access URL must be absolute")) {
+            return "The meeting link must be a valid HTTPS URL.";
+        }
+        if (message.contains("Video conference access URL cannot target")) {
+            return "The meeting link cannot target localhost or private network hosts.";
+        }
+        if (message.contains("Physical room already has an overlapping lesson")) {
+            return "The physical room already has a lesson in the selected period.";
+        }
+        if (message.contains("Lesson physical room must belong to the same organization")) {
+            return "The physical room must belong to the same organization as the class group.";
+        }
+        if (message.contains("Lesson physical room must be active")) {
+            return "The selected physical room must be active.";
+        }
+        if (message.contains("Lesson content block must belong to the same class group")) {
+            return "The selected pedagogical block must belong to the same class group.";
+        }
+        if (message.contains("Physical room code is required")) {
+            return "Physical room code is required.";
+        }
+        if (message.contains("Physical room name is required")) {
+            return "Physical room name is required.";
+        }
+        if (message.contains("Physical room capacity must be greater than zero")) {
+            return "Physical room capacity must be greater than zero.";
+        }
+        if (message.contains("Physical room capacity is below active class group enrollments")) {
+            return "Physical room capacity is below the active class group enrollments.";
+        }
+        if (message.contains("Physical room organic unit must belong to the same organization")) {
+            return "The selected organic unit must belong to the same organization as the room.";
+        }
+        if (message.contains("Physical room with lessons cannot be deleted")) {
+            return "Physical rooms with lessons cannot be deleted.";
+        }
+        if (message.contains("Physical room with scheduled or active lessons cannot be deactivated")) {
+            return "Physical rooms with scheduled or active lessons cannot be deactivated.";
         }
         if (message.contains("Unknown")) {
             return "The selected record does not exist.";

@@ -9,6 +9,8 @@ public final class StudentClassGroupView {
     private final ClassGroupEnrollmentView enrollment;
     private final List<ContentBlockView> contentBlocks;
     private final Map<Long, List<BlockContentItemView>> blockContentsByBlock;
+    private final Map<Long, List<LessonView>> blockLessonsByBlock;
+    private final Map<Long, List<BlockActivityView>> blockActivitiesByBlock;
     private final boolean eligibleForEnrollment;
 
     private StudentClassGroupView(
@@ -16,12 +18,16 @@ public final class StudentClassGroupView {
             ClassGroupEnrollmentView enrollment,
             List<ContentBlockView> contentBlocks,
             Map<Long, List<BlockContentItemView>> blockContentsByBlock,
+            Map<Long, List<LessonView>> blockLessonsByBlock,
+            Map<Long, List<BlockActivityView>> blockActivitiesByBlock,
             boolean eligibleForEnrollment
     ) {
         this.classGroup = classGroup;
         this.enrollment = enrollment;
         this.contentBlocks = List.copyOf(contentBlocks);
         this.blockContentsByBlock = Map.copyOf(blockContentsByBlock);
+        this.blockLessonsByBlock = Map.copyOf(blockLessonsByBlock);
+        this.blockActivitiesByBlock = Map.copyOf(blockActivitiesByBlock);
         this.eligibleForEnrollment = eligibleForEnrollment;
     }
 
@@ -30,6 +36,8 @@ public final class StudentClassGroupView {
             ClassGroupEnrollmentView enrollment,
             List<ContentBlockView> contentBlocks,
             Map<Long, List<BlockContentItemView>> blockContentsByBlock,
+            Map<Long, List<LessonView>> blockLessonsByBlock,
+            Map<Long, List<BlockActivityView>> blockActivitiesByBlock,
             boolean eligibleForEnrollment
     ) {
         return new StudentClassGroupView(
@@ -37,6 +45,8 @@ public final class StudentClassGroupView {
                 enrollment,
                 contentBlocks,
                 blockContentsByBlock,
+                blockLessonsByBlock,
+                blockActivitiesByBlock,
                 eligibleForEnrollment
         );
     }
@@ -57,6 +67,14 @@ public final class StudentClassGroupView {
         return blockContentsByBlock;
     }
 
+    public Map<Long, List<LessonView>> getBlockLessonsByBlock() {
+        return blockLessonsByBlock;
+    }
+
+    public Map<Long, List<BlockActivityView>> getBlockActivitiesByBlock() {
+        return blockActivitiesByBlock;
+    }
+
     public boolean isEnrolled() {
         return enrollment != null;
     }
@@ -66,11 +84,30 @@ public final class StudentClassGroupView {
     }
 
     public boolean isCanEnroll() {
-        return eligibleForEnrollment && enrollment == null && classGroup.isActive();
+        return eligibleForEnrollment
+                && classGroup.isActive()
+                && (enrollment == null || (!enrollment.isActive() && !enrollment.isPending()));
     }
 
     public boolean isCanWithdraw() {
         return isActiveEnrollment();
+    }
+
+    public boolean isActionAvailable() {
+        return isActiveEnrollment() || isCanEnroll() || isCanWithdraw();
+    }
+
+    public String getUnavailableActionLabel() {
+        if (enrollment != null && enrollment.isPending()) {
+            return "Waiting approval";
+        }
+        if (!classGroup.isActive()) {
+            return "Closed";
+        }
+        if (!eligibleForEnrollment) {
+            return "Subject enrollment required";
+        }
+        return "No action available";
     }
 
     public String getEnrollmentStateLabel() {

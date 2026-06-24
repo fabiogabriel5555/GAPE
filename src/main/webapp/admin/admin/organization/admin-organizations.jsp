@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
     if (request.getAttribute("activeMenu") == null) {
         request.setAttribute("activeMenu", "organizations");
@@ -104,6 +105,21 @@
             padding: 14px;
         }
 
+        .gape-class-activities-panel {
+            margin-inline-start: 28px;
+            position: relative;
+        }
+
+        .gape-class-activities-panel::before {
+            background-color: #d9e2ef;
+            bottom: 12px;
+            content: "";
+            left: -16px;
+            position: absolute;
+            top: 12px;
+            width: 2px;
+        }
+
         .gape-course-node {
             border-inline-start: 3px solid #2563eb;
         }
@@ -116,11 +132,29 @@
             border-inline-start: 3px solid #7c3aed;
         }
 
+        .gape-lesson-node {
+            border-inline-start: 3px solid #2563eb;
+        }
+
+        .gape-room-node {
+            border-inline-start: 3px solid #16a34a;
+        }
+
         .gape-node-meta {
             color: #64748b;
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+        }
+
+        @media (max-width: 575.98px) {
+            .gape-class-activities-panel {
+                margin-inline-start: 0;
+            }
+
+            .gape-class-activities-panel::before {
+                display: none;
+            }
         }
 
         @media (max-width: 1199.98px) {
@@ -520,6 +554,7 @@
                                                                                             <c:forEach var="classGroup" items="${subject.classGroups}">
                                                                                                 <c:set var="canModifyClassGroup" value="${canModifyClassGroupById[classGroup.id]}" />
                                                                                                 <c:set var="canManageClassGroupStructure" value="${canManageClassGroupStructureById[classGroup.id]}" />
+                                                                                                <c:set var="activityPanelId" value="organizationClassGroupActivities${course.id}_${subject.subjectId}_${classGroup.id}" />
                                                                                                 <div class="gape-class-group-node border border-neutral-30 rounded-8 px-16 py-12 bg-white">
                                                                                                     <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap">
                                                                                                         <div class="d-flex align-items-start gap-10">
@@ -539,15 +574,23 @@
                                                                                                             <span class="${classGroup.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
                                                                                                                 <c:out value="${classGroup.stateLabel}"/>
                                                                                                             </span>
+                                                                                                            <button type="button"
+                                                                                                                    class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600"
+                                                                                                                    title="Show Activities"
+                                                                                                                    aria-label="Show Activities"
+                                                                                                                    aria-expanded="false"
+                                                                                                                    aria-controls="${activityPanelId}"
+                                                                                                                    data-gape-tree-toggle="${activityPanelId}"
+                                                                                                                    data-gape-open-title="Hide Activities"
+                                                                                                                    data-gape-closed-title="Show Activities">
+                                                                                                                <i class="ph ph-caret-down"></i>
+                                                                                                            </button>
                                                                                                             <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail">
                                                                                                                 <i class="ph ph-eye"></i>
                                                                                                             </a>
                                                                                                             <c:if test="${not classGroup.archived and canModifyClassGroup}">
                                                                                                                 <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/edit" class="text-20 text-neutral-500 hover-text-main-600" title="Edit">
                                                                                                                     <i class="ph ph-pencil-simple-line"></i>
-                                                                                                                </a>
-                                                                                                                <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/new" class="text-20 text-neutral-500 hover-text-main-600" title="New content block">
-                                                                                                                    <i class="ph ph-stack-plus"></i>
                                                                                                                 </a>
                                                                                                             </c:if>
                                                                                                             <c:if test="${not classGroup.archived and canManageClassGroupStructure}">
@@ -580,6 +623,9 @@
                                                                                                             </div>
                                                                                                         </div>
                                                                                                     </c:if>
+                                                                                                    <div id="${activityPanelId}" class="d-none">
+                                                                                                        <%@ include file="/WEB-INF/fragments/class-group-activities-panel.jspf" %>
+                                                                                                    </div>
                                                                                                 </div>
                                                                                             </c:forEach>
                                                                                             <c:if test="${empty subject.classGroups}">

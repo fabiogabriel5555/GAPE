@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +33,7 @@ import pt.isel.gape.learning.dao.ClassGroupEnrollmentDAO;
 import pt.isel.gape.learning.dao.ContentBlockDAO;
 import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
+import pt.isel.gape.learning.dao.EnrollmentApprovalPolicyDAO;
 import pt.isel.gape.learning.dao.EnrollmentDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.Course;
@@ -40,6 +42,7 @@ import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.CourseSubjectAssociationCommand;
 import pt.isel.gape.learning.model.CourseSubjectState;
 import pt.isel.gape.learning.model.CurricularTerm;
+import pt.isel.gape.learning.model.EnrollmentApprovalMode;
 import pt.isel.gape.learning.model.Subject;
 import pt.isel.gape.learning.model.SubjectCreateCommand;
 import pt.isel.gape.learning.model.SubjectInitialCourseAssignment;
@@ -48,6 +51,7 @@ import pt.isel.gape.learning.model.SubjectUpdateCommand;
 import pt.isel.gape.learning.service.ClassGroupService;
 import pt.isel.gape.learning.service.CourseService;
 import pt.isel.gape.learning.service.CourseSubjectService;
+import pt.isel.gape.learning.service.EnrollmentService;
 import pt.isel.gape.learning.service.SubjectService;
 import pt.isel.gape.security.authorization.AuthorizationPolicy;
 import pt.isel.gape.security.session.SessionUser;
@@ -56,10 +60,13 @@ import pt.isel.gape.structure.dao.TeachClassGroupDAO;
 import pt.isel.gape.structure.dao.OrganicUnitDAO;
 import pt.isel.gape.structure.dao.OrganizationDAO;
 import pt.isel.gape.structure.model.Organization;
+import pt.isel.gape.structure.model.RoleAssignmentState;
 import pt.isel.gape.structure.service.OrganizationService;
 import pt.isel.gape.web.media.ProfilePhotoStorage;
 import pt.isel.gape.web.view.ClassGroupView;
+import pt.isel.gape.web.view.CoordinatorAssignmentView;
 import pt.isel.gape.web.view.CourseView;
+import pt.isel.gape.web.view.EnrollmentManagementView;
 import pt.isel.gape.web.view.OrganizationView;
 import pt.isel.gape.web.view.SubjectCourseView;
 import pt.isel.gape.web.view.SubjectFormData;
@@ -70,7 +77,9 @@ import pt.isel.gape.web.view.UserOptionView;
         "/admin/subjects",
         "/admin/subjects/*",
         "/coordinator/subjects",
-        "/coordinator/subjects/*"
+        "/coordinator/subjects/*",
+        "/instructor/subjects",
+        "/instructor/subjects/*"
 })
 @MultipartConfig(maxFileSize = 50L * 1024L * 1024L, maxRequestSize = 52L * 1024L * 1024L)
 public final class SubjectManagementServlet extends DashboardServletSupport {
@@ -78,19 +87,17 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
     private static final String ADMIN_SUBJECT_LIST_JSP = "/admin/admin/subject/admin-subjects.jsp";
     private static final String ADMIN_SUBJECT_FORM_JSP = "/admin/admin/subject/admin-subject-form.jsp";
     private static final String ADMIN_SUBJECT_DETAIL_JSP = "/admin/admin/subject/admin-subject-detail.jsp";
-    private static final String ADMIN_SUBJECT_COURSE_FORM_JSP = "/admin/admin/subject/admin-subject-course-form.jsp";
     private static final String COORDINATOR_SUBJECT_LIST_JSP =
             "/coordinator/coordinator/subject/coordinator-subjects.jsp";
     private static final String COORDINATOR_SUBJECT_FORM_JSP =
             "/coordinator/coordinator/subject/coordinator-subject-form.jsp";
     private static final String COORDINATOR_SUBJECT_DETAIL_JSP =
             "/coordinator/coordinator/subject/coordinator-subject-detail.jsp";
-    private static final String COORDINATOR_SUBJECT_COURSE_FORM_JSP =
-            "/coordinator/coordinator/subject/coordinator-subject-course-form.jsp";
 
     private final SubjectService subjectService;
     private final CourseService courseService;
     private final CourseSubjectService courseSubjectService;
+    private final EnrollmentService enrollmentService;
     private final ClassGroupService classGroupService;
     private final OrganizationService organizationService;
     private final UserService userService;
@@ -98,10 +105,12 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
     private final CourseSubjectDAO courseSubjectDAO;
     private final ClassGroupDAO classGroupDAO;
     private final SubjectDAO subjectDAO;
+    private final EnrollmentApprovalPolicyDAO enrollmentApprovalPolicyDAO;
     private final CoordinateSubjectDAO coordinateSubjectDAO;
     private final OrganizationDAO organizationDAO;
     private final LearningViewFactory viewFactory;
     private final ProfilePhotoStorage photoStorage;
+    private final ClassGroupActivityViewSupport activityViewSupport;
 
     public SubjectManagementServlet() {
         this(ConnectionProvider.defaultProvider(), ApplicationClock.system());
@@ -112,6 +121,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 new SubjectService(connectionProvider, clock),
                 new CourseService(connectionProvider, clock),
                 new CourseSubjectService(connectionProvider, clock),
+                new EnrollmentService(connectionProvider, clock),
                 new ClassGroupService(connectionProvider, clock),
                 new OrganizationService(connectionProvider, clock),
                 new UserService(connectionProvider, clock),
@@ -119,6 +129,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 new CourseSubjectDAO(connectionProvider),
                 new ClassGroupDAO(connectionProvider),
                 new SubjectDAO(connectionProvider),
+                new EnrollmentApprovalPolicyDAO(connectionProvider),
                 new CoordinateSubjectDAO(connectionProvider),
                 new OrganizationDAO(connectionProvider),
                 new LearningViewFactory(
@@ -134,7 +145,8 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                         new UserDAO(connectionProvider),
                         new TeachClassGroupDAO(connectionProvider)
                 ),
-                new ProfilePhotoStorage()
+                new ProfilePhotoStorage(),
+                new ClassGroupActivityViewSupport(connectionProvider, clock)
         );
     }
 
@@ -142,6 +154,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             SubjectService subjectService,
             CourseService courseService,
             CourseSubjectService courseSubjectService,
+            EnrollmentService enrollmentService,
             ClassGroupService classGroupService,
             OrganizationService organizationService,
             UserService userService,
@@ -149,14 +162,17 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             CourseSubjectDAO courseSubjectDAO,
             ClassGroupDAO classGroupDAO,
             SubjectDAO subjectDAO,
+            EnrollmentApprovalPolicyDAO enrollmentApprovalPolicyDAO,
             CoordinateSubjectDAO coordinateSubjectDAO,
             OrganizationDAO organizationDAO,
             LearningViewFactory viewFactory,
-            ProfilePhotoStorage photoStorage
+            ProfilePhotoStorage photoStorage,
+            ClassGroupActivityViewSupport activityViewSupport
     ) {
         this.subjectService = subjectService;
         this.courseService = courseService;
         this.courseSubjectService = courseSubjectService;
+        this.enrollmentService = enrollmentService;
         this.classGroupService = classGroupService;
         this.organizationService = organizationService;
         this.userService = userService;
@@ -164,10 +180,12 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         this.courseSubjectDAO = courseSubjectDAO;
         this.classGroupDAO = classGroupDAO;
         this.subjectDAO = subjectDAO;
+        this.enrollmentApprovalPolicyDAO = enrollmentApprovalPolicyDAO;
         this.coordinateSubjectDAO = coordinateSubjectDAO;
         this.organizationDAO = organizationDAO;
         this.viewFactory = viewFactory;
         this.photoStorage = photoStorage;
+        this.activityViewSupport = activityViewSupport;
     }
 
     @Override
@@ -180,11 +198,11 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 return;
             }
             if (segments.length == 1 && "new".equals(segments[0])) {
-                if (isCoordinatorSubjectRequest(request)) {
+                if (isLimitedSubjectRequest(request)) {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     return;
                 }
-                showSubjectForm(request, response, SubjectFormData.blank(firstManagedOrganizationId(request)), true, null);
+                showSubjectForm(request, response, newSubjectFormData(request), true, null);
                 return;
             }
             if (segments.length == 1) {
@@ -192,11 +210,19 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 return;
             }
             if (segments.length == 2 && "edit".equals(segments[1])) {
+                if (isTeacherSubjectRequest(request)) {
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    return;
+                }
                 showEditForm(request, response, Long.parseLong(segments[0]), null);
                 return;
             }
             if (segments.length == 2 && "courses".equals(segments[1])) {
-                showCourseAssociationForm(request, response, Long.parseLong(segments[0]), null);
+                if (isTeacherSubjectRequest(request)) {
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    return;
+                }
+                redirect(request, response, subjectBasePath(request) + "/" + Long.parseLong(segments[0]) + "/edit#course-associations");
                 return;
             }
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -210,6 +236,10 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             throws ServletException, IOException {
         String[] segments = pathSegments(request.getPathInfo());
         try {
+            if (isTeacherSubjectRequest(request)) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
             if (segments.length == 0) {
                 if (isCoordinatorSubjectRequest(request)) {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
@@ -237,8 +267,29 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 updateCourseAssociation(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
                 return;
             }
+            if (segments.length == 3 && "policies".equals(segments[1])) {
+                updateSubjectEnrollmentPolicy(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
+                return;
+            }
+            if (segments.length == 4 && "coordinators".equals(segments[1]) && "update".equals(segments[3])) {
+                updateCoordinatorAssignment(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
+                return;
+            }
             if (segments.length == 4 && "courses".equals(segments[1]) && "delete".equals(segments[3])) {
                 removeCourseAssociation(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
+                return;
+            }
+            if (segments.length == 5 && "enrollments".equals(segments[1])) {
+                long subjectId = Long.parseLong(segments[0]);
+                long courseId = Long.parseLong(segments[2]);
+                long studentUserId = Long.parseLong(segments[3]);
+                switch (segments[4]) {
+                    case "approve" -> approveSubjectEnrollment(request, response, subjectId, courseId, studentUserId);
+                    case "reject" -> rejectSubjectEnrollment(request, response, subjectId, courseId, studentUserId);
+                    case "update" -> updateSubjectEnrollment(request, response, subjectId, courseId, studentUserId);
+                    case "delete" -> deleteSubjectEnrollment(request, response, subjectId, courseId, studentUserId);
+                    default -> response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                }
                 return;
             }
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -251,10 +302,15 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             throws ServletException, IOException {
         SessionUser actor = requireCurrentUser(request);
         boolean coordinatorMode = isCoordinatorSubjectRequest(request);
-        List<Organization> organizations = coordinatorMode ? coordinatorManagedOrganizations(actor) : managedOrganizations(request);
+        boolean teacherMode = isTeacherSubjectRequest(request);
+        List<Organization> organizations = coordinatorMode || teacherMode
+                ? List.of()
+                : managedOrganizations(request);
         List<Subject> rawSubjects = coordinatorMode
                 ? coordinatorSubjects(actor, organizations, request)
-                : organizations.stream()
+                : teacherMode
+                        ? teacherSubjects(actor)
+                        : organizations.stream()
                         .flatMap(organization -> subjectService.listSubjects(
                                 actor.userId(),
                                 currentSessionId(request),
@@ -267,9 +323,11 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         List<SubjectView> subjects = rawSubjects.stream()
                 .map(viewFactory::subjectView)
                 .toList();
-        Map<Long, List<SubjectCourseView>> subjectCoursesBySubject = subjectCoursesBySubject(subjects);
+        Map<Long, List<SubjectCourseView>> subjectCoursesBySubject = subjectCoursesBySubject(actor, subjects, request);
         Map<Long, Map<Long, List<ClassGroupView>>> subjectCourseClassGroups =
-                subjectCourseClassGroupsBySubjectAndCourse(subjectCoursesBySubject);
+                subjectCourseClassGroupsBySubjectAndCourse(actor, subjectCoursesBySubject, request);
+        Map<Long, List<ClassGroupView>> classGroupsBySubject =
+                classGroupsBySubject(subjectCoursesBySubject, subjectCourseClassGroups);
         Set<Long> courseIds = courseIdsFrom(subjectCoursesBySubject);
         Set<Long> classGroupIds = classGroupIdsFrom(subjectCourseClassGroups);
 
@@ -281,11 +339,19 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 canManageSubjectAssociationsById(actor, rawSubjects, request));
         request.setAttribute("subjectCoursesBySubject", subjectCoursesBySubject);
         request.setAttribute("subjectCourseClassGroupsBySubjectAndCourse", subjectCourseClassGroups);
+        request.setAttribute("classGroupsBySubject", classGroupsBySubject);
         request.setAttribute("canModifyCourseById", canModifyCourseById(actor, courseIds, request));
         request.setAttribute("canManageCourseChildrenById", canManageCourseChildrenById(actor, courseIds, request));
         request.setAttribute("canModifyClassGroupById", canModifyClassGroupById(actor, classGroupIds, request));
         request.setAttribute("canManageClassGroupStructureById",
                 canManageClassGroupStructureById(actor, classGroupIds, request));
+        activityViewSupport.exposeClassGroupActivities(
+                request,
+                actor,
+                currentSessionId(request),
+                primaryProfile(actor),
+                classGroupIds
+        );
         request.setAttribute("subjectCount", subjects.size());
         request.setAttribute("activeSubjects", subjects.stream().filter(SubjectView::isActive).count());
         request.setAttribute("archivedSubjects", subjects.stream().filter(SubjectView::isArchived).count());
@@ -297,6 +363,37 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 (Boolean) request.getAttribute("canCreateSubjects") ? "New Subject" : null
         );
         forward(request, response, subjectListJsp(request));
+    }
+
+    private SubjectFormData newSubjectFormData(HttpServletRequest request) {
+        Long initialCourseId = parseOptionalLong(request.getParameter("courseId"));
+        if (initialCourseId != null) {
+            Course initialCourse = initialCourse(initialCourseId);
+            if (initialCourse != null && canUseInitialCourse(request, initialCourse)) {
+                return SubjectFormData.blank(initialCourse.organizationId(), initialCourse.id());
+            }
+        }
+        return SubjectFormData.blank(firstManagedOrganizationId(request));
+    }
+
+    private Course initialCourse(long courseId) {
+        try {
+            return courseDAO.findById(courseId).orElse(null);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load initial course", exception);
+        }
+    }
+
+    private boolean canUseInitialCourse(HttpServletRequest request, Course course) {
+        if (course.state() == CourseState.ARCHIVED) {
+            return false;
+        }
+        for (Organization organization : managedOrganizations(request)) {
+            if (organization.id() == course.organizationId()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void showDetail(HttpServletRequest request, HttpServletResponse response, long subjectId)
@@ -318,16 +415,40 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 request.getRemoteAddr()
         );
         boolean canManageSubjectAssociations = canManageSubjectAssociations(actor, subjectId, request);
+        List<SubjectCourseView> subjectCourseAssociations = subjectCourseViews(subjectId).stream()
+                .filter(association -> canReadSubjectCourse(actor, subjectId, association.getCourseId(), request))
+                .toList();
+        List<EnrollmentManagementView> subjectEnrollments = viewFactory.subjectEnrollmentViews(subjectId);
+        List<ClassGroupView> classGroups = viewFactory.classGroupViews(classGroupsBySubject(subjectId).stream()
+                .filter(classGroup -> canReadClassGroup(request, actor, classGroup.id()))
+                .toList());
+        Set<Long> classGroupIds = classGroupIdsFrom(classGroups);
         prepareSubjectBasePath(request);
         request.setAttribute("subject", subjectView);
-        request.setAttribute("subjectCourseAssociations", subjectCourseViews(subjectId));
-        request.setAttribute("classGroups", viewFactory.classGroupViews(classGroupsBySubject(subjectId)));
+        request.setAttribute("subjectCourseAssociations", subjectCourseAssociations);
+        request.setAttribute("coordinatorAssignments", coordinatorAssignments(subjectId));
+        request.setAttribute("classGroups", classGroups);
+        exposeSubjectEnrollmentManagement(request, subjectEnrollments);
+        request.setAttribute("subjectEnrollmentPolicyByCourseId",
+                subjectEnrollmentPolicyByCourseId(subjectCourseAssociations));
+        request.setAttribute("availableCourseOptions", availableCourseOptions(request, subject, subjectCourseAssociations));
         request.setAttribute("coordinatorOptions", coordinatorOptions(request, null));
         request.setAttribute("canModifySubject", canModifySubject);
         request.setAttribute("canManageSubjectAssociations", canManageSubjectAssociations);
+        request.setAttribute("canManageSubjectEnrollments", canManageSubjectAssociations);
         request.setAttribute("canCreateClassGroupsForSubject",
                 canCreateClassGroupsForSubject(actor, subjectId, request));
         request.setAttribute("canAssignSubjectCoordinators", canModifySubject);
+        request.setAttribute("canModifyClassGroupById", canModifyClassGroupById(actor, classGroupIds, request));
+        request.setAttribute("canManageClassGroupStructureById",
+                canManageClassGroupStructureById(actor, classGroupIds, request));
+        activityViewSupport.exposeClassGroupActivities(
+                request,
+                actor,
+                currentSessionId(request),
+                primaryProfile(actor),
+                classGroupIds
+        );
         prepareSubjectContext(request, subjectView, "detail");
         prepareDashboard(request, "subjects", "Subject Detail");
         forward(request, response, subjectDetailJsp(request));
@@ -366,65 +487,12 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         }
         SubjectFormData form = error == null ? SubjectFormData.from(subject) : SubjectFormData.from(request, subjectId);
         prepareSubjectForm(request, form, false, error, subject);
-        prepareSubjectContext(request, viewFactory.subjectView(subject), "edit");
+        SubjectView subjectView = viewFactory.subjectView(subject);
+        request.setAttribute("subject", subjectView);
+        prepareSubjectContext(request, subjectView, "edit");
         request.setAttribute("canModifySubject", Boolean.TRUE);
         request.setAttribute("canAssignSubjectCoordinators", Boolean.TRUE);
         forward(request, response, subjectFormJsp(request));
-    }
-
-    private void showCourseAssociationForm(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            long subjectId,
-            String error
-    ) throws ServletException, IOException {
-        SessionUser actor = requireCurrentUser(request);
-        Subject subject = subjectService.getSubject(
-                actor.userId(),
-                currentSessionId(request),
-                primaryProfile(actor),
-                subjectId,
-                request.getRemoteAddr()
-        );
-        SubjectView subjectView = viewFactory.subjectView(subject);
-        List<SubjectCourseView> allAssociations = subjectCourseViews(subjectId);
-        List<SubjectCourseView> associations = allAssociations.stream()
-                .filter(association -> courseSubjectService.canManageAssociation(
-                        actor.userId(),
-                        currentSessionId(request),
-                        primaryProfile(actor),
-                        association.getCourseId(),
-                        subjectId,
-                        request.getRemoteAddr()
-                ))
-                .toList();
-        List<CourseView> availableCourseOptions = availableCourseOptions(request, subject, allAssociations);
-        if ((!canManageSubjectAssociations(actor, subjectId, request)
-                && associations.isEmpty()
-                && availableCourseOptions.isEmpty())
-                || subjectView.isArchived()) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
-            return;
-        }
-
-        request.setAttribute("subject", subjectView);
-        prepareSubjectBasePath(request);
-        request.setAttribute("subjectCourseAssociations", associations);
-        request.setAttribute("availableCourseOptions", availableCourseOptions);
-        request.setAttribute("canModifySubject", subjectService.canModifySubject(
-                actor.userId(),
-                currentSessionId(request),
-                primaryProfile(actor),
-                subjectId,
-                request.getRemoteAddr()
-        ));
-        request.setAttribute("canManageSubjectAssociations", Boolean.TRUE);
-        if (error != null) {
-            request.setAttribute("errorMessage", error);
-        }
-        prepareSubjectContext(request, subjectView, "courses");
-        prepareDashboard(request, "subjects", "Associate Courses");
-        forward(request, response, subjectCourseFormJsp(request));
     }
 
     private void createSubject(HttpServletRequest request, HttpServletResponse response)
@@ -476,6 +544,17 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                 flashError(request, "Subject created, but " + messageFor(exception));
                 redirect(request, response, subjectBasePath(request) + "/" + created.id());
                 return;
+            }
+            for (SubjectInitialCourseAssignment assignment : initialCourseAssignments) {
+                enrollmentService.updateSubjectEnrollmentPolicy(
+                        actor.userId(),
+                        currentSessionId(request),
+                        primaryProfile(actor),
+                        assignment.courseId(),
+                        created.id(),
+                        assignment.approvalMode(),
+                        request.getRemoteAddr()
+                );
             }
             flashSuccess(request, "Subject created successfully.");
             redirect(request, response, subjectBasePath(request) + "/" + created.id());
@@ -569,7 +648,33 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirect(request, response, subjectBasePath(request) + "/" + subjectId);
+        redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "#subject-enrollments");
+    }
+
+    private void updateCoordinatorAssignment(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long subjectId,
+            long coordinatorUserId
+    ) throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            subjectService.updateCoordinatorAssignment(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    subjectId,
+                    coordinatorUserId,
+                    roleAssignmentState(text(request, "state")),
+                    optionalDate(request, "startDate"),
+                    optionalDate(request, "endDate"),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Coordinator assignment updated.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "#subject-enrollments");
     }
 
     private void archiveSubject(HttpServletRequest request, HttpServletResponse response, long subjectId)
@@ -602,12 +707,14 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             throws ServletException, IOException {
         SessionUser actor = requireCurrentUser(request);
         try {
+            EnrollmentApprovalMode approvalMode = requiredApprovalMode(request, "approvalMode");
+            long courseId = longParameter(request, "courseId");
             courseSubjectService.associateSubject(
                     actor.userId(),
                     currentSessionId(request),
                     primaryProfile(actor),
                     new CourseSubjectAssociationCommand(
-                            longParameter(request, "courseId"),
+                            courseId,
                             subjectId,
                             optionalInteger(request, "curricularYear"),
                             curricularTerm(text(request, "term")),
@@ -616,10 +723,20 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                     ),
                     request.getRemoteAddr()
             );
+            enrollmentService.updateSubjectEnrollmentPolicy(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    courseId,
+                    subjectId,
+                    approvalMode,
+                    request.getRemoteAddr()
+            );
             flashSuccess(request, "Course associated with subject.");
-            redirect(request, response, subjectBasePath(request) + "/" + subjectId + "/courses");
+            redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "#course-associations");
         } catch (RuntimeException exception) {
-            showCourseAssociationForm(request, response, subjectId, messageFor(exception));
+            flashError(request, messageFor(exception));
+            redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "/edit#course-associations");
         }
     }
 
@@ -627,6 +744,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             throws ServletException, IOException {
         SessionUser actor = requireCurrentUser(request);
         try {
+            EnrollmentApprovalMode approvalMode = requiredApprovalMode(request, "approvalMode");
             courseSubjectService.updateAssociation(
                     actor.userId(),
                     currentSessionId(request),
@@ -641,10 +759,20 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                     ),
                     request.getRemoteAddr()
             );
+            enrollmentService.updateSubjectEnrollmentPolicy(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    courseId,
+                    subjectId,
+                    approvalMode,
+                    request.getRemoteAddr()
+            );
             flashSuccess(request, "Course association updated.");
-            redirect(request, response, subjectBasePath(request) + "/" + subjectId + "/courses");
+            redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "#course-associations");
         } catch (RuntimeException exception) {
-            showCourseAssociationForm(request, response, subjectId, messageFor(exception));
+            flashError(request, messageFor(exception));
+            redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "/edit#course-associations");
         }
     }
 
@@ -664,7 +792,136 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirect(request, response, subjectBasePath(request) + "/" + subjectId + "/courses");
+        redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "#course-associations");
+    }
+
+    private void updateSubjectEnrollmentPolicy(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long subjectId,
+            long courseId
+    ) throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            enrollmentService.updateSubjectEnrollmentPolicy(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    courseId,
+                    subjectId,
+                    requiredApprovalMode(request, "approvalMode"),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Subject enrollment policy updated.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "#course-associations");
+    }
+
+    private void approveSubjectEnrollment(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long subjectId,
+            long courseId,
+            long studentUserId
+    ) throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            enrollmentService.approveSubjectEnrollment(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    studentUserId,
+                    courseId,
+                    subjectId,
+                    optionalDate(request, "startDate"),
+                    optionalDate(request, "endDate"),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Subject enrollment request approved.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "#subject-enrollments");
+    }
+
+    private void rejectSubjectEnrollment(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long subjectId,
+            long courseId,
+            long studentUserId
+    ) throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            enrollmentService.rejectSubjectEnrollment(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    studentUserId,
+                    courseId,
+                    subjectId,
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Subject enrollment request rejected.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "#subject-enrollments");
+    }
+
+    private void updateSubjectEnrollment(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long subjectId,
+            long courseId,
+            long studentUserId
+    ) throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            enrollmentService.updateSubjectEnrollment(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    studentUserId,
+                    courseId,
+                    subjectId,
+                    subjectEnrollmentState(text(request, "state")),
+                    optionalDate(request, "startDate"),
+                    optionalDate(request, "endDate"),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Subject enrollment updated.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirect(request, response, subjectBasePath(request) + "/" + subjectId);
+    }
+
+    private void deleteSubjectEnrollment(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long subjectId,
+            long courseId,
+            long studentUserId
+    ) throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            enrollmentService.deleteSubjectEnrollment(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    studentUserId,
+                    courseId,
+                    subjectId,
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Subject enrollment deleted.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirect(request, response, subjectBasePath(request) + "/" + subjectId);
     }
 
     private static List<SubjectInitialCourseAssignment> selectedInitialCourseAssignments(HttpServletRequest request) {
@@ -675,6 +932,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         Integer curricularYear = optionalInteger(request, "initialCurricularYear");
         CurricularTerm term = curricularTerm(text(request, "initialTerm"));
         boolean mandatory = request.getParameter("initialMandatory") != null;
+        EnrollmentApprovalMode approvalMode = requiredApprovalMode(request, "initialApprovalMode");
         Set<Long> courseIds = new LinkedHashSet<>();
         if (values != null) {
             for (String value : values) {
@@ -684,7 +942,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             }
         }
         return courseIds.stream()
-                .map(courseId -> new SubjectInitialCourseAssignment(courseId, curricularYear, term, mandatory))
+                .map(courseId -> new SubjectInitialCourseAssignment(courseId, curricularYear, term, mandatory, approvalMode))
                 .toList();
     }
 
@@ -704,6 +962,8 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         List<SubjectCourseView> associations = subjectForEdit == null
                 ? List.of()
                 : subjectCourseViews(subjectForEdit.id());
+        boolean canManageSubjectAssociations = subjectForEdit != null
+                && canManageSubjectAssociations(actor, subjectForEdit.id(), request);
         request.setAttribute("form", form);
         request.setAttribute("creating", creating);
         request.setAttribute("organizationOptions", organizations.stream()
@@ -712,6 +972,12 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         request.setAttribute("selectedOrganizationId", selectedOrganizationId);
         request.setAttribute("courseOptions", courseOptions(organizations));
         request.setAttribute("subjectCourseAssociations", associations);
+        request.setAttribute("subjectEnrollmentPolicyByCourseId", subjectEnrollmentPolicyByCourseId(associations));
+        exposeSubjectEnrollmentManagement(request, subjectForEdit == null
+                ? List.of()
+                : viewFactory.subjectEnrollmentViews(subjectForEdit.id()));
+        request.setAttribute("canManageSubjectAssociations", canManageSubjectAssociations);
+        request.setAttribute("canManageSubjectEnrollments", canManageSubjectAssociations);
         request.setAttribute("availableCourseOptions", subjectForEdit == null
                 ? List.of()
                 : availableCourseOptions(request, subjectForEdit, associations));
@@ -757,6 +1023,16 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         }
     }
 
+    private List<Subject> teacherSubjects(SessionUser actor) {
+        try {
+            return subjectDAO.findByTeacher(actor.userId()).stream()
+                    .sorted(Comparator.comparingLong(Subject::id))
+                    .toList();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load teacher subjects", exception);
+        }
+    }
+
     private List<Organization> coordinatorManagedOrganizations(SessionUser actor) {
         return List.of();
     }
@@ -780,15 +1056,18 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
     }
 
     private static String subjectBasePath(HttpServletRequest request) {
-        return isCoordinatorSubjectRequest(request) ? "/coordinator/subjects" : "/admin/subjects";
+        if (isCoordinatorSubjectRequest(request)) {
+            return "/coordinator/subjects";
+        }
+        return isTeacherSubjectRequest(request) ? "/instructor/subjects" : "/admin/subjects";
     }
 
     private static String subjectCourseBasePath(HttpServletRequest request) {
-        return isCoordinatorSubjectRequest(request) ? "/courses" : "/admin/courses";
+        return isLimitedSubjectRequest(request) ? "/courses" : "/admin/courses";
     }
 
     private static String subjectListJsp(HttpServletRequest request) {
-        return isCoordinatorSubjectRequest(request) ? COORDINATOR_SUBJECT_LIST_JSP : ADMIN_SUBJECT_LIST_JSP;
+        return isLimitedSubjectRequest(request) ? COORDINATOR_SUBJECT_LIST_JSP : ADMIN_SUBJECT_LIST_JSP;
     }
 
     private static String subjectFormJsp(HttpServletRequest request) {
@@ -796,17 +1075,19 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
     }
 
     private static String subjectDetailJsp(HttpServletRequest request) {
-        return isCoordinatorSubjectRequest(request) ? COORDINATOR_SUBJECT_DETAIL_JSP : ADMIN_SUBJECT_DETAIL_JSP;
-    }
-
-    private static String subjectCourseFormJsp(HttpServletRequest request) {
-        return isCoordinatorSubjectRequest(request)
-                ? COORDINATOR_SUBJECT_COURSE_FORM_JSP
-                : ADMIN_SUBJECT_COURSE_FORM_JSP;
+        return isLimitedSubjectRequest(request) ? COORDINATOR_SUBJECT_DETAIL_JSP : ADMIN_SUBJECT_DETAIL_JSP;
     }
 
     private static boolean isCoordinatorSubjectRequest(HttpServletRequest request) {
         return request.getServletPath() != null && request.getServletPath().startsWith("/coordinator/subjects");
+    }
+
+    private static boolean isTeacherSubjectRequest(HttpServletRequest request) {
+        return request.getServletPath() != null && request.getServletPath().startsWith("/instructor/subjects");
+    }
+
+    private static boolean isLimitedSubjectRequest(HttpServletRequest request) {
+        return isCoordinatorSubjectRequest(request) || isTeacherSubjectRequest(request);
     }
 
     private boolean canCreateAnySubject(SessionUser actor, List<Organization> organizations, HttpServletRequest request) {
@@ -880,7 +1161,9 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
     }
 
     private Map<Long, Map<Long, List<ClassGroupView>>> subjectCourseClassGroupsBySubjectAndCourse(
-            Map<Long, List<SubjectCourseView>> coursesBySubject
+            SessionUser actor,
+            Map<Long, List<SubjectCourseView>> coursesBySubject,
+            HttpServletRequest request
     ) {
         Map<Long, Map<Long, List<ClassGroupView>>> classGroupsBySubjectAndCourse = new HashMap<>();
         for (Map.Entry<Long, List<SubjectCourseView>> subjectEntry : coursesBySubject.entrySet()) {
@@ -891,12 +1174,31 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                         viewFactory.classGroupViews(classGroupsByCourseSubject(
                                 association.getCourseId(),
                                 subjectEntry.getKey()
-                        ))
+                        ).stream()
+                                .filter(classGroup -> canReadClassGroup(request, actor, classGroup.id()))
+                                .toList())
                 );
             }
             classGroupsBySubjectAndCourse.put(subjectEntry.getKey(), classGroupsByCourse);
         }
         return classGroupsBySubjectAndCourse;
+    }
+
+    private static Map<Long, List<ClassGroupView>> classGroupsBySubject(
+            Map<Long, List<SubjectCourseView>> coursesBySubject,
+            Map<Long, Map<Long, List<ClassGroupView>>> classGroupsBySubjectAndCourse
+    ) {
+        Map<Long, List<ClassGroupView>> classGroupsBySubject = new HashMap<>();
+        for (Map.Entry<Long, List<SubjectCourseView>> subjectEntry : coursesBySubject.entrySet()) {
+            List<ClassGroupView> classGroups = new ArrayList<>();
+            Map<Long, List<ClassGroupView>> classGroupsByCourse =
+                    classGroupsBySubjectAndCourse.getOrDefault(subjectEntry.getKey(), Map.of());
+            for (SubjectCourseView association : subjectEntry.getValue()) {
+                classGroups.addAll(classGroupsByCourse.getOrDefault(association.getCourseId(), List.of()));
+            }
+            classGroupsBySubject.put(subjectEntry.getKey(), classGroups);
+        }
+        return classGroupsBySubject;
     }
 
     private static Set<Long> courseIdsFrom(Map<Long, List<SubjectCourseView>> coursesBySubject) {
@@ -921,6 +1223,47 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             }
         }
         return classGroupIds;
+    }
+
+    private static Set<Long> classGroupIdsFrom(List<ClassGroupView> classGroups) {
+        Set<Long> classGroupIds = new HashSet<>();
+        for (ClassGroupView classGroup : classGroups) {
+            classGroupIds.add(classGroup.getId());
+        }
+        return classGroupIds;
+    }
+
+    private void exposeSubjectEnrollmentManagement(
+            HttpServletRequest request,
+            List<EnrollmentManagementView> enrollments
+    ) {
+        request.setAttribute("subjectEnrollments", enrollments);
+        request.setAttribute("pendingSubjectEnrollments", enrollments.stream()
+                .filter(EnrollmentManagementView::isPending)
+                .toList());
+        request.setAttribute("activeSubjectEnrollments", enrollments.stream()
+                .filter(EnrollmentManagementView::isActive)
+                .toList());
+        request.setAttribute("auditSubjectEnrollments", enrollments.stream()
+                .filter(enrollment -> !enrollment.isPending() && !enrollment.isActive())
+                .toList());
+    }
+
+    private Map<Long, String> subjectEnrollmentPolicyByCourseId(List<SubjectCourseView> associations) {
+        Map<Long, String> policies = new HashMap<>();
+        for (SubjectCourseView association : associations) {
+            try {
+                policies.put(
+                        association.getCourseId(),
+                        enrollmentApprovalPolicyDAO
+                                .subjectMode(association.getCourseId(), association.getSubjectId())
+                                .toDatabaseValue()
+                );
+            } catch (SQLException exception) {
+                policies.put(association.getCourseId(), EnrollmentApprovalMode.MANUAL.toDatabaseValue());
+            }
+        }
+        return policies;
     }
 
     private Map<Long, Boolean> canModifyCourseById(
@@ -1081,12 +1424,50 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         }
     }
 
-    private Map<Long, List<SubjectCourseView>> subjectCoursesBySubject(List<SubjectView> subjects) {
+    private Map<Long, List<SubjectCourseView>> subjectCoursesBySubject(
+            SessionUser actor,
+            List<SubjectView> subjects,
+            HttpServletRequest request
+    ) {
         Map<Long, List<SubjectCourseView>> coursesBySubject = new HashMap<>();
         for (SubjectView subject : subjects) {
-            coursesBySubject.put(subject.getId(), subjectCourseViews(subject.getId()));
+            coursesBySubject.put(subject.getId(), subjectCourseViews(subject.getId()).stream()
+                    .filter(association -> canReadSubjectCourse(
+                            actor,
+                            subject.getId(),
+                            association.getCourseId(),
+                            request
+                    ))
+                    .toList());
         }
         return coursesBySubject;
+    }
+
+    private boolean canReadSubjectCourse(
+            SessionUser actor,
+            long subjectId,
+            long courseId,
+            HttpServletRequest request
+    ) {
+        if (primaryProfile(actor) != AccessProfileType.TEACHER) {
+            return true;
+        }
+        return classGroupsByCourseSubject(courseId, subjectId).stream()
+                .anyMatch(classGroup -> canReadClassGroup(request, actor, classGroup.id()));
+    }
+
+    private boolean canReadClassGroup(HttpServletRequest request, SessionUser actor, long classGroupId) {
+        try {
+            return classGroupService.canReadClassGroup(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    classGroupId,
+                    request.getRemoteAddr()
+            );
+        } catch (RuntimeException exception) {
+            return false;
+        }
     }
 
     private List<SubjectCourseView> subjectCourseViews(long subjectId) {
@@ -1118,6 +1499,16 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                     .map(user -> UserOptionView.from(user, selectedId != null && selectedId == user.id()))
                     .toList();
         } catch (RuntimeException exception) {
+            return List.of();
+        }
+    }
+
+    private List<CoordinatorAssignmentView> coordinatorAssignments(long subjectId) {
+        try {
+            return coordinateSubjectDAO.findBySubject(subjectId).stream()
+                    .map(CoordinatorAssignmentView::from)
+                    .toList();
+        } catch (RuntimeException | SQLException exception) {
             return List.of();
         }
     }
@@ -1157,6 +1548,9 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         request.setAttribute("coordinatorSubjectContextId", subject.getId());
         request.setAttribute("coordinatorSubjectContextName", subject.getName());
         request.setAttribute("coordinatorSubjectActiveChild", activeChild);
+        request.setAttribute("teacherSubjectContextId", subject.getId());
+        request.setAttribute("teacherSubjectContextName", subject.getName());
+        request.setAttribute("teacherSubjectActiveChild", activeChild);
     }
 
     private static Set<Long> selectedCoordinator(String value) {
@@ -1174,6 +1568,40 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
 
     private static CourseSubjectState courseSubjectState(String value) {
         return enumValue(CourseSubjectState.class, value, CourseSubjectState.ACTIVE, "association state");
+    }
+
+    private static EnrollmentApprovalMode requiredApprovalMode(HttpServletRequest request, String name) {
+        String value = text(request, name);
+        if (value == null) {
+            throw new IllegalArgumentException("Enrollment approval mode is required");
+        }
+        try {
+            return EnrollmentApprovalMode.parse(value);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Invalid enrollment approval mode: " + value, exception);
+        }
+    }
+
+    private static RoleAssignmentState roleAssignmentState(String value) {
+        if (value == null || value.isBlank()) {
+            return RoleAssignmentState.ACTIVE;
+        }
+        try {
+            return RoleAssignmentState.fromDatabaseValue(value);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Invalid coordinator assignment state: " + value, exception);
+        }
+    }
+
+    private static pt.isel.gape.learning.model.EnrollmentState subjectEnrollmentState(String value) {
+        if (value == null || value.isBlank()) {
+            return pt.isel.gape.learning.model.EnrollmentState.PENDING;
+        }
+        try {
+            return pt.isel.gape.learning.model.EnrollmentState.parse(value);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Invalid subject enrollment state: " + value, exception);
+        }
     }
 
     private static <T extends Enum<T>> T enumValue(Class<T> enumType, String value, T defaultValue, String fieldLabel) {

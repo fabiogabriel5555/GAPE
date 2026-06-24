@@ -66,6 +66,7 @@
                     <h3 class="text-16 fw-medium text-neutral-700 mb-16">Current Associations</h3>
                     <div class="d-flex flex-column gap-16 mb-32">
                         <c:forEach var="association" items="${courseSubjects}">
+                            <c:set var="associationPolicy" value="${subjectEnrollmentPolicyBySubjectId[association.subjectId]}"/>
                             <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/subjects/${association.subjectId}" method="post" class="gape-association-form border border-neutral-30 rounded-12 px-20 py-20">
                                 <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                 <div class="row gy-4 align-items-start">
@@ -79,7 +80,7 @@
                                             | <c:out value="${association.subjectEctsLabel}"/>
                                         </span>
                                     </div>
-                                    <div class="col-xl-2 col-lg-3 col-md-6">
+                                    <div class="col-xl-1 col-lg-3 col-md-6">
                                         <label for="curricularYear${association.subjectId}" class="fw-medium text-base text-neutral-800 mb-12">Year</label>
                                         <input id="curricularYear${association.subjectId}" name="curricularYear" type="number" min="1" value="<c:out value='${association.curricularYear}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                                     </div>
@@ -102,11 +103,18 @@
                                             <option value="INACTIVE" ${association.state == 'INACTIVE' ? 'selected' : ''}>Inactive</option>
                                         </select>
                                     </div>
-                                    <div class="col-xl-2 col-lg-6">
+                                    <div class="col-xl-2 col-lg-3 col-md-6 gape-select-field">
+                                        <label for="approvalMode${association.subjectId}" class="fw-medium text-base text-neutral-800 mb-12">Enrollment</label>
+                                        <select id="approvalMode${association.subjectId}" name="approvalMode" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
+                                            <option value="manual" <c:if test="${associationPolicy ne 'auto_approve'}">selected</c:if>>Manual approval</option>
+                                            <option value="auto_approve" <c:if test="${associationPolicy eq 'auto_approve'}">selected</c:if>>Auto approve</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-xl-1 col-lg-6">
                                         <span class="d-block fw-medium text-base text-neutral-800 mb-12 invisible" aria-hidden="true">Mandatory</span>
                                         <div class="form-check common-check gape-association-check mb-0">
                                             <input class="form-check-input" type="checkbox" id="mandatory${association.subjectId}" name="mandatory" value="true" ${association.mandatory ? 'checked' : ''}>
-                                            <label class="form-check-label fw-medium" for="mandatory${association.subjectId}">Mandatory</label>
+                                            <label class="form-check-label fw-medium" for="mandatory${association.subjectId}">Required</label>
                                         </div>
                                     </div>
                                     <div class="col-xl-1 col-lg-3 d-flex flex-column gap-8">
@@ -130,7 +138,7 @@
                         <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                         <h3 class="text-16 fw-medium text-neutral-700 mb-20">Add Subject</h3>
                         <div class="row gy-4 align-items-start">
-                            <div class="col-xl-4 col-lg-6 gape-select-field">
+                            <div class="col-xl-3 col-lg-6 gape-select-field">
                                 <label for="subjectId" class="fw-medium text-base text-neutral-800 mb-12">Subject</label>
                                 <select id="subjectId" name="subjectId" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
                                     <option value="">Select subject</option>
@@ -141,7 +149,7 @@
                                     </c:forEach>
                                 </select>
                             </div>
-                            <div class="col-xl-2 col-lg-3 col-md-6">
+                            <div class="col-xl-1 col-lg-3 col-md-6">
                                 <label for="curricularYear" class="fw-medium text-base text-neutral-800 mb-12">Year</label>
                                 <input id="curricularYear" name="curricularYear" type="number" min="1" value="<c:out value='${form.curricularYear}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                             </div>
@@ -162,6 +170,13 @@
                                 <select id="state" name="state" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
                                     <option value="ACTIVE" ${form.state == 'ACTIVE' ? 'selected' : ''}>Active</option>
                                     <option value="INACTIVE" ${form.state == 'INACTIVE' ? 'selected' : ''}>Inactive</option>
+                                </select>
+                            </div>
+                            <div class="col-xl-2 col-lg-3 col-md-6 gape-select-field">
+                                <label for="approvalMode" class="fw-medium text-base text-neutral-800 mb-12">Enrollment</label>
+                                <select id="approvalMode" name="approvalMode" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
+                                    <option value="manual" ${form.approvalMode != 'auto_approve' ? 'selected' : ''}>Manual approval</option>
+                                    <option value="auto_approve" ${form.approvalMode == 'auto_approve' ? 'selected' : ''}>Auto approve</option>
                                 </select>
                             </div>
                             <div class="col-xl-2 col-lg-6">

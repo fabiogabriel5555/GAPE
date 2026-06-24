@@ -4,6 +4,7 @@
 <c:if test="${profileHasPhoto}">
     <c:set var="profilePhotoUrl" value="${pageContext.request.contextPath}/media/${user.photo}"/>
 </c:if>
+<c:set var="profileContentOuterClass" value="${profileContentFlush ? '' : 'px-24 py-24'}"/>
 <c:choose>
     <c:when test="${user.state == 'ACTIVE'}">
         <c:set var="stateToneClass" value="gape-state-active"/>
@@ -185,7 +186,7 @@
     }
 </style>
 
-<div class="px-24 py-24">
+<div class="${profileContentOuterClass}">
     <c:if test="${not empty successMessage}">
         <div class="alert alert-success border-0 rounded-10 mb-24" role="alert">
             <c:out value="${successMessage}"/>

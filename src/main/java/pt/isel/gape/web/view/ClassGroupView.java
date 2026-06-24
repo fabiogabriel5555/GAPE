@@ -137,6 +137,14 @@ public final class ClassGroupView {
         return min + " / " + max;
     }
 
+    public String getCapacityRangeLabel() {
+        return getCapacityLabel();
+    }
+
+    public String getOccupancyLabel() {
+        return activeEnrollmentCount + " / " + (maxStudents == null ? "-" : maxStudents);
+    }
+
     public String getActiveEnrollmentCountLabel() {
         return activeEnrollmentCount == 1 ? "1 active student" : activeEnrollmentCount + " active students";
     }
@@ -208,6 +216,10 @@ public final class ClassGroupView {
         return getCode() + " | " + subject.getAcronym() + " | " + course.getSubjectManagementContextLabel();
     }
 
+    public String getContextGroupLabel() {
+        return subject.getAcronym() + " | " + course.getSubjectManagementContextLabel();
+    }
+
     public String getContextHtml() {
         return contextPartHtml(getCode(), getCode())
                 + " | "
@@ -216,8 +228,18 @@ public final class ClassGroupView {
                 + course.getSubjectManagementContextHtml();
     }
 
+    public String getContextGroupHtml() {
+        return contextPartHtml(subject.getAcronym(), subject.getName())
+                + " | "
+                + course.getSubjectManagementContextHtml();
+    }
+
     public String getContextTitle() {
         return getCode() + " | " + subject.getName() + " | " + course.getSubjectManagementContextTitle();
+    }
+
+    public String getContextGroupTitle() {
+        return subject.getName() + " | " + course.getSubjectManagementContextTitle();
     }
 
     private static String contextPartHtml(String acronym, String name) {

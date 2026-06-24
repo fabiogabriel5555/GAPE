@@ -30,6 +30,7 @@ class SchemaIntegrityTest {
                 "organization", "organic_unit", "course", "subject", "class_group", "content_block",
                 "integrate_subject", "manage_organization", "coordinate_subject", "teach_class_group",
                 "enroll_course", "enroll_subject", "enroll_class_group",
+                "subject_enrollment_policy", "class_group_enrollment_policy",
                 "content_item", "content_file", "physical_room", "lesson", "assessment", "question", "question_option",
                 "attempt", "response", "response_option",
                 "associate_organization_content", "associate_organic_unit_content", "associate_course_content",

@@ -251,10 +251,12 @@ public final class CourseView {
             return "Not enrolled";
         }
         return switch (enrollment.state()) {
+            case PENDING -> "Pending approval";
             case ACTIVE -> "Enrolled";
             case INACTIVE -> "Inactive";
+            case REJECTED -> "Rejected";
             case COMPLETED -> "Completed";
-            case WITHDRAWN -> "Withdrawn";
+            case WITHDRAWN -> "Left";
             case ARCHIVED -> "Archived";
         };
     }
@@ -264,12 +266,18 @@ public final class CourseView {
             return "bg-neutral-30 text-neutral-600";
         }
         return switch (enrollment.state()) {
+            case PENDING -> "bg-warning-30 text-warning-600";
             case ACTIVE -> "bg-success-50 text-success-600";
             case INACTIVE -> "bg-warning-30 text-warning-600";
+            case REJECTED -> "bg-danger-50 text-danger-600";
             case COMPLETED -> "bg-info-50 text-info-600";
             case WITHDRAWN -> "bg-warning-30 text-warning-600";
             case ARCHIVED -> "bg-danger-50 text-danger-600";
         };
+    }
+
+    public EnrollmentState getEnrollmentState() {
+        return enrollment == null ? null : enrollment.state();
     }
 
     public String getEnrollmentStartDate() {

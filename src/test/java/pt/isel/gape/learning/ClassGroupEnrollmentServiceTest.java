@@ -24,6 +24,7 @@ import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.ClassGroupEnrollment;
 import pt.isel.gape.learning.model.ClassGroupEnrollmentCommand;
+import pt.isel.gape.learning.model.EnrollmentApprovalMode;
 import pt.isel.gape.learning.model.EnrollmentState;
 import pt.isel.gape.learning.service.ClassGroupEnrollmentService;
 import pt.isel.gape.learning.service.EnrollmentService;
@@ -57,13 +58,40 @@ class ClassGroupEnrollmentServiceTest {
     }
 
     @Test
-    void studentCanEnrollSelfInClassGroupWhenEnrolledInSubject() throws Exception {
+    void studentCanRequestSelfClassGroupEnrollmentWhenEnrolledInSubject() throws Exception {
         insertSubjectEnrollment41();
 
-        ClassGroupEnrollment enrollment = classGroupEnrollmentService.enrollStudentInClassGroup(
+        ClassGroupEnrollment enrollment = classGroupEnrollmentService.requestStudentInClassGroup(
                 4L,
                 null,
-                AccessProfileType.STUDENT,
+                new ClassGroupEnrollmentCommand(
+                        4L,
+                        52L,
+                        LocalDate.of(2026, 3, 1),
+                        null
+                ),
+                "127.0.0.1"
+        );
+
+        assertEquals(EnrollmentState.PENDING, enrollment.state());
+        assertEquals(52L, enrollment.classGroupId());
+    }
+
+    @Test
+    void classGroupRequestIsAutoApprovedWhenPolicyIsAutoApprove() throws Exception {
+        insertSubjectEnrollment41();
+        classGroupEnrollmentService.updateClassGroupEnrollmentPolicy(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                52L,
+                EnrollmentApprovalMode.AUTO_APPROVE,
+                "127.0.0.1"
+        );
+
+        ClassGroupEnrollment enrollment = classGroupEnrollmentService.requestStudentInClassGroup(
+                4L,
+                null,
                 new ClassGroupEnrollmentCommand(
                         4L,
                         52L,
@@ -81,10 +109,9 @@ class ClassGroupEnrollmentServiceTest {
     void classGroupEnrollmentRequiresSubjectEnrollment() {
         assertThrows(
                 IllegalStateException.class,
-                () -> classGroupEnrollmentService.enrollStudentInClassGroup(
+                () -> classGroupEnrollmentService.requestStudentInClassGroup(
                         4L,
                         null,
-                        AccessProfileType.STUDENT,
                         new ClassGroupEnrollmentCommand(
                                 4L,
                                 52L,
@@ -143,10 +170,9 @@ class ClassGroupEnrollmentServiceTest {
     void duplicateClassGroupEnrollmentIsRejected() {
         assertThrows(
                 IllegalStateException.class,
-                () -> classGroupEnrollmentService.enrollStudentInClassGroup(
+                () -> classGroupEnrollmentService.requestStudentInClassGroup(
                         4L,
                         null,
-                        AccessProfileType.STUDENT,
                         new ClassGroupEnrollmentCommand(
                                 4L,
                                 50L,
@@ -159,24 +185,23 @@ class ClassGroupEnrollmentServiceTest {
     }
 
     @Test
-    void overlappingClassGroupEnrollmentInSameCourseSubjectIsRejected() throws Exception {
+    void studentCanRequestAnotherClassGroupInSameCourseSubject() throws Exception {
         insertPrjParallelClassGroup();
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> classGroupEnrollmentService.enrollStudentInClassGroup(
+        ClassGroupEnrollment enrollment = classGroupEnrollmentService.requestStudentInClassGroup(
+                4L,
+                null,
+                new ClassGroupEnrollmentCommand(
                         4L,
-                        null,
-                        AccessProfileType.STUDENT,
-                        new ClassGroupEnrollmentCommand(
-                                4L,
-                                95L,
-                                LocalDate.of(2026, 3, 1),
-                                null
-                        ),
-                        "127.0.0.1"
-                )
+                        95L,
+                        LocalDate.of(2026, 3, 1),
+                        null
+                ),
+                "127.0.0.1"
         );
+
+        assertEquals(EnrollmentState.PENDING, enrollment.state());
+        assertEquals(95L, enrollment.classGroupId());
     }
 
     @Test
@@ -185,10 +210,9 @@ class ClassGroupEnrollmentServiceTest {
 
         assertThrows(
                 SecurityException.class,
-                () -> classGroupEnrollmentService.enrollStudentInClassGroup(
+                () -> classGroupEnrollmentService.requestStudentInClassGroup(
                         4L,
                         null,
-                        AccessProfileType.STUDENT,
                         new ClassGroupEnrollmentCommand(
                                 5L,
                                 52L,

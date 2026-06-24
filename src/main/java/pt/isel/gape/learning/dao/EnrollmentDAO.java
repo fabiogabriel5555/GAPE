@@ -66,6 +66,69 @@ public final class EnrollmentDAO {
         }
     }
 
+    public void updateCourseEnrollment(
+            Connection connection,
+            long studentUserId,
+            long courseId,
+            EnrollmentState state,
+            LocalDate endDate
+    ) throws SQLException {
+        String sql = """
+                UPDATE enroll_course
+                SET state = ?, end_date = ?
+                WHERE id_student_user = ?
+                  AND id_course = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, state.toDatabaseValue());
+            setDate(statement, 2, endDate);
+            statement.setLong(3, studentUserId);
+            statement.setLong(4, courseId);
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Course enrollment not found");
+            }
+        }
+    }
+
+    public void deleteCourseEnrollment(
+            Connection connection,
+            long studentUserId,
+            long courseId
+    ) throws SQLException {
+        String sql = """
+                DELETE FROM enroll_course
+                WHERE id_student_user = ?
+                  AND id_course = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, studentUserId);
+            statement.setLong(2, courseId);
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Course enrollment not found");
+            }
+        }
+    }
+
+    public void deleteSubjectEnrollmentsInCourse(
+            Connection connection,
+            long studentUserId,
+            long courseId
+    ) throws SQLException {
+        String sql = """
+                DELETE FROM enroll_subject
+                WHERE id_student_user = ?
+                  AND id_course = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, studentUserId);
+            statement.setLong(2, courseId);
+            statement.executeUpdate();
+        }
+    }
+
     public void withdrawActiveSubjectsInCourse(
             Connection connection,
             long studentUserId,
@@ -121,6 +184,45 @@ public final class EnrollmentDAO {
     public Optional<CourseEnrollment> findCourseEnrollment(long studentUserId, long courseId) throws SQLException {
         try (Connection connection = connectionProvider.getConnection()) {
             return findCourseEnrollment(connection, studentUserId, courseId);
+        }
+    }
+
+    public List<CourseEnrollment> findCourseEnrollmentsByCourse(long courseId) throws SQLException {
+        String sql = """
+                SELECT id_student_user, id_course, state, start_date, end_date
+                FROM enroll_course
+                WHERE id_course = ?
+                ORDER BY state, start_date DESC, id_student_user
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, courseId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<CourseEnrollment> enrollments = new ArrayList<>();
+                while (resultSet.next()) {
+                    enrollments.add(mapCourseEnrollment(resultSet));
+                }
+                return enrollments;
+            }
+        }
+    }
+
+    public long countActiveCourseEnrollments(long courseId) throws SQLException {
+        String sql = """
+                SELECT COUNT(*)
+                FROM enroll_course
+                WHERE id_course = ?
+                  AND state = 'active'
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, courseId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getLong(1);
+            }
         }
     }
 
@@ -262,18 +364,91 @@ public final class EnrollmentDAO {
     }
 
     public void enrollSubject(Connection connection, SubjectEnrollmentCommand command) throws SQLException {
+        saveSubjectEnrollment(connection, command, EnrollmentState.ACTIVE);
+    }
+
+    public void requestSubject(Connection connection, SubjectEnrollmentCommand command) throws SQLException {
+        saveSubjectEnrollment(connection, command, EnrollmentState.PENDING);
+    }
+
+    private void saveSubjectEnrollment(
+            Connection connection,
+            SubjectEnrollmentCommand command,
+            EnrollmentState state
+    ) throws SQLException {
         String sql = """
                 INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date)
-                VALUES (?, ?, ?, 'active', ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, command.studentUserId());
             statement.setLong(2, requireCourseId(command.courseId()));
             statement.setLong(3, command.subjectId());
-            setDate(statement, 4, command.startDate());
-            setDate(statement, 5, command.endDate());
+            statement.setString(4, state.toDatabaseValue());
+            setDate(statement, 5, command.startDate());
+            setDate(statement, 6, command.endDate());
             statement.executeUpdate();
+        }
+    }
+
+    public void updateSubjectState(
+            Connection connection,
+            long studentUserId,
+            long courseId,
+            long subjectId,
+            EnrollmentState expectedState,
+            EnrollmentState newState,
+            LocalDate startDate,
+            LocalDate endDate
+    ) throws SQLException {
+        String sql = """
+                UPDATE enroll_subject
+                SET state = ?, start_date = ?, end_date = ?
+                WHERE id_student_user = ?
+                  AND id_course = ?
+                  AND id_subject = ?
+                  AND state = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, newState.toDatabaseValue());
+            setDate(statement, 2, startDate);
+            setDate(statement, 3, endDate);
+            statement.setLong(4, studentUserId);
+            statement.setLong(5, courseId);
+            statement.setLong(6, subjectId);
+            statement.setString(7, expectedState.toDatabaseValue());
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Expected subject enrollment state not found");
+            }
+        }
+    }
+
+    public void reactivateSubjectRequest(
+            Connection connection,
+            SubjectEnrollmentCommand command,
+            EnrollmentState newState
+    ) throws SQLException {
+        String sql = """
+                UPDATE enroll_subject
+                SET state = ?, start_date = ?, end_date = ?
+                WHERE id_student_user = ?
+                  AND id_course = ?
+                  AND id_subject = ?
+                  AND state IN ('inactive', 'rejected', 'withdrawn', 'archived')
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, newState.toDatabaseValue());
+            setDate(statement, 2, command.startDate());
+            setDate(statement, 3, command.endDate());
+            statement.setLong(4, command.studentUserId());
+            statement.setLong(5, requireCourseId(command.courseId()));
+            statement.setLong(6, command.subjectId());
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Reusable subject enrollment not found");
+            }
         }
     }
 
@@ -300,6 +475,59 @@ public final class EnrollmentDAO {
             statement.setLong(4, subjectId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Active subject enrollment not found");
+            }
+        }
+    }
+
+    public void updateSubjectEnrollment(
+            Connection connection,
+            long studentUserId,
+            long courseId,
+            long subjectId,
+            EnrollmentState state,
+            LocalDate startDate,
+            LocalDate endDate
+    ) throws SQLException {
+        String sql = """
+                UPDATE enroll_subject
+                SET state = ?, start_date = ?, end_date = ?
+                WHERE id_student_user = ?
+                  AND id_course = ?
+                  AND id_subject = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, state.toDatabaseValue());
+            setDate(statement, 2, startDate);
+            setDate(statement, 3, endDate);
+            statement.setLong(4, studentUserId);
+            statement.setLong(5, courseId);
+            statement.setLong(6, subjectId);
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Subject enrollment not found");
+            }
+        }
+    }
+
+    public void deleteSubjectEnrollment(
+            Connection connection,
+            long studentUserId,
+            long courseId,
+            long subjectId
+    ) throws SQLException {
+        String sql = """
+                DELETE FROM enroll_subject
+                WHERE id_student_user = ?
+                  AND id_course = ?
+                  AND id_subject = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, studentUserId);
+            statement.setLong(2, courseId);
+            statement.setLong(3, subjectId);
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Subject enrollment not found");
             }
         }
     }
@@ -352,6 +580,51 @@ public final class EnrollmentDAO {
         try (Connection connection = connectionProvider.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, studentUserId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<SubjectEnrollment> enrollments = new ArrayList<>();
+                while (resultSet.next()) {
+                    enrollments.add(mapSubjectEnrollment(resultSet));
+                }
+                return enrollments;
+            }
+        }
+    }
+
+    public List<SubjectEnrollment> findSubjectEnrollmentsByCourseAndSubject(long courseId, long subjectId)
+            throws SQLException {
+        String sql = """
+                SELECT id_student_user, id_course, id_subject, state, start_date, end_date
+                FROM enroll_subject
+                WHERE id_course = ?
+                  AND id_subject = ?
+                ORDER BY state, start_date DESC, id_student_user
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, courseId);
+            statement.setLong(2, subjectId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<SubjectEnrollment> enrollments = new ArrayList<>();
+                while (resultSet.next()) {
+                    enrollments.add(mapSubjectEnrollment(resultSet));
+                }
+                return enrollments;
+            }
+        }
+    }
+
+    public List<SubjectEnrollment> findSubjectEnrollmentsBySubject(long subjectId) throws SQLException {
+        String sql = """
+                SELECT id_student_user, id_course, id_subject, state, start_date, end_date
+                FROM enroll_subject
+                WHERE id_subject = ?
+                ORDER BY state, start_date DESC, id_course, id_student_user
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, subjectId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<SubjectEnrollment> enrollments = new ArrayList<>();
                 while (resultSet.next()) {

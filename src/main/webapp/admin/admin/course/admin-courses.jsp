@@ -62,6 +62,21 @@
             padding: 14px;
         }
 
+        .gape-class-activities-panel {
+            margin-inline-start: 28px;
+            position: relative;
+        }
+
+        .gape-class-activities-panel::before {
+            background-color: #d9e2ef;
+            bottom: 12px;
+            content: "";
+            left: -16px;
+            position: absolute;
+            top: 12px;
+            width: 2px;
+        }
+
         .gape-subject-node {
             border-inline-start: 3px solid #16a34a;
         }
@@ -70,11 +85,29 @@
             border-inline-start: 3px solid #7c3aed;
         }
 
+        .gape-lesson-node {
+            border-inline-start: 3px solid #2563eb;
+        }
+
+        .gape-room-node {
+            border-inline-start: 3px solid #16a34a;
+        }
+
         .gape-node-meta {
             color: #64748b;
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
+        }
+
+        @media (max-width: 575.98px) {
+            .gape-class-activities-panel {
+                margin-inline-start: 0;
+            }
+
+            .gape-class-activities-panel::before {
+                display: none;
+            }
         }
     </style>
 </head>
@@ -93,28 +126,34 @@
                 <%@ include file="/WEB-INF/fragments/flash-messages.jspf" %>
 
                 <div class="row gy-4 mb-24">
-                    <div class="col-md-3">
+                    <div class="col-sm-6 col-xl">
                         <div class="bg-white rounded-10 px-24 py-24 border border-neutral-30">
                             <span class="text-14 text-neutral-500">Total</span>
                             <h2 class="text-32 fw-semibold text-neutral-700 mb-0">${courseCount}</h2>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-sm-6 col-xl">
                         <div class="bg-white rounded-10 px-24 py-24 border border-neutral-30">
                             <span class="text-14 text-neutral-500">Active</span>
                             <h2 class="text-32 fw-semibold text-success-600 mb-0">${activeCourses}</h2>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-sm-6 col-xl">
                         <div class="bg-white rounded-10 px-24 py-24 border border-neutral-30">
                             <span class="text-14 text-neutral-500">Archived</span>
                             <h2 class="text-32 fw-semibold text-danger-600 mb-0">${archivedCourses}</h2>
                         </div>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-sm-6 col-xl">
                         <div class="bg-white rounded-10 px-24 py-24 border border-neutral-30">
                             <span class="text-14 text-neutral-500">Subjects</span>
                             <h2 class="text-32 fw-semibold text-main-600 mb-0">${subjectTotal}</h2>
+                        </div>
+                    </div>
+                    <div class="col-sm-6 col-xl">
+                        <div class="bg-white rounded-10 px-24 py-24 border border-neutral-30">
+                            <span class="text-14 text-neutral-500">Students</span>
+                            <h2 class="text-32 fw-semibold text-warning-600 mb-0">${activeCourseStudentTotal}</h2>
                         </div>
                     </div>
                 </div>
@@ -137,8 +176,8 @@
                             <tr>
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Course</th>
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Context</th>
-                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Type</th>
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Subjects</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Students</th>
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
                             </tr>
@@ -183,8 +222,8 @@
                                         </div>
                                     </td>
                                     <td class="py-20 px-20 text-14 text-neutral-500" title="<c:out value='${course.courseManagementContextTitle}'/>"><c:out value="${course.courseManagementContextHtml}" escapeXml="false"/></td>
-                                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${course.typeLabel}"/></td>
                                     <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${course.subjectCount}"/></td>
+                                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${activeEnrollmentCountByCourse[course.id]}"/></td>
                                     <td class="py-20 px-20">
                                         <span class="${course.stateBadgeClass} px-16 py-8 border-neutral-30 border rounded-pill text-14">
                                             <c:out value="${course.stateLabel}"/>
@@ -362,6 +401,7 @@
                                                                 <c:forEach var="classGroup" items="${classGroups}">
                                                                     <c:set var="canModifyClassGroup" value="${canModifyClassGroupById[classGroup.id]}" />
                                                                     <c:set var="canManageClassGroupStructure" value="${canManageClassGroupStructureById[classGroup.id]}" />
+                                                                    <c:set var="activityPanelId" value="courseClassGroupActivities${course.id}_${subject.id}_${classGroup.id}" />
                                                                     <div class="gape-class-group-node border border-neutral-30 rounded-8 px-16 py-12 bg-white">
                                                                         <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap">
                                                                             <div class="d-flex align-items-start gap-10">
@@ -381,15 +421,23 @@
                                                                                 <span class="${classGroup.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
                                                                                     <c:out value="${classGroup.stateLabel}"/>
                                                                                 </span>
+                                                                                <button type="button"
+                                                                                        class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600"
+                                                                                        title="Show Activities"
+                                                                                        aria-label="Show Activities"
+                                                                                        aria-expanded="false"
+                                                                                        aria-controls="${activityPanelId}"
+                                                                                        data-gape-tree-toggle="${activityPanelId}"
+                                                                                        data-gape-open-title="Hide Activities"
+                                                                                        data-gape-closed-title="Show Activities">
+                                                                                    <i class="ph ph-caret-down"></i>
+                                                                                </button>
                                                                                 <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail">
                                                                                     <i class="ph ph-eye"></i>
                                                                                 </a>
                                                                                 <c:if test="${not classGroup.archived and canModifyClassGroup}">
                                                                                     <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/edit" class="text-20 text-neutral-500 hover-text-main-600" title="Edit">
                                                                                         <i class="ph ph-pencil-simple-line"></i>
-                                                                                    </a>
-                                                                                    <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/new" class="text-20 text-neutral-500 hover-text-main-600" title="New content block">
-                                                                                        <i class="ph ph-stack-plus"></i>
                                                                                     </a>
                                                                                 </c:if>
                                                                                 <c:if test="${not classGroup.archived and canManageClassGroupStructure}">
@@ -422,6 +470,9 @@
                                                                             </div>
                                                                         </div>
                                                                         </c:if>
+                                                                        <div id="${activityPanelId}" class="d-none">
+                                                                            <%@ include file="/WEB-INF/fragments/class-group-activities-panel.jspf" %>
+                                                                        </div>
                                                                     </div>
                                                                 </c:forEach>
                                                                 <c:if test="${empty classGroups}">

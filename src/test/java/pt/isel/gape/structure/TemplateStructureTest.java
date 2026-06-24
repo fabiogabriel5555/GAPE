@@ -63,7 +63,6 @@ class TemplateStructureTest {
             "coordinator/coordinator/subject/coordinator-subjects.jsp",
             "coordinator/coordinator/subject/coordinator-subject-form.jsp",
             "coordinator/coordinator/subject/coordinator-subject-detail.jsp",
-            "coordinator/coordinator/subject/coordinator-subject-course-form.jsp",
             "instructor/instructor-dashbord.jsp",
             "instructor/instructor-message.jsp",
             "instructor/instructor-my-profile.jsp",
@@ -279,19 +278,396 @@ class TemplateStructureTest {
     }
 
     @Test
+    void classGroupDetailAndEditExposeEnrollmentManagement() throws IOException {
+        String servlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/ClassGroupManagementServlet.java"));
+        String service = Files.readString(JAVA_DIR.resolve("pt/isel/gape/learning/service/ClassGroupEnrollmentService.java"));
+        String dao = Files.readString(JAVA_DIR.resolve("pt/isel/gape/learning/dao/ClassGroupEnrollmentDAO.java"));
+        String detail = Files.readString(WEBAPP_DIR.resolve("WEB-INF/fragments/class-group-detail-page.jspf"));
+        String management = Files.readString(WEBAPP_DIR.resolve("WEB-INF/fragments/class-group-enrollment-management.jspf"));
+        String row = Files.readString(WEBAPP_DIR.resolve("WEB-INF/fragments/class-group-enrollment-row.jspf"));
+
+        assertTrue(detail.contains("Class Details &amp; Enrollments")
+                        && detail.contains("data-cg-tab=\"info\"")
+                        && detail.contains("data-cg-panel=\"info\"")
+                        && detail.contains("Setup, teachers and enrollments.")
+                        && detail.contains("class-group-enrollment-management.jspf"),
+                "Class Group Detail must combine details and enrollments in one tab");
+        int contentsIndex = detail.indexOf("<c:out value=\"${blockContentCount}\"/> contents");
+        int loadedIndex = detail.indexOf(">Loaded");
+        int newBlockIndex = detail.indexOf(">New Block");
+        assertTrue(contentsIndex >= 0 && loadedIndex > contentsIndex && newBlockIndex > loadedIndex,
+                "Class Group Detail structure actions must be ordered as contents, Loaded, New Block");
+        assertFalse(detail.contains("data-cg-tab=\"enrollments\"")
+                        || detail.contains("data-cg-panel=\"enrollments\""),
+                "Class Group Detail must not keep a separate Enrollments tab");
+
+        for (Path formPath : List.of(
+                WEBAPP_DIR.resolve("admin/admin/class-group/admin-class-group-form.jsp"),
+                WEBAPP_DIR.resolve("coordinator/coordinator/class-group/coordinator-class-group-form.jsp"),
+                WEBAPP_DIR.resolve("instructor/instructor/class-group/instructor-class-group-form.jsp")
+        )) {
+            String form = Files.readString(formPath);
+            assertTrue(form.contains("class-group-enrollment-management.jspf")
+                            && form.contains("class-group-teacher-management.jspf"),
+                    () -> "Edit Class Group must include enrollment and teacher management: " + formPath);
+        }
+
+        assertTrue(management.contains(">Enrollments</h3>")
+                        && management.contains("pendingClassGroupEnrollments")
+                        && management.contains("activeClassGroupEnrollments")
+                        && management.contains("auditClassGroupEnrollments")
+                        && management.contains("classGroupEnrollmentPolicy")
+                        && management.contains("/learning/class-groups/${classGroup.id}/enrollments"),
+                "Class group enrollment management must separate pending, active and audit enrollments");
+        assertTrue(row.contains("/approve")
+                        && row.contains("/reject")
+                        && row.contains("/update")
+                        && row.contains("/delete")
+                        && row.contains("stateValue")
+                        && row.contains("startDateValue")
+                        && row.contains("endDateValue"),
+                "Class group enrollment rows must allow approving, rejecting, editing and deleting enrollments");
+        assertTrue(servlet.contains("updateStudentEnrollment")
+                        && servlet.contains("deleteStudentEnrollment")
+                        && servlet.contains("prepareClassGroupEnrollmentAttributes")
+                        && servlet.contains("redirectToReturnPath(request, response, \"/learning/class-groups/\" + classGroupId + \"#class-group-enrollments\")"),
+                "ClassGroupManagementServlet must route class group enrollment management actions and preserve the current section");
+        assertTrue(service.contains("updateClassGroupEnrollment")
+                        && service.contains("deleteClassGroupEnrollment")
+                        && service.contains("CLASS_GROUP_ENROLL_UPDATE")
+                        && service.contains("CLASS_GROUP_ENROLL_DELETE"),
+                "ClassGroupEnrollmentService must support editing and deleting class group enrollments");
+        assertTrue(dao.contains("updateEnrollment(")
+                        && dao.contains("deleteEnrollment("),
+                "ClassGroupEnrollmentDAO must persist class group enrollment edits and deletions");
+    }
+
+    @Test
+    void classGroupListingsExposeShowActivitiesAutomation() throws IOException {
+        List<Path> listPaths = List.of(
+                WEBAPP_DIR.resolve("admin/admin/class-group/admin-class-groups.jsp"),
+                WEBAPP_DIR.resolve("coordinator/coordinator/class-group/coordinator-class-groups.jsp"),
+                WEBAPP_DIR.resolve("instructor/instructor/class-group/instructor-class-groups.jsp")
+        );
+
+        for (Path listPath : listPaths) {
+            String page = Files.readString(listPath);
+            assertTrue(page.contains("data-gape-tree-toggle=\"classGroupStructure${classGroup.id}\"")
+                            && page.contains("Show Activities")
+                            && page.contains("class-group-activities-panel.jspf")
+                            && page.contains("canModifyClassGroupRow"),
+                    () -> "Class group list must reuse the shared Show Activities fragment: " + listPath);
+        }
+
+        String servlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/ClassGroupManagementServlet.java"));
+        assertTrue(servlet.contains("\"classGroupLessonsByClassGroup\"")
+                        && servlet.contains("\"classGroupRoomsByClassGroup\"")
+                        && servlet.contains("\"canManagePhysicalRoomByCode\""),
+                "ClassGroupManagementServlet must load lessons, rooms and room permissions for Show Activities");
+
+        String activityFragment = Files.readString(WEBAPP_DIR.resolve("WEB-INF/fragments/class-group-activities-panel.jspf"));
+        assertTrue(activityFragment.contains("Class Activities")
+                        && activityFragment.contains("/learning/lessons/${lesson.id}")
+                        && activityFragment.contains("${lesson.compactDateRangeLabel}")
+                        && activityFragment.contains("/learning/rooms/${room.encodedCode}"),
+                "Class group activity fragment must expose lessons and rooms");
+
+        String courseList = Files.readString(WEBAPP_DIR.resolve("admin/admin/course/admin-courses.jsp"));
+        String subjectList = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subjects.jsp"));
+        String organizationList = Files.readString(WEBAPP_DIR.resolve("admin/admin/organization/admin-organizations.jsp"));
+        assertTrue(courseList.contains("courseClassGroupActivities${course.id}_${subject.id}_${classGroup.id}")
+                        && courseList.contains("Show Activities")
+                        && courseList.contains("class-group-activities-panel.jspf"),
+                "Course list must expose Show Activities inside each class group");
+        assertTrue(subjectList.contains("subjectClassGroupActivities${subject.id}_${course.id}_${classGroup.id}")
+                        && subjectList.contains("Show Activities")
+                        && subjectList.contains("class-group-activities-panel.jspf"),
+                "Subject list must expose Show Activities inside each class group");
+        assertTrue(organizationList.contains("organizationClassGroupActivities${course.id}_${subject.subjectId}_${classGroup.id}")
+                        && organizationList.contains("Show Activities")
+                        && organizationList.contains("class-group-activities-panel.jspf"),
+                "Organization list must expose Show Activities inside each class group");
+
+        String courseServlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/CourseManagementServlet.java"));
+        String subjectServlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/SubjectManagementServlet.java"));
+        String organizationServlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/OrganizationManagementServlet.java"));
+        assertTrue(courseServlet.contains("ClassGroupActivityViewSupport")
+                        && courseServlet.contains("exposeClassGroupActivities"),
+                "CourseManagementServlet must load class group activities");
+        assertTrue(subjectServlet.contains("ClassGroupActivityViewSupport")
+                        && subjectServlet.contains("exposeClassGroupActivities"),
+                "SubjectManagementServlet must load class group activities");
+        assertTrue(organizationServlet.contains("ClassGroupActivityViewSupport")
+                        && organizationServlet.contains("exposeClassGroupActivities"),
+                "OrganizationManagementServlet must load class group activities");
+    }
+
+    @Test
+    void addContentModalSupportsLessons() throws IOException {
+        String fragment = Files.readString(WEBAPP_DIR.resolve("WEB-INF/fragments/class-group-detail-page.jspf"));
+        assertTrue(fragment.contains("Online/Hybr. Classes")
+                        && fragment.contains("data-content-category=\"live_classes\"")
+                        && fragment.contains("data-source-kind=\"lesson\" data-lesson-type=\"online\"")
+                        && fragment.contains("data-source-kind=\"lesson\" data-lesson-type=\"hybrid\"")
+                        && fragment.contains("data-content-category=\"in_person_classes\"")
+                        && fragment.contains("data-source-kind=\"lesson\" data-lesson-type=\"onsite\"")
+                        && fragment.contains("data-lesson-action=\"${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/lessons\"")
+                        && fragment.contains("data-lesson-starts-at")
+                        && fragment.contains("data-lesson-ends-at")
+                        && fragment.contains("data-lesson-access-url")
+                        && fragment.contains("data-lesson-room"),
+                "Add Content modal must create online, hybrid and in-person lessons directly from content blocks");
+
+        String servlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/ClassGroupManagementServlet.java"));
+        assertTrue(servlet.contains("@MultipartConfig")
+                        && servlet.contains("case \"lessons\" -> createBlockLesson")
+                        && servlet.contains("lessonService.createLesson")
+                        && servlet.contains("physicalRoomOptions"),
+                "ClassGroupManagementServlet must accept lesson creation from the multipart Add Content modal");
+    }
+
+    @Test
     void studentEnrollmentPageExposesClassGroupFlow() throws IOException {
         String servlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/StudentEnrollmentServlet.java"));
-        String page = Files.readString(WEBAPP_DIR.resolve("student/student-enrolled-courses.jsp"));
+        String coursesPage = Files.readString(WEBAPP_DIR.resolve("student/student/course/student-courses.jsp"));
+        String courseDetailPage = Files.readString(WEBAPP_DIR.resolve("student/student/course/student-course-detail.jsp"));
+        String subjectsPage = Files.readString(WEBAPP_DIR.resolve("student/student/subject/student-subjects.jsp"));
+        String classGroupsPage = Files.readString(WEBAPP_DIR.resolve("student/student/class-group/student-class-groups.jsp"));
+        String classGroupDetailPage = Files.readString(WEBAPP_DIR.resolve("student/student/class-group/student-class-group-detail.jsp"));
+        String subjectDetailPage = Files.readString(WEBAPP_DIR.resolve("student/student/subject/student-subject-detail.jsp"));
+        String studentLessonsPage = Files.readString(WEBAPP_DIR.resolve("student/student/lesson/student-lessons.jsp"));
+        String studentCalendarPage = Files.readString(WEBAPP_DIR.resolve("student/student/calendar/student-calendar.jsp"));
+        String studentLessonServlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/StudentLessonServlet.java"));
+        String studentSidebar = Files.readString(FRAGMENTS_DIR.resolve("student-dashboard-sidebar.jspf"));
+        String studentDashboardStart = Files.readString(FRAGMENTS_DIR.resolve("student-dashboard-start.jspf"));
+        String studentClassGroupCard = Files.readString(FRAGMENTS_DIR.resolve("student-class-group-card.jspf"));
+        String scripts = Files.readString(FRAGMENTS_DIR.resolve("template-base-scripts.jspf"));
+        String autoUpdateScript = Files.readString(ASSETS_DIR.resolve("js/gape-student-enrollment-auto-update.js"));
 
         assertTrue(servlet.contains("ClassGroupEnrollmentService")
                         && servlet.contains("studentClassGroups")
-                        && servlet.contains("\"class-groups\""),
+                        && servlet.contains("\"class-groups\"")
+                        && servlet.contains("\"/student/class-groups/*\"")
+                        && servlet.contains("showClassGroupDetail")
+                        && servlet.contains("canEnrollInClassGroupContext(classGroup, activeSubjectContexts)")
+                        && servlet.contains("return activeSubjectContexts.contains(key);"),
                 "StudentEnrollmentServlet must load and handle student class group enrollments");
-        assertTrue(page.contains("Class Groups")
-                        && page.contains("/student/enrollments/class-groups/${item.classGroup.id}")
-                        && page.contains("/student/enrollments/class-groups/${item.classGroup.id}/withdraw")
-                        && page.contains("Pedagogical Blocks"),
-                "Student enrollment page must expose class group enrollment, withdrawal and visible blocks");
+        assertTrue(coursesPage.contains("Courses")
+                        && classGroupsPage.contains("Class Group Enrollments")
+                        && studentClassGroupCard.contains("/student/enrollments/class-groups/${item.classGroup.id}")
+                        && studentClassGroupCard.contains("/student/enrollments/class-groups/${item.classGroup.id}/withdraw"),
+                "Student enrollment page must expose class group enrollment and withdrawal actions");
+        assertTrue(classGroupsPage.contains("studentClassGroupCourseGroups")
+                        && classGroupsPage.contains("gape-student-class-course-group")
+                        && classGroupsPage.contains("gape-student-class-subject-group")
+                        && classGroupsPage.contains("Open course detail")
+                        && classGroupsPage.contains("Open subject detail")
+                        && classGroupsPage.contains("data-student-show-unenrolled")
+                        && classGroupsPage.contains("col-xxl-4 col-xl-6 col-md-6\" data-student-unenrolled-summary")
+                        && classGroupsPage.contains("gape-student-class-group-card--summary")
+                        && classGroupsPage.contains("gape-student-card-icon-button")
+                        && classGroupsPage.contains("<c:if test=\"${item.enrolled}\">")
+                        && classGroupsPage.contains("<c:if test=\"${not item.enrolled}\">")
+                        && classGroupsPage.contains("col-xxl-4 col-xl-6 col-md-6")
+                        && studentClassGroupCard.contains("data-student-unenrolled-card")
+                        && studentClassGroupCard.contains("Modality:")
+                        && studentClassGroupCard.contains("Shift:")
+                        && studentClassGroupCard.contains("Occup:")
+                        && studentClassGroupCard.contains("Dates:")
+                        && studentClassGroupCard.contains("unavailableActionLabel")
+                        && studentClassGroupCard.contains("gape-student-class-group-card__icon")
+                        && studentClassGroupCard.contains("/student/class-groups/${item.classGroup.id}")
+                        && studentClassGroupCard.contains("aria-label=\"Open class group\"")
+                        && studentClassGroupCard.contains("data-gape-enrollment-actions-kind=\"class-group-list\""),
+                "Student class groups page must group larger cards by course and subject with compact icon actions");
+        int classGroupCardsRowIndex = classGroupsPage.indexOf("<div class=\"row gy-3\">");
+        int enrolledClassGroupCardIndex = classGroupsPage.indexOf("<c:if test=\"${item.enrolled}\">", classGroupCardsRowIndex);
+        int availableClassGroupCardIndex = classGroupsPage.indexOf("<c:if test=\"${not item.enrolled}\">", enrolledClassGroupCardIndex);
+        assertTrue(classGroupCardsRowIndex >= 0
+                        && enrolledClassGroupCardIndex > classGroupCardsRowIndex
+                        && availableClassGroupCardIndex > enrolledClassGroupCardIndex,
+                "Student class groups page must render enrolled class groups before other available class groups");
+        assertTrue(classGroupsPage.indexOf("data-student-unenrolled-summary")
+                        > classGroupsPage.indexOf("<%@ include file=\"/WEB-INF/fragments/student-class-group-card.jspf\" %>"),
+                "Student class groups summary card must render after the normal class group cards");
+        assertTrue(studentDashboardStart.contains("min-height: 48px;")
+                        && studentDashboardStart.contains("margin-block-end: 22px !important;")
+                        && studentDashboardStart.contains("background: var(--main-50);")
+                        && studentDashboardStart.contains("border: 1px solid var(--main-600);")
+                        && studentDashboardStart.contains("height: 40px;")
+                        && studentDashboardStart.contains(".gape-student-card-actions,")
+                        && studentDashboardStart.contains("margin-top: auto;")
+                        && studentDashboardStart.contains("border-top: 1px solid var(--neutral-30);")
+                        && studentDashboardStart.contains(".gape-student-class-group-card--summary"),
+                "Student dashboard styles must keep centered title spacing, Eduall icon buttons and subtle summary cards");
+        assertFalse(studentDashboardStart.contains("box-shadow: 0 8px 18px rgba(37, 99, 235, .14);")
+                        || studentDashboardStart.contains("linear-gradient(180deg, #ffffff 0%, var(--main-50) 100%)"),
+                "Student card buttons must not use the rejected custom blue shadow/gradient style");
+        assertFalse(classGroupsPage.contains("Teachers:"),
+                "Student class groups page cards must not render teacher counts");
+        assertFalse(classGroupsPage.contains("gape-student-class-group-summary-card"),
+                "Student class groups summary must use the same card shape as class group cards");
+        assertFalse(classGroupsPage.contains("Pedagogical Blocks"),
+                "Student class groups page must not render pedagogical blocks inside class group cards");
+        assertTrue(subjectDetailPage.contains("col-xxl-3 col-xl-4 col-md-6")
+                        && subjectDetailPage.contains("px-14 py-14")
+                        && subjectDetailPage.contains("<h6 class=\"text-14 fw-semibold text-neutral-800 mb-4\"><c:out value=\"${item.classGroup.code}\"/></h6>")
+                        && subjectDetailPage.contains("/student/enrollments/class-groups/${item.classGroup.id}")
+                        && subjectDetailPage.contains("/student/class-groups/${item.classGroup.id}")
+                        && subjectDetailPage.contains("aria-label=\"Request enrollment\"")
+                        && subjectDetailPage.contains("aria-label=\"Open class group\"")
+                        && subjectDetailPage.contains("aria-label=\"Leave class group\"")
+                        && subjectDetailPage.contains("Modality:")
+                        && subjectDetailPage.contains("Shift:")
+                        && subjectDetailPage.contains("Occup:")
+                        && subjectDetailPage.contains("data-gape-enrollment-target=\"subject-${course.id}-${subject.subjectId}\"")
+                        && subjectDetailPage.contains("data-gape-enrollment-actions-kind=\"class-group-detail\""),
+                "Student subject detail must expose compact class group cards with labelled information and icon actions");
+        assertFalse(classGroupsPage.contains("Capacity:")
+                        || classGroupsPage.contains("capacityLabel")
+                        || subjectDetailPage.contains("Capacity:")
+                        || subjectDetailPage.contains("capacityLabel"),
+                "Student class group cards must not render Capacity; Occupancy is the student-facing availability indicator");
+        assertFalse(subjectDetailPage.contains("Dates:")
+                        || subjectDetailPage.contains("Teachers:"),
+                "Student subject detail class group cards must not render dates or teacher counts");
+        assertFalse(subjectDetailPage.contains("Pedagogical Blocks"),
+                "Student subject detail class group cards must not render pedagogical blocks");
+        assertFalse(subjectDetailPage.contains(">Withdraw<"),
+                "Student-facing enrollment actions must not use the Withdraw label");
+        assertTrue(classGroupDetailPage.contains("Study Path")
+                        && classGroupDetailPage.contains("gape-student-structure-board"),
+                "Student class group detail page must exist with student-focused content");
+        assertTrue(servlet.contains("studentContentBlocks(classGroup.id())")
+                        && servlet.contains("contentBlockDAO.findByClassGroup(classGroupId)")
+                        && servlet.contains(".filter(ContentBlockView::isActive)")
+                        && !servlet.contains("isVisibleToStudent("),
+                "Student class group detail must load only active block structure without a pre-JSP visibility helper");
+        assertTrue(classGroupDetailPage.contains("data-gape-enrollment-target=\"class-group-${classGroup.id}\"")
+                        && classGroupDetailPage.contains("data-gape-enrollment-actions-kind=\"class-group-detail-page\"")
+                        && classGroupDetailPage.contains("Open structure")
+                        && classGroupDetailPage.contains("gape-student-activity-row")
+                        && classGroupDetailPage.contains("lesson.hasMeetingLink")
+                        && classGroupDetailPage.contains("/student/lessons/${lesson.id}/access")
+                        && classGroupDetailPage.contains("lesson.attendanceLabel")
+                        && !classGroupDetailPage.contains("data-bs-toggle=\"collapse\"")
+                        && !classGroupDetailPage.contains("href=\"${fn:escapeXml(lesson.accessUrl)}\"")
+                        && classGroupDetailPage.contains("studentContentInlineUrl")
+                        && classGroupDetailPage.contains("studentContentDownloadUrl")
+                        && classGroupDetailPage.contains("blockActivitiesByBlock"),
+                "Student class group detail must expose enrollment status, inline lesson details and visible learning materials");
+        assertTrue(studentSidebar.contains("studentClassGroupContextId")
+                        && studentSidebar.contains("/student/class-groups/${studentClassGroupContextId}")
+                        && studentSidebar.contains("class-group-detail"),
+                "Student sidebar must mark class group detail pages like other detail pages");
+        int studentMessageMenuIndex = studentSidebar.indexOf("data-menu-key=\"message\"");
+        int studentCalendarMenuIndex = studentSidebar.indexOf("data-menu-key=\"calendar\"", studentMessageMenuIndex);
+        int studentCoursesMenuIndex = studentSidebar.indexOf("data-menu-key=\"courses\"", studentCalendarMenuIndex);
+        assertTrue(studentMessageMenuIndex >= 0
+                        && studentCalendarMenuIndex > studentMessageMenuIndex
+                        && studentCoursesMenuIndex > studentCalendarMenuIndex,
+                "Student sidebar must render Calendar immediately after Message and before Courses");
+        assertTrue(studentLessonsPage.contains("lessonCourseGroups")
+                        && studentLessonsPage.contains("courseGroup.subjectGroups")
+                        && studentLessonsPage.contains("subjectGroup.lessons")
+                        && studentLessonsPage.contains("col-xxl-4 col-xl-6 col-md-6")
+                        && studentLessonsPage.contains("gape-student-card gape-student-card--actionable px-18 py-18")
+                        && studentLessonsPage.contains("gape-student-card-actions")
+                        && studentLessonsPage.contains("w-40 h-40 rounded-10")
+                        && studentLessonsPage.contains("lesson.dateRangeLabel")
+                        && studentLessonsPage.contains("(lesson.online or lesson.hybrid) and lesson.hasMeetingLink")
+                        && studentCalendarPage.contains("(lesson.online or lesson.hybrid) and lesson.hasMeetingLink")
+                        && studentLessonServlet.contains("lessonCourseGroups(lessons, classGroupById)")
+                        && studentLessonsPage.contains("/student/lessons/${lesson.id}/access")
+                        && studentCalendarPage.contains("/student/lessons/${lesson.id}/access")
+                        && studentLessonServlet.contains("openMeetingAccess")
+                        && studentLessonServlet.contains("lessonService.getLesson")
+                        && !studentLessonsPage.contains("href=\"${fn:escapeXml(lesson.accessUrl)}\"")
+                        && !studentCalendarPage.contains("href=\"${fn:escapeXml(lesson.accessUrl)}\"")
+                        && !studentLessonServlet.contains("studentLessonContextId")
+                        && !studentSidebar.contains("studentLessonContextId")
+                        && !studentSidebar.contains("lesson-detail"),
+                "Student lesson access must group lessons by course and subject and use the audited meeting access endpoint without exposing a student lesson detail page");
+        assertFalse(servlet.contains("openClassGroupContexts")
+                        || servlet.contains("hasOpenEnrollmentInContext(")
+                        || servlet.contains("hasOverlappingActiveEnrollment(")
+                        || classGroupsPage.contains("Already in another group")
+                        || subjectDetailPage.contains("Already in another group"),
+                "Students must be allowed to request more than one class group in the same course subject context");
+        assertTrue(courseDetailPage.contains("data-gape-enrollment-actions-kind=\"subject-open-compact\"")
+                        && subjectsPage.contains("data-gape-enrollment-actions-kind=\"subject-open\"")
+                        && studentClassGroupCard.contains("data-gape-enrollment-actions-kind=\"class-group-list\"")
+                        && coursesPage.contains("gape-student-card-actions")
+                        && subjectsPage.contains("gape-student-card-actions")
+                        && courseDetailPage.contains("gape-student-card-actions"),
+                "Student enrollment cards must expose local update targets for each page context");
+        assertFalse(subjectsPage.contains("gape-student-card-icon-button--primary")
+                        || servlet.contains("gape-student-card-icon-button--primary")
+                        || studentDashboardStart.contains("gape-student-card-icon-button--primary")
+                        || courseDetailPage.contains("gape-student-card-icon-button--primary")
+                        || classGroupsPage.contains("gape-student-card-icon-button--primary")
+                        || studentClassGroupCard.contains("gape-student-card-icon-button--primary")
+                        || subjectDetailPage.contains("gape-student-card-icon-button--primary")
+                        || studentLessonsPage.contains("gape-student-card-icon-button--primary")
+                        || classGroupDetailPage.contains("gape-student-card-icon-button--primary")
+                        || studentCalendarPage.contains("gape-student-card-icon-button--primary"),
+                "Student action buttons must use the light Eduall icon button style instead of the filled primary variant");
+        assertTrue(studentDashboardStart.contains(".gape-student-card-icon-button--request")
+                        && studentDashboardStart.contains(".gape-student-card-icon-button--meeting")
+                        && studentDashboardStart.contains(".gape-student-card-icon-button--download")
+                        && studentDashboardStart.contains("background: var(--success-50);")
+                        && studentDashboardStart.contains("background: #f3ecff;")
+                        && studentDashboardStart.contains("background: var(--warning-50);")
+                        && subjectsPage.contains("gape-student-card-icon-button--request")
+                        && courseDetailPage.contains("gape-student-card-icon-button--request")
+                        && studentClassGroupCard.contains("gape-student-card-icon-button--request")
+                        && subjectDetailPage.contains("gape-student-card-icon-button--request")
+                        && classGroupDetailPage.contains("gape-student-card-icon-button--request")
+                        && studentLessonsPage.contains("gape-student-card-icon-button--meeting")
+                        && classGroupDetailPage.contains("gape-student-card-icon-button--meeting")
+                        && studentCalendarPage.contains("gape-student-card-icon-button--meeting")
+                        && classGroupDetailPage.contains("gape-student-card-icon-button--download")
+                        && servlet.contains("gape-student-card-icon-button gape-student-card-icon-button--request"),
+                "Student card action buttons must use distinct Eduall color variants by action type");
+        assertTrue(servlet.contains("writeStudentEnrollmentResponse")
+                        && servlet.contains("subjectEnrollmentUpdates")
+                        && servlet.contains("classGroupEnrollmentUpdates")
+                        && servlet.contains("\"updates\"")
+                        && servlet.contains("synchronizeEnrollmentTargets"),
+                "StudentEnrollmentServlet must return structured Ajax updates after enrollment actions and polling");
+        assertTrue(scripts.contains("gape-student-enrollment-auto-update.js")
+                        && autoUpdateScript.contains("/student/enrollments/")
+                        && autoUpdateScript.contains("/student/enrollments/updates")
+                        && autoUpdateScript.contains("fetch(studentEnrollmentActionUrl(form.action)")
+                        && autoUpdateScript.contains("syncVisibleEnrollmentTargets")
+                        && autoUpdateScript.contains("setInterval(syncVisibleEnrollmentTargets")
+                        && autoUpdateScript.contains(".gape-student-dashboard-main")
+                        && autoUpdateScript.contains("response.json()")
+                        && autoUpdateScript.contains("applyEnrollmentUpdates")
+                        && autoUpdateScript.contains("data-gape-enrollment-target")
+                        && autoUpdateScript.contains("new URLSearchParams(new FormData(form))")
+                        && autoUpdateScript.contains("application/x-www-form-urlencoded")
+                        && autoUpdateScript.contains(";jsessionid="),
+                "Student enrollment forms must update local enrollment targets after Ajax submission");
+        assertFalse(autoUpdateScript.contains("currentMain.innerHTML = nextMain.innerHTML")
+                        || autoUpdateScript.contains("window.location.reload()"),
+                "Student enrollment Ajax must not refresh or replace the full student page");
+    }
+
+    @Test
+    void courseDetailOrdersStudentsBeforeSubjectsAndAvoidsDuplicateCourseContext() throws IOException {
+        String courseDetail = Files.readString(WEBAPP_DIR.resolve("admin/admin/course/admin-course-detail.jsp"));
+
+        int studentsSection = courseDetail.indexOf("course-enrollment-management.jspf");
+        int subjectsSection = courseDetail.indexOf(">Subjects</h3>");
+        assertTrue(studentsSection > 0 && subjectsSection > 0,
+                "Course detail must render both Students and Subjects sections");
+        assertTrue(studentsSection < subjectsSection,
+                "Course detail must render Students before Subjects");
+        assertTrue(courseDetail.contains("${course.courseManagementContextHtml}"),
+                "Course detail subjects must render the course context without duplicating the subject/course chain");
+        assertFalse(courseDetail.contains("subjectManagementContextHtml"),
+                "Course detail subjects must not use the subject management context because it duplicates the course");
     }
 
     @Test
@@ -308,15 +684,17 @@ class TemplateStructureTest {
                 Set<String> allowedDashbordNames = Set.of(
                         "admin-dashbord.jsp",
                         "coordinator-dashbord.jsp",
-                        "instructor-dashbord.jsp"
+                        "instructor-dashbord.jsp",
+                        "student-dashboard.jsp"
                 );
                 List<String> unexpectedNames = stream
                         .filter(Files::isRegularFile)
                         .map(path -> path.getFileName().toString())
                         .filter(name -> name.endsWith(".jsp"))
-                        .filter(name -> name.contains("dashboard")
+                        .filter(name -> !allowedDashbordNames.contains(name)
+                                && (name.contains("dashboard")
                                 || name.contains("ashboard")
-                                || (name.contains("dashbord") && !allowedDashbordNames.contains(name)))
+                                || name.contains("dashbord")))
                         .collect(Collectors.toList());
 
                 assertTrue(unexpectedNames.isEmpty(),
@@ -505,19 +883,20 @@ class TemplateStructureTest {
     @Test
     void associationFormsExposeDeleteActions() throws IOException {
         String courseSubjectForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/course/admin-course-subject-form.jsp"));
-        String subjectCourseForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subject-course-form.jsp"));
+        String subjectCourseAssociations = Files.readString(FRAGMENTS_DIR.resolve("subject-course-associations-panel.jspf"));
         String subjectList = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subjects.jsp"));
 
         assertTrue(courseSubjectForm.contains("/subjects/${association.subjectId}/delete")
                         && courseSubjectForm.contains("gape-action-delete"),
                 "Associate Subject must allow deleting existing subject associations");
-        assertTrue(subjectCourseForm.contains("/courses/${association.courseId}/delete")
-                        && subjectCourseForm.contains("gape-action-delete"),
-                "Associate Courses must allow deleting existing course associations");
+        assertTrue(subjectCourseAssociations.contains("/courses/${association.courseId}/delete")
+                        && subjectCourseAssociations.contains("gape-action-delete")
+                        && subjectCourseAssociations.contains("name=\"approvalMode\""),
+                "Course Associations panel must allow deleting existing course associations and editing enrollment approval policy");
         assertTrue(subjectList.contains("canManageSubjectAssociationsById")
                         && subjectList.contains("canManageSubjectAssociationsRow")
-                        && subjectList.contains("${subjectBasePath}/${subject.id}/courses"),
-                "Subjects list must expose association actions independently from subject mutation");
+                        && subjectList.contains("${subjectBasePath}/${subject.id}/edit#course-associations"),
+                "Subjects list must expose course association actions through Edit Subject Course Associations");
     }
 
     @Test
@@ -531,7 +910,7 @@ class TemplateStructureTest {
         String subjectList = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subjects.jsp"));
         String subjectDetail = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subject-detail.jsp"));
         String subjectForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subject-form.jsp"));
-        String subjectCourseForm = Files.readString(WEBAPP_DIR.resolve("admin/admin/subject/admin-subject-course-form.jsp"));
+        String subjectCourseAssociations = Files.readString(FRAGMENTS_DIR.resolve("subject-course-associations-panel.jspf"));
 
         assertTrue(coordinatorHome.contains("<jsp:include page=\"/admin/admin-dashbord.jsp\"")
                         && coordinatorMessage.contains("<jsp:include page=\"/admin/admin-message.jsp\"")
@@ -544,7 +923,7 @@ class TemplateStructureTest {
                         && sidebar.contains("coordinatorSubjectContextId")
                         && sidebar.contains("coordinatorSubjectActiveChild"),
                 "Coordinator sidebar must expose the admin-like subject navigation under the coordinator route");
-        assertTrue(sidebar.contains("not sessionScope['gape.auth.hasCoordinatorProfile']")
+        assertTrue(sidebar.contains("not isCoordinatorDashboard")
                         && sidebar.contains("/coordinator/courses"),
                 "Coordinator sidebar must expose coordinator-scoped courses without exposing the generic courses tab");
         assertTrue(sidebar.contains("coordinator/coordinator-reviews.jsp")
@@ -556,23 +935,96 @@ class TemplateStructureTest {
         int coordinatorCoursesLink = sidebar.indexOf("/coordinator/courses", coordinatorSection);
         int coordinatorSubjectsLink = sidebar.indexOf("/coordinator/subjects", coordinatorCoursesLink);
         int coordinatorClassGroupsLink = sidebar.indexOf("/learning/class-groups", coordinatorSubjectsLink);
-        assertTrue(sidebar.indexOf("Message") < sidebar.indexOf("Reviews")
-                        && sidebar.indexOf("Reviews") < sidebar.indexOf("Quiz Attempts")
-                        && sidebar.indexOf("Quiz Attempts") < coordinatorSection
+        int messageHref = sidebar.indexOf("${messageHref}");
+        int calendarHref = sidebar.indexOf("${calendarHref}", messageHref);
+        int reviewsHref = sidebar.indexOf("${reviewsHref}", calendarHref);
+        int quizAttemptsHref = sidebar.indexOf("${quizAttemptsHref}", reviewsHref);
+        assertTrue(messageHref < calendarHref
+                        && calendarHref < reviewsHref
+                        && reviewsHref < quizAttemptsHref
+                        && quizAttemptsHref < coordinatorSection
                         && coordinatorSection < coordinatorCoursesLink
                         && coordinatorCoursesLink < coordinatorSubjectsLink
                         && coordinatorSubjectsLink < coordinatorClassGroupsLink,
                 "Coordinator sidebar must keep reviews, quiz attempts, courses, subjects and class groups in order");
         assertTrue(subjectList.contains("${subjectBasePath}/${subject.id}")
                         && subjectDetail.contains("${subjectBasePath}/${subject.id}/edit")
-                        && subjectForm.contains("${subjectBasePath}/${form.id}/courses")
-                        && subjectCourseForm.contains("${subjectBasePath}/${subject.id}/courses")
-                        && subjectDetail.contains("${subjectCourseBasePath}/${association.courseId}")
-                        && subjectForm.contains("${subjectCourseBasePath}/${association.courseId}")
-                        && subjectCourseForm.contains("${subjectCourseBasePath}/${association.courseId}"),
+                        && subjectForm.contains("subject-course-associations-panel.jspf")
+                        && subjectDetail.contains("subject-course-associations-panel.jspf")
+                        && subjectCourseAssociations.contains("${subjectBasePath}/${subject.id}/courses")
+                        && subjectCourseAssociations.contains("${subjectCourseBasePath}/${association.courseId}"),
                 "Shared subject views must use the request-scoped base path for admin and coordinator routes");
         assertTrue(subjectForm.contains("not creating and canAssignSubjectCoordinators"),
                 "Subject edit form must hide coordinator assignment outside administrator context");
+    }
+
+    @Test
+    void sidebarShowsRoomsAsManagementMenu() throws IOException {
+        String sidebar = Files.readString(FRAGMENTS_DIR.resolve("dashboard-sidebar.jspf"));
+
+        int messageHref = sidebar.indexOf("${messageHref}");
+        int calendarHref = sidebar.indexOf("${calendarHref}", messageHref);
+        int reviewsHref = sidebar.indexOf("${reviewsHref}", calendarHref);
+        assertTrue(sidebar.contains("/learning/calendar")
+                        && sidebar.contains("/student/calendar")
+                        && sidebar.contains("Calendar")
+                        && messageHref < calendarHref
+                        && calendarHref < reviewsHref,
+                "Sidebar must expose Calendar immediately after Message and before Reviews, with a student route");
+        assertTrue(sidebar.contains("/learning/rooms"),
+                "Sidebar must expose the physical room management route");
+        assertTrue(sidebar.contains("Rooms"),
+                "Physical room management must be labelled as Rooms in the sidebar");
+        assertFalse(sidebar.contains("Physical Rooms"),
+                "Physical room management must not remain as a separately named Physical Rooms menu");
+        assertTrue(sidebar.contains("or isCoordinatorDashboard or isTeacherDashboard"),
+                "Rooms menu visibility must include coordinator and teacher dashboards");
+
+        int coordinatorSection = sidebar.indexOf(">Coordinator<");
+        int coordinatorCourses = sidebar.indexOf("/coordinator/courses", coordinatorSection);
+        int coordinatorSubjects = sidebar.indexOf("/coordinator/subjects", coordinatorCourses);
+        int coordinatorClassGroups = sidebar.indexOf("/learning/class-groups", coordinatorSubjects);
+        int coordinatorLessons = sidebar.indexOf("/learning/lessons", coordinatorClassGroups);
+        int coordinatorRooms = sidebar.indexOf("/learning/rooms", coordinatorLessons);
+        int teacherSection = sidebar.indexOf(">Teacher<");
+        assertTrue(coordinatorSection > 0
+                        && coordinatorCourses > coordinatorSection
+                        && coordinatorSubjects > coordinatorCourses
+                        && coordinatorClassGroups > coordinatorSubjects
+                        && coordinatorLessons > coordinatorClassGroups
+                        && coordinatorRooms > coordinatorLessons
+                        && coordinatorRooms < teacherSection,
+                "Coordinator sidebar must show Courses, Subjects, Class Groups, Lessons and Rooms in order");
+
+        int teacherSubjects = sidebar.indexOf("/instructor/subjects", teacherSection);
+        int teacherClassGroups = sidebar.indexOf("/learning/class-groups", teacherSubjects);
+        int teacherLessons = sidebar.indexOf("/learning/lessons", teacherClassGroups);
+        int teacherRooms = sidebar.indexOf("/learning/rooms", teacherLessons);
+        int adminSection = sidebar.indexOf(">Admin<");
+        assertTrue(teacherSection > 0
+                        && teacherSubjects > teacherSection
+                        && teacherClassGroups > teacherSubjects
+                        && teacherLessons > teacherClassGroups
+                        && teacherRooms > teacherLessons
+                        && teacherRooms < adminSection,
+                "Teacher sidebar must show Subjects, Class Groups, Lessons and Rooms in order");
+
+        int adminUsers = sidebar.indexOf("/admin/users", adminSection);
+        int adminOrganizations = sidebar.indexOf("/admin/organizations", adminUsers);
+        int adminCourses = sidebar.indexOf("/admin/courses", adminOrganizations);
+        int adminSubjects = sidebar.indexOf("/admin/subjects", adminCourses);
+        int adminClassGroups = sidebar.indexOf("/learning/class-groups", adminSubjects);
+        int adminLessons = sidebar.indexOf("/learning/lessons", adminClassGroups);
+        int adminRooms = sidebar.indexOf("/learning/rooms", adminLessons);
+        assertTrue(adminSection > 0
+                        && adminUsers > adminSection
+                        && adminOrganizations > adminUsers
+                        && adminCourses > adminOrganizations
+                        && adminSubjects > adminCourses
+                        && adminClassGroups > adminSubjects
+                        && adminLessons > adminClassGroups
+                        && adminRooms > adminLessons,
+                "Admin sidebar must keep Users, Organizations, Courses, Subjects, Class Groups, Lessons and Rooms in order");
     }
 
     @Test
@@ -592,6 +1044,8 @@ class TemplateStructureTest {
                         && instructorReviews.contains("<jsp:include page=\"/admin/admin-reviews.jsp\""),
                 "Instructor shared root pages must reuse the administrator quiz/review templates");
         assertTrue(sidebar.contains("/instructor/instructor-message.jsp")
+                        && sidebar.contains("/instructor/subjects")
+                        && sidebar.contains("teacherSubjectContextId")
                         && sidebar.contains("/instructor/instructor-reviews.jsp")
                         && sidebar.contains("/instructor/instructor-quiz-attempts.jsp")
                         && sidebar.contains("${messageHref}")
@@ -601,8 +1055,10 @@ class TemplateStructureTest {
         assertTrue(sidebar.contains("not isTeacherDashboard"),
                 "Instructor sidebar must not expose the generic courses tab");
         int teacherSection = sidebar.indexOf(">Teacher<");
-        assertTrue(teacherSection > 0 && sidebar.indexOf("Class Groups", teacherSection) > teacherSection,
-                "Instructor sidebar must show class groups under the Teacher section");
+        assertTrue(teacherSection > 0
+                        && sidebar.indexOf("Subjects", teacherSection) > teacherSection
+                        && sidebar.indexOf("Class Groups", teacherSection) > sidebar.indexOf("Subjects", teacherSection),
+                "Instructor sidebar must show subjects and class groups under the Teacher section");
     }
 
     @Test

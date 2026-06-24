@@ -120,6 +120,57 @@ public final class UserDAO {
         }
     }
 
+    public List<User> findActiveStudents() throws SQLException {
+        String sql = """
+                SELECT u.id_user, u.name, u.email, u.state, u.language, u.photo, u.created_at,
+                       u.credential_hash, u.credential_salt, u.document_type, u.document_number
+                FROM user_account u
+                JOIN student_profile sp ON sp.id_user = u.id_user
+                WHERE u.state = 'active'
+                ORDER BY u.name, u.email
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            List<User> users = new ArrayList<>();
+            while (resultSet.next()) {
+                long userId = resultSet.getLong("id_user");
+                users.add(mapUser(resultSet, loadProfiles(connection, userId)));
+            }
+            return users;
+        }
+    }
+
+    public List<User> findActiveStudentsEnrolledInCourse(long courseId) throws SQLException {
+        String sql = """
+                SELECT DISTINCT u.id_user, u.name, u.email, u.state, u.language, u.photo, u.created_at,
+                       u.credential_hash, u.credential_salt, u.document_type, u.document_number
+                FROM user_account u
+                JOIN student_profile sp ON sp.id_user = u.id_user
+                JOIN enroll_course ec ON ec.id_student_user = u.id_user
+                WHERE u.state = 'active'
+                  AND ec.id_course = ?
+                  AND ec.state = 'active'
+                  AND (ec.start_date IS NULL OR ec.start_date <= CURRENT_DATE)
+                  AND (ec.end_date IS NULL OR ec.end_date >= CURRENT_DATE)
+                ORDER BY u.name, u.email
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, courseId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<User> users = new ArrayList<>();
+                while (resultSet.next()) {
+                    long userId = resultSet.getLong("id_user");
+                    users.add(mapUser(resultSet, loadProfiles(connection, userId)));
+                }
+                return users;
+            }
+        }
+    }
+
     public List<User> findActiveStudentsEnrolledInSubject(long courseId, long subjectId) throws SQLException {
         String sql = """
                 SELECT DISTINCT u.id_user, u.name, u.email, u.state, u.language, u.photo, u.created_at,

@@ -35,6 +35,17 @@ uploads/**
 !uploads/**/
 !uploads/**/.gitkeep
 !uploads/contents/guia-prj.pdf
+!uploads/contents/legacy.pdf
+!uploads/contents/texto-integral-aula.txt
+!uploads/contents/audio/revisao.m4a
+!uploads/contents/images/er.webp
+!uploads/contents/packages/scorm-qualidade.zip
+!uploads/contents/packages/xapi-auditoria.zip
+!uploads/contents/presentations/slides-seguranca.pdf
+!uploads/contents/thumbs/er.webp
+!uploads/contents/thumbs/normalizacao.webp
+!uploads/contents/videos/normalizacao.mp4
+!uploads/contents/videos/planning.mp4
 gape/uploads/**
 .gape-webp-native/
 docs/dev/.gape-webp-native/

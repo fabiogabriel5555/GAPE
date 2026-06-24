@@ -162,6 +162,9 @@
                         <a href="${courseBackHref}" class="border-main-600 border px-24 py-12 fw-semibold rounded-12 hover-bg-main-50 transition-03">Cancel</a>
                     </div>
                 </form>
+                <c:if test="${not creating}">
+                    <%@ include file="/WEB-INF/fragments/course-enrollment-management.jspf" %>
+                </c:if>
             </div>
             <%@ include file="/WEB-INF/fragments/dashboard-footer.jspf" %>
         </div>

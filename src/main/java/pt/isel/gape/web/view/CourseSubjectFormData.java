@@ -12,6 +12,7 @@ public final class CourseSubjectFormData {
     private final String term;
     private final boolean mandatory;
     private final String state;
+    private final String approvalMode;
 
     public CourseSubjectFormData(
             String courseId,
@@ -19,7 +20,8 @@ public final class CourseSubjectFormData {
             String curricularYear,
             String term,
             boolean mandatory,
-            String state
+            String state,
+            String approvalMode
     ) {
         this.courseId = courseId;
         this.subjectId = subjectId;
@@ -27,6 +29,7 @@ public final class CourseSubjectFormData {
         this.term = term;
         this.mandatory = mandatory;
         this.state = state;
+        this.approvalMode = approvalMode == null || approvalMode.isBlank() ? "manual" : approvalMode;
     }
 
     public static CourseSubjectFormData blank(long courseId) {
@@ -36,7 +39,8 @@ public final class CourseSubjectFormData {
                 "",
                 "",
                 true,
-                CourseSubjectState.ACTIVE.name()
+                CourseSubjectState.ACTIVE.name(),
+                "manual"
         );
     }
 
@@ -47,7 +51,8 @@ public final class CourseSubjectFormData {
                 association.curricularYear() == null ? "" : Integer.toString(association.curricularYear()),
                 association.term() == null ? "" : association.term().name(),
                 association.mandatory(),
-                association.state().name()
+                association.state().name(),
+                "manual"
         );
     }
 
@@ -58,7 +63,8 @@ public final class CourseSubjectFormData {
                 value(request, "curricularYear"),
                 value(request, "term"),
                 request.getParameter("mandatory") != null,
-                value(request, "state")
+                value(request, "state"),
+                value(request, "approvalMode")
         );
     }
 
@@ -84,6 +90,10 @@ public final class CourseSubjectFormData {
 
     public String getState() {
         return state;
+    }
+
+    public String getApprovalMode() {
+        return approvalMode;
     }
 
     private static String value(HttpServletRequest request, String name) {

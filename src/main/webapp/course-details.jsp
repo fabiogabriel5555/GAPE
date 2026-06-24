@@ -109,7 +109,7 @@
                                                     <form action="${pageContext.request.contextPath}/student/enrollments/courses/${course.id}/subjects/${association.subjectId}/withdraw" method="post" class="m-0">
                                                         <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                                         <input type="hidden" name="returnTo" value="${returnTo}">
-                                                        <button type="submit" class="border-main-600 border px-18 py-9 rounded-12 fw-semibold text-main-600 hover-bg-main-50 transition-03">Withdraw</button>
+                                                        <button type="submit" class="border-main-600 border px-18 py-9 rounded-12 fw-semibold text-main-600 hover-bg-main-50 transition-03">Leave</button>
                                                     </form>
                                                 </c:when>
                                                 <c:otherwise>
@@ -146,7 +146,7 @@
                             <form action="${pageContext.request.contextPath}/student/enrollments/courses/${course.id}/withdraw" method="post" class="m-0">
                                 <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                 <input type="hidden" name="returnTo" value="${returnTo}">
-                                <button type="submit" class="border-main-600 border w-100 py-12 rounded-12 fw-semibold text-main-600 hover-bg-main-50 transition-03">Withdraw from Course</button>
+                                <button type="submit" class="border-main-600 border w-100 py-12 rounded-12 fw-semibold text-main-600 hover-bg-main-50 transition-03">Leave Course</button>
                             </form>
                         </c:when>
                         <c:when test="${canUseStudentActions}">
