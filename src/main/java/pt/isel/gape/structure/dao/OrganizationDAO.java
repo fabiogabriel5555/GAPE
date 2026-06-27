@@ -78,7 +78,7 @@ public final class OrganizationDAO {
                 JOIN manage_organization mo ON mo.id_organization = o.id_organization
                 WHERE mo.id_admin_user = ?
                   AND mo.state = 'active'
-                  AND o.state <> 'archived'
+                  AND o.state = 'active'
                   AND (mo.start_date IS NULL OR mo.start_date <= CURRENT_DATE)
                   AND (mo.end_date IS NULL OR mo.end_date >= CURRENT_DATE)
                 ORDER BY o.id_organization
@@ -161,7 +161,7 @@ public final class OrganizationDAO {
                 WHERE ga.id_admin_user = ?
                   AND ga.cod_permission IN (%s)
                   AND p.state = 'active'
-                  AND o.state <> 'archived'
+                  AND o.state = 'active'
                 ORDER BY o.id_organization
                 """.formatted(placeholders);
 

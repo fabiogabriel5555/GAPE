@@ -537,7 +537,7 @@ public final class LessonManagementServlet extends DashboardServletSupport {
                 result.put(
                         classGroup.getId(),
                         contentBlockDAO.findByClassGroup(classGroup.getId()).stream()
-                                .filter(block -> block.state() != ContentBlockState.ARCHIVED)
+                                .filter(block -> block.state() != ContentBlockState.INACTIVE)
                                 .map(viewFactory::contentBlockView)
                                 .toList()
                 );

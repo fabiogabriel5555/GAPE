@@ -1,47 +1,143 @@
-# Browser validation workflow
+# Local validation workflow
 
-Use this workflow after frontend changes. It keeps Browser validation repeatable and avoids losing time on port discovery, manual Tomcat setup and repeated UI login.
+This file records the fastest known local setup for Maven and browser validation in this workspace.
 
-## Fast setup
+Last confirmed locally: 2026-06-26.
 
-1. Build the app when code changed:
+## Cleanup rule
+
+Never leave a Tomcat, Maven/Surefire fork, Brave, Chrome, Edge or Playwright process open when it was started only for validation.
+
+Before finishing a validation run:
+
+```powershell
+.\docs\dev\scripts\browser-stop.ps1
+Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object { $_.LocalPort -eq 18080 }
+Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'mvn|surefire|browser-tomcat10|apache-tomcat-10.1.24|playwright|ms-playwright' } | Select-Object ProcessId,Name,CommandLine
+```
+
+The port check should return no listener unless the server was already owned by the user before the validation started.
+
+## Maven full test defaults
+
+Use the full suite command exactly when the user asks for final backend validation:
+
+```powershell
+mvn -q test
+```
+
+Local timing observed on this machine:
+
+- last successful full run: about 144 seconds;
+- use a command timeout of at least 15 minutes (`900000` ms) for the full suite;
+- do not treat the Java/WebP native-access warning as a failure when Maven exits with code `0`.
+
+If `mvn -q test` appears stuck or a previous run timed out, check for stale Maven/Surefire/Java test forks before running it again:
+
+```powershell
+Get-CimInstance Win32_Process |
+  Where-Object { $_.CommandLine -match 'mvn|surefire|org.apache.maven|junit' } |
+  Select-Object ProcessId,Name,CommandLine
+```
+
+Stop only processes that were started by the current validation attempt and verify the port/process state afterwards.
+
+To isolate a suspected slow/failing test class, use:
+
+```powershell
+mvn -q "-Dtest=<TestClassName>" test
+```
+
+For browser validation after code changes, build the WAR without re-running tests:
 
 ```powershell
 mvn -q -DskipTests package
 ```
 
-2. Start/redeploy the Browser Tomcat on the fixed port:
+## Browser defaults in this workspace
+
+The integrated Codex Browser is not a useful default in this local setup. It has repeatedly failed with:
+
+```text
+No browser is available
+```
+
+Do not spend time retrying the integrated Browser for this project. Use Playwright/CDP with the locally installed Brave browser.
+
+Primary browser executable:
+
+```text
+C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe
+```
+
+The Playwright bundled Chromium binaries may be missing, so direct Playwright launches must pass `executablePath` instead of relying on the default downloaded browser:
+
+```javascript
+const { chromium } = await import("playwright");
+const browser = await chromium.launch({
+  executablePath: "C:\\Program Files\\BraveSoftware\\Brave-Browser\\Application\\brave.exe",
+  headless: true
+});
+try {
+  // validate pages here
+} finally {
+  await browser.close();
+}
+```
+
+The helper scripts under `docs/dev/scripts` already search Brave first, then Edge/Chrome. Prefer them for repeatable checks.
+
+## Tomcat setup for browser validation
+
+Fixed local target:
+
+- base URL: `http://localhost:18080/GAPE`
+- HTTP port: `18080`
+- shutdown port: `18085`
+- Tomcat base: `target/browser-tomcat10`
+- default account: `admin@gape.local` / `Password#2026`
+
+Fast setup after building the app:
 
 ```powershell
+mvn -q -DskipTests package
 .\docs\dev\scripts\browser-prepare.ps1 -SkipPackage
 ```
 
-The script always targets `http://localhost:18080/GAPE`, redeploys `target/gape`, logs in with the seed admin account and prints authenticated URLs using `;jsessionid=...`.
-
-3. Open the printed `Session base` URL in the in-app Browser, then navigate from the printed recommended URLs.
-
-4. Stop the local Browser Tomcat when finished:
+Stop it when the validation is finished:
 
 ```powershell
 .\docs\dev\scripts\browser-stop.ps1
 ```
 
-## Fast Add Content modal check
+If `browser-prepare.ps1` cannot start Tomcat because of local path quoting/encoding around `catalina.bat`, do not keep retrying the same failing command. Start Tomcat with quoted direct Java arguments or fix the script, then still stop the resulting process before finishing.
 
-For general frontend QA, use the generic browser flow runner instead of rebuilding CDP commands by hand:
+## Fast browser checks
+
+For a generic authenticated page check:
 
 ```powershell
 .\docs\dev\scripts\browser-check-flow.ps1 `
-  -Route "/learning/class-groups" `
-  -ExpectText "Class Groups" `
-  -Out "target\browser-screenshots\class-groups.png"
+  -Prepare `
+  -Route "/learning/assessments/new" `
+  -ExpectText "Assessment" `
+  -Out "target\browser-screenshots\assessment-new.png"
 ```
 
-It authenticates with the seed admin account, opens the requested route, runs configured clicks/assertions, checks for common server-error text, checks horizontal overflow, captures a screenshot, and returns a compact JSON result with `passed`.
+Use `-Prepare` only when Tomcat is not already running. When iterating quickly, keep the prepared server only for the duration of the active validation run, then stop it.
+
+For mobile layout checks:
+
+```powershell
+.\docs\dev\scripts\browser-check-flow.ps1 `
+  -Route "/learning/assessments/new" `
+  -Width 390 `
+  -Height 844 `
+  -Out "target\browser-screenshots\assessment-new-mobile.png"
+```
 
 Useful options:
 
-- `-Prepare`: start/redeploy the fixed Tomcat first.
 - `-ClickSelector ".some-button"`: click one or more CSS selectors.
 - `-ClickText "New Block"`: click a button/link by visible text.
 - `-ExpectText "Loaded"`: require visible page text.
@@ -49,7 +145,7 @@ Useful options:
 - `-RejectText "Exception"`: fail if text is present.
 - `-NoScreenshot`: run faster when DOM/layout proof is enough.
 
-For Class Group Detail changes around the Add Content modal, use the dedicated wrapper:
+For Class Group Detail changes around the Add Content modal:
 
 ```powershell
 mvn -q -DskipTests package
@@ -58,24 +154,12 @@ mvn -q -DskipTests package
   -ClassGroupId 53 `
   -ContentType Video `
   -Out "target\browser-screenshots\add-content-modal-fast.png"
+.\docs\dev\scripts\browser-stop.ps1
 ```
-
-The wrapper calls `browser-check-flow.ps1 -Preset AddContent`. It opens `/learning/class-groups/{id}`, opens Add Content, selects the requested content type, captures a screenshot and fails if the modal title, selected option, footer visibility, file input visibility or horizontal overflow are wrong.
-
-Keep these scripts as the default for frontend work because they avoid manual login, repeated port discovery and ad hoc Browser/CDP commands. Use `-Prepare` only when Tomcat is not already running; otherwise keep the already prepared server alive while iterating.
-
-## Browser plugin defaults
-
-Use longer timeouts for local JSP pages and screenshots:
-
-- Navigation/actions: at least `120000` ms.
-- Screenshots: at least `300000` ms.
-- Prefer direct authenticated URLs from `browser-prepare.ps1` over typing credentials into the UI for every run.
-- If the Browser screenshot call times out with `Page.captureScreenshot`, do not keep retrying the same capture. Finish the Browser checks through DOM, console errors, route transitions and visible page content, then create the required screenshot with the fallback script below.
 
 ## Screenshot fallback
 
-The in-app Browser can navigate and inspect the app even when its internal CDP screenshot command times out. In that case, keep Browser validation mandatory and capture the same authenticated page with a local Chromium browser:
+When a screenshot is needed, prefer the local Brave/CDP scripts instead of the integrated Browser screenshot path:
 
 ```powershell
 .\docs\dev\scripts\browser-screenshot.ps1 `
@@ -87,8 +171,6 @@ The in-app Browser can navigate and inspect the app even when its internal CDP s
   -TimeoutSeconds 300
 ```
 
-Use this for visual QA evidence whenever `tab.screenshot(...)` fails. The script uses the fixed `http://localhost:18080/GAPE` target, creates a seed-admin session, opens the requested route with `;jsessionid=...`, waits before capture so the EduAll preloader disappears, and writes a deterministic screenshot under `target\browser-screenshots`.
-
 ## Minimum checks after frontend changes
 
 - Desktop and mobile viewport for the changed screens.
@@ -97,6 +179,7 @@ Use this for visual QA evidence whenever `tab.screenshot(...)` fails. The script
 - Menus and action buttons match the current user's permissions.
 - Text does not overlap or overflow on mobile.
 - Images/profile assets load or use their intended fallback.
+- Any server/browser process started for QA is stopped before finishing.
 
 ## Useful seed accounts
 

@@ -16,6 +16,9 @@
   <format code="pdf">
     <label>PDF</label>
   </format>
+  <format code="archive">
+    <label>Arquivo compactado</label>
+  </format>
   <format code="url">
     <label>URL</label>
   </format>
@@ -32,6 +35,6 @@
     <label>Codigo incorporado</label>
   </format>
   <format code="other">
-    <label>Outro formato</label>
+    <label>Other format</label>
   </format>
 </contentFormats>

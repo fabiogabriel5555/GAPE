@@ -5,8 +5,7 @@ import java.util.Locale;
 public enum PhysicalRoomState {
     ACTIVE("active"),
     INACTIVE("inactive"),
-    UNAVAILABLE("unavailable"),
-    ARCHIVED("archived");
+    UNAVAILABLE("unavailable");
 
     private final String databaseValue;
 

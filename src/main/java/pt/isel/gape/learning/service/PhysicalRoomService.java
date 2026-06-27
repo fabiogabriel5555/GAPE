@@ -311,7 +311,7 @@ public final class PhysicalRoomService {
             String sourceIp
     ) {
         changePhysicalRoomState(actorUserId, sessionId, actorProfileType, code,
-                PhysicalRoomState.ARCHIVED, "PHYSICAL_ROOM_ARCHIVE", sourceIp);
+                PhysicalRoomState.INACTIVE, "PHYSICAL_ROOM_ARCHIVE", sourceIp);
     }
 
     public void setPhysicalRoomState(
@@ -552,9 +552,6 @@ public final class PhysicalRoomService {
                 command.location(),
                 command.state()
         );
-        if (command.state() == PhysicalRoomState.ARCHIVED) {
-            throw new IllegalArgumentException("Use the archive operation to archive physical rooms");
-        }
     }
 
     private static void validateUpdateCommand(PhysicalRoomUpdateCommand command) {
@@ -568,9 +565,6 @@ public final class PhysicalRoomService {
                 command.location(),
                 command.state()
         );
-        if (command.state() == PhysicalRoomState.ARCHIVED) {
-            throw new IllegalArgumentException("Use the archive operation to archive physical rooms");
-        }
     }
 
     private static void validateCommonCommand(

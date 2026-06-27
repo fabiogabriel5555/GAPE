@@ -208,7 +208,7 @@ public final class OrganizationService {
                 connection.setAutoCommit(false);
                 try {
                     Organization current = requireOrganization(connection, organizationId);
-                    requireNotArchived(current);
+                    ensureOrganizationCanBeUpdated(current, command);
                     organizationDAO.update(connection, organizationId, command);
                     requireActiveOrganizationAdministrator(connection, organizationId, command.state());
                     auditService.record(connection, actorUserId, sessionId, "ORGANIZATION_UPDATE",
@@ -244,7 +244,7 @@ public final class OrganizationService {
                 connection.setAutoCommit(false);
                 try {
                     Organization current = requireOrganization(connection, organizationId);
-                    requireNotArchived(current);
+                    ensureOrganizationCanBeUpdated(current);
                     organizationDAO.updatePhoto(connection, organizationId, photo);
                     auditService.record(connection, actorUserId, sessionId, "ORGANIZATION_UPDATE",
                             "organization", Long.toString(organizationId), "success", sourceIp);
@@ -282,7 +282,6 @@ public final class OrganizationService {
                 connection.setAutoCommit(false);
                 try {
                     Organization organization = requireOrganization(connection, organizationId);
-                    requireNotArchived(organization);
                     requireAssignableAdministrator(connection, adminUserId, organizationId);
                     manageOrganizationDAO.assign(connection, adminUserId, organizationId, startDate, endDate);
                     requireActiveOrganizationAdministrator(connection, organizationId, organization.state());
@@ -317,8 +316,7 @@ public final class OrganizationService {
                 connection.setAutoCommit(false);
                 try {
                     Organization current = requireOrganization(connection, organizationId);
-                    requireNotArchived(current);
-                    organizationDAO.updateState(connection, organizationId, OrganizationState.ARCHIVED);
+                    organizationDAO.updateState(connection, organizationId, OrganizationState.INACTIVE);
                     auditService.record(connection, actorUserId, sessionId, "ORGANIZATION_ARCHIVE",
                             "organization", Long.toString(organizationId), "success", sourceIp);
                     connection.commit();
@@ -349,7 +347,6 @@ public final class OrganizationService {
                 connection.setAutoCommit(false);
                 try {
                     Organization current = requireOrganization(connection, organizationId);
-                    requireNotArchived(current);
                     if (organizationDAO.hasDomainDependencies(connection, organizationId)) {
                         throw new IllegalStateException("Organization with domain dependencies cannot be deleted");
                     }
@@ -471,10 +468,25 @@ public final class OrganizationService {
                 .orElseThrow(() -> new IllegalArgumentException("Organization not found: " + organizationId));
     }
 
+    private static void ensureOrganizationCanBeUpdated(Organization organization) {
+        if (organization.state() == OrganizationState.INACTIVE) {
+            throw new IllegalStateException("Inactive organizations cannot be changed");
+        }
+    }
+
+    private static void ensureOrganizationCanBeUpdated(
+            Organization organization,
+            OrganizationUpdateCommand command
+    ) {
+        if (organization.state() == OrganizationState.INACTIVE && command.state() != OrganizationState.ACTIVE) {
+            throw new IllegalStateException("Inactive organizations cannot be changed");
+        }
+    }
+
     private void requireAssignableAdministrator(Connection connection, long adminUserId, long organizationId)
             throws SQLException {
         if (!manageOrganizationDAO.canAssign(connection, adminUserId, organizationId)) {
-            throw new IllegalArgumentException("Assignment requires active administrator and non-archived organization");
+            throw new IllegalArgumentException("Assignment requires active administrator and active organization");
         }
     }
 
@@ -506,19 +518,10 @@ public final class OrganizationService {
         AcademicTextValidator.requireAcronym(command.acronym(), "Organization acronym is required");
         Objects.requireNonNull(command.type(), "organization type is required");
         Objects.requireNonNull(command.state(), "organization state is required");
-        if (command.state() == OrganizationState.ARCHIVED) {
-            throw new IllegalArgumentException("Use the archive operation to archive organizations");
-        }
     }
 
     private static Set<Long> safeAdministrators(Set<Long> administratorUserIds) {
         return administratorUserIds == null ? Set.of() : administratorUserIds;
-    }
-
-    private static void requireNotArchived(Organization organization) {
-        if (organization.state() == OrganizationState.ARCHIVED) {
-            throw new IllegalStateException("Archived organizations cannot be changed");
-        }
     }
 
     private static void requireValidDates(LocalDate startDate, LocalDate endDate) {

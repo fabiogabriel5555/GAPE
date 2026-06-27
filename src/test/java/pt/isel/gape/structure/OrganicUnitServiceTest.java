@@ -65,7 +65,7 @@ class OrganicUnitServiceTest {
                 new OrganicUnitCreateCommand(
                         10L,
                         "LAB",
-                        "Laboratorio de Projetos",
+                        "Laboratory of Projects",
                         "LAB",
                         OrganicUnitType.SECTION,
                         OrganicUnitState.ACTIVE,
@@ -111,7 +111,7 @@ class OrganicUnitServiceTest {
                         new OrganicUnitCreateCommand(
                                 0L,
                                 "INV",
-                                "Invalida",
+                                "Invalid",
                                 "INV",
                                 OrganicUnitType.OTHER,
                                 OrganicUnitState.ACTIVE,
@@ -215,7 +215,7 @@ class OrganicUnitServiceTest {
                         new OrganicUnitCreateCommand(
                                 10L,
                                 "STU",
-                                "Unidade Estudante",
+                                "Unidade Student",
                                 "STU",
                                 OrganicUnitType.OTHER,
                                 OrganicUnitState.ACTIVE,

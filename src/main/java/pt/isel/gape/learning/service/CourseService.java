@@ -186,6 +186,7 @@ public final class CourseService {
                 connection.setAutoCommit(false);
                 try {
                     Course current = requireCourse(connection, courseId);
+                    ensureCourseCanBeUpdated(current);
                     requireCourseMutationContext(actorUserId, sessionId, actorProfileType, current.id(), sourceIp);
                     requireCourseCreateContext(
                             actorUserId,
@@ -195,7 +196,6 @@ public final class CourseService {
                             command.organicUnitId(),
                             sourceIp
                     );
-                    requireNotArchived(current);
                     validateOrganizationAndUnit(connection, command.organizationId(), command.organicUnitId());
                     MediaPathValidator.optionalEntityProfilePath(command.photo(), "courses", courseId, "Course photo");
                     courseDAO.update(connection, courseId, command);
@@ -237,8 +237,8 @@ public final class CourseService {
                 connection.setAutoCommit(false);
                 try {
                     Course current = requireCourse(connection, courseId);
+                    ensureCourseCanBeUpdated(current);
                     requireCourseMutationContext(actorUserId, sessionId, actorProfileType, current.id(), sourceIp);
-                    requireNotArchived(current);
                     courseDAO.updatePhoto(connection, courseId, normalizedPhoto);
                     auditService.record(connection, actorUserId, sessionId, "COURSE_UPDATE",
                             "course", Long.toString(courseId), "success", sourceIp);
@@ -272,8 +272,7 @@ public final class CourseService {
                 try {
                     Course current = requireCourse(connection, courseId);
                     requireCourseMutationContext(actorUserId, sessionId, actorProfileType, current.id(), sourceIp);
-                    requireNotArchived(current);
-                    courseDAO.updateState(connection, courseId, CourseState.ARCHIVED);
+                    courseDAO.updateState(connection, courseId, CourseState.INACTIVE);
                     auditService.record(connection, actorUserId, sessionId, "COURSE_ARCHIVE",
                             "course", Long.toString(courseId), "success", sourceIp);
                     connection.commit();
@@ -304,8 +303,8 @@ public final class CourseService {
                 try {
                     Course current = requireCourse(connection, courseId);
                     requireCourseMutationContext(actorUserId, sessionId, actorProfileType, current.id(), sourceIp);
-                    if (current.state() != CourseState.ARCHIVED) {
-                        throw new IllegalStateException("Only archived courses can be unarchived");
+                    if (current.state() != CourseState.INACTIVE) {
+                        throw new IllegalStateException("Only inactive courses can be activated");
                     }
                     validateOrganizationAndUnit(connection, current.organizationId(), current.organicUnitId());
                     courseDAO.updateState(connection, courseId, CourseState.ACTIVE);
@@ -339,7 +338,6 @@ public final class CourseService {
                 try {
                     Course current = requireCourse(connection, courseId);
                     requireCourseMutationContext(actorUserId, sessionId, actorProfileType, current.id(), sourceIp);
-                    requireNotArchived(current);
                     if (courseDAO.hasDomainDependencies(connection, courseId)) {
                         throw new IllegalStateException("Course with domain dependencies cannot be deleted");
                     }
@@ -408,8 +406,8 @@ public final class CourseService {
     ) throws SQLException {
         Organization organization = organizationDAO.findById(connection, organizationId)
                 .orElseThrow(() -> new IllegalArgumentException("Course organization not found: " + organizationId));
-        if (organization.state() == OrganizationState.ARCHIVED) {
-            throw new IllegalStateException("Archived organizations cannot receive courses");
+        if (organization.state() != OrganizationState.ACTIVE) {
+            throw new IllegalStateException("Inactive organizations cannot receive courses");
         }
         if (organicUnitId != null) {
             OrganicUnit unit = organicUnitDAO.findById(connection, organicUnitId)
@@ -417,9 +415,15 @@ public final class CourseService {
             if (unit.organizationId() != organizationId) {
                 throw new IllegalArgumentException("Course organic unit must belong to the same organization");
             }
-            if (unit.state() == OrganicUnitState.ARCHIVED) {
-                throw new IllegalStateException("Archived organic units cannot receive courses");
+            if (unit.state() != OrganicUnitState.ACTIVE) {
+                throw new IllegalStateException("Inactive organic units cannot receive courses");
             }
+        }
+    }
+
+    private static void ensureCourseCanBeUpdated(Course course) {
+        if (course.state() == CourseState.INACTIVE) {
+            throw new IllegalStateException("Inactive courses cannot be changed");
         }
     }
 
@@ -643,9 +647,6 @@ public final class CourseService {
         Objects.requireNonNull(command.type(), "course type is required");
         Objects.requireNonNull(command.state(), "course state is required");
         requireDurationInYears(command.duration());
-        if (command.state() == CourseState.ARCHIVED) {
-            throw new IllegalArgumentException("Use the archive operation to archive courses");
-        }
     }
 
     private static void validateUpdateCommand(CourseUpdateCommand command) {
@@ -659,9 +660,6 @@ public final class CourseService {
         Objects.requireNonNull(command.type(), "course type is required");
         Objects.requireNonNull(command.state(), "course state is required");
         requireDurationInYears(command.duration());
-        if (command.state() == CourseState.ARCHIVED) {
-            throw new IllegalArgumentException("Use the archive operation to archive courses");
-        }
     }
 
     private static void requireDurationInYears(String value) {
@@ -670,12 +668,6 @@ public final class CourseService {
         }
         if (!value.trim().matches("\\d+")) {
             throw new IllegalArgumentException("Course duration must contain only digits");
-        }
-    }
-
-    private static void requireNotArchived(Course course) {
-        if (course.state() == CourseState.ARCHIVED) {
-            throw new IllegalStateException("Archived courses cannot be changed");
         }
     }
 

@@ -42,13 +42,13 @@ class PdfUploadServiceTest {
 
         UploadedContentFile uploadedFile = pdfUploadService.savePdf(
                 new ByteArrayInputStream(pdfBytes),
-                "aula.pdf",
+                "lesson.pdf",
                 "application/pdf; charset=binary"
         );
 
         assertTrue(uploadedFile.relativePath().startsWith("contents/"));
         assertTrue(uploadedFile.relativePath().endsWith(".pdf"));
-        assertEquals("aula.pdf", uploadedFile.originalFileName());
+        assertEquals("lesson.pdf", uploadedFile.originalFileName());
         assertEquals("application/pdf", uploadedFile.contentType());
         assertEquals(pdfBytes.length, uploadedFile.originalSize());
         assertEquals(64, uploadedFile.sha256().length());
@@ -61,7 +61,7 @@ class PdfUploadServiceTest {
 
         UploadedContentFile uploadedFile = pdfUploadService.savePdf(
                 new ByteArrayInputStream(validPdfBytes()),
-                "aula.pdf",
+                "lesson.pdf",
                 "application/octet-stream"
         );
 
@@ -77,7 +77,7 @@ class PdfUploadServiceTest {
         UploadedContentFile uploadedFile = pdfUploadService.saveContentFile(
                 ContentFormat.PDF,
                 new ByteArrayInputStream(validPdfBytes()),
-                "aula.pdf",
+                "lesson.pdf",
                 "application/pdf",
                 ContentStorageContext.forContentBlock(53L, 60L, 120L, 9L)
         );
@@ -101,7 +101,7 @@ class PdfUploadServiceTest {
         UploadedContentFile uploadedFile = pdfUploadService.saveContentFile(
                 ContentFormat.PDF,
                 new ByteArrayInputStream(validPdfBytes()),
-                "aula.pdf",
+                "lesson.pdf",
                 "application/pdf",
                 ContentStorageContext.forContentItem(120L, 9L)
         );
@@ -112,6 +112,25 @@ class PdfUploadServiceTest {
     }
 
     @Test
+    void savesArchiveContentPreservingOriginalExtension() throws Exception {
+        PdfUploadService pdfUploadService = new PdfUploadService(uploadRoot, 1024L);
+        byte[] archiveBytes = "zip placeholder".getBytes(StandardCharsets.US_ASCII);
+
+        UploadedContentFile uploadedFile = pdfUploadService.saveContentFile(
+                ContentFormat.ARCHIVE,
+                new ByteArrayInputStream(archiveBytes),
+                "answers.zip",
+                "application/zip",
+                ContentStorageContext.forContentItem(120L, 9L)
+        );
+
+        assertEquals("contents/archive/9/120.zip", uploadedFile.relativePath());
+        assertEquals("application/zip", uploadedFile.contentType());
+        assertEquals(archiveBytes.length, uploadedFile.originalSize());
+        assertTrue(Files.exists(uploadRoot.resolve(uploadedFile.relativePath())));
+    }
+
+    @Test
     void defaultServiceUsesConfiguredSystemUploadDirectory() throws Exception {
         String previousUploadDir = System.getProperty("gape.upload.dir");
         System.setProperty("gape.upload.dir", uploadRoot.toString());
@@ -119,8 +138,8 @@ class PdfUploadServiceTest {
             PdfUploadService pdfUploadService = new PdfUploadService();
 
             UploadedContentFile uploadedFile = pdfUploadService.saveText(
-                    new ByteArrayInputStream("conteudo textual".getBytes(StandardCharsets.UTF_8)),
-                    "aula.txt",
+                    new ByteArrayInputStream("textual content".getBytes(StandardCharsets.UTF_8)),
+                    "lesson.txt",
                     "text/plain"
             );
 
@@ -147,7 +166,7 @@ class PdfUploadServiceTest {
                     () -> pdfUploadService.saveMedia(
                             ContentFormat.VIDEO,
                             new ByteArrayInputStream("not-a-real-video".getBytes(StandardCharsets.US_ASCII)),
-                            "aula.mp4",
+                            "lesson.mp4",
                             "video/mp4"
                     )
             );
@@ -171,7 +190,7 @@ class PdfUploadServiceTest {
                     IOException.class,
                     () -> pdfUploadService.savePdf(
                             new ByteArrayInputStream("%PDF-1.4\ninvalid-pdf-body".getBytes(StandardCharsets.US_ASCII)),
-                            "aula.pdf",
+                            "lesson.pdf",
                             "application/pdf"
                     )
             );
@@ -196,7 +215,7 @@ class PdfUploadServiceTest {
                     () -> pdfUploadService.saveMedia(
                             ContentFormat.AUDIO,
                             new ByteArrayInputStream("not-a-real-audio".getBytes(StandardCharsets.US_ASCII)),
-                            "aula.mp3",
+                            "lesson.mp3",
                             "audio/mpeg"
                     )
             );
@@ -244,7 +263,7 @@ class PdfUploadServiceTest {
                 IllegalArgumentException.class,
                 () -> pdfUploadService.savePdf(
                         new ByteArrayInputStream("not a pdf".getBytes(StandardCharsets.US_ASCII)),
-                        "aula.pdf",
+                        "lesson.pdf",
                         "application/pdf"
                 )
         );
@@ -285,13 +304,13 @@ class PdfUploadServiceTest {
         UploadedContentFile uploadedFile = pdfUploadService.saveMedia(
                 ContentFormat.VIDEO,
                 new ByteArrayInputStream(mp4VideoBytes()),
-                "aula.mp4",
+                "lesson.mp4",
                 "video/mp4"
         );
 
         assertTrue(uploadedFile.relativePath().startsWith("contents/"));
         assertTrue(uploadedFile.relativePath().endsWith(".mp4"));
-        assertEquals("aula.mp4", uploadedFile.originalFileName());
+        assertEquals("lesson.mp4", uploadedFile.originalFileName());
         assertEquals("video/mp4", uploadedFile.contentType());
         assertNotNull(uploadedFile.thumbnailRelativePath());
         assertTrue(uploadedFile.thumbnailRelativePath().endsWith("-thumb.webp"));
@@ -306,7 +325,7 @@ class PdfUploadServiceTest {
         UploadedContentFile uploadedFile = pdfUploadService.saveMedia(
                 ContentFormat.VIDEO,
                 new ByteArrayInputStream(mp4VideoBytes()),
-                "aula.mp4",
+                "lesson.mp4",
                 "application/octet-stream"
         );
 
@@ -325,11 +344,11 @@ class PdfUploadServiceTest {
         UploadedContentFile uploadedFile = pdfUploadService.saveMedia(
                 ContentFormat.VIDEO,
                 new ByteArrayInputStream(mkvVideoBytes()),
-                "aula.mkv",
+                "lesson.mkv",
                 "video/x-matroska"
         );
 
-        assertEquals("aula.mkv", uploadedFile.originalFileName());
+        assertEquals("lesson.mkv", uploadedFile.originalFileName());
         assertTrue(uploadedFile.relativePath().endsWith(".mp4"));
         assertEquals("video/mp4", uploadedFile.contentType());
         assertEquals("video/x-matroska", uploadedFile.originalContentType());
@@ -346,12 +365,12 @@ class PdfUploadServiceTest {
         UploadedContentFile uploadedFile = pdfUploadService.saveMedia(
                 ContentFormat.AUDIO,
                 new ByteArrayInputStream(wavSilenceBytes()),
-                "aula.mp3",
+                "lesson.mp3",
                 "audio/mpeg"
         );
 
         assertTrue(uploadedFile.relativePath().startsWith("contents/"));
-        assertEquals("aula.mp3", uploadedFile.originalFileName());
+        assertEquals("lesson.mp3", uploadedFile.originalFileName());
         assertTrue(uploadedFile.relativePath().endsWith(".m4a"));
         assertEquals("audio/mp4", uploadedFile.contentType());
         assertTrue(Files.exists(pdfUploadService.resolveStoredContentFile(uploadedFile.relativePath())));
@@ -364,7 +383,7 @@ class PdfUploadServiceTest {
         UploadedContentFile uploadedFile = pdfUploadService.saveMedia(
                 ContentFormat.AUDIO,
                 new ByteArrayInputStream(wavSilenceBytes()),
-                "aula.mp3",
+                "lesson.mp3",
                 "application/octet-stream"
         );
 
@@ -378,14 +397,14 @@ class PdfUploadServiceTest {
         PdfUploadService pdfUploadService = new PdfUploadService(uploadRoot, 1024L, 1024L);
 
         UploadedContentFile uploadedFile = pdfUploadService.saveText(
-                new ByteArrayInputStream("conteudo textual".getBytes(StandardCharsets.UTF_8)),
-                "aula.txt",
+                new ByteArrayInputStream("textual content".getBytes(StandardCharsets.UTF_8)),
+                "lesson.txt",
                 "text/plain"
         );
 
         assertTrue(uploadedFile.relativePath().startsWith("contents/"));
         assertTrue(uploadedFile.relativePath().endsWith(".txt"));
-        assertEquals("aula.txt", uploadedFile.originalFileName());
+        assertEquals("lesson.txt", uploadedFile.originalFileName());
         assertEquals("text/plain", uploadedFile.contentType());
         assertTrue(Files.exists(pdfUploadService.resolveStoredContentFile(uploadedFile.relativePath())));
     }
@@ -429,7 +448,7 @@ class PdfUploadServiceTest {
         PdfUploadService pdfUploadService = new PdfUploadService(uploadRoot, 1024L, 1024L);
         Path storedFile = uploadRoot.resolve("contents/text/77/777.txt");
         Files.createDirectories(storedFile.getParent());
-        Files.writeString(storedFile, "conteudo", StandardCharsets.UTF_8);
+        Files.writeString(storedFile, "content", StandardCharsets.UTF_8);
 
         pdfUploadService.deleteStoredContentFiles(List.of("contents/text/77/777.txt"));
 
@@ -444,7 +463,7 @@ class PdfUploadServiceTest {
         PdfUploadService pdfUploadService = new PdfUploadService(uploadRoot, 1024L, 1024L);
         Path storedFile = uploadRoot.resolve("contents/items/777/processed/content.txt");
         Files.createDirectories(storedFile.getParent());
-        Files.writeString(storedFile, "conteudo", StandardCharsets.UTF_8);
+        Files.writeString(storedFile, "content", StandardCharsets.UTF_8);
 
         pdfUploadService.deleteStoredContentFiles(List.of("contents/items/777/processed/content.txt"));
 

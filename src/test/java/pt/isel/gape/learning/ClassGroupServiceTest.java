@@ -41,6 +41,8 @@ import pt.isel.gape.transversal.DatabaseTestSupport;
 class ClassGroupServiceTest {
 
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-06-04T10:15:30Z"), ZoneOffset.UTC);
+    private static final LocalDate FUTURE_START = LocalDate.of(2026, 6, 10);
+    private static final LocalDate FUTURE_END = LocalDate.of(2026, 6, 30);
 
     private ClassGroupService classGroupService;
 
@@ -72,10 +74,10 @@ class ClassGroupServiceTest {
                         31L,
                         "MAT-AD-T1",
                         ClassGroupModality.ONLINE,
-                        ClassGroupState.ACTIVE,
+                        ClassGroupState.SCHEDULED,
                         null,
                         25,
-                        LocalDate.of(2026, 3, 1),
+                        FUTURE_START,
                         null,
                         ClassGroupShift.AFTERNOON,
                         false
@@ -101,10 +103,10 @@ class ClassGroupServiceTest {
                         31L,
                         "MAT-AD-TN",
                         ClassGroupModality.ONLINE,
-                        ClassGroupState.ACTIVE,
+                        ClassGroupState.SCHEDULED,
                         null,
                         25,
-                        LocalDate.of(2026, 3, 1),
+                        FUTURE_START,
                         null,
                         ClassGroupShift.AFTERNOON,
                         true
@@ -128,11 +130,11 @@ class ClassGroupServiceTest {
                                 31L,
                                 "PRJ-AD-T1",
                                 ClassGroupModality.HYBRID,
-                                ClassGroupState.ACTIVE,
+                                ClassGroupState.SCHEDULED,
                                 5,
                                 20,
-                                LocalDate.of(2026, 3, 1),
-                                LocalDate.of(2026, 6, 30),
+                                FUTURE_START,
+                                FUTURE_END,
                                 ClassGroupShift.EVENING,
                                 false
                         ),
@@ -154,7 +156,7 @@ class ClassGroupServiceTest {
                                 31L,
                                 "MAT-AD-T2",
                                 ClassGroupModality.ONLINE,
-                                ClassGroupState.ACTIVE,
+                                ClassGroupState.SCHEDULED,
                                 20,
                                 10,
                                 null,
@@ -180,11 +182,11 @@ class ClassGroupServiceTest {
                                 31L,
                                 "MAT-AD-BAD-DATE",
                                 ClassGroupModality.ONLINE,
-                                ClassGroupState.ACTIVE,
+                                ClassGroupState.SCHEDULED,
                                 null,
                                 25,
                                 LocalDate.of(2026, 6, 30),
-                                LocalDate.of(2026, 3, 1),
+                                FUTURE_START,
                                 ClassGroupShift.AFTERNOON,
                                 false
                         ),
@@ -219,11 +221,11 @@ class ClassGroupServiceTest {
                         31L,
                         "PRJ-T1",
                         ClassGroupModality.HYBRID,
-                        ClassGroupState.ACTIVE,
+                        ClassGroupState.SCHEDULED,
                         5,
                         30,
-                        LocalDate.of(2026, 2, 1),
-                        LocalDate.of(2026, 6, 30),
+                        FUTURE_START,
+                        FUTURE_END,
                         ClassGroupShift.EVENING,
                         false
                 ),
@@ -249,11 +251,11 @@ class ClassGroupServiceTest {
                                 31L,
                                 "PRJ-T1",
                                 ClassGroupModality.HYBRID,
-                                ClassGroupState.ACTIVE,
+                                ClassGroupState.SCHEDULED,
                                 5,
                                 30,
-                                LocalDate.of(2026, 2, 1),
-                                LocalDate.of(2026, 6, 30),
+                                FUTURE_START,
+                                FUTURE_END,
                                 ClassGroupShift.EVENING,
                                 false
                         ),
@@ -288,11 +290,11 @@ class ClassGroupServiceTest {
                         30L,
                         "PRJ-T1",
                         ClassGroupModality.ONSITE,
-                        ClassGroupState.ACTIVE,
+                        ClassGroupState.SCHEDULED,
                         5,
                         30,
-                        LocalDate.of(2026, 2, 1),
-                        LocalDate.of(2026, 6, 30),
+                        FUTURE_START,
+                        FUTURE_END,
                         ClassGroupShift.EVENING,
                         true
                 ),
@@ -394,10 +396,10 @@ class ClassGroupServiceTest {
                         31L,
                         "MAT-AD-ARCH",
                         ClassGroupModality.ONLINE,
-                        ClassGroupState.ACTIVE,
+                        ClassGroupState.SCHEDULED,
                         null,
                         25,
-                        LocalDate.of(2026, 3, 1),
+                        FUTURE_START,
                         null,
                         ClassGroupShift.AFTERNOON,
                         false
@@ -413,7 +415,7 @@ class ClassGroupServiceTest {
                 "127.0.0.1"
         );
 
-        assertEquals("archived", classGroupState(classGroup.id()));
+        assertEquals("completed", classGroupState(classGroup.id()));
     }
 
     @Test
@@ -441,10 +443,10 @@ class ClassGroupServiceTest {
                         31L,
                         "MAT-AD-DEL",
                         ClassGroupModality.ONLINE,
-                        ClassGroupState.ACTIVE,
+                        ClassGroupState.SCHEDULED,
                         null,
                         25,
-                        LocalDate.of(2026, 3, 1),
+                        FUTURE_START,
                         null,
                         ClassGroupShift.AFTERNOON,
                         false
@@ -476,11 +478,11 @@ class ClassGroupServiceTest {
                                 30L,
                                 "PRJ-T1",
                                 ClassGroupModality.ONSITE,
-                                ClassGroupState.ACTIVE,
+                                ClassGroupState.SCHEDULED,
                                 5,
                                 30,
-                                LocalDate.of(2026, 2, 1),
-                                LocalDate.of(2026, 6, 30),
+                                FUTURE_START,
+                                FUTURE_END,
                                 ClassGroupShift.EVENING,
                                 false
                         ),
@@ -549,11 +551,11 @@ class ClassGroupServiceTest {
                 30L,
                 "PRJ-T1",
                 modality,
-                ClassGroupState.ACTIVE,
+                ClassGroupState.SCHEDULED,
                 5,
                 30,
-                LocalDate.of(2026, 2, 1),
-                LocalDate.of(2026, 6, 30),
+                FUTURE_START,
+                FUTURE_END,
                 shift,
                 false
         );

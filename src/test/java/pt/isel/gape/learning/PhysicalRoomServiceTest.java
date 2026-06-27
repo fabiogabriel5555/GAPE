@@ -107,15 +107,15 @@ class PhysicalRoomServiceTest {
                 new PhysicalRoomUpdateCommand(
                         10L,
                         20L,
-                        "Sala Coordenador",
-                        "Atualizada por coordenador",
+                        "Coordinator Room",
+                        "Updated by coordinator",
                         31,
                         "Edificio C",
                         PhysicalRoomState.ACTIVE
                 ),
                 "127.0.0.1"
         );
-        assertEquals("Sala Coordenador", updated.name());
+        assertEquals("Coordinator Room", updated.name());
 
         physicalRoomService.deletePhysicalRoom(
                 2L,
@@ -245,7 +245,7 @@ class PhysicalRoomServiceTest {
                                 "SALA-ORG-MISMATCH",
                                 10L,
                                 21L,
-                                "Sala Externa Invalida",
+                                "External Room Invalid",
                                 null,
                                 20,
                                 "Edificio X",
@@ -274,7 +274,7 @@ class PhysicalRoomServiceTest {
                 new PhysicalRoomUpdateCommand(
                         10L,
                         20L,
-                        "Sala Atualizada",
+                        "Sala Updated",
                         "Capacidade revista",
                         35,
                         "Edificio B",
@@ -283,7 +283,7 @@ class PhysicalRoomServiceTest {
                 "127.0.0.1"
         );
 
-        assertEquals("Sala Atualizada", updated.name());
+        assertEquals("Sala Updated", updated.name());
         assertEquals(35, updated.capacity());
         assertEquals(PhysicalRoomState.UNAVAILABLE, updated.state());
     }
@@ -299,7 +299,7 @@ class PhysicalRoomServiceTest {
                         10L,
                         20L,
                         "Sala A1",
-                        "Laboratorio principal",
+                        "Laboratory principal",
                         25,
                         "Edificio A",
                         PhysicalRoomState.UNAVAILABLE
@@ -351,7 +351,7 @@ class PhysicalRoomServiceTest {
                 10L,
                 20L,
                 "Sala de Teste",
-                "Sala criada por teste automatico",
+                "Room created by automatic test",
                 30,
                 "Edificio A",
                 PhysicalRoomState.ACTIVE

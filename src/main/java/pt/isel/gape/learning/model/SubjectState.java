@@ -4,8 +4,7 @@ import java.util.Locale;
 
 public enum SubjectState {
     ACTIVE("active"),
-    INACTIVE("inactive"),
-    ARCHIVED("archived");
+    INACTIVE("inactive");
 
     private final String databaseValue;
 

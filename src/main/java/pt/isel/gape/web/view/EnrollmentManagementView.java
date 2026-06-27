@@ -97,7 +97,6 @@ public final class EnrollmentManagementView {
             case REJECTED -> "Rejected";
             case COMPLETED -> "Completed";
             case WITHDRAWN -> "Left";
-            case ARCHIVED -> "Archived";
         };
     }
 
@@ -113,7 +112,6 @@ public final class EnrollmentManagementView {
             case REJECTED -> "bg-danger-50 text-danger-600";
             case COMPLETED -> "bg-info-50 text-info-600";
             case WITHDRAWN -> "bg-warning-30 text-warning-600";
-            case ARCHIVED -> "bg-danger-50 text-danger-600";
         };
     }
 

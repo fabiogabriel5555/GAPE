@@ -2,6 +2,7 @@ package pt.isel.gape.web.view;
 
 import jakarta.servlet.http.HttpServletRequest;
 import pt.isel.gape.learning.model.ClassGroup;
+import pt.isel.gape.learning.model.ClassGroupState;
 
 public final class ClassGroupFormData {
 
@@ -37,7 +38,7 @@ public final class ClassGroupFormData {
         this.subjectId = subjectId;
         this.code = code;
         this.modality = modality;
-        this.state = state == null || state.isBlank() ? "ACTIVE" : state;
+        this.state = state == null || state.isBlank() ? "DRAFT" : state;
         this.minStudents = minStudents;
         this.maxStudents = maxStudents;
         this.startsAt = startsAt;
@@ -53,7 +54,7 @@ public final class ClassGroupFormData {
                 stringValue(subjectId),
                 "",
                 "ONSITE",
-                "ACTIVE",
+                "DRAFT",
                 "",
                 "",
                 "",
@@ -70,7 +71,7 @@ public final class ClassGroupFormData {
                 Long.toString(classGroup.subjectId()),
                 classGroup.code(),
                 classGroup.modality().name(),
-                classGroup.state().name(),
+                editableState(classGroup.state()).name(),
                 stringValue(classGroup.minStudents()),
                 stringValue(classGroup.maxStudents()),
                 classGroup.startsAt() == null ? "" : classGroup.startsAt().toString(),
@@ -156,5 +157,9 @@ public final class ClassGroupFormData {
 
     private static String stringValue(Object value) {
         return value == null ? "" : value.toString();
+    }
+
+    private static ClassGroupState editableState(ClassGroupState state) {
+        return state == ClassGroupState.DRAFT ? ClassGroupState.DRAFT : ClassGroupState.SCHEDULED;
     }
 }

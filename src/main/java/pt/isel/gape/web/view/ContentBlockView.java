@@ -86,7 +86,6 @@ public final class ContentBlockView {
             case DRAFT -> "Draft";
             case ACTIVE -> "Active";
             case INACTIVE -> "Inactive";
-            case ARCHIVED -> "Archived";
         };
     }
 
@@ -95,12 +94,11 @@ public final class ContentBlockView {
             case DRAFT -> "bg-neutral-30 text-neutral-600";
             case ACTIVE -> "bg-success-50 text-success-600";
             case INACTIVE -> "bg-warning-30 text-warning-600";
-            case ARCHIVED -> "bg-danger-50 text-danger-600";
         };
     }
 
     public boolean isArchived() {
-        return state == ContentBlockState.ARCHIVED;
+        return state == ContentBlockState.INACTIVE;
     }
 
     public boolean isActive() {

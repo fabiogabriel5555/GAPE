@@ -24,6 +24,7 @@ import pt.isel.gape.learning.model.ContentItemState;
 import pt.isel.gape.learning.model.ContentStorageContext;
 import pt.isel.gape.learning.model.ReusableContentFile;
 import pt.isel.gape.learning.model.UploadedContentFile;
+import pt.isel.gape.learning.service.AssessmentService;
 import pt.isel.gape.learning.service.ContentAssociationService;
 import pt.isel.gape.learning.service.ContentFileService;
 import pt.isel.gape.learning.service.ContentItemService;
@@ -42,6 +43,7 @@ public final class ContentUploadServlet extends HttpServlet {
     private final SessionManager sessionManager;
     private final ContentItemService contentItemService;
     private final ContentAssociationService contentAssociationService;
+    private final AssessmentService assessmentService;
     private final ContentFileService contentFileService;
     private final PdfUploadService pdfUploadService;
     private final AuditService auditService;
@@ -51,6 +53,7 @@ public final class ContentUploadServlet extends HttpServlet {
                 new SessionManager(),
                 new ContentItemService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new ContentAssociationService(ConnectionProvider.defaultProvider(), Clock.systemUTC()),
+                new AssessmentService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new ContentFileService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new PdfUploadService(),
                 new AuditService(ConnectionProvider.defaultProvider(), ApplicationClock.system())
@@ -65,9 +68,30 @@ public final class ContentUploadServlet extends HttpServlet {
             PdfUploadService pdfUploadService,
             AuditService auditService
     ) {
+        this(
+                sessionManager,
+                contentItemService,
+                contentAssociationService,
+                new AssessmentService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
+                contentFileService,
+                pdfUploadService,
+                auditService
+        );
+    }
+
+    ContentUploadServlet(
+            SessionManager sessionManager,
+            ContentItemService contentItemService,
+            ContentAssociationService contentAssociationService,
+            AssessmentService assessmentService,
+            ContentFileService contentFileService,
+            PdfUploadService pdfUploadService,
+            AuditService auditService
+    ) {
         this.sessionManager = sessionManager;
         this.contentItemService = contentItemService;
         this.contentAssociationService = contentAssociationService;
+        this.assessmentService = assessmentService;
         this.contentFileService = contentFileService;
         this.pdfUploadService = pdfUploadService;
         this.auditService = auditService;
@@ -112,6 +136,27 @@ public final class ContentUploadServlet extends HttpServlet {
                         associationCommand.targetId(),
                         request.getRemoteAddr()
                 );
+                if (isAssessmentRepositorySource(reusableFile.source())) {
+                    if (associationCommand.type() != ContentAssociationType.CONTENT_BLOCK) {
+                        throw new IllegalArgumentException("Assessment reuse requires a target content block");
+                    }
+                    long sourceAssessmentId = assessmentIdFromRepositorySource(reusableFile.source());
+                    var clonedAssessment = assessmentService.cloneAssessmentToBlock(
+                            sessionUser.get().userId(),
+                            sessionId,
+                            profileType.get(),
+                            sourceAssessmentId,
+                            associationCommand.targetId(),
+                            request.getRemoteAddr()
+                    );
+                    response.setStatus(HttpServletResponse.SC_CREATED);
+                    response.setContentType("text/plain;charset=UTF-8");
+                    response.getWriter().write(Long.toString(clonedAssessment.id()));
+                    auditService.record(sessionUser.get().userId(), sessionId, "CONTENT_ASSESSMENT_REUSE",
+                            "assessment", sourceAssessmentId + ":" + clonedAssessment.id(),
+                            "success", request.getRemoteAddr());
+                    return;
+                }
                 ContentItem contentItem = contentItemService.createContentItem(
                         sessionUser.get().userId(),
                         sessionId,
@@ -166,7 +211,8 @@ public final class ContentUploadServlet extends HttpServlet {
                     || format == ContentFormat.TEXT
                     || format == ContentFormat.IMAGE
                     || format == ContentFormat.VIDEO
-                    || format == ContentFormat.AUDIO) {
+                    || format == ContentFormat.AUDIO
+                    || format == ContentFormat.ARCHIVE) {
                 Part filePart = requiredFilePart(request);
                 source = pendingContentSource();
                 fallbackTitle = submittedFileName(filePart);
@@ -394,6 +440,15 @@ public final class ContentUploadServlet extends HttpServlet {
 
     private static String pendingContentSource() {
         return "contents/pending/" + UUID.randomUUID() + "/content.pending";
+    }
+
+    private static boolean isAssessmentRepositorySource(String source) {
+        return source != null && source.trim().startsWith("assessment:");
+    }
+
+    private static long assessmentIdFromRepositorySource(String source) {
+        String value = source == null ? "" : source.trim().substring("assessment:".length());
+        return parseLong(value, "assessmentRepositorySource");
     }
 
     private static String blankToNull(String value) {

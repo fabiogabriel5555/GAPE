@@ -140,7 +140,7 @@
                     </div>
                     <div class="col-sm-6 col-xl">
                         <div class="bg-white rounded-10 px-24 py-24 border border-neutral-30">
-                            <span class="text-14 text-neutral-500">Archived</span>
+                            <span class="text-14 text-neutral-500">Inactive</span>
                             <h2 class="text-32 fw-semibold text-danger-600 mb-0">${archivedCourses}</h2>
                         </div>
                     </div>

@@ -4,8 +4,10 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AccessProfileType;
@@ -83,7 +85,7 @@ public final class ContentBlockService {
                 try {
                     ClassGroup classGroup = requireClassGroup(connection, command.classGroupId());
                     requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
-                    requireNotArchived(classGroup);
+                    requireClassGroupEditable(classGroup);
                     if (command.state() == ContentBlockState.ACTIVE
                             && contentBlockDAO.activeOrderExists(
                                     connection,
@@ -145,6 +147,53 @@ public final class ContentBlockService {
         }
     }
 
+    public void reorderContentBlocks(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long classGroupId,
+            List<Long> orderedBlockIds,
+            String sourceIp
+    ) {
+        try {
+            if (orderedBlockIds == null || orderedBlockIds.isEmpty()) {
+                throw new IllegalArgumentException("Block order is required");
+            }
+            if (new HashSet<>(orderedBlockIds).size() != orderedBlockIds.size()) {
+                throw new IllegalArgumentException("Block order contains duplicates");
+            }
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    ClassGroup classGroup = requireClassGroup(connection, classGroupId);
+                    requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
+                    requireClassGroupEditable(classGroup);
+                    List<ContentBlock> blocks = contentBlockDAO.findByClassGroup(connection, classGroupId, true);
+                    Set<Long> expectedIds = new HashSet<>();
+                    for (ContentBlock block : blocks) {
+                        expectedIds.add(block.id());
+                    }
+                    if (!expectedIds.equals(new HashSet<>(orderedBlockIds))) {
+                        throw new IllegalArgumentException("Block order must include every block in the class group");
+                    }
+                    contentBlockDAO.reorderWithinClassGroup(connection, classGroupId, orderedBlockIds);
+                    auditService.record(connection, actorUserId, sessionId, "CONTENT_BLOCK_REORDER",
+                            "class_group", Long.toString(classGroupId), "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "CONTENT_BLOCK_REORDER", Long.toString(classGroupId), sourceIp);
+            throw wrap(exception, "Failed to reorder content blocks");
+        }
+    }
+
     public ContentBlock updateContentBlock(
             long actorUserId,
             Long sessionId,
@@ -160,11 +209,11 @@ public final class ContentBlockService {
                 connection.setAutoCommit(false);
                 try {
                     ContentBlock current = requireContentBlock(connection, contentBlockId);
-                    requireNotArchived(current);
+                    requireContentBlockEditable(current);
                     requireSameContentBlockContext(current, command);
                     ClassGroup classGroup = requireClassGroup(connection, current.classGroupId());
                     requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
-                    requireNotArchived(classGroup);
+                    requireClassGroupEditable(classGroup);
                     if (command.state() == ContentBlockState.ACTIVE
                             && contentBlockDAO.activeOrderExists(
                                     connection,
@@ -206,11 +255,11 @@ public final class ContentBlockService {
                 connection.setAutoCommit(false);
                 try {
                     ContentBlock current = requireContentBlock(connection, contentBlockId);
-                    requireNotArchived(current);
+                    requireContentBlockEditable(current);
                     ClassGroup classGroup = requireClassGroup(connection, current.classGroupId());
                     requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
-                    requireNotArchived(classGroup);
-                    contentBlockDAO.updateState(connection, contentBlockId, ContentBlockState.ARCHIVED);
+                    requireClassGroupEditable(classGroup);
+                    contentBlockDAO.updateState(connection, contentBlockId, ContentBlockState.INACTIVE);
                     auditService.record(connection, actorUserId, sessionId, "CONTENT_BLOCK_ARCHIVE",
                             "content_block", Long.toString(contentBlockId), "success", sourceIp);
                     connection.commit();
@@ -240,12 +289,12 @@ public final class ContentBlockService {
                 connection.setAutoCommit(false);
                 try {
                     ContentBlock current = requireContentBlock(connection, contentBlockId);
-                    if (current.state() != ContentBlockState.ARCHIVED) {
-                        throw new IllegalStateException("Only archived content blocks can be restored");
+                    if (current.state() != ContentBlockState.INACTIVE) {
+                        throw new IllegalStateException("Only inactive content blocks can be restored");
                     }
                     ClassGroup classGroup = requireClassGroup(connection, current.classGroupId());
                     requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
-                    requireNotArchived(classGroup);
+                    requireClassGroupEditable(classGroup);
                     if (contentBlockDAO.activeOrderExists(
                             connection,
                             current.classGroupId(),
@@ -284,10 +333,10 @@ public final class ContentBlockService {
                 connection.setAutoCommit(false);
                 try {
                     ContentBlock current = requireContentBlock(connection, contentBlockId);
-                    requireNotArchived(current);
+                    requireContentBlockEditable(current);
                     ClassGroup classGroup = requireClassGroup(connection, current.classGroupId());
                     requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
-                    requireNotArchived(classGroup);
+                    requireClassGroupEditable(classGroup);
                     if (contentBlockDAO.hasDomainDependencies(connection, contentBlockId)) {
                         throw new IllegalStateException("Content block with domain dependencies cannot be deleted");
                     }
@@ -421,9 +470,6 @@ public final class ContentBlockService {
         }
         Objects.requireNonNull(accessMode, "content block access mode is required");
         Objects.requireNonNull(state, "content block state is required");
-        if (state == ContentBlockState.ARCHIVED) {
-            throw new IllegalArgumentException("Use the archive operation to archive content blocks");
-        }
         if (accessMode == ContentBlockAccessMode.SCHEDULED && availableFrom == null) {
             throw new IllegalArgumentException("Scheduled content blocks require an availability start date");
         }
@@ -435,15 +481,15 @@ public final class ContentBlockService {
         }
     }
 
-    private static void requireNotArchived(ClassGroup classGroup) {
-        if (classGroup.state() == ClassGroupState.ARCHIVED) {
-            throw new IllegalStateException("Archived class groups cannot receive content block changes");
+    private static void requireClassGroupEditable(ClassGroup classGroup) {
+        if (classGroup.state() == ClassGroupState.COMPLETED) {
+            throw new IllegalStateException("Completed class groups cannot receive content block changes");
         }
     }
 
-    private static void requireNotArchived(ContentBlock contentBlock) {
-        if (contentBlock.state() == ContentBlockState.ARCHIVED) {
-            throw new IllegalStateException("Archived content blocks cannot be changed");
+    private static void requireContentBlockEditable(ContentBlock contentBlock) {
+        if (contentBlock.state() == ContentBlockState.INACTIVE) {
+            throw new IllegalStateException("Inactive content blocks cannot be changed");
         }
     }
 

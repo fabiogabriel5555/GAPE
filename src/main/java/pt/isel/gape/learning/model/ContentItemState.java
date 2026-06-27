@@ -5,8 +5,7 @@ import java.util.Locale;
 public enum ContentItemState {
     DRAFT("draft"),
     ACTIVE("active"),
-    INACTIVE("inactive"),
-    ARCHIVED("archived");
+    INACTIVE("inactive");
 
     private final String databaseValue;
 

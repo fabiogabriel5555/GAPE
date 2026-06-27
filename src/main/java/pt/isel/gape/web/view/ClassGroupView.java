@@ -99,19 +99,19 @@ public final class ClassGroupView {
 
     public String getStateLabel() {
         return switch (state) {
+            case DRAFT -> "Draft";
+            case SCHEDULED -> "Scheduled";
             case ACTIVE -> "Active";
-            case INACTIVE -> "Inactive";
-            case CLOSED -> "Closed";
-            case ARCHIVED -> "Archived";
+            case COMPLETED -> "Completed";
         };
     }
 
     public String getStateBadgeClass() {
         return switch (state) {
+            case DRAFT -> "bg-neutral-30 text-neutral-600";
+            case SCHEDULED -> "bg-info-50 text-info-600";
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
-            case CLOSED -> "bg-info-50 text-info-600";
-            case ARCHIVED -> "bg-danger-50 text-danger-600";
+            case COMPLETED -> "bg-danger-50 text-danger-600";
         };
     }
 
@@ -120,7 +120,11 @@ public final class ClassGroupView {
     }
 
     public boolean isArchived() {
-        return state == ClassGroupState.ARCHIVED;
+        return state == ClassGroupState.COMPLETED;
+    }
+
+    public boolean isCompleted() {
+        return state == ClassGroupState.COMPLETED;
     }
 
     public Integer getMinStudents() {

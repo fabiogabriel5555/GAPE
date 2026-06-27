@@ -31,8 +31,9 @@ class SchemaIntegrityTest {
                 "integrate_subject", "manage_organization", "coordinate_subject", "teach_class_group",
                 "enroll_course", "enroll_subject", "enroll_class_group",
                 "subject_enrollment_policy", "class_group_enrollment_policy",
-                "content_item", "content_file", "physical_room", "lesson", "assessment", "question", "question_option",
-                "attempt", "response", "response_option",
+                "content_item", "content_file", "physical_room", "lesson", "assessment", "assessment_class_group",
+                "question", "question_option",
+                "enroll_assessment", "attempt", "response", "response_option",
                 "associate_organization_content", "associate_organic_unit_content", "associate_course_content",
                 "associate_subject_content", "associate_class_group_content", "associate_block_content",
                 "associate_assessment_content",
@@ -75,6 +76,7 @@ class SchemaIntegrityTest {
             List<String[]> fkChecks = List.of(
                     new String[]{"user_session", "fk_user_session_user"},
                     new String[]{"course", "fk_course_org"},
+                    new String[]{"assessment_class_group", "fk_assessment_class_group_assessment"},
                     new String[]{"lesson", "fk_lesson_class_group"},
                     new String[]{"attendance_record", "fk_attendance_student"},
                     new String[]{"message", "fk_message_channel"}
@@ -99,6 +101,7 @@ class SchemaIntegrityTest {
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "class_group", "ck_class_group_shift", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "class_group", "ck_class_group_students_range", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "content_block", "ck_content_block_scheduled_access", "CHECK"));
+            assertTrue(DatabaseTestSupport.existsConstraint(connection, "assessment", "ck_assessment_mode", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "message", "ck_message_attachment_type", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "certificate", "ck_certificate_issued_context", "CHECK"));
         }
@@ -111,7 +114,14 @@ class SchemaIntegrityTest {
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_enroll_class_group_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_content_block_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_lesson_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_assessment_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bu_assessment_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_assessment_class_group_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bu_assessment_class_group_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_attempt_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bu_attempt_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_response_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_response_option_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_schedule_event_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_message_validate"));
         }

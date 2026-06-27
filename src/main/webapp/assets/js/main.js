@@ -1,6 +1,6 @@
 (function ($) {
   "use strict";
-  
+
   // ==========================================
   //      Start Document Ready function
   // ==========================================
@@ -62,7 +62,7 @@
       }
     },
   ]
-});  
+});
 // ========================= Our Popular Tutors Slider Js end ===================
 
 
@@ -107,13 +107,13 @@
       }
     },
   ]
-});  
+});
 // ========================= Our Popular Tutors Slider Js end ===================
 
 
 
 
-// ================admin dashbord start========================  
+// ================admin dashbord start========================
 
 
   // ========================== Course List filter bar btn start ================================
@@ -240,6 +240,7 @@
       { key: "class-groups", paths: ["/student/class-groups"] },
       { key: "lessons", paths: ["/student/lessons"] },
       { key: "calendar", paths: ["/student/calendar"] },
+      { key: "assessments", paths: ["/student/assessments"] },
       { key: "profile", paths: ["/student/student/profile"] },
       { key: "message", paths: ["/student/student/message"] },
       { key: "reviews", paths: ["/student/student/review"] },
@@ -252,7 +253,7 @@
       "student-reviews.jsp": "reviews",
       "student-home.jsp": "dashboard",
       "student-assignment.jsp": "dashboard",
-      "student-my-quiz-attempts.jsp": "dashboard",
+      "student-my-quiz-attempts.jsp": "assessments",
       "student-settings.jsp": "profile"
     };
 
@@ -357,7 +358,7 @@
     });
   }
 
-  
+
 
   // ================== Password Show Hide Js Start ==========
   // $(".toggle-password").on('click', function() {
@@ -465,7 +466,7 @@ initDataTable('#example-five', {
 
 
 
-// ================admin dashbord end========================  
+// ================admin dashbord end========================
 
 
 
@@ -503,7 +504,7 @@ initDataTable('#example-five', {
 
   // Set CSS variable to be used in keyframes
   floatingLabel.css("--left-percentage", percentage);
-  
+
   // Trigger reflow to restart animation
   floatingLabel[0].offsetWidth; // Force reflow
   floatingLabel.css("animation-name", "none");
@@ -525,7 +526,7 @@ $(".progressBar").each(function(){
       easing: "swing",
       step: function(p) {
       $bar.css({
-          transform: "rotate("+ (45+(p*1.8)) +"deg)", // 100%=180° so: ° = % * 1.8
+          transform: "rotate("+ (45+(p*1.8)) +"deg)", // 100%=180Â° so: Â° = % * 1.8
           // 45 is to add the needed rotation to have the green borders at the bottom
       });
       $val.text(p|0);
@@ -591,9 +592,9 @@ $(".progressBar").each(function(){
           }
         },
       ]
-    });  
+    });
     // ========================= Brand Slider Js End ===================
-      
+
 
 
  // ========================= testimonial-five Slider Js Start ==============
@@ -635,7 +636,7 @@ $(".progressBar").each(function(){
       }
     },
   ]
-});  
+});
 // ========================= testimonial-five-slider Js End ===================
 
 
@@ -678,7 +679,7 @@ $(".progressBar").each(function(){
       }
     },
   ]
-});  
+});
 // ========================= our-popular-five-slider Js End ===================
 
 
@@ -703,21 +704,21 @@ $(".progressBar").each(function(){
     $('.mobile-menu').addClass('active');
     $('.side-overlay').addClass('show');
     $('body').addClass('scroll-hide-sm');
-  }); 
+  });
 
   $('.close-button, .side-overlay').on('click', function () {
     $('.mobile-menu').removeClass('active');
     $('.side-overlay').removeClass('show');
     $('body').removeClass('scroll-hide-sm');
-  }); 
+  });
   // ============== Mobile Menu Sidebar & Offcanvas Js End ========
-  
+
   // ============== Mobile Nav Menu Dropdown Js Start =======================
-  var windowWidth = $(window).width(); 
-  
+  var windowWidth = $(window).width();
+
   $('.has-submenu').on('click', function () {
-    var thisItem = $(this); 
-    
+    var thisItem = $(this);
+
     if(windowWidth < 992) {
       if(thisItem.hasClass('active')) {
         thisItem.removeClass('active')
@@ -725,16 +726,16 @@ $(".progressBar").each(function(){
         $('.has-submenu').removeClass('active')
         $(thisItem).addClass('active')
       }
-      
+
       var submenu = thisItem.find('.nav-submenu');
-      
+
       $('.nav-submenu').not(submenu).slideUp(300);
       submenu.slideToggle(300);
     }
-    
+
   });
   // ============== Mobile Nav Menu Dropdown Js End =======================
-    
+
   // ===================== Scroll Back to Top Js Start ======================
   var progressPath = document.querySelector('.progress-wrap path');
   if (progressPath) {
@@ -786,7 +787,7 @@ function dynamicActiveMenuClass(selector) {
 
     // Remove activePage class from navigation menu items only.
     $menu.find("li.nav-menu__item, li.nav-submenu__item").removeClass("activePage");
-    
+
     // Add activePage class to the correct li based on the current URL
     $menu.find("li.nav-menu__item, li.nav-submenu__item").each(function () {
       let anchor = $(this).children("a[href]").first();
@@ -809,7 +810,7 @@ if ($('.nav-menu').length) {
 }
   // ========================== add active class to ul>li top Active current page Js End =====================
 
-    
+
   // ========================== Select2 Js Start =================================
   $(document).ready(function() {
     $('.js-example-basic-single').each(function() {
@@ -826,7 +827,7 @@ if ($('.nav-menu').length) {
     });
   });
   // ========================== Select2 Js End =================================
-  
+
   // ========================= Brand Slider Js Start ==============
   $('.brand-slider').slick({
     slidesToShow: 7,
@@ -880,9 +881,9 @@ if ($('.nav-menu').length) {
         }
       },
     ]
-  });  
+  });
   // ========================= Brand Slider Js End ===================
-  
+
   // ========================= Brand Slider Js Start ==============
   $('.features-slider').slick({
     slidesToShow: 3,
@@ -922,32 +923,32 @@ if ($('.nav-menu').length) {
         }
       },
     ]
-  });  
+  });
   // ========================= Brand Slider Js End ===================
 
   // ========================= Wishlist Button Js Start ===================
   $('.wishlist-btn').on('click', function () {
-    $(this).removeClass('text-main-two-600'); 
-    $(this).toggleClass('text-white bg-main-two-600'); 
+    $(this).removeClass('text-main-two-600');
+    $(this).toggleClass('text-white bg-main-two-600');
   })
   // ========================= Wishlist Button Js End ===================
-  
+
   // ========================= Instructor Button Js Start ===================
   $('.social-infos .social-infos__button').on('click', function () {
-    $('.social-list').not($(this).siblings('.social-list')).removeClass('d-flex'); 
-    $('.social-infos .social-infos__button').not($(this)).removeClass('active'); 
-    $(this).siblings('.social-list').toggleClass('d-flex'); 
-    $(this).toggleClass('active'); 
+    $('.social-list').not($(this).siblings('.social-list')).removeClass('d-flex');
+    $('.social-infos .social-infos__button').not($(this)).removeClass('active');
+    $(this).siblings('.social-list').toggleClass('d-flex');
+    $(this).toggleClass('active');
   });
   // ========================= Instructor Button Js End ===================
 
 
   // ========================= Instructor Button Js Start ===================
   $('.our-popular-five .our-popular-five__button').on('click', function () {
-    $('.social-list').not($(this).siblings('.social-list')).removeClass('d-flex'); 
-    $('.our-popular-five .our-popular-five__button').not($(this)).removeClass('active'); 
-    $(this).siblings('.social-list').toggleClass('d-flex'); 
-    $(this).toggleClass('active'); 
+    $('.social-list').not($(this).siblings('.social-list')).removeClass('d-flex');
+    $('.our-popular-five .our-popular-five__button').not($(this)).removeClass('active');
+    $(this).siblings('.social-list').toggleClass('d-flex');
+    $(this).toggleClass('active');
   });
   // ========================= Instructor Button Js End ===================
 
@@ -990,7 +991,7 @@ if ($('.nav-menu').length) {
         }
       },
     ]
-  });  
+  });
   // ========================= Brand Slider Js End ===================
 
    // =========================Testimonials Slider Js Start ===================
@@ -1016,7 +1017,7 @@ if ($('.nav-menu').length) {
   });
   // =========================Testimonials Slider Js End ===================
 
-  
+
   // ========================= magnific Popup Js Start =====================
   $('.play-button').magnificPopup({
     type:'iframe',
@@ -1024,7 +1025,7 @@ if ($('.nav-menu').length) {
     mainClass: 'mfp-fade',
   });
   // ========================= magnific Popup Js End =====================
-  
+
 
    // ========================= Counter Up Js End ===================
    const counterUp = window.counterUp.default;
@@ -1041,9 +1042,9 @@ if ($('.nav-menu').length) {
        }
      });
    };
- 
+
    const IO = new IntersectionObserver(callback, { threshold: 1 });
- 
+
    // Counter Two for each
    const counterNumbers = document.querySelectorAll('.counter');
    if (counterNumbers.length > 0) {
@@ -1091,7 +1092,7 @@ if ($('.nav-menu').length) {
         }
       },
     ]
-  });  
+  });
   // ========================= Brand Slider Js End ===================
 
   // ========================= Testimonials Slider Two Js Start ==============
@@ -1119,16 +1120,16 @@ if ($('.nav-menu').length) {
         }
       },
     ]
-  });  
+  });
   // ========================= Testimonials Slider Two Js End ===================
-  
+
   // ========================= Background Image Js Start ===================
     $(".background-img").css('background-image', function () {
       var bg = 'url(' + $(this).data("background-image") + ')';
       return bg;
     });
   // ========================= Background Image Js End ===================
-  
+
   // ========================= Testimonials Slider Two Js Start ==============
   $('.banner-three__slider').slick({
     slidesToShow: 1,
@@ -1149,17 +1150,17 @@ if ($('.nav-menu').length) {
   });
 
   $('.banner-three__slider').on('beforeChange', function(event, slick, currentSlide, nextSlide) {
-    $('.wow').css('visibility', 'hidden').removeClass('animated'); 
+    $('.wow').css('visibility', 'hidden').removeClass('animated');
   });
 
   $('.banner-three__slider').on('afterChange', function(event, slick, currentSlide) {
     new WOW().init();
-    $('.wow').css('visibility', 'visible'); 
+    $('.wow').css('visibility', 'visible');
   });
 // ========================= Testimonials Slider Two Js End ===================
 
   // ========================= Testimonials Slider Two Js End ===================
-  
+
   // ========================= Testimonials Slider Two Js Start ==============
   $('.testimonials-three-slider').slick({
     slidesToShow: 3,
@@ -1194,7 +1195,7 @@ if ($('.nav-menu').length) {
         }
       },
     ]
-  });  
+  });
   // ========================= Testimonials Slider Two Js End ===================
 
   // ========================= Brand Slider Js Start ==============
@@ -1236,7 +1237,7 @@ if ($('.nav-menu').length) {
         }
       },
     ]
-  });  
+  });
   // ========================= Brand Slider Js End ===================
 
   // ========================== Range Slider Js Start =====================
@@ -1253,7 +1254,7 @@ if ($('.nav-menu').length) {
     $( "#amount" ).val( "$" + $( "#slider-range" ).slider( "values", 0 ) +
     " - $" + $( "#slider-range" ).slider( "values", 1 ) );
   });
-  
+
   // ========================== Course List filter bar btn start ================================
   $('.list-bar-btn').on('click', function () {
     $('.sidebar').addClass('active');
@@ -1281,7 +1282,7 @@ if ($('.nav-menu').length) {
       }
     }
   // ========================= Player Js End ===========================
-  
+
   // ========================= Brand Slider Js Start ==============
   $('.tutor-slider').slick({
     slidesToShow: 3,
@@ -1321,7 +1322,7 @@ if ($('.nav-menu').length) {
         }
       },
     ]
-  });  
+  });
   // ========================= Brand Slider Js End ===================
 
   // ========================= Increment & Decrement Js Start ===================
@@ -1330,21 +1331,21 @@ if ($('.nav-menu').length) {
 
   $(plus).on('click', function () {
     var input = $(this).siblings('.quantity__input');
-    var value = input.val(); 
+    var value = input.val();
     value++;
-    input.val(value); 
-  }); 
+    input.val(value);
+  });
 
   $(minus).on('click', function () {
     var input = $(this).siblings('.quantity__input');
-    var value = input.val(); 
+    var value = input.val();
     if(value > 1) {
       value--;
     }
-    input.val(value); 
-  }); 
+    input.val(value);
+  });
   // ========================= Increment & Decrement Js End ===================
-  
+
   // ========================= Review Js Start ==============
   $('.review-slider, .review-slider-two').slick({
     slidesToShow: 1,
@@ -1370,7 +1371,7 @@ if ($('.nav-menu').length) {
         }
       },
     ]
-  });  
+  });
   // ========================= Review Js End ===================
 
   // ========================= Wow Js Start ===================
@@ -1397,8 +1398,8 @@ if ($('.nav-menu').length) {
 
     // ========================= Color List Js Start ===================
     $('.color-list__button').on('click', function () {
-      $('.color-list__button').removeClass('active'); 
-  
+      $('.color-list__button').removeClass('active');
+
       if(!$(this).hasClass('active')) {
         $(this).addClass('active');
         $(this).removeClass('border-neutral-50');
@@ -1406,11 +1407,11 @@ if ($('.nav-menu').length) {
         $(this).removeClass('active');
         $(this).addClass('border-neutral-50');
       };
-    }); 
+    });
     // ========================= Color List Js End ===================
-    
+
     // ========================= Product Details Slider Js Start ===================
-    
+
     $('.product-big-thumbs').slick({
       slidesToShow: 1,
       slidesToScroll: 1,
@@ -1451,7 +1452,7 @@ if ($('.nav-menu').length) {
       $(this).toggleClass('active')
     });
     // ========================= Add To Cart Js End ===================
-  
+
 
   });
   // ==========================================
@@ -1475,7 +1476,7 @@ if ($('.nav-menu').length) {
       else {
           $('.header').removeClass('fixed-header');
       }
-    }); 
+    });
     // ========================= Header Sticky Js End===================
 
 })(jQuery);

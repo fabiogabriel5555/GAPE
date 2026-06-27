@@ -71,7 +71,7 @@ class SubjectServiceTest {
                         "Arquitetura de Software",
                         "ASW",
                         null,
-                        "Disciplina de arquitetura",
+                        "Subject de arquitetura",
                         BigDecimal.valueOf(6),
                         70,
                         SubjectState.ACTIVE,
@@ -101,7 +101,7 @@ class SubjectServiceTest {
                         "Sistemas Distribuidos",
                         "SD",
                         null,
-                        "Disciplina associada a varios cursos",
+                        "Subject associated with several courses",
                         BigDecimal.valueOf(6),
                         70,
                         SubjectState.ACTIVE,
@@ -130,10 +130,10 @@ class SubjectServiceTest {
                 AccessProfileType.ADMINISTRATOR,
                 new SubjectCreateCommand(
                         10L,
-                        "Disciplina com Foto",
+                        "Subject With Photo",
                         "DCF",
                         null,
-                        "Disciplina com imagem propria",
+                        "Subject with its own image",
                         BigDecimal.valueOf(6),
                         70,
                         SubjectState.ACTIVE,
@@ -169,10 +169,10 @@ class SubjectServiceTest {
                 AccessProfileType.ADMINISTRATOR,
                 new SubjectCreateCommand(
                         10L,
-                        "Disciplina Foto Invalida",
+                        "Subject Invalid Photo",
                         "DFI",
                         null,
-                        "Disciplina para teste de imagem",
+                        "Subject for image test",
                         BigDecimal.valueOf(6),
                         70,
                         SubjectState.ACTIVE,
@@ -206,10 +206,10 @@ class SubjectServiceTest {
                 AccessProfileType.ADMINISTRATOR,
                 new SubjectCreateCommand(
                         10L,
-                        "Disciplina Inativa",
+                        "Subject Inativa",
                         "DIN",
                         null,
-                        "Criada inativa mas associada a curso",
+                        "Created inactive but associated with course",
                         BigDecimal.valueOf(6),
                         70,
                         SubjectState.INACTIVE,
@@ -223,7 +223,7 @@ class SubjectServiceTest {
         );
 
         assertEquals(SubjectState.INACTIVE, subject.state());
-        assertTrue(hasCourseSubject(30L, subject.id()));
+        assertEquals("inactive", courseSubjectState(30L, subject.id()));
     }
 
     @Test
@@ -236,7 +236,7 @@ class SubjectServiceTest {
                         AccessProfileType.ADMINISTRATOR,
                         new SubjectCreateCommand(
                                 0L,
-                                "Disciplina Invalida",
+                                "Subject Invalid",
                                 "INV",
                                 null,
                                 null,
@@ -264,7 +264,7 @@ class SubjectServiceTest {
                         AccessProfileType.ADMINISTRATOR,
                         new SubjectCreateCommand(
                                 10L,
-                                "Disciplina Sem Curso",
+                                "Subject Without Course",
                                 "DSC",
                                 null,
                                 null,
@@ -301,7 +301,7 @@ class SubjectServiceTest {
                         "Projeto Aplicado",
                         "PRJ",
                         null,
-                        "Atualizada pelo coordenador",
+                        "Updated by coordinator",
                         BigDecimal.valueOf(12),
                         140,
                         SubjectState.ACTIVE
@@ -344,7 +344,7 @@ class SubjectServiceTest {
                         AccessProfileType.STUDENT,
                         new SubjectCreateCommand(
                                 10L,
-                                "Disciplina Estudante",
+                                "Subject Student",
                                 "DEST",
                                 null,
                                 null,
@@ -500,6 +500,25 @@ class SubjectServiceTest {
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 return resultSet.getInt(1) > 0;
+            }
+        }
+    }
+
+    private static String courseSubjectState(long courseId, long subjectId) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT state
+                     FROM integrate_subject
+                     WHERE id_course = ?
+                       AND id_subject = ?
+                     """)) {
+            statement.setLong(1, courseId);
+            statement.setLong(2, subjectId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new AssertionError("Course-subject association not found");
+                }
+                return resultSet.getString("state");
             }
         }
     }

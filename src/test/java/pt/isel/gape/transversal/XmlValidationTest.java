@@ -32,9 +32,9 @@ class XmlValidationTest {
 
     private static final Path GAPE_CONFIG_XSD = CONFIG_XSD_DIR.resolve("gape-config.xsd");
     private static final Path CALENDARIO_ACADEMICO_XSD =
-            CONFIG_XSD_DIR.resolve("transversal/calendarioAcademico.xsd");
+            CONFIG_XSD_DIR.resolve("transversal/academicCalendar.xsd");
     private static final Path CALENDARIO_PLURIANUAL_XSD =
-            CONFIG_XSD_DIR.resolve("transversal/calendarioPlurianual.xsd");
+            CONFIG_XSD_DIR.resolve("transversal/multiYearCalendar.xsd");
 
     @Test
     void schemasCompile() {
@@ -47,7 +47,7 @@ class XmlValidationTest {
     }
 
     @Test
-    void allConfigXmlFilesValidateAgainstTheirSchemas() throws Exception {
+    void allConfigXmlFilesValidteAgainstTheirSchemas() throws Exception {
         List<Path> xmlFiles = supportXmlFiles();
 
         assertFalse(xmlFiles.isEmpty(), "Expected at least one XML support file to validate");
@@ -102,7 +102,7 @@ class XmlValidationTest {
                     <label>Conta ativa</label>
                   </state>
                   <state code="inactive">
-                    <label>Conta inativa</label>
+                    <label>Inactive account</label>
                   </state>
                 </userStates>
                 """
@@ -144,7 +144,7 @@ class XmlValidationTest {
                     <label>Justificada</label>
                   </status>
                   <status code="late">
-                    <label>Atraso</label>
+                    <label>Late</label>
                   </status>
                   <status code="partial">
                     <label>Parcial</label>
@@ -157,9 +157,6 @@ class XmlValidationTest {
                   </state>
                   <state code="cancelled">
                     <label>Cancelada</label>
-                  </state>
-                  <state code="archived">
-                    <label>Arquivada</label>
                   </state>
                 </attendanceStates>
                 """
@@ -178,13 +175,13 @@ class XmlValidationTest {
                 <?xml version="1.0" encoding="UTF-8"?>
                 <sessionStates>
                   <state>
-                    <label>Sessao ativa</label>
+                    <label>Active session</label>
                   </state>
                   <state code="expired">
-                    <label>Sessao expirada</label>
+                    <label>Expired session</label>
                   </state>
                   <state code="closed">
-                    <label>Sessao terminada</label>
+                    <label>Closed session</label>
                   </state>
                 </sessionStates>
                 """,
@@ -212,7 +209,7 @@ class XmlValidationTest {
                 <?xml version="1.0" encoding="UTF-8"?>
                 <assessmentTypes>
                   <type code="questionnaire">
-                    <label>Questionario</label>
+                    <label>Form</label>
                   </type>
                   <type code="quiz">
                     <label>Quiz</label>
@@ -260,48 +257,48 @@ class XmlValidationTest {
         List<String> invalidXmlCases = List.of(
                 """
                 <?xml version="1.0" encoding="UTF-8"?>
-                <calendarioAcademico anoInicial="2025" anoFinal="2026">
-                  <verao inicio="2026-02-16" fim="2026-06-05">
-                    <normal fim="2026-06-22" lancar="2026-06-29"/>
-                    <recurso fim="2026-07-10" lancar="2026-07-17"/>
-                    <pascoa inicio="2026-03-30" fim="2026-04-05"/>
-                  </verao>
-                  <inverno inicio="2025-09-15" fim="2026-01-10">
-                    <normal fim="2026-01-24" lancar="2026-01-31"/>
-                    <recurso fim="2026-02-07" lancar="2026-02-14"/>
-                    <natal inicio="2025-12-22" fim="2026-01-02"/>
-                  </inverno>
-                </calendarioAcademico>
+                <academicCalendar initialYear="2025" finalYear="2026">
+                  <summer start="2026-02-16" end="2026-06-05">
+                    <normal end="2026-06-22" release="2026-06-29"/>
+                    <resit end="2026-07-10" release="2026-07-17"/>
+                    <easter start="2026-03-30" end="2026-04-05"/>
+                  </summer>
+                  <winter start="2025-09-15" end="2026-01-10">
+                    <normal end="2026-01-24" release="2026-01-31"/>
+                    <resit end="2026-02-07" release="2026-02-14"/>
+                    <christmas start="2025-12-22" end="2026-01-02"/>
+                  </winter>
+                </academicCalendar>
                 """,
                 """
                 <?xml version="1.0" encoding="UTF-8"?>
-                <calendarioAcademico anoFinal="2026">
-                  <inverno inicio="2025-09-15" fim="2026-01-10">
-                    <normal fim="2026-01-24" lancar="2026-01-31"/>
-                    <recurso fim="2026-02-07" lancar="2026-02-14"/>
-                    <natal inicio="2025-12-22" fim="2026-01-02"/>
-                  </inverno>
-                  <verao inicio="2026-02-16" fim="2026-06-05">
-                    <normal fim="2026-06-22" lancar="2026-06-29"/>
-                    <recurso fim="2026-07-10" lancar="2026-07-17"/>
-                    <pascoa inicio="2026-03-30" fim="2026-04-05"/>
-                  </verao>
-                </calendarioAcademico>
+                <academicCalendar finalYear="2026">
+                  <winter start="2025-09-15" end="2026-01-10">
+                    <normal end="2026-01-24" release="2026-01-31"/>
+                    <resit end="2026-02-07" release="2026-02-14"/>
+                    <christmas start="2025-12-22" end="2026-01-02"/>
+                  </winter>
+                  <summer start="2026-02-16" end="2026-06-05">
+                    <normal end="2026-06-22" release="2026-06-29"/>
+                    <resit end="2026-07-10" release="2026-07-17"/>
+                    <easter start="2026-03-30" end="2026-04-05"/>
+                  </summer>
+                </academicCalendar>
                 """,
                 """
                 <?xml version="1.0" encoding="UTF-8"?>
-                <calendarioAcademico anoInicial="2025-2026" anoFinal="2026">
-                  <inverno inicio="2025-09-15" fim="2026-01-10">
-                    <normal fim="2026-01-24" lancar="2026-01-31"/>
-                    <recurso fim="2026-02-07" lancar="2026-02-14"/>
-                    <natal inicio="2025-12-22" fim="2026-01-02"/>
-                  </inverno>
-                  <verao inicio="2026-02-31" fim="2026-06-05">
-                    <normal fim="2026-06-22" lancar="2026-06-29"/>
-                    <recurso fim="2026-07-10" lancar="2026-07-17"/>
-                    <pascoa inicio="2026-03-30" fim="2026-04-05"/>
-                  </verao>
-                </calendarioAcademico>
+                <academicCalendar initialYear="2025-2026" finalYear="2026">
+                  <winter start="2025-09-15" end="2026-01-10">
+                    <normal end="2026-01-24" release="2026-01-31"/>
+                    <resit end="2026-02-07" release="2026-02-14"/>
+                    <christmas start="2025-12-22" end="2026-01-02"/>
+                  </winter>
+                  <summer start="2026-02-31" end="2026-06-05">
+                    <normal end="2026-06-22" release="2026-06-29"/>
+                    <resit end="2026-07-10" release="2026-07-17"/>
+                    <easter start="2026-03-30" end="2026-04-05"/>
+                  </summer>
+                </academicCalendar>
                 """
         );
 
@@ -316,28 +313,28 @@ class XmlValidationTest {
         List<String> invalidXmlCases = List.of(
                 """
                 <?xml version="1.0" encoding="UTF-8"?>
-                <calendario>
-                  <ano valor="2026">
-                    <mes id_mes="1" nome="Janeiro">
-                      <dia numero="1" dia_semana="Quinta">
-                        <util/>
-                        <fim-de-semana/>
-                      </dia>
-                    </mes>
+                <calendar>
+                  <ano value="2026">
+                    <month month_id="1" name="January">
+                      <day number="1" weekday="Thursday">
+                        <workday/>
+                        <weekend/>
+                      </day>
+                    </month>
                   </ano>
-                </calendario>
+                </calendar>
                 """,
                 """
                 <?xml version="1.0" encoding="UTF-8"?>
-                <calendario>
+                <calendar>
                   <ano>
-                    <mes id_mes="13" nome="March">
-                      <dia numero="32" dia_semana="Tuesday">
-                        <feriado>Feriado Municipal</feriado>
-                      </dia>
-                    </mes>
+                    <month month_id="13" name="March">
+                      <day number="32" weekday="Tuesday">
+                        <holiday>Municipal Holiday</holiday>
+                      </day>
+                    </month>
                   </ano>
-                </calendario>
+                </calendar>
                 """
         );
 
@@ -372,10 +369,10 @@ class XmlValidationTest {
 
     private static Path schemaFor(Path xmlFile) {
         String fileName = xmlFile.getFileName().toString();
-        if ("calendarioAcademico.xml".equals(fileName)) {
+        if ("academicCalendar.xml".equals(fileName)) {
             return CALENDARIO_ACADEMICO_XSD;
         }
-        if ("calendarioPlurianual.xml".equals(fileName)) {
+        if ("multiYearCalendar.xml".equals(fileName)) {
             return CALENDARIO_PLURIANUAL_XSD;
         }
         return GAPE_CONFIG_XSD;

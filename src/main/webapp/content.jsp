@@ -28,13 +28,13 @@
     <link rel="stylesheet" href="assets/css/animate.css">
     <!-- dataTables.dataTables -->
     <link rel="stylesheet" href="assets/css/dataTables.dataTables.min.css">
-    
+
     <link rel="stylesheet" href="assets/css/aos.css">
     <!-- Main css -->
     <link rel="stylesheet" href="assets/css/main.css">
-</head> 
+</head>
 <body>
-    
+
 <!--==================== Preloader Start ====================-->
   <div class="preloader">
     <img src="assets/images/icons/preloader.gif" alt="">
@@ -65,10 +65,10 @@
             <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
-            
+
 <ul class="nav-menu flex-align nav-menu--mobile">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -134,7 +134,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -155,7 +155,7 @@
                 <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -179,7 +179,7 @@
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -194,7 +194,7 @@
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -226,7 +226,7 @@
     </select>
 </div>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -246,7 +246,7 @@
                     </a>
                 </div>
                 <!-- Logo End  -->
-    
+
                 <!-- Select Start -->
                 <div class="d-sm-block d-none">
                     <div class="header-select border border-neutral-30 bg-main-25 rounded-pill position-relative">
@@ -269,13 +269,13 @@
 </div>
                 </div>
                 <!-- Select End -->
-    
+
                 <!-- Menu Start  -->
                 <div class="header-menu d-lg-block d-none">
-                    
+
 <ul class="nav-menu flex-align ">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -341,7 +341,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -362,7 +362,7 @@
                 <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -386,7 +386,7 @@
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -401,7 +401,7 @@
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -428,7 +428,7 @@
                     <%@ include file="/WEB-INF/fragments/user-avatar-content.jspf" %>
                 </a>
                 <button type="button" class="toggle-mobileMenu d-lg-none text-neutral-200 flex-center">
-                    <i class="ph ph-list"></i> 
+                    <i class="ph ph-list"></i>
                 </button>
             </div>
             <!-- Header Right End  -->
@@ -703,7 +703,7 @@
                             </div>
                             <div class="mb-24">
                                 <label class="text-neutral-700 text-lg fw-medium mb-12">Star Reviews </label>
-                                
+
                                 <div id="half-star-rating">
                                     <div class="rating-group">
                                         <input class="rating__input rating__input--none" checked name="rating2" id="rating2-0" value="0" type="radio">
@@ -746,7 +746,7 @@
                     </div>
                     <!-- Review Form End -->
                 </div>
-                
+
                 <div class="col-xl-4">
                     <div class="course-details__sidebar border border-neutral-30 rounded-12 bg-white p-24">
                         <div class="accordion common-accordion style-three" id="accordionExampleTwo">
@@ -760,7 +760,7 @@
                               <div id="collapseOneTwo" class="accordion-collapse collapse show" data-bs-parent="#accordionExampleTwo">
                                 <div class="accordion-body p-0 bg-main-25">
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">What is Python?</span>
@@ -778,7 +778,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Setting up your Python environment</span>
@@ -796,7 +796,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Writing your first Python program</span>
@@ -814,7 +814,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Understanding Python syntax and structure</span>
@@ -834,7 +834,7 @@
                                 </div>
                               </div>
                             </div>
-                            
+
                             <div class="accordion-item">
                               <h2 class="accordion-header bg-main-25">
                                 <button class="accordion-button bg-main-25 collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwoTwo" aria-expanded="false" aria-controls="collapseTwoTwo">
@@ -844,7 +844,7 @@
                               <div id="collapseTwoTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExampleTwo">
                                 <div class="accordion-body p-0 bg-main-25">
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">What is Python?</span>
@@ -862,7 +862,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Setting up your Python environment</span>
@@ -880,7 +880,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Writing your first Python program</span>
@@ -898,7 +898,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Understanding Python syntax and structure</span>
@@ -927,7 +927,7 @@
                               <div id="collapseThreeTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExampleTwo">
                                 <div class="accordion-body p-0 bg-main-25">
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">What is Python?</span>
@@ -945,7 +945,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Setting up your Python environment</span>
@@ -963,7 +963,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Writing your first Python program</span>
@@ -981,7 +981,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Understanding Python syntax and structure</span>
@@ -1010,7 +1010,7 @@
                               <div id="collapseFourTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExampleTwo">
                                 <div class="accordion-body p-0 bg-main-25">
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">What is Python?</span>
@@ -1028,7 +1028,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Setting up your Python environment</span>
@@ -1046,7 +1046,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Writing your first Python program</span>
@@ -1064,7 +1064,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Understanding Python syntax and structure</span>
@@ -1093,7 +1093,7 @@
                               <div id="collapseFiveTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExampleTwo">
                                 <div class="accordion-body p-0 bg-main-25">
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">What is Python?</span>
@@ -1111,7 +1111,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Setting up your Python environment</span>
@@ -1129,7 +1129,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Writing your first Python program</span>
@@ -1147,7 +1147,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Understanding Python syntax and structure</span>
@@ -1176,7 +1176,7 @@
                               <div id="collapseSixTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExampleTwo">
                                 <div class="accordion-body p-0 bg-main-25">
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">What is Python?</span>
@@ -1194,7 +1194,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Setting up your Python environment</span>
@@ -1212,7 +1212,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Writing your first Python program</span>
@@ -1230,7 +1230,7 @@
                                         </div>
                                     </div>
                                     <div class="curriculam-item">
-                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">   
+                                        <a href="javascript:void(0)" class="text-neutral-500 fw-medium hover-text-main-600 d-block">
                                             <span class="flex-align gap-12">
                                                 <i class="text-xl d-flex ph-bold ph-video-camera"></i>
                                                 <span class="text-line-1">Understanding Python syntax and structure</span>
@@ -1257,7 +1257,7 @@
         </div>
     </section>
     <!-- ============================== Course Details Section End ============================== -->
-    
+
     <!-- ================================= Certificate Section Start ================================= -->
 <div class="certificate">
     <div class="container container--lg">
@@ -1279,7 +1279,7 @@
                             </div>
                         </div>
                         <div class="col-xl-6 d-xl-block d-none">
-                            <div class="certificate__thumb" data-aos="fade-up-left">    
+                            <div class="certificate__thumb" data-aos="fade-up-left">
                                 <img src="assets/images/thumbs/certificate-img.png" alt="" data-tilt data-tilt-max="8" data-tilt-speed="500" data-tilt-perspective="5000" data-tilt-full-page-listening>
                             </div>
                         </div>
@@ -1290,8 +1290,8 @@
     </div>
  </div>
 <!-- ================================= Certificate Section End ================================= -->
-    
-    
+
+
 <!-- ==================== Footer Start Here ==================== -->
 <footer class="footer bg-main-25 position-relative z-1">
     <div class="container">
@@ -1309,7 +1309,7 @@
     </div>
 </footer>
 <!-- ==================== Footer End Here ==================== -->
-  
+
 
         <!-- Jquery js -->
     <script src="assets/js/jquery-3.7.1.min.js"></script>
@@ -1344,22 +1344,14 @@
     <script src="assets/js/wow.min.js"></script>
 
     <script src="assets/js/aos.js"></script>
-    
+
     <!-- main js -->
     <script src="assets/js/main.js"></script>
 
 
-    
+
 
 
 
     </body>
 </html>
-
-
-
-
-
-
-
-

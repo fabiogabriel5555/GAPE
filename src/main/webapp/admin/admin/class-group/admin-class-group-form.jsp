@@ -413,7 +413,7 @@
                     <div class="gape-wizard-shell">
                         <aside class="gape-class-preview bg-white rounded-10" aria-label="Class group preview">
                             <div class="gape-preview-cover">
-                                <span class="gape-preview-badge" data-preview-state>Active</span>
+                                <span class="gape-preview-badge" data-preview-state>Draft</span>
                                 <i class="ph ph-users-three"></i>
                             </div>
                             <div class="gape-preview-body px-24 py-24">
@@ -560,30 +560,11 @@
                             <div class="gape-step-panel" data-step-panel="2">
                                 <span class="gape-step-eyebrow">Class group access</span>
                                 <h3 class="gape-step-title">Select class group access</h3>
-                                <p class="gape-step-copy">Control whether this class group is available, paused or closed, then define the expected capacity and date window.</p>
+                                <p class="gape-step-copy">The class group state is calculated from the date window. Leave the start date empty to keep it as draft.</p>
 
-                                <div class="gape-choice-grid mb-28">
-                                    <label class="gape-choice-card">
-                                        <input type="radio" name="state" value="ACTIVE" ${form.state == 'ACTIVE' ? 'checked' : ''}>
-                                        <span>
-                                            <strong class="gape-choice-title">Active</strong>
-                                            <small>The class group is available for the academic workflow.</small>
-                                        </span>
-                                    </label>
-                                    <label class="gape-choice-card">
-                                        <input type="radio" name="state" value="INACTIVE" ${form.state == 'INACTIVE' ? 'checked' : ''}>
-                                        <span>
-                                            <strong class="gape-choice-title">Inactive</strong>
-                                            <small>Keep the class group hidden from active operations until it is ready.</small>
-                                        </span>
-                                    </label>
-                                    <label class="gape-choice-card">
-                                        <input type="radio" name="state" value="CLOSED" ${form.state == 'CLOSED' ? 'checked' : ''}>
-                                        <span>
-                                            <strong class="gape-choice-title">Closed</strong>
-                                            <small>Preserve the record while preventing normal active use.</small>
-                                        </span>
-                                    </label>
+                                <div class="mb-28">
+                                    <label class="fw-medium text-base text-neutral-800 mb-12 d-block">State</label>
+                                    <span class="d-inline-flex align-items-center gap-8 px-18 py-14 bg-neutral-20 border border-neutral-30 rounded-14 text-14 fw-semibold text-neutral-700" data-class-group-state-display>Draft</span>
                                 </div>
 
                                 <div class="row gy-4">
@@ -856,6 +837,26 @@
             return 'Not set';
         }
 
+        function todayValue() {
+            var now = new Date();
+            var month = String(now.getMonth() + 1).padStart(2, '0');
+            var day = String(now.getDate()).padStart(2, '0');
+            return now.getFullYear() + '-' + month + '-' + day;
+        }
+
+        function computedStateLabel() {
+            var startsAt = fieldValue('#startsAt', '');
+            var endsAt = fieldValue('#endsAt', '');
+            var today = todayValue();
+            if (!startsAt) {
+                return 'Draft';
+            }
+            if (endsAt && endsAt <= today) {
+                return 'Completed';
+            }
+            return startsAt <= today ? 'Active' : 'Scheduled';
+        }
+
         function updatePreview() {
             updateCrossFieldValidity();
             var code = fieldValue('#code', 'Class group code');
@@ -863,7 +864,7 @@
             var subject = selectedText('#subjectId', selectedText('#subjectContext', 'Subject not selected'));
             var context = course + ' - ' + subject;
             var modality = checkedChoiceLabel('modality', 'On-site');
-            var state = checkedChoiceLabel('state', 'Active');
+            var state = computedStateLabel();
             var shift = selectedText('#shift', 'Not set');
             var capacity = capacityLabel();
             var dates = dateLabel();
@@ -874,7 +875,7 @@
             setText('[data-preview-context]', context);
             setText('[data-preview-modality], [data-review-modality]', modality);
             setText('[data-preview-shift], [data-review-shift]', shift);
-            setText('[data-preview-state], [data-review-state]', state);
+            setText('[data-preview-state], [data-review-state], [data-class-group-state-display]', state);
             setText('[data-preview-capacity], [data-review-capacity]', capacity);
             setText('[data-preview-dates], [data-review-dates]', dates);
             setText('[data-review-thumbnails]', thumbnails);
@@ -896,7 +897,20 @@
             }
 
             if (startsAt && endsAt) {
+                var today = todayValue();
+                startsAt.min = today;
+                endsAt.min = startsAt.value || today;
+                startsAt.setCustomValidity('');
                 endsAt.setCustomValidity('');
+                if (endsAt.value && !startsAt.value) {
+                    startsAt.setCustomValidity('Start date is required when an end date is set.');
+                }
+                if (startsAt.value && startsAt.value < today) {
+                    startsAt.setCustomValidity('Start date cannot be in the past.');
+                }
+                if (endsAt.value && endsAt.value < today) {
+                    endsAt.setCustomValidity('End date cannot be in the past.');
+                }
                 if (startsAt.value && endsAt.value && startsAt.value > endsAt.value) {
                     endsAt.setCustomValidity('End date cannot be before start date.');
                 }
@@ -970,6 +984,7 @@
         }
 
         updatePreview();
+        window.setInterval(updatePreview, 30000);
         });
     })();
 </script>

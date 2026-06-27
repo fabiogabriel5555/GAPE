@@ -80,7 +80,7 @@ class CourseServiceTest {
                 1L,
                 null,
                 AccessProfileType.ADMINISTRATOR,
-                validCreateCommand("Curso com Foto", "CF"),
+                validCreateCommand("Course With Photo", "CF"),
                 "127.0.0.1"
         );
 
@@ -105,7 +105,7 @@ class CourseServiceTest {
                 1L,
                 null,
                 AccessProfileType.ADMINISTRATOR,
-                validCreateCommand("Curso Foto Invalida", "CFI"),
+                validCreateCommand("Course Invalid Photo", "CFI"),
                 "127.0.0.1"
         );
 
@@ -133,7 +133,7 @@ class CourseServiceTest {
                         new CourseCreateCommand(
                                 0L,
                                 null,
-                                "Curso Invalido",
+                                "Course Invalid",
                                 "INV",
                                 null,
                                 null,
@@ -158,7 +158,7 @@ class CourseServiceTest {
                         new CourseCreateCommand(
                                 10L,
                                 21L,
-                                "Curso Misto",
+                                "Course Mixed",
                                 "MIX",
                                 null,
                                 null,
@@ -180,7 +180,7 @@ class CourseServiceTest {
                         4L,
                         null,
                         AccessProfileType.STUDENT,
-                        validCreateCommand("Curso Estudante", "CE"),
+                        validCreateCommand("Course Student", "CE"),
                         "127.0.0.1"
                 )
         );
@@ -197,7 +197,7 @@ class CourseServiceTest {
                         new CourseCreateCommand(
                                 10L,
                                 20L,
-                                "Curso com Duracao Invalida",
+                                "Course With Invalid Duration",
                                 "CDI",
                                 null,
                                 null,
@@ -376,7 +376,7 @@ class CourseServiceTest {
                 name,
                 acronym,
                 null,
-                "Curso de teste",
+                "Course test",
                 BigDecimal.valueOf(60),
                 "1",
                 CourseType.SHORT_COURSE,

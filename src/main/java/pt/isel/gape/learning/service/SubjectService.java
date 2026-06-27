@@ -239,7 +239,6 @@ public final class SubjectService {
                     Subject current = requireSubject(connection, subjectId);
                     requireSubjectMutationManager(actorUserId, sessionId, actorProfileType, current, sourceIp);
                     validateOrganization(connection, current.organizationId());
-                    requireNotArchived(current);
                     MediaPathValidator.optionalEntityProfilePath(command.photo(), "subjects", subjectId, "Subject photo");
                     subjectDAO.update(connection, subjectId, command);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_UPDATE",
@@ -281,7 +280,6 @@ public final class SubjectService {
                 try {
                     Subject current = requireSubject(connection, subjectId);
                     requireSubjectMutationManager(actorUserId, sessionId, actorProfileType, current, sourceIp);
-                    requireNotArchived(current);
                     subjectDAO.updatePhoto(connection, subjectId, normalizedPhoto);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_UPDATE",
                             "subject", Long.toString(subjectId), "success", sourceIp);
@@ -319,7 +317,6 @@ public final class SubjectService {
                 try {
                     Subject subject = requireSubject(connection, subjectId);
                     requireSubjectAdministrator(actorUserId, sessionId, actorProfileType, subject.organizationId(), sourceIp);
-                    requireNotArchived(subject);
                     assignCoordinatorInternal(connection, coordinatorUserId, subjectId, startDate, endDate);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_ASSIGN_COORDINATOR",
                             "subject", subjectId + ":" + coordinatorUserId, "success", sourceIp);
@@ -358,9 +355,8 @@ public final class SubjectService {
                 try {
                     Subject subject = requireSubject(connection, subjectId);
                     requireSubjectAdministrator(actorUserId, sessionId, actorProfileType, subject.organizationId(), sourceIp);
-                    requireNotArchived(subject);
                     if (!coordinateSubjectDAO.canAssign(connection, coordinatorUserId, subjectId)) {
-                        throw new IllegalArgumentException("Subject assignment requires active coordinator and non-archived subject");
+                        throw new IllegalArgumentException("Subject assignment requires active coordinator and active subject");
                     }
                     coordinateSubjectDAO.updateAssignment(connection, coordinatorUserId, subjectId, state, startDate, endDate);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_COORDINATOR_UPDATE",
@@ -394,8 +390,7 @@ public final class SubjectService {
                 try {
                     Subject subject = requireSubject(connection, subjectId);
                     requireSubjectMutationManager(actorUserId, sessionId, actorProfileType, subject, sourceIp);
-                    requireNotArchived(subject);
-                    subjectDAO.updateState(connection, subjectId, SubjectState.ARCHIVED);
+                    subjectDAO.updateState(connection, subjectId, SubjectState.INACTIVE);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_ARCHIVE",
                             "subject", Long.toString(subjectId), "success", sourceIp);
                     connection.commit();
@@ -426,7 +421,6 @@ public final class SubjectService {
                 try {
                     Subject subject = requireSubject(connection, subjectId);
                     requireSubjectMutationManager(actorUserId, sessionId, actorProfileType, subject, sourceIp);
-                    requireNotArchived(subject);
                     if (subjectDAO.hasDomainDependencies(connection, subjectId)) {
                         throw new IllegalStateException("Subject with domain dependencies cannot be deleted");
                     }
@@ -471,7 +465,7 @@ public final class SubjectService {
     ) throws SQLException {
         requireValidDates(startDate, endDate);
         if (!coordinateSubjectDAO.canAssign(connection, coordinatorUserId, subjectId)) {
-            throw new IllegalArgumentException("Subject assignment requires active coordinator and non-archived subject");
+            throw new IllegalArgumentException("Subject assignment requires active coordinator and active subject");
         }
         coordinateSubjectDAO.assign(connection, coordinatorUserId, subjectId, startDate, endDate);
     }
@@ -479,8 +473,8 @@ public final class SubjectService {
     private void validateOrganization(Connection connection, long organizationId) throws SQLException {
         Organization organization = organizationDAO.findById(connection, organizationId)
                 .orElseThrow(() -> new IllegalArgumentException("Subject organization not found: " + organizationId));
-        if (organization.state() == OrganizationState.ARCHIVED) {
-            throw new IllegalStateException("Archived organizations cannot receive subjects");
+        if (organization.state() != OrganizationState.ACTIVE) {
+            throw new IllegalStateException("Inactive organizations cannot receive subjects");
         }
     }
 
@@ -491,8 +485,8 @@ public final class SubjectService {
             if (course.organizationId() != command.organizationId()) {
                 throw new IllegalArgumentException("Initial course must belong to the subject organization");
             }
-            if (course.state() == CourseState.ARCHIVED) {
-                throw new IllegalStateException("Archived courses cannot receive subject associations");
+            if (course.state() != CourseState.ACTIVE) {
+                throw new IllegalStateException("Inactive courses cannot receive subject associations");
             }
         }
     }
@@ -654,7 +648,7 @@ public final class SubjectService {
             boolean hasActiveAssociation = false;
             AuthorizationDecision lastDeniedDecision = AuthorizationDecision.deny("no_active_subject_course_association");
             for (CourseSubjectAssociation association : courseSubjectDAO.findBySubject(subjectId)) {
-                if (association.state() == CourseSubjectState.ARCHIVED) {
+                if (association.state() != CourseSubjectState.ACTIVE) {
                     continue;
                 }
                 hasActiveAssociation = true;
@@ -767,9 +761,6 @@ public final class SubjectService {
         AcademicTextValidator.requireAcronym(command.acronym(), "Subject acronym is required");
         requireNoInitialPhoto(command.photo(), "Subject photo");
         Objects.requireNonNull(command.state(), "subject state is required");
-        if (command.state() == SubjectState.ARCHIVED) {
-            throw new IllegalArgumentException("Use the archive operation to archive subjects");
-        }
         List<SubjectInitialCourseAssignment> assignments = initialCourseAssignments(command);
         if (assignments.isEmpty()) {
             throw new IllegalArgumentException("At least one initial course is required");
@@ -794,9 +785,6 @@ public final class SubjectService {
         AcademicTextValidator.requireAcronym(command.acronym(), "Subject acronym is required");
         MediaPathValidator.optionalSafeRelativePath(command.photo(), "Subject photo");
         Objects.requireNonNull(command.state(), "subject state is required");
-        if (command.state() == SubjectState.ARCHIVED) {
-            throw new IllegalArgumentException("Use the archive operation to archive subjects");
-        }
     }
 
     private static Set<Long> safeCoordinators(Set<Long> coordinatorUserIds) {
@@ -807,6 +795,9 @@ public final class SubjectService {
             SubjectCreateCommand command,
             long subjectId
     ) {
+        CourseSubjectState associationState = command.state() == SubjectState.ACTIVE
+                ? CourseSubjectState.ACTIVE
+                : CourseSubjectState.INACTIVE;
         return initialCourseAssignments(command).stream()
                 .map(assignment -> new CourseSubjectAssociationCommand(
                         assignment.courseId(),
@@ -814,7 +805,7 @@ public final class SubjectService {
                         assignment.curricularYear(),
                         assignment.term(),
                         assignment.mandatory(),
-                        CourseSubjectState.ACTIVE
+                        associationState
                 ))
                 .toList();
     }
@@ -831,12 +822,6 @@ public final class SubjectService {
         return command.initialCourseAssignments().stream()
                 .filter(Objects::nonNull)
                 .toList();
-    }
-
-    private static void requireNotArchived(Subject subject) {
-        if (subject.state() == SubjectState.ARCHIVED) {
-            throw new IllegalStateException("Archived subjects cannot be changed");
-        }
     }
 
     private static void requireNoInitialPhoto(String value, String fieldLabel) {

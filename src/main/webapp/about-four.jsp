@@ -28,13 +28,13 @@
     <link rel="stylesheet" href="assets/css/animate.css">
     <!-- dataTables.dataTables -->
     <link rel="stylesheet" href="assets/css/dataTables.dataTables.min.css">
-    
+
     <link rel="stylesheet" href="assets/css/aos.css">
     <!-- Main css -->
     <link rel="stylesheet" href="assets/css/main.css">
-</head> 
+</head>
 <body>
-    
+
 <!--==================== Preloader Start ====================-->
   <div class="preloader">
     <img src="assets/images/icons/preloader.gif" alt="">
@@ -65,10 +65,10 @@
             <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
-            
+
 <ul class="nav-menu flex-align nav-menu--mobile">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -134,7 +134,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -155,7 +155,7 @@
                 <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -179,7 +179,7 @@
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -194,7 +194,7 @@
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -226,7 +226,7 @@
     </select>
 </div>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -246,7 +246,7 @@
                     </a>
                 </div>
                 <!-- Logo End  -->
-    
+
                 <!-- Select Start -->
                 <div class="d-sm-block d-none">
                     <div class="header-select border border-neutral-30 bg-main-25 rounded-pill position-relative">
@@ -269,13 +269,13 @@
 </div>
                 </div>
                 <!-- Select End -->
-    
+
                 <!-- Menu Start  -->
                 <div class="header-menu d-lg-block d-none">
-                    
+
 <ul class="nav-menu flex-align ">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -341,7 +341,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -362,7 +362,7 @@
                 <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -386,7 +386,7 @@
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -401,7 +401,7 @@
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -428,7 +428,7 @@
                     <%@ include file="/WEB-INF/fragments/user-avatar-content.jspf" %>
                 </a>
                 <button type="button" class="toggle-mobileMenu d-lg-none text-neutral-200 flex-center">
-                    <i class="ph ph-list"></i> 
+                    <i class="ph ph-list"></i>
                 </button>
             </div>
             <!-- Header Right End  -->
@@ -445,7 +445,7 @@
     <img src="assets/images/shapes/shape5.png" alt="" class="shape six animation-walking d-md-block d-none">
     <img src="assets/images/shapes/shape4.png" alt="" class="shape four animation-scalation">
     <img src="assets/images/shapes/shape4.png" alt="" class="shape nine animation-scalation">
-    
+
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8">
@@ -453,20 +453,20 @@
                     <h1 class="breadcrumb__title display-4 fw-semibold text-center"> About Us 04</h1>
                     <ul class="breadcrumb__list d-flex align-items-center justify-content-center gap-4">
                         <li class="breadcrumb__item">
-                            <a href="index.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium"> 
+                            <a href="index.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium">
                                 <i class="text-lg d-inline-flex ph-bold ph-house"></i> Home</a>
                          </li>
                         <li class="breadcrumb__item">
                             <i class="text-neutral-500 d-flex ph-bold ph-caret-right"></i>
                         </li>
                         <li class="breadcrumb__item">
-                            <a href="course.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium"> </a> 
+                            <a href="course.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium"> </a>
                         </li>
                         <li class="breadcrumb__item d-none">
                             <i class="text-neutral-500 d-flex ph-bold ph-caret-right"></i>
                         </li>
-                        <li class="breadcrumb__item"> 
-                            <span class="text-main-two-600"> About Us 04 </span> 
+                        <li class="breadcrumb__item">
+                            <span class="text-main-two-600"> About Us 04 </span>
                         </li>
                     </ul>
                 </div>
@@ -495,7 +495,7 @@
                                 <span class="text-white">Award Winning</span>
                             </div>
                         </div>
-                        
+
                         <div class="d-sm-flex d-none position-absolute inset-block-end-0 inset-inline-start-0 me-lg-0 ms--150px px-24 py-12 rounded-12 bg-white fw-medium flex-align d-inline-flex gap-16 box-shadow-lg" data-tilt data-tilt-max="8" data-tilt-speed="500" data-tilt-perspective="5000" data-tilt-transition="1s" data-tilt-scale="1.04">
                             <div class="text-center">
                                 <img src="assets/images/thumbs/about-four-short-img.png" class="mb-24" alt="">
@@ -515,9 +515,9 @@
                                 <h5 class="text-main-600 mb-0">Find Your Tution Jobs, in your area</h5>
                             </div>
                             <h2 class="mb-24 wow bounceInRight">Find Tutoring Jobs</h2>
-                            <p class="text-neutral-500 text-line-2 wow bounceInUp">If teaching jobs interests you, then you are on the right place. GAPE, we often haveÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â 500+ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â open home tuition jobs that are genuine andÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â 100%ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â verified.</p>
+                            <p class="text-neutral-500 text-line-2 wow bounceInUp">If teaching jobs interest you, you are in the right place. GAPE often has 500+ open home tuition jobs that are genuine and 100% verified.</p>
                         </div>
-    
+
                         <div class="grid-cols-2">
                             <div class="flex-align align-items-start gap-20 animation-item" data-aos="fade-up" data-aos-duration="600">
                                 <span class="flex-shrink-0 w-56 h-56 flex-center d-inline-flex bg-main-50 text-main-600 text-32 rounded-circle box-shadow-md">
@@ -568,7 +568,7 @@
                                 </div>
                             </div>
                         </div>
-    
+
                         <div class="pt-40 border-top border-neutral-50 mt-40 border-dashed border-0">
                             <a href="apply-admission.jsp" class="btn btn-main rounded-pill flex-align d-inline-flex gap-8">
                                 <i class="ph-bold ph-magnifying-glass d-flex text-lg"></i>
@@ -577,14 +577,14 @@
                         </div>
                     </div>
                 </div>
-                
+
             </div>
         </div>
     </div>
 </section>
 <!-- ================================ About Four End =============================== -->
 
-    
+
     <!-- ================================= Counter Section Three Start ============================== -->
 <section class="counter-three py-120 bg-main-25">
     <div class="container">
@@ -631,7 +631,7 @@
     </div>
  </section>
 <!-- ================================= Counter Section Three End ============================== -->
-    
+
     <!-- ====================================== Tutor Section Start ======================================= -->
 <section class="tutor-two py-120 position-relative z-1 background-img" data-background-image="assets/images/bg/gradient-bg-2.png">
     <div class="container">
@@ -644,7 +644,7 @@
             <h2 class="mb-24">What Our Students Say</h2>
             <p class="">Our tutoring sessions are interactive and engaging, focusing on the student's specific needs.</p>
         </div>
-        
+
         <div class="tutor-slider">
             <div>
                 <div class="scale-hover-item bg-white rounded-16 p-12 h-100 border border-neutral-20">
@@ -673,7 +673,7 @@
                             </div>
                             <div class="mt-24 flex-between gap-16 flex-wrap">
                                 <h4 class="mb-0 text-main-two-600">
-                                    $155 <span class="text-inherit text-neutral-200 fw-normal">per/hr</span> 
+                                    $155 <span class="text-inherit text-neutral-200 fw-normal">per/hr</span>
                                 </h4>
                                 <div class="flex-align gap-8 py-10 px-14 border border-main-100 rounded-8 bg-main-25">
                                     <span class="text-xl d-flex text-main-600"><i class="ph-bold ph-map-pin"></i></span>
@@ -717,7 +717,7 @@
                             </div>
                             <div class="mt-24 flex-between gap-16 flex-wrap">
                                 <h4 class="mb-0 text-main-two-600">
-                                    $155 <span class="text-inherit text-neutral-200 fw-normal">per/hr</span> 
+                                    $155 <span class="text-inherit text-neutral-200 fw-normal">per/hr</span>
                                 </h4>
                                 <div class="flex-align gap-8 py-10 px-14 border border-main-100 rounded-8 bg-main-25">
                                     <span class="text-xl d-flex text-main-600"><i class="ph-bold ph-map-pin"></i></span>
@@ -761,7 +761,7 @@
                             </div>
                             <div class="mt-24 flex-between gap-16 flex-wrap">
                                 <h4 class="mb-0 text-main-two-600">
-                                    $155 <span class="text-inherit text-neutral-200 fw-normal">per/hr</span> 
+                                    $155 <span class="text-inherit text-neutral-200 fw-normal">per/hr</span>
                                 </h4>
                                 <div class="flex-align gap-8 py-10 px-14 border border-main-100 rounded-8 bg-main-25">
                                     <span class="text-xl d-flex text-main-600"><i class="ph-bold ph-map-pin"></i></span>
@@ -805,7 +805,7 @@
                             </div>
                             <div class="mt-24 flex-between gap-16 flex-wrap">
                                 <h4 class="mb-0 text-main-two-600">
-                                    $155 <span class="text-inherit text-neutral-200 fw-normal">per/hr</span> 
+                                    $155 <span class="text-inherit text-neutral-200 fw-normal">per/hr</span>
                                 </h4>
                                 <div class="flex-align gap-8 py-10 px-14 border border-main-100 rounded-8 bg-main-25">
                                     <span class="text-xl d-flex text-main-600"><i class="ph-bold ph-map-pin"></i></span>
@@ -823,7 +823,7 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="flex-center gap-16 mt-40">
             <button type="button" id="tutor-prev" class="slick-prev slick-arrow flex-center rounded-circle border border-gray-100 hover-border-main-600 text-xl hover-bg-main-600 hover-text-white transition-1 w-48 h-48" style="">
                 <i class="ph ph-caret-left"></i>
@@ -838,7 +838,7 @@
 
     <!-- ============================== Review Section start =============================== -->
 <section class="review py-120 bg-main-25 overflow-hidden">
- 
+
 
     <div class="container">
         <div class="section-heading text-center">
@@ -853,7 +853,7 @@
             <img src="assets/images/shapes/shape2.png" alt="" class="shape two style-left animation-scalation">
             <img src="assets/images/shapes/shape6.png" alt="" class="shape four style-top animation-scalation">
             <img src="assets/images/shapes/shape2.png" alt="" class="shape four style-right animation-scalation">
-            
+
             <div class="row gy-4">
                 <div class="col-lg-6" data-aos="fade-up"  data-aos-duration="600">
                     <div class="bg-white p-32 rounded-12 box-shadow-md">
@@ -1003,7 +1003,7 @@
  </div>
 <!-- ========================== Brand Section End =========================== -->
 
-    
+
 <!-- ==================== Footer Start Here ==================== -->
 <footer class="footer bg-neutral-900 position-relative z-1">
     <div class="container">
@@ -1021,7 +1021,7 @@
     </div>
 </footer>
 <!-- ==================== Footer End Here ==================== -->
-  
+
 
         <!-- Jquery js -->
     <script src="assets/js/jquery-3.7.1.min.js"></script>
@@ -1056,22 +1056,14 @@
     <script src="assets/js/wow.min.js"></script>
 
     <script src="assets/js/aos.js"></script>
-    
+
     <!-- main js -->
     <script src="assets/js/main.js"></script>
 
 
-    
+
 
 
 
     </body>
 </html>
-
-
-
-
-
-
-
-

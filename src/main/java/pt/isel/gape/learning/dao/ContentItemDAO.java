@@ -83,13 +83,37 @@ public final class ContentItemDAO {
         }
     }
 
+    public Optional<ContentItem> findFirstItemBySource(Connection connection, String source) throws SQLException {
+        String sql = """
+                SELECT id_content_item, author_user_id, title, description, format, source,
+                       state, created_at, updated_at
+                FROM content_item
+                WHERE TRIM(source) = ?
+                ORDER BY id_content_item
+                LIMIT 1
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, source == null ? "" : source.trim());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(mapContentItem(resultSet));
+            }
+        }
+    }
+
     public List<ContentItem> findReusableFileBackedItems(Connection connection) throws SQLException {
         String sql = """
                 SELECT id_content_item, author_user_id, title, description, format, source,
                        state, created_at, updated_at
                 FROM content_item
                 WHERE state = 'active'
-                  AND format IN ('pdf', 'text', 'image', 'video', 'audio')
+                  AND (
+                        format IN ('pdf', 'text', 'image', 'video', 'audio')
+                        OR (format = 'other' AND source LIKE 'assessment:%')
+                  )
                   AND source IS NOT NULL
                   AND TRIM(source) <> ''
                   AND source NOT LIKE 'contents/pending/%'
@@ -99,7 +123,8 @@ public final class ContentItemDAO {
                             WHEN 'image' THEN 2
                             WHEN 'video' THEN 3
                             WHEN 'audio' THEN 4
-                            ELSE 5
+                            WHEN 'other' THEN 5
+                            ELSE 6
                          END,
                          title,
                          id_content_item
@@ -112,6 +137,63 @@ public final class ContentItemDAO {
                 items.add(mapContentItem(resultSet));
             }
             return items;
+        }
+    }
+
+    public boolean hasActiveAssessmentRepositoryReference(long assessmentId) throws SQLException {
+        try (Connection connection = connectionProvider.getConnection()) {
+            return hasActiveAssessmentRepositoryReference(connection, assessmentId);
+        }
+    }
+
+    public boolean hasActiveAssessmentRepositoryReference(Connection connection, long assessmentId) throws SQLException {
+        String sql = """
+                SELECT COUNT(*)
+                FROM content_item
+                WHERE state = 'active'
+                  AND format = 'other'
+                  AND TRIM(source) = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, "assessment:" + assessmentId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getLong(1) > 0;
+            }
+        }
+    }
+
+    public int ensureAssessmentRepositoryReferences(
+            Connection connection,
+            long authorUserId,
+            LocalDateTime createdAt
+    ) throws SQLException {
+        String sql = """
+                INSERT INTO content_item (
+                    author_user_id, title, description, format, source, state, created_at, updated_at
+                )
+                SELECT COALESCE(
+                           (SELECT MIN(ua.id_user) FROM user_account ua WHERE ua.id_user = ?),
+                           (SELECT MIN(ap.id_user) FROM administrator_profile ap),
+                           (SELECT MIN(ua.id_user) FROM user_account ua)
+                       ),
+                       a.title, a.description, 'other', CONCAT('assessment:', a.id_assessment),
+                       CASE WHEN a.state = 'completed' THEN 'inactive' ELSE 'active' END,
+                       ?, NULL
+                FROM assessment a
+                WHERE EXISTS (SELECT 1 FROM user_account)
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM content_item ci
+                      WHERE TRIM(ci.source) = CONCAT('assessment:', a.id_assessment)
+                  )
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, authorUserId);
+            statement.setTimestamp(2, Timestamp.valueOf(createdAt));
+            return statement.executeUpdate();
         }
     }
 

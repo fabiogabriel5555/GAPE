@@ -1016,7 +1016,7 @@ public final class UserManagementServlet extends DashboardServletSupport {
 
     private List<Course> activeCourses(long organizationId) throws SQLException {
         return courseDAO.findByOrganization(organizationId).stream()
-                .filter(course -> course.state() != CourseState.ARCHIVED)
+                .filter(course -> course.state() == CourseState.ACTIVE)
                 .sorted(Comparator.comparing(Course::name))
                 .toList();
     }

@@ -95,7 +95,7 @@ public final class OrganicUnitService {
                 connection.setAutoCommit(false);
                 try {
                     Organization organization = requireOrganization(connection, command.organizationId());
-                    requireOrganizationNotArchived(organization);
+                    requireOrganizationActive(organization);
                     validateParent(connection, null, command.organizationId(), command.parentOrganicUnitId());
                     OrganicUnitCreateCommand commandWithGeneratedCode = new OrganicUnitCreateCommand(
                             command.organizationId(),
@@ -202,8 +202,8 @@ public final class OrganicUnitService {
                             sourceIp
                     );
                     Organization organization = requireOrganization(connection, current.organizationId());
-                    requireOrganizationNotArchived(organization);
-                    requireOrganicUnitNotArchived(current);
+                    requireOrganizationActive(organization);
+                    requireOrganicUnitActive(current);
                     validateParent(connection, organicUnitId, current.organizationId(), command.parentOrganicUnitId());
                     OrganicUnitUpdateCommand commandWithManagedCode = new OrganicUnitUpdateCommand(
                             current.type() == command.type()
@@ -249,9 +249,8 @@ public final class OrganicUnitService {
                     OrganicUnit current = requireOrganicUnit(connection, organicUnitId);
                     requireOrganicUnitMutationContext(actorUserId, sessionId, actorProfileType, current.id(), sourceIp);
                     Organization organization = requireOrganization(connection, current.organizationId());
-                    requireOrganizationNotArchived(organization);
-                    requireOrganicUnitNotArchived(current);
-                    organicUnitDAO.updateState(connection, organicUnitId, OrganicUnitState.ARCHIVED);
+                    requireOrganizationActive(organization);
+                    organicUnitDAO.updateState(connection, organicUnitId, OrganicUnitState.INACTIVE);
                     auditService.record(connection, actorUserId, sessionId, "ORGANIC_UNIT_ARCHIVE",
                             "organic_unit", Long.toString(organicUnitId), "success", sourceIp);
                     connection.commit();
@@ -283,8 +282,8 @@ public final class OrganicUnitService {
                     OrganicUnit current = requireOrganicUnit(connection, organicUnitId);
                     requireOrganicUnitMutationContext(actorUserId, sessionId, actorProfileType, current.id(), sourceIp);
                     Organization organization = requireOrganization(connection, current.organizationId());
-                    requireOrganizationNotArchived(organization);
-                    requireOrganicUnitNotArchived(current);
+                    requireOrganizationActive(organization);
+                    requireOrganicUnitActive(current);
                     if (organicUnitDAO.hasDomainDependencies(connection, organicUnitId)) {
                         throw new IllegalStateException("Organic unit with domain dependencies cannot be deleted");
                     }
@@ -368,8 +367,8 @@ public final class OrganicUnitService {
             requireOrganicUnitGrantDelegation(actorUserId, sessionId, actorProfileType, organicUnitId, sourceIp);
             try (Connection connection = connectionProvider.getConnection()) {
                 Organization organization = requireOrganization(connection, unit.organizationId());
-                requireOrganizationNotArchived(organization);
-                requireOrganicUnitNotArchived(unit);
+                requireOrganizationActive(organization);
+                requireOrganicUnitActive(unit);
                 Set<Long> eligible = new LinkedHashSet<>();
                 for (Long adminUserId : permissionDAO.findActiveAdministratorUserIds(connection)) {
                     Set<AdministratorPermissionAssignment> assignments =
@@ -432,8 +431,8 @@ public final class OrganicUnitService {
                     OrganicUnit unit = requireOrganicUnit(connection, organicUnitId);
                     requireOrganicUnitGrantDelegation(actorUserId, sessionId, actorProfileType, organicUnitId, sourceIp);
                     Organization organization = requireOrganization(connection, unit.organizationId());
-                    requireOrganizationNotArchived(organization);
-                    requireOrganicUnitNotArchived(unit);
+                    requireOrganizationActive(organization);
+                    requireOrganicUnitActive(unit);
                     requireAssignableOrganicUnitAdministrator(connection, adminUserId, organicUnitId);
                     permissionDAO.grantAdministratorPermission(
                             connection,
@@ -472,8 +471,8 @@ public final class OrganicUnitService {
                     OrganicUnit unit = requireOrganicUnit(connection, organicUnitId);
                     requireOrganicUnitGrantDelegation(actorUserId, sessionId, actorProfileType, organicUnitId, sourceIp);
                     Organization organization = requireOrganization(connection, unit.organizationId());
-                    requireOrganizationNotArchived(organization);
-                    requireOrganicUnitNotArchived(unit);
+                    requireOrganizationActive(organization);
+                    requireOrganicUnitActive(unit);
                     AdministratorPermissionAssignment assignment = organicUnitAdministratorAssignment(organicUnitId);
                     if (!permissionDAO.hasExactAdministratorContextGrant(
                             connection,
@@ -530,7 +529,7 @@ public final class OrganicUnitService {
             if (parent.organizationId() != organizationId) {
                 throw new IllegalArgumentException("Parent organic unit must belong to the same organization");
             }
-            requireOrganicUnitNotArchived(parent);
+            requireOrganicUnitActive(parent);
             currentParentId = parent.parentOrganicUnitId();
         }
     }
@@ -780,9 +779,6 @@ public final class OrganicUnitService {
         AcademicTextValidator.requireAcronym(command.acronym(), "Organic unit acronym is required");
         Objects.requireNonNull(command.type(), "organic unit type is required");
         Objects.requireNonNull(command.state(), "organic unit state is required");
-        if (command.state() == OrganicUnitState.ARCHIVED) {
-            throw new IllegalArgumentException("Use the archive operation to archive organic units");
-        }
     }
 
     private static void validateUpdateCommand(OrganicUnitUpdateCommand command) {
@@ -821,15 +817,15 @@ public final class OrganicUnitService {
         };
     }
 
-    private static void requireOrganizationNotArchived(Organization organization) {
-        if (organization.state() == OrganizationState.ARCHIVED) {
-            throw new IllegalStateException("Archived organizations cannot be changed");
+    private static void requireOrganizationActive(Organization organization) {
+        if (organization.state() != OrganizationState.ACTIVE) {
+            throw new IllegalStateException("Inactive organizations cannot be changed");
         }
     }
 
-    private static void requireOrganicUnitNotArchived(OrganicUnit organicUnit) {
-        if (organicUnit.state() == OrganicUnitState.ARCHIVED) {
-            throw new IllegalStateException("Archived organic units cannot be changed");
+    private static void requireOrganicUnitActive(OrganicUnit organicUnit) {
+        if (organicUnit.state() != OrganicUnitState.ACTIVE) {
+            throw new IllegalStateException("Inactive organic units cannot be changed");
         }
     }
 

@@ -405,11 +405,11 @@ class TemplateStructureTest {
     @Test
     void addContentModalSupportsLessons() throws IOException {
         String fragment = Files.readString(WEBAPP_DIR.resolve("WEB-INF/fragments/class-group-detail-page.jspf"));
-        assertTrue(fragment.contains("Online/Hybr. Classes")
-                        && fragment.contains("data-content-category=\"live_classes\"")
+        assertTrue(fragment.contains(">Class</button>")
+                        && fragment.contains("data-content-category=\"class\"")
+                        && fragment.contains("data-category=\"class\"")
                         && fragment.contains("data-source-kind=\"lesson\" data-lesson-type=\"online\"")
                         && fragment.contains("data-source-kind=\"lesson\" data-lesson-type=\"hybrid\"")
-                        && fragment.contains("data-content-category=\"in_person_classes\"")
                         && fragment.contains("data-source-kind=\"lesson\" data-lesson-type=\"onsite\"")
                         && fragment.contains("data-lesson-action=\"${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/lessons\"")
                         && fragment.contains("data-lesson-starts-at")
@@ -744,7 +744,9 @@ class TemplateStructureTest {
                     String pageName = page.getFileName().toString();
                     String html = Files.readString(page);
 
-                    if (!hasDashboardSidebar(html) || pageName.endsWith("-alt-home.jsp")) {
+                    if (!hasDashboardSidebar(html)
+                            || pageName.endsWith("-alt-home.jsp")
+                            || redirectsBeforeRendering(html)) {
                         continue;
                     }
 
@@ -769,6 +771,11 @@ class TemplateStructureTest {
                 }
             }
         }
+    }
+
+    private static boolean redirectsBeforeRendering(String html) {
+        return html.contains("response.sendRedirect(request.getContextPath()")
+                && html.contains("return;");
     }
 
     @Test
@@ -916,9 +923,9 @@ class TemplateStructureTest {
                         && coordinatorMessage.contains("<jsp:include page=\"/admin/admin-message.jsp\"")
                         && coordinatorProfile.contains("<jsp:include page=\"/admin/admin-my-profile.jsp\""),
                 "Coordinator shared root pages must reuse the administrator templates");
-        assertTrue(coordinatorQuizAttempts.contains("<jsp:include page=\"/admin/admin-quiz-attempts.jsp\"")
+        assertTrue(coordinatorQuizAttempts.contains("response.sendRedirect(request.getContextPath() + \"/learning/assessments\")")
                         && coordinatorReviews.contains("<jsp:include page=\"/admin/admin-reviews.jsp\""),
-                "Coordinator shared root pages must reuse the administrator quiz/review templates");
+                "Coordinator shared root pages must route assessments to the real flow and reuse the administrator review template");
         assertTrue(sidebar.contains("/coordinator/subjects")
                         && sidebar.contains("coordinatorSubjectContextId")
                         && sidebar.contains("coordinatorSubjectActiveChild"),
@@ -927,26 +934,28 @@ class TemplateStructureTest {
                         && sidebar.contains("/coordinator/courses"),
                 "Coordinator sidebar must expose coordinator-scoped courses without exposing the generic courses tab");
         assertTrue(sidebar.contains("coordinator/coordinator-reviews.jsp")
-                        && sidebar.contains("coordinator/coordinator-quiz-attempts.jsp")
+                        && sidebar.contains("/learning/assessments")
                         && sidebar.contains("${reviewsHref}")
                         && sidebar.contains("${quizAttemptsHref}"),
-                "Coordinator sidebar must route reviews and quiz attempts to coordinator pages");
+                "Coordinator sidebar must route reviews to coordinator pages and assessments to the real assessment flow");
         int coordinatorSection = sidebar.indexOf(">Coordinator<");
         int coordinatorCoursesLink = sidebar.indexOf("/coordinator/courses", coordinatorSection);
         int coordinatorSubjectsLink = sidebar.indexOf("/coordinator/subjects", coordinatorCoursesLink);
         int coordinatorClassGroupsLink = sidebar.indexOf("/learning/class-groups", coordinatorSubjectsLink);
+        int coordinatorRoomsLink = sidebar.indexOf("/learning/rooms", coordinatorClassGroupsLink);
         int messageHref = sidebar.indexOf("${messageHref}");
         int calendarHref = sidebar.indexOf("${calendarHref}", messageHref);
-        int reviewsHref = sidebar.indexOf("${reviewsHref}", calendarHref);
-        int quizAttemptsHref = sidebar.indexOf("${quizAttemptsHref}", reviewsHref);
+        int quizAttemptsHref = sidebar.indexOf("${quizAttemptsHref}", coordinatorRoomsLink);
+        int reviewsHref = sidebar.indexOf("${reviewsHref}", quizAttemptsHref);
         assertTrue(messageHref < calendarHref
-                        && calendarHref < reviewsHref
-                        && reviewsHref < quizAttemptsHref
-                        && quizAttemptsHref < coordinatorSection
+                        && calendarHref < coordinatorSection
                         && coordinatorSection < coordinatorCoursesLink
                         && coordinatorCoursesLink < coordinatorSubjectsLink
-                        && coordinatorSubjectsLink < coordinatorClassGroupsLink,
-                "Coordinator sidebar must keep reviews, quiz attempts, courses, subjects and class groups in order");
+                        && coordinatorSubjectsLink < coordinatorClassGroupsLink
+                        && coordinatorClassGroupsLink < coordinatorRoomsLink
+                        && coordinatorRoomsLink < quizAttemptsHref
+                        && quizAttemptsHref < reviewsHref,
+                "Coordinator sidebar must keep courses, subjects, class groups, rooms, assessments and reviews in order");
         assertTrue(subjectList.contains("${subjectBasePath}/${subject.id}")
                         && subjectDetail.contains("${subjectBasePath}/${subject.id}/edit")
                         && subjectForm.contains("subject-course-associations-panel.jspf")
@@ -1040,18 +1049,18 @@ class TemplateStructureTest {
                         && instructorMessage.contains("<jsp:include page=\"/admin/admin-message.jsp\"")
                         && instructorProfile.contains("<jsp:include page=\"/admin/admin-my-profile.jsp\""),
                 "Instructor shared root pages must reuse the administrator templates");
-        assertTrue(instructorQuizAttempts.contains("<jsp:include page=\"/admin/admin-quiz-attempts.jsp\"")
+        assertTrue(instructorQuizAttempts.contains("response.sendRedirect(request.getContextPath() + \"/learning/assessments\")")
                         && instructorReviews.contains("<jsp:include page=\"/admin/admin-reviews.jsp\""),
-                "Instructor shared root pages must reuse the administrator quiz/review templates");
+                "Instructor shared root pages must route assessments to the real flow and reuse the administrator review template");
         assertTrue(sidebar.contains("/instructor/instructor-message.jsp")
                         && sidebar.contains("/instructor/subjects")
                         && sidebar.contains("teacherSubjectContextId")
                         && sidebar.contains("/instructor/instructor-reviews.jsp")
-                        && sidebar.contains("/instructor/instructor-quiz-attempts.jsp")
+                        && sidebar.contains("/learning/assessments")
                         && sidebar.contains("${messageHref}")
                         && sidebar.contains("${reviewsHref}")
                         && sidebar.contains("${quizAttemptsHref}"),
-                "Instructor sidebar must route shared pages to the instructor wrappers");
+                "Instructor sidebar must route shared pages to instructor wrappers and assessments to the real assessment flow");
         assertTrue(sidebar.contains("not isTeacherDashboard"),
                 "Instructor sidebar must not expose the generic courses tab");
         int teacherSection = sidebar.indexOf(">Teacher<");

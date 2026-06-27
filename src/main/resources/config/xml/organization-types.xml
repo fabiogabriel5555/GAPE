@@ -11,6 +11,6 @@
     <label>Empresa</label>
   </type>
   <type code="other">
-    <label>Outro tipo de organizacao</label>
+    <label>Other organization type</label>
   </type>
 </organizationTypes>

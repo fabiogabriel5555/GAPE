@@ -15,6 +15,7 @@ public record Lesson(
         boolean attendanceRequired,
         LessonState state,
         LocalDateTime startsAt,
-        LocalDateTime endsAt
+        LocalDateTime endsAt,
+        Integer orderNo
 ) {
 }

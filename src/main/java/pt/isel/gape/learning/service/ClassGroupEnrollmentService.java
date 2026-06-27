@@ -502,7 +502,7 @@ public final class ClassGroupEnrollmentService {
                             sourceIp,
                             true
                     );
-                    requireNotArchived(classGroup);
+                    requireClassGroupOpenForEnrollmentChanges(classGroup);
                     ClassGroupEnrollment current = classGroupEnrollmentDAO
                             .findEnrollment(connection, studentUserId, classGroupId)
                             .orElseThrow(() -> new IllegalArgumentException("Class group enrollment not found"));
@@ -859,9 +859,9 @@ public final class ClassGroupEnrollmentService {
         );
     }
 
-    private static void requireNotArchived(ClassGroup classGroup) {
-        if (classGroup.state() == ClassGroupState.ARCHIVED) {
-            throw new IllegalStateException("Archived class groups cannot be changed");
+    private static void requireClassGroupOpenForEnrollmentChanges(ClassGroup classGroup) {
+        if (classGroup.state() == ClassGroupState.COMPLETED) {
+            throw new IllegalStateException("Completed class groups cannot be changed");
         }
     }
 

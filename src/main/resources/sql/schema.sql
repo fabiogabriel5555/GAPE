@@ -210,7 +210,7 @@ CREATE TABLE IF NOT EXISTS organization (
     CONSTRAINT ck_organization_type
         CHECK (type IN ('educational_institution', 'training_company', 'company', 'other')),
     CONSTRAINT ck_organization_state
-        CHECK (state IN ('active', 'inactive', 'archived')),
+        CHECK (state IN ('active', 'inactive')),
     CONSTRAINT ck_organization_name_separator
         CHECK (LOCATE('|', name) = 0),
     CONSTRAINT ck_organization_acronym_separator
@@ -240,7 +240,7 @@ CREATE TABLE IF NOT EXISTS organic_unit (
     CONSTRAINT ck_organic_unit_type
         CHECK (type IN ('school', 'faculty', 'department', 'center', 'office', 'service', 'section', 'direction', 'other')),
     CONSTRAINT ck_organic_unit_state
-        CHECK (state IN ('active', 'inactive', 'archived')),
+        CHECK (state IN ('active', 'inactive')),
     CONSTRAINT ck_organic_unit_name_separator
         CHECK (LOCATE('|', name) = 0),
     CONSTRAINT ck_organic_unit_acronym_separator
@@ -273,7 +273,7 @@ CREATE TABLE IF NOT EXISTS course (
     CONSTRAINT ck_course_type
         CHECK (type IN ('degree', 'master', 'short_course', 'professional_training', 'other')),
     CONSTRAINT ck_course_state
-        CHECK (state IN ('active', 'inactive', 'archived')),
+        CHECK (state IN ('active', 'inactive')),
     CONSTRAINT ck_course_ects
         CHECK (ects IS NULL OR ects >= 0),
     CONSTRAINT ck_course_name_separator
@@ -305,7 +305,7 @@ CREATE TABLE IF NOT EXISTS subject (
     CONSTRAINT ck_subject_workload_hours
         CHECK (workload_hours IS NULL OR workload_hours >= 0),
     CONSTRAINT ck_subject_state
-        CHECK (state IN ('active', 'inactive', 'archived')),
+        CHECK (state IN ('active', 'inactive')),
     CONSTRAINT ck_subject_name_separator
         CHECK (LOCATE('|', name) = 0),
     CONSTRAINT ck_subject_acronym_separator
@@ -338,7 +338,9 @@ CREATE TABLE IF NOT EXISTS class_group (
     CONSTRAINT ck_class_group_modality
         CHECK (modality IN ('onsite', 'online', 'hybrid')),
     CONSTRAINT ck_class_group_state
-        CHECK (state IN ('active', 'inactive', 'closed', 'archived')),
+        CHECK (state IN ('draft', 'scheduled', 'active', 'completed')),
+    CONSTRAINT ck_class_group_scheduled_start
+        CHECK (state <> 'scheduled' OR starts_at IS NOT NULL),
     CONSTRAINT ck_class_group_shift
         CHECK (shift IN ('morning', 'afternoon', 'evening', 'mixed')),
     CONSTRAINT ck_class_group_students_range
@@ -382,7 +384,7 @@ CREATE TABLE IF NOT EXISTS content_block (
     CONSTRAINT ck_content_block_access_mode
         CHECK (access_mode IN ('open', 'restricted', 'scheduled')),
     CONSTRAINT ck_content_block_state
-        CHECK (state IN ('draft', 'active', 'inactive', 'archived')),
+        CHECK (state IN ('draft', 'active', 'inactive')),
     CONSTRAINT ck_content_block_available_pair
         CHECK (available_until IS NULL OR available_from IS NOT NULL),
     CONSTRAINT ck_content_block_scheduled_access
@@ -420,7 +422,7 @@ CREATE TABLE IF NOT EXISTS integrate_subject (
             OR (curricular_year IS NOT NULL AND term IS NOT NULL)
         ),
     CONSTRAINT ck_integrate_subject_state
-        CHECK (state IN ('active', 'inactive', 'archived'))
+        CHECK (state IN ('active', 'inactive'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS manage_organization (
@@ -440,7 +442,7 @@ CREATE TABLE IF NOT EXISTS manage_organization (
     CONSTRAINT ck_manage_organization_dates
         CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
     CONSTRAINT ck_manage_organization_state
-        CHECK (state IN ('active', 'inactive', 'archived'))
+        CHECK (state IN ('active', 'inactive'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS coordinate_subject (
@@ -460,7 +462,7 @@ CREATE TABLE IF NOT EXISTS coordinate_subject (
     CONSTRAINT ck_coordinate_subject_dates
         CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
     CONSTRAINT ck_coordinate_subject_state
-        CHECK (state IN ('active', 'inactive', 'archived'))
+        CHECK (state IN ('active', 'inactive'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS teach_class_group (
@@ -480,7 +482,7 @@ CREATE TABLE IF NOT EXISTS teach_class_group (
     CONSTRAINT ck_teach_class_group_dates
         CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
     CONSTRAINT ck_teach_class_group_state
-        CHECK (state IN ('active', 'inactive', 'archived'))
+        CHECK (state IN ('active', 'inactive'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS enroll_course (
@@ -500,7 +502,7 @@ CREATE TABLE IF NOT EXISTS enroll_course (
     CONSTRAINT ck_enroll_course_dates
         CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
     CONSTRAINT ck_enroll_course_state
-        CHECK (state IN ('active', 'inactive', 'completed', 'withdrawn', 'archived'))
+        CHECK (state IN ('active', 'inactive', 'completed', 'withdrawn'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS enroll_subject (
@@ -531,7 +533,7 @@ CREATE TABLE IF NOT EXISTS enroll_subject (
     CONSTRAINT ck_enroll_subject_dates
         CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
     CONSTRAINT ck_enroll_subject_state
-        CHECK (state IN ('pending', 'active', 'inactive', 'rejected', 'completed', 'withdrawn', 'archived'))
+        CHECK (state IN ('pending', 'active', 'inactive', 'rejected', 'completed', 'withdrawn'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS enroll_class_group (
@@ -551,7 +553,7 @@ CREATE TABLE IF NOT EXISTS enroll_class_group (
     CONSTRAINT ck_enroll_class_group_dates
         CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
     CONSTRAINT ck_enroll_class_group_state
-        CHECK (state IN ('pending', 'active', 'inactive', 'rejected', 'completed', 'withdrawn', 'archived'))
+        CHECK (state IN ('pending', 'active', 'inactive', 'rejected', 'completed', 'withdrawn'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS subject_enrollment_policy (
@@ -599,9 +601,9 @@ CREATE TABLE IF NOT EXISTS content_item (
         FOREIGN KEY (author_user_id) REFERENCES user_account (id_user)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT ck_content_item_format
-        CHECK (format IN ('text', 'image', 'video', 'audio', 'pdf', 'url', 'scorm', 'xapi', 'presentation', 'embed', 'other')),
+        CHECK (format IN ('text', 'image', 'video', 'audio', 'pdf', 'archive', 'url', 'scorm', 'xapi', 'presentation', 'embed', 'other')),
     CONSTRAINT ck_content_item_state
-        CHECK (state IN ('draft', 'active', 'inactive', 'archived')),
+        CHECK (state IN ('draft', 'active', 'inactive')),
     CONSTRAINT ck_content_item_updated
         CHECK (updated_at IS NULL OR updated_at >= created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -665,7 +667,7 @@ CREATE TABLE IF NOT EXISTS physical_room (
     CONSTRAINT ck_physical_room_capacity
         CHECK (capacity > 0),
     CONSTRAINT ck_physical_room_state
-        CHECK (state IN ('active', 'inactive', 'unavailable', 'archived'))
+        CHECK (state IN ('active', 'inactive', 'unavailable'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS lesson (
@@ -680,11 +682,13 @@ CREATE TABLE IF NOT EXISTS lesson (
     access_url VARCHAR(255) NULL,
     attendance_required BOOLEAN NOT NULL,
     state VARCHAR(20) NOT NULL,
-    starts_at DATETIME NOT NULL,
-    ends_at DATETIME NOT NULL,
+    starts_at DATETIME NULL,
+    ends_at DATETIME NULL,
+    order_no INT NULL,
     PRIMARY KEY (id_lesson),
     KEY idx_lesson_class_group (id_class_group),
     KEY idx_lesson_content_block (id_content_block),
+    KEY idx_lesson_block_order (id_content_block, order_no),
     KEY idx_lesson_room (cod_physical_room),
     KEY idx_lesson_room_state_dates (cod_physical_room, state, starts_at, ends_at),
     KEY idx_lesson_state (state),
@@ -700,9 +704,13 @@ CREATE TABLE IF NOT EXISTS lesson (
     CONSTRAINT ck_lesson_type
         CHECK (type IN ('online', 'onsite', 'hybrid')),
     CONSTRAINT ck_lesson_state
-        CHECK (state IN ('scheduled', 'active', 'completed', 'cancelled')),
+        CHECK (state IN ('draft', 'scheduled', 'active', 'completed', 'cancelled')),
+    CONSTRAINT ck_lesson_scheduled_start
+        CHECK (state <> 'scheduled' OR starts_at IS NOT NULL),
     CONSTRAINT ck_lesson_dates
-        CHECK (ends_at > starts_at)
+        CHECK (starts_at IS NULL OR ends_at IS NULL OR ends_at > starts_at),
+    CONSTRAINT ck_lesson_order_no
+        CHECK (order_no IS NULL OR order_no > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS assessment (
@@ -717,12 +725,15 @@ CREATE TABLE IF NOT EXISTS assessment (
     max_grade DECIMAL(5,2) NOT NULL,
     passing_grade DECIMAL(5,2) NOT NULL,
     attempts_limit INT NULL,
+    enrollment_mode VARCHAR(30) NOT NULL DEFAULT 'auto_approve',
     state VARCHAR(20) NOT NULL,
     available_from DATETIME NULL,
     available_until DATETIME NULL,
+    order_no INT NULL,
     PRIMARY KEY (id_assessment),
     KEY idx_assessment_subject (id_subject),
     KEY idx_assessment_content_block (id_content_block),
+    KEY idx_assessment_block_order (id_content_block, order_no),
     KEY idx_assessment_state (state),
     CONSTRAINT fk_assessment_subject
         FOREIGN KEY (id_subject) REFERENCES subject (id_subject)
@@ -731,17 +742,42 @@ CREATE TABLE IF NOT EXISTS assessment (
         FOREIGN KEY (id_content_block) REFERENCES content_block (id_content_block)
         ON UPDATE CASCADE ON DELETE SET NULL,
     CONSTRAINT ck_assessment_type
-        CHECK (type IN ('questionnaire', 'exam')),
+        CHECK (type IN ('form', 'test', 'exam')),
+    CONSTRAINT ck_assessment_mode
+        CHECK (mode IN ('online', 'onsite')),
+    CONSTRAINT ck_assessment_correction_mode
+        CHECK (correction_mode IN ('automatic', 'mixed', 'manual')),
+    CONSTRAINT ck_assessment_enrollment_mode
+        CHECK (enrollment_mode IN ('manual', 'auto_approve')),
+    CONSTRAINT ck_assessment_state
+        CHECK (state IN ('draft', 'scheduled', 'active', 'completed')),
     CONSTRAINT ck_assessment_grades
         CHECK (max_grade >= 0 AND passing_grade >= 0 AND passing_grade <= max_grade),
     CONSTRAINT ck_assessment_attempts_limit
         CHECK (attempts_limit IS NULL OR attempts_limit > 0),
+    CONSTRAINT ck_assessment_scheduled_start
+        CHECK (state <> 'scheduled' OR available_from IS NOT NULL),
     CONSTRAINT ck_assessment_availability
         CHECK (
             available_from IS NULL
             OR available_until IS NULL
             OR available_until >= available_from
-        )
+        ),
+    CONSTRAINT ck_assessment_order_no
+        CHECK (order_no IS NULL OR order_no > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS assessment_class_group (
+    id_assessment BIGINT UNSIGNED NOT NULL,
+    id_class_group BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (id_assessment, id_class_group),
+    KEY idx_assessment_class_group_group (id_class_group),
+    CONSTRAINT fk_assessment_class_group_assessment
+        FOREIGN KEY (id_assessment) REFERENCES assessment (id_assessment)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_assessment_class_group_class_group
+        FOREIGN KEY (id_class_group) REFERENCES class_group (id_class_group)
+        ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS question (
@@ -763,13 +799,36 @@ CREATE TABLE IF NOT EXISTS question (
         FOREIGN KEY (id_assessment) REFERENCES assessment (id_assessment)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT ck_question_type
-        CHECK (type IN ('single_choice', 'multiple_choice', 'dropdown', 'short_text', 'paragraph', 'file_upload', 'date_time', 'rating', 'other')),
+        CHECK (type IN ('single_choice', 'multiple_choice', 'short_text', 'paragraph', 'file_upload', 'rating')),
     CONSTRAINT ck_question_order
         CHECK (order_no > 0),
     CONSTRAINT ck_question_score
-        CHECK (score >= 0),
+        CHECK (score >= 0.10),
+    CONSTRAINT ck_question_rating_expected_answer
+        CHECK (type <> 'rating' OR (expected_answer IS NOT NULL AND TRIM(expected_answer) <> '')),
     CONSTRAINT ck_question_state
-        CHECK (state IN ('active', 'inactive', 'archived'))
+        CHECK (state IN ('active', 'inactive'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS enroll_assessment (
+    id_student_user BIGINT UNSIGNED NOT NULL,
+    id_assessment BIGINT UNSIGNED NOT NULL,
+    state VARCHAR(20) NOT NULL,
+    start_date DATE NULL,
+    end_date DATE NULL,
+    PRIMARY KEY (id_student_user, id_assessment),
+    KEY idx_enroll_assessment_assessment (id_assessment),
+    KEY idx_enroll_assessment_state (state),
+    CONSTRAINT fk_enroll_assessment_student
+        FOREIGN KEY (id_student_user) REFERENCES student_profile (id_user)
+        ON UPDATE CASCADE ON DELETE RESTRICT,
+    CONSTRAINT fk_enroll_assessment_assessment
+        FOREIGN KEY (id_assessment) REFERENCES assessment (id_assessment)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT ck_enroll_assessment_dates
+        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
+    CONSTRAINT ck_enroll_assessment_state
+        CHECK (state IN ('pending', 'active', 'inactive', 'rejected', 'completed', 'withdrawn'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS question_option (
@@ -787,7 +846,7 @@ CREATE TABLE IF NOT EXISTS question_option (
     CONSTRAINT ck_question_option_order
         CHECK (order_no > 0),
     CONSTRAINT ck_question_option_state
-        CHECK (state IN ('active', 'inactive', 'archived'))
+        CHECK (state IN ('active', 'inactive'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS attempt (
@@ -995,7 +1054,7 @@ CREATE TABLE IF NOT EXISTS schedule_event (
     CONSTRAINT ck_schedule_event_reminder_minutes
         CHECK (reminder_minutes_before IS NULL OR reminder_minutes_before >= 0),
     CONSTRAINT ck_schedule_event_state
-        CHECK (state IN ('draft', 'active', 'inactive', 'cancelled', 'archived', 'completed'))
+        CHECK (state IN ('draft', 'active', 'inactive', 'cancelled', 'completed'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS receive_schedule_event (
@@ -1048,7 +1107,7 @@ CREATE TABLE IF NOT EXISTS attendance_record (
     CONSTRAINT ck_attendance_source
         CHECK (source IN ('manual', 'automatic', 'other')),
     CONSTRAINT ck_attendance_state
-        CHECK (state IN ('active', 'corrected', 'cancelled', 'archived')),
+        CHECK (state IN ('active', 'corrected', 'cancelled')),
     CONSTRAINT ck_attendance_checkout
         CHECK (check_out IS NULL OR check_in IS NULL OR check_out >= check_in)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -1101,7 +1160,7 @@ CREATE TABLE IF NOT EXISTS grade_sheet (
     CONSTRAINT ck_grade_sheet_type
         CHECK (type IN ('final', 'continuous_assessment', 'exam', 'partial', 'other')),
     CONSTRAINT ck_grade_sheet_state
-        CHECK (state IN ('draft', 'published', 'closed', 'archived'))
+        CHECK (state IN ('draft', 'published', 'closed'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS associate_grade_sheet_class_group (
@@ -1161,7 +1220,7 @@ CREATE TABLE IF NOT EXISTS grade_record (
     CONSTRAINT ck_grade_record_result
         CHECK (result IN ('approved', 'failed', 'pending', 'absent', 'reproved')),
     CONSTRAINT ck_grade_record_state
-        CHECK (state IN ('draft', 'published', 'corrected', 'archived', 'active')),
+        CHECK (state IN ('draft', 'published', 'corrected', 'active')),
     CONSTRAINT ck_grade_record_value
         CHECK (value >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -1192,7 +1251,7 @@ CREATE TABLE IF NOT EXISTS certificate (
     CONSTRAINT ck_certificate_type
         CHECK (type IN ('completion', 'attendance', 'qualification', 'other')),
     CONSTRAINT ck_certificate_state
-        CHECK (state IN ('draft', 'active', 'issued', 'revoked', 'archived')),
+        CHECK (state IN ('draft', 'active', 'issued', 'revoked')),
     CONSTRAINT ck_certificate_issued_context
         CHECK (state <> 'issued' OR (validation_code IS NOT NULL AND issued_at IS NOT NULL))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -1301,7 +1360,7 @@ CREATE TABLE IF NOT EXISTS message (
     CONSTRAINT ck_message_priority
         CHECK (priority IS NULL OR priority IN ('low', 'normal', 'high', 'urgent')),
     CONSTRAINT ck_message_state
-        CHECK (state IN ('draft', 'scheduled', 'sent', 'active', 'edited', 'deleted', 'cancelled', 'archived')),
+        CHECK (state IN ('draft', 'scheduled', 'sent', 'active', 'edited', 'deleted', 'cancelled')),
     CONSTRAINT ck_message_updated
         CHECK (updated_at IS NULL OR updated_at >= created_at),
     CONSTRAINT ck_message_scheduled
@@ -1334,7 +1393,7 @@ CREATE TABLE IF NOT EXISTS receive_message (
     CONSTRAINT ck_receive_message_delivery_mode
         CHECK (delivery_mode IN ('internal', 'email', 'both')),
     CONSTRAINT ck_receive_message_state
-        CHECK (state IN ('pending', 'delivered', 'read', 'failed', 'archived')),
+        CHECK (state IN ('pending', 'delivered', 'read', 'failed')),
     CONSTRAINT ck_receive_message_read_after_delivered
         CHECK (read_at IS NULL OR delivered_at IS NULL OR read_at >= delivered_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -1964,8 +2023,8 @@ BEGIN
     FROM organization
     WHERE id_organization = NEW.id_organization;
 
-    IF NEW.state <> 'archived' AND v_organization_state = 'archived' THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Subject cannot be active in archived Organization';
+    IF NEW.state = 'active' AND v_organization_state <> 'active' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Subject cannot be active in inactive Organization';
     END IF;
 END$$
 
@@ -1981,8 +2040,8 @@ BEGIN
     FROM organization
     WHERE id_organization = NEW.id_organization;
 
-    IF NEW.state <> 'archived' AND v_organization_state = 'archived' THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Subject cannot be active in archived Organization';
+    IF NEW.state = 'active' AND v_organization_state <> 'active' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Subject cannot be active in inactive Organization';
     END IF;
 END$$
 
@@ -2010,8 +2069,8 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Course and Subject must belong to the same Organization';
     END IF;
 
-    IF NEW.state <> 'archived' AND (v_course_state = 'archived' OR v_subject_state = 'archived') THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Course_Subject association cannot use archived entities';
+    IF NEW.state = 'active' AND (v_course_state <> 'active' OR v_subject_state <> 'active') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Course_Subject association requires active entities';
     END IF;
 END$$
 
@@ -2039,8 +2098,8 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Course and Subject must belong to the same Organization';
     END IF;
 
-    IF NEW.state <> 'archived' AND (v_course_state = 'archived' OR v_subject_state = 'archived') THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Course_Subject association cannot use archived entities';
+    IF NEW.state = 'active' AND (v_course_state <> 'active' OR v_subject_state <> 'active') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Course_Subject association requires active entities';
     END IF;
 END$$
 
@@ -2199,9 +2258,9 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group Course must integrate the selected Subject';
     END IF;
 
-    IF NEW.state <> 'archived'
-       AND (v_course_state = 'archived' OR v_subject_state = 'archived' OR v_association_state = 'archived') THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group cannot be active under archived context';
+    IF NEW.state IN ('scheduled', 'active')
+       AND (v_course_state <> 'active' OR v_subject_state <> 'active' OR v_association_state <> 'active') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group cannot be scheduled or active under inactive context';
     END IF;
 END$$
 
@@ -2227,9 +2286,9 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group Course must integrate the selected Subject';
     END IF;
 
-    IF NEW.state <> 'archived'
-       AND (v_course_state = 'archived' OR v_subject_state = 'archived' OR v_association_state = 'archived') THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group cannot be active under archived context';
+    IF NEW.state IN ('scheduled', 'active')
+       AND (v_course_state <> 'active' OR v_subject_state <> 'active' OR v_association_state <> 'active') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group cannot be scheduled or active under inactive context';
     END IF;
 
     IF NEW.max_students IS NOT NULL THEN
@@ -2474,8 +2533,8 @@ BEGIN
     FROM class_group
     WHERE id_class_group = NEW.id_class_group;
 
-    IF NEW.state <> 'archived' AND v_class_state = 'archived' THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Content_Block cannot be changed under archived Class_Group';
+    IF NEW.state <> 'inactive' AND v_class_state = 'completed' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Content_Block cannot be changed under completed Class_Group';
     END IF;
 
     IF NEW.state = 'active' THEN
@@ -2509,8 +2568,8 @@ BEGIN
     FROM class_group
     WHERE id_class_group = NEW.id_class_group;
 
-    IF NEW.state <> 'archived' AND v_class_state = 'archived' THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Content_Block cannot be changed under archived Class_Group';
+    IF NEW.state <> 'inactive' AND v_class_state = 'completed' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Content_Block cannot be changed under completed Class_Group';
     END IF;
 
     IF NEW.state = 'active' THEN
@@ -2591,7 +2650,7 @@ CREATE TRIGGER bi_content_item_validate
 BEFORE INSERT ON content_item
 FOR EACH ROW
 BEGIN
-    IF NEW.format IN ('text', 'image', 'video', 'audio', 'pdf', 'url', 'scorm', 'xapi', 'presentation', 'embed')
+    IF NEW.format IN ('text', 'image', 'video', 'audio', 'pdf', 'archive', 'url', 'scorm', 'xapi', 'presentation', 'embed')
        AND COALESCE(TRIM(NEW.source), '') = '' THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Content_Item source is required for the selected format';
     END IF;
@@ -2602,7 +2661,7 @@ CREATE TRIGGER bu_content_item_validate
 BEFORE UPDATE ON content_item
 FOR EACH ROW
 BEGIN
-    IF NEW.format IN ('text', 'image', 'video', 'audio', 'pdf', 'url', 'scorm', 'xapi', 'presentation', 'embed')
+    IF NEW.format IN ('text', 'image', 'video', 'audio', 'pdf', 'archive', 'url', 'scorm', 'xapi', 'presentation', 'embed')
        AND COALESCE(TRIM(NEW.source), '') = '' THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Content_Item source is required for the selected format';
     END IF;
@@ -2780,8 +2839,8 @@ FOR EACH ROW
 BEGIN
     DECLARE v_block_subject BIGINT UNSIGNED;
 
-    IF NEW.type = 'questionnaire' AND NEW.id_content_block IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Questionnaire Assessment requires a Content_Block';
+    IF NEW.type IN ('form', 'test') AND NEW.id_content_block IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Form and Test Assessments require a Content_Block';
     END IF;
 
     IF NEW.type = 'exam' AND NEW.id_subject IS NULL THEN
@@ -2808,8 +2867,8 @@ FOR EACH ROW
 BEGIN
     DECLARE v_block_subject BIGINT UNSIGNED;
 
-    IF NEW.type = 'questionnaire' AND NEW.id_content_block IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Questionnaire Assessment requires a Content_Block';
+    IF NEW.type IN ('form', 'test') AND NEW.id_content_block IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Form and Test Assessments require a Content_Block';
     END IF;
 
     IF NEW.type = 'exam' AND NEW.id_subject IS NULL THEN
@@ -2829,6 +2888,64 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bi_assessment_class_group_validate$$
+CREATE TRIGGER bi_assessment_class_group_validate
+BEFORE INSERT ON assessment_class_group
+FOR EACH ROW
+BEGIN
+    DECLARE v_assessment_type VARCHAR(30);
+    DECLARE v_assessment_subject BIGINT UNSIGNED;
+    DECLARE v_assessment_block BIGINT UNSIGNED;
+    DECLARE v_group_subject BIGINT UNSIGNED;
+
+    SELECT type, id_subject, id_content_block
+    INTO v_assessment_type, v_assessment_subject, v_assessment_block
+    FROM assessment
+    WHERE id_assessment = NEW.id_assessment;
+
+    SELECT id_subject
+    INTO v_group_subject
+    FROM class_group
+    WHERE id_class_group = NEW.id_class_group;
+
+    IF v_assessment_type <> 'exam' OR v_assessment_block IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Assessment_Class_Group is only allowed for subject-level Exam Assessments';
+    END IF;
+
+    IF v_assessment_subject IS NULL OR v_group_subject <> v_assessment_subject THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Assessment_Class_Group Class_Group must belong to the Assessment Subject';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_assessment_class_group_validate$$
+CREATE TRIGGER bu_assessment_class_group_validate
+BEFORE UPDATE ON assessment_class_group
+FOR EACH ROW
+BEGIN
+    DECLARE v_assessment_type VARCHAR(30);
+    DECLARE v_assessment_subject BIGINT UNSIGNED;
+    DECLARE v_assessment_block BIGINT UNSIGNED;
+    DECLARE v_group_subject BIGINT UNSIGNED;
+
+    SELECT type, id_subject, id_content_block
+    INTO v_assessment_type, v_assessment_subject, v_assessment_block
+    FROM assessment
+    WHERE id_assessment = NEW.id_assessment;
+
+    SELECT id_subject
+    INTO v_group_subject
+    FROM class_group
+    WHERE id_class_group = NEW.id_class_group;
+
+    IF v_assessment_type <> 'exam' OR v_assessment_block IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Assessment_Class_Group is only allowed for subject-level Exam Assessments';
+    END IF;
+
+    IF v_assessment_subject IS NULL OR v_group_subject <> v_assessment_subject THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Assessment_Class_Group Class_Group must belong to the Assessment Subject';
+    END IF;
+END$$
+
 DROP TRIGGER IF EXISTS bi_attempt_validate$$
 CREATE TRIGGER bi_attempt_validate
 BEFORE INSERT ON attempt
@@ -2837,10 +2954,12 @@ BEGIN
     DECLARE v_attempts_limit INT;
     DECLARE v_assessment_subject BIGINT UNSIGNED;
     DECLARE v_class_group BIGINT UNSIGNED;
+    DECLARE v_assessment_state VARCHAR(20);
     DECLARE v_exists INT DEFAULT 0;
+    DECLARE v_assessment_enrollment_exists INT DEFAULT 0;
 
-    SELECT a.attempts_limit, a.id_subject, cb.id_class_group
-    INTO v_attempts_limit, v_assessment_subject, v_class_group
+    SELECT a.attempts_limit, a.id_subject, cb.id_class_group, a.state
+    INTO v_attempts_limit, v_assessment_subject, v_class_group, v_assessment_state
     FROM assessment a
     LEFT JOIN content_block cb ON cb.id_content_block = a.id_content_block
     WHERE a.id_assessment = NEW.id_assessment;
@@ -2859,18 +2978,40 @@ BEGIN
         FROM enroll_class_group
         WHERE id_student_user = NEW.id_student_user
           AND id_class_group = v_class_group
-          AND state = 'active';
+          AND (state = 'active' OR (v_assessment_state = 'completed' AND state = 'completed'));
     ELSEIF v_assessment_subject IS NOT NULL THEN
         SELECT COUNT(*)
         INTO v_exists
-        FROM enroll_subject
-        WHERE id_student_user = NEW.id_student_user
-          AND id_subject = v_assessment_subject
-          AND state = 'active';
+        FROM assessment_class_group acg
+        JOIN class_group cg ON cg.id_class_group = acg.id_class_group
+        JOIN enroll_class_group ecg
+          ON ecg.id_class_group = cg.id_class_group
+         AND ecg.id_student_user = NEW.id_student_user
+         AND (ecg.state = 'active' OR (v_assessment_state = 'completed' AND ecg.state = 'completed'))
+        JOIN enroll_subject es
+          ON es.id_student_user = NEW.id_student_user
+         AND es.id_subject = cg.id_subject
+         AND es.id_course = cg.id_course
+         AND es.state = 'active'
+        WHERE acg.id_assessment = NEW.id_assessment
+          AND cg.id_subject = v_assessment_subject;
     END IF;
 
     IF v_exists = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Attempt requires an active enrollment in the Assessment context';
+    END IF;
+
+    SELECT COUNT(*)
+    INTO v_assessment_enrollment_exists
+    FROM enroll_assessment
+    WHERE id_student_user = NEW.id_student_user
+      AND id_assessment = NEW.id_assessment
+      AND state = 'active'
+      AND (start_date IS NULL OR start_date <= CURRENT_DATE)
+      AND (end_date IS NULL OR end_date >= CURRENT_DATE);
+
+    IF v_assessment_enrollment_exists = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Attempt requires an active Assessment enrollment';
     END IF;
 END$$
 
@@ -2882,10 +3023,12 @@ BEGIN
     DECLARE v_attempts_limit INT;
     DECLARE v_assessment_subject BIGINT UNSIGNED;
     DECLARE v_class_group BIGINT UNSIGNED;
+    DECLARE v_assessment_state VARCHAR(20);
     DECLARE v_exists INT DEFAULT 0;
+    DECLARE v_assessment_enrollment_exists INT DEFAULT 0;
 
-    SELECT a.attempts_limit, a.id_subject, cb.id_class_group
-    INTO v_attempts_limit, v_assessment_subject, v_class_group
+    SELECT a.attempts_limit, a.id_subject, cb.id_class_group, a.state
+    INTO v_attempts_limit, v_assessment_subject, v_class_group, v_assessment_state
     FROM assessment a
     LEFT JOIN content_block cb ON cb.id_content_block = a.id_content_block
     WHERE a.id_assessment = NEW.id_assessment;
@@ -2904,18 +3047,40 @@ BEGIN
         FROM enroll_class_group
         WHERE id_student_user = NEW.id_student_user
           AND id_class_group = v_class_group
-          AND state = 'active';
+          AND (state = 'active' OR (v_assessment_state = 'completed' AND state = 'completed'));
     ELSEIF v_assessment_subject IS NOT NULL THEN
         SELECT COUNT(*)
         INTO v_exists
-        FROM enroll_subject
-        WHERE id_student_user = NEW.id_student_user
-          AND id_subject = v_assessment_subject
-          AND state = 'active';
+        FROM assessment_class_group acg
+        JOIN class_group cg ON cg.id_class_group = acg.id_class_group
+        JOIN enroll_class_group ecg
+          ON ecg.id_class_group = cg.id_class_group
+         AND ecg.id_student_user = NEW.id_student_user
+         AND (ecg.state = 'active' OR (v_assessment_state = 'completed' AND ecg.state = 'completed'))
+        JOIN enroll_subject es
+          ON es.id_student_user = NEW.id_student_user
+         AND es.id_subject = cg.id_subject
+         AND es.id_course = cg.id_course
+         AND es.state = 'active'
+        WHERE acg.id_assessment = NEW.id_assessment
+          AND cg.id_subject = v_assessment_subject;
     END IF;
 
     IF v_exists = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Attempt requires an active enrollment in the Assessment context';
+    END IF;
+
+    SELECT COUNT(*)
+    INTO v_assessment_enrollment_exists
+    FROM enroll_assessment
+    WHERE id_student_user = NEW.id_student_user
+      AND id_assessment = NEW.id_assessment
+      AND state = 'active'
+      AND (start_date IS NULL OR start_date <= CURRENT_DATE)
+      AND (end_date IS NULL OR end_date >= CURRENT_DATE);
+
+    IF v_assessment_enrollment_exists = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Attempt requires an active Assessment enrollment';
     END IF;
 END$$
 
@@ -2966,14 +3131,14 @@ BEGIN
     FROM question
     WHERE id_question = v_response_question;
 
-    IF v_question_type IN ('single_choice', 'dropdown') THEN
+    IF v_question_type = 'single_choice' THEN
         SELECT COUNT(*)
         INTO v_selected_count
         FROM response_option
         WHERE id_response = NEW.id_response;
 
         IF v_selected_count >= 1 THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Single-choice and dropdown Questions allow at most one selected Option';
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Single-choice Questions allow at most one selected Option';
         END IF;
     END IF;
 END$$
@@ -3403,7 +3568,7 @@ BEGIN
     FROM integrate_subject
     WHERE id_course = v_course
       AND id_subject = v_subject
-      AND state <> 'archived';
+      AND state = 'active';
 
     IF v_exists = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Certificate Course must integrate the Subject of the referenced Grade_Sheet';
@@ -3556,10 +3721,10 @@ END$$
 DELIMITER ;
 
 -- ---------------------------------------------------------
--- Restricoes que devem ficar no Service (nao totalmente SQL):
--- - autorizacoes por perfil em operacoes de processo/aprovacao;
--- - coerencia cruzada de contexto (curso/disciplina/turma/bloco);
--- - limites temporais com regras de negocio avancadas;
+-- Constraints that must remain in the Service layer (not fully SQL):
+-- - profile authorizations in process/approval operations;
+-- - cross-context consistency (course/subject/class group/block);
+-- - temporal limits with advanced business rules;
 -- - "pelo menos um" em relacoes opcionais do lado pai;
--- - regras de encaminhamento/destino de mensagens.
+-- - message routing/destination rules.
 -- ---------------------------------------------------------

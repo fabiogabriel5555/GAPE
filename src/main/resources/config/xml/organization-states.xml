@@ -2,9 +2,9 @@
 <organizationStates xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                     xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
   <state code="active">
-    <label>Organizacao ativa</label>
+    <label>Active organization</label>
   </state>
   <state code="inactive">
-    <label>Organizacao inativa</label>
+    <label>Inactive organization</label>
   </state>
 </organizationStates>

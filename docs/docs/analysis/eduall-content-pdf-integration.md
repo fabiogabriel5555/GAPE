@@ -54,7 +54,7 @@ The student `My Courses` page lists visible pedagogical blocks and their content
 
 - `/contents/upload` is covered by `CsrfFilter`.
 - Download and upload servlets require an authenticated session.
-- Download checks content access before resolving non-reusable content; active file-backed content is readable for repository reuse and preview.
+- Download checks content access before resolving normal content; active reusable repository files are readable for repository preview by non-student actors without original-context permission.
 - Stored file paths are validated as safe relative paths below the content storage root.
 - External links are escaped in JSP attributes.
 - URL and embed sources must be absolute HTTP(S) URLs.

@@ -171,12 +171,12 @@ public final class CourseSubjectDAO {
         }
     }
 
-    public long countNonArchivedBySubject(Connection connection, long subjectId) throws SQLException {
+    public long countActiveBySubject(Connection connection, long subjectId) throws SQLException {
         String sql = """
                 SELECT COUNT(*)
                 FROM integrate_subject
                 WHERE id_subject = ?
-                  AND state <> 'archived'
+                  AND state = 'active'
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {

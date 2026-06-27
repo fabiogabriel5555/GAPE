@@ -58,7 +58,6 @@
                                             <option value="rejected" ${enrollment.stateValue == 'rejected' ? 'selected' : ''}>Rejected</option>
                                             <option value="completed" ${enrollment.stateValue == 'completed' ? 'selected' : ''}>Completed</option>
                                             <option value="withdrawn" ${enrollment.stateValue == 'withdrawn' ? 'selected' : ''}>Left</option>
-                                            <option value="archived" ${enrollment.stateValue == 'archived' ? 'selected' : ''}>Archived</option>
                                         </select>
                                     </div>
                                     <div class="col-sm-6">

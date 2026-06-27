@@ -31,13 +31,13 @@
     <link rel="stylesheet" href="assets/css/animate.css">
     <!-- dataTables.dataTables -->
     <link rel="stylesheet" href="assets/css/dataTables.dataTables.min.css">
-    
+
     <link rel="stylesheet" href="assets/css/aos.css">
     <!-- Main css -->
     <link rel="stylesheet" href="assets/css/main.css">
-</head> 
+</head>
 <body>
-    
+
 <!--==================== Preloader Start ====================-->
   <div class="preloader">
     <img src="assets/images/icons/preloader.gif" alt="">
@@ -68,10 +68,10 @@
             <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
-            
+
 <ul class="nav-menu flex-align nav-menu--mobile">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -137,7 +137,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -158,7 +158,7 @@
                 <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -182,7 +182,7 @@
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -197,7 +197,7 @@
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -229,7 +229,7 @@
     </select>
 </div>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -239,7 +239,7 @@
 <!-- ==========message dashbord start=========== -->
 <div class="dashbord bg-main-25 w-100">
     <div class="d-flex">
-        
+
 <!-- ========Dashdord Sidebar start======== -->
 <%@ include file="/WEB-INF/fragments/dashboard-sidebar.jspf" %>
 <!-- ========Dashdord Sidebar end======== -->
@@ -517,7 +517,7 @@
                                     <div class="d-flex align-items-center gap-12 flex-wrap">
                                         <img src="assets/images/thumbs/dashbord-message-img5.png" alt="">
                                         <div>
-                                            <h6 class="text-14 fw-medium text-neutral-500 mb-0">KovÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¡cs TÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â­mea</h6>
+                                            <h6 class="text-14 fw-medium text-neutral-500 mb-0">Kovacs Timea</h6>
                                             <span class="text-12 fw-normal text-neutral-100">Hello? interested in this loads?</span>
                                         </div>
                                     </div>
@@ -576,7 +576,7 @@
                                     </button>
                                </div>
                             </div>
-                            
+
                             <div>
 
                                 <div class="mt-24">
@@ -622,7 +622,7 @@
                                         <img src="assets/images/thumbs/dashbord-message-img2.png" alt="" class="">
                                         <div>
                                             <span class="text-12 fw-normal text-neutral-100 mb-12">Eleanor, 6 hours ago</span>
-                                            <p class="max-w-514-px text-14 fw-normal text-neutral-500 bg-neutral-20 px-20 py-18 rounded-10 mb-12 line-height-105">When an unknown printer took a galley of type and scrambled it to make a type specimen book. 
+                                            <p class="max-w-514-px text-14 fw-normal text-neutral-500 bg-neutral-20 px-20 py-18 rounded-10 mb-12 line-height-105">When an unknown printer took a galley of type and scrambled it to make a type specimen book.
                                             <br>
                                             <br>
                                             It is a long established fact that a reader will be distracted.</p>
@@ -697,33 +697,33 @@
                                 <div class="flex-grow-1">
                                     <div class="mt-24 mb-32 d-flex align-items-center gap-16 flex-wrap flex-grow-1">
                                         <div class="d-flex align-items-center gap-8 flex-grow-1">
-    
+
                                             <button type="button" class="w-40 h-40 bg-neutral-20 border-neutral-40 rounded-circle align-items-center justify-content-center d-flex border text-24 text-neutral-500 hover-bg-main-600 hover-text-white transition-03">
                                                 <i class="ph ph-smiley"></i>
                                             </button>
-    
+
                                             <button type="button" class="w-40 h-40 bg-neutral-20 border-neutral-40 rounded-circle align-items-center justify-content-center d-flex border text-24 text-neutral-500  hover-bg-main-600 hover-text-white transition-03">
                                                 <i class="ph ph-microphone"></i>
                                             </button>
-    
+
                                             <button type="button" class="w-40 h-40 bg-neutral-20 border-neutral-40 rounded-circle align-items-center justify-content-center d-flex border text-24 text-neutral-500  hover-bg-main-600 hover-text-white transition-03">
                                                 <i class="ph ph-camera"></i>
                                             </button>
-    
+
                                             <button type="button" class="w-40 h-40 bg-neutral-20 border-neutral-40 rounded-circle align-items-center justify-content-center d-flex border text-24 text-neutral-500  hover-bg-main-600 hover-text-white transition-03">
                                                 <i class="ph ph-image"></i>
                                             </button>
-                                        
+
                                             <button type="button" class="w-40 h-40 bg-neutral-20 border-neutral-40 rounded-circle align-items-center justify-content-center d-flex border text-24 text-neutral-500  hover-bg-main-600 hover-text-white transition-03">
                                                 <i class="ph ph-video-camera"></i>
                                             </button>
-    
+
                                             <button type="button" class="w-40 h-40 bg-neutral-20 border-neutral-40 rounded-circle align-items-center justify-content-center d-flex border text-24 text-neutral-500  hover-bg-main-600 hover-text-white transition-03">
                                                 <i class="ph ph-google-drive-logo"></i>
                                             </button>
-    
+
                                         </div>
-    
+
                                         <div class="w-100 flex-grow-1">
                                             <form action="#" class="position-relative flex-grow-1">
                                                 <input type="text" placeholder="Say Something..." class="text-12 fw-normal text-neutral-100 py-13 ps-16 w-100 pe-90 bg-neutral-20 border-neutral-40 border rounded-pill focus-visible-outline focus-border-main-600  line-height-1 flex-grow-1">
@@ -733,7 +733,7 @@
                                                 </button>
                                             </form>
                                         </div>
-    
+
                                     </div>
                                 </div>
                             </div>
@@ -747,7 +747,7 @@
 <div class="bg-neutral-20 border-neutral-40 border-top px-24 py-16 mt-auto">
     <div class="d-flex align-items-center gap-24 justify-content-between flex-wrap">
         <p class="fw-medium text-14 text-neutral-500">
-            Copyright &copy; 2026 
+            Copyright &copy; 2026
             <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="text-main-600 fw-medium">GAPE</a>.
             All Rights Reserved
         </p>
@@ -797,23 +797,14 @@
     <script src="assets/js/wow.min.js"></script>
 
     <script src="assets/js/aos.js"></script>
-    
+
     <!-- main js -->
     <script src="${pageContext.request.contextPath}/assets/js/main.js?v=20260616-sidebar"></script>
 
 
-    
+
 
 
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-

@@ -3,6 +3,7 @@ package pt.isel.gape.learning.model;
 import java.util.Locale;
 
 public enum LessonState {
+    DRAFT("draft"),
     SCHEDULED("scheduled"),
     ACTIVE("active"),
     COMPLETED("completed"),

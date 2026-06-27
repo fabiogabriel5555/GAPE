@@ -19,13 +19,13 @@ import org.junit.jupiter.api.Test;
  * Cenario positivo: o dataset valido (seed/base.sql) carrega registos nas tabelas centrais
  * das quatro areas do modelo.
  *
- * Cenario negativo: cada statement dos scripts de teste (PK, FK, UNIQUE, CHECK e regras
- * aplicacionais em trigger) e rejeitado por uma excecao de integridade.
+ * Cenario negativo: cada statement dos scripts test (PK, FK, UNIQUE, CHECK e regras
+ * application rules in triggers) and rejected by an integrity exception.
  *
  * As tabelas do modelo cobertas correspondem a lista do planeamento:
  * user_account, user_session, deletion_request, organization, organic_unit,
  * course, subject, integrate_subject, class_group, enroll_class_group, content_block,
- * content_item, lesson, physical_room, assessment, question, question_option, attempt,
+ * content_item, lesson, physical_room, assessment, enroll_assessment, question, question_option, attempt,
  * response, certificate, message.
  */
 class DatabaseRestrictionCoverageTest {
@@ -34,7 +34,7 @@ class DatabaseRestrictionCoverageTest {
             "user_account", "user_session", "organization", "organic_unit", "course", "subject",
             "integrate_subject", "class_group", "enroll_course", "enroll_subject", "enroll_class_group",
             "content_block", "content_item",
-            "physical_room", "lesson", "assessment", "question", "question_option", "attempt",
+            "physical_room", "lesson", "assessment", "enroll_assessment", "question", "question_option", "attempt",
             "response", "certificate", "message", "activity_log"
     );
 

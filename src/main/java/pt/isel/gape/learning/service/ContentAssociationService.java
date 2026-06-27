@@ -3,14 +3,21 @@ package pt.isel.gape.learning.service;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.learning.dao.AssessmentDAO;
 import pt.isel.gape.learning.dao.ContentAssociationDAO;
 import pt.isel.gape.learning.dao.ContentItemDAO;
+import pt.isel.gape.learning.dao.LessonDAO;
+import pt.isel.gape.learning.model.Assessment;
+import pt.isel.gape.learning.model.BlockContentPlacement;
 import pt.isel.gape.learning.model.BlockContentItem;
 import pt.isel.gape.learning.model.ContentAssociation;
 import pt.isel.gape.learning.model.ContentAssociationCommand;
@@ -18,6 +25,7 @@ import pt.isel.gape.learning.model.ContentAssociationType;
 import pt.isel.gape.learning.model.ContentContext;
 import pt.isel.gape.learning.model.ContentItem;
 import pt.isel.gape.learning.model.ContentItemState;
+import pt.isel.gape.learning.model.Lesson;
 import pt.isel.gape.security.authorization.PermissionChecker;
 import pt.isel.gape.structure.dao.CoordinateSubjectDAO;
 import pt.isel.gape.structure.dao.ManageOrganizationDAO;
@@ -32,6 +40,8 @@ public final class ContentAssociationService {
     private final ConnectionProvider connectionProvider;
     private final ContentItemDAO contentItemDAO;
     private final ContentAssociationDAO contentAssociationDAO;
+    private final LessonDAO lessonDAO;
+    private final AssessmentDAO assessmentDAO;
     private final ContentAccessPolicy contentAccessPolicy;
     private final AuditService auditService;
 
@@ -39,12 +49,16 @@ public final class ContentAssociationService {
             ConnectionProvider connectionProvider,
             ContentItemDAO contentItemDAO,
             ContentAssociationDAO contentAssociationDAO,
+            LessonDAO lessonDAO,
+            AssessmentDAO assessmentDAO,
             PermissionChecker permissionChecker,
             AuditService auditService
     ) {
         this.connectionProvider = Objects.requireNonNull(connectionProvider, "connectionProvider is required");
         this.contentItemDAO = Objects.requireNonNull(contentItemDAO, "contentItemDAO is required");
         this.contentAssociationDAO = Objects.requireNonNull(contentAssociationDAO, "contentAssociationDAO is required");
+        this.lessonDAO = Objects.requireNonNull(lessonDAO, "lessonDAO is required");
+        this.assessmentDAO = Objects.requireNonNull(assessmentDAO, "assessmentDAO is required");
         this.contentAccessPolicy = new ContentAccessPolicy(
                 Objects.requireNonNull(permissionChecker, "permissionChecker is required"),
                 contentAssociationDAO
@@ -57,6 +71,8 @@ public final class ContentAssociationService {
                 connectionProvider,
                 new ContentItemDAO(connectionProvider),
                 new ContentAssociationDAO(connectionProvider),
+                new LessonDAO(connectionProvider),
+                new AssessmentDAO(connectionProvider),
                 new PermissionChecker(
                         new PermissionDAO(connectionProvider),
                         new ManageOrganizationDAO(connectionProvider),
@@ -83,8 +99,8 @@ public final class ContentAssociationService {
                 connection.setAutoCommit(false);
                 try {
                     ContentItem contentItem = requireContentItem(connection, contentItemId);
-                    if (contentItem.state() == ContentItemState.ARCHIVED) {
-                        throw new IllegalStateException("Archived content cannot be associated to new contexts");
+                    if (contentItem.state() == ContentItemState.INACTIVE) {
+                        throw new IllegalStateException("Inactive content cannot be associated to new contexts");
                     }
                     ContentContext targetContext = requireContext(connection, command.type(), command.targetId());
                     requireAssociationManager(
@@ -230,6 +246,109 @@ public final class ContentAssociationService {
             }
         } catch (RuntimeException | SQLException exception) {
             throw wrap(exception, "Failed to list block content items");
+        }
+    }
+
+    public void reorderBlockContentItems(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long classGroupId,
+            List<BlockContentPlacement> placements,
+            String sourceIp
+    ) {
+        try {
+            validateActor(actorUserId, actorProfileType);
+            if (placements == null || placements.isEmpty()) {
+                throw new IllegalArgumentException("Pedagogical item order is required");
+            }
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Set<String> seenTargets = new HashSet<>();
+                    List<BlockContentPlacement> contentPlacements = new ArrayList<>();
+                    for (BlockContentPlacement placement : placements) {
+                        if (placement.orderNo() <= 0) {
+                            throw new IllegalArgumentException("Pedagogical item order must be positive");
+                        }
+                        String targetKey = placement.itemType() + ":" + placement.targetContentBlockId() + ":" + placement.itemId();
+                        if (!seenTargets.add(targetKey)) {
+                            throw new IllegalArgumentException("Pedagogical item order contains duplicate target items");
+                        }
+                        ContentContext sourceContext = requireContext(
+                                connection,
+                                ContentAssociationType.CONTENT_BLOCK,
+                                placement.sourceContentBlockId()
+                        );
+                        ContentContext targetContext = requireContext(
+                                connection,
+                                ContentAssociationType.CONTENT_BLOCK,
+                                placement.targetContentBlockId()
+                        );
+                        if (!Objects.equals(sourceContext.classGroupId(), classGroupId)
+                                || !Objects.equals(targetContext.classGroupId(), classGroupId)) {
+                            throw new IllegalArgumentException("Pedagogical items can only be reordered inside the same class group");
+                        }
+                        contentAccessPolicy.requireContextManager(
+                                connection, actorUserId, sessionId, actorProfileType, targetContext, sourceIp);
+                        if (placement.isContent()) {
+                            ContentItem contentItem = requireContentItem(connection, placement.itemId());
+                            requireAssociationManager(
+                                    connection,
+                                    actorUserId,
+                                    sessionId,
+                                    actorProfileType,
+                                    contentItem,
+                                    targetContext,
+                                    sourceIp
+                            );
+                            contentPlacements.add(placement);
+                        } else if (placement.isLesson()) {
+                            Lesson lesson = lessonDAO.lockById(connection, placement.itemId())
+                                    .orElseThrow(() -> new IllegalArgumentException("Lesson not found: " + placement.itemId()));
+                            if (lesson.contentBlockId() != placement.sourceContentBlockId()) {
+                                throw new IllegalArgumentException("Lesson source block is stale");
+                            }
+                            lessonDAO.updateBlockPlacement(
+                                    connection,
+                                    placement.itemId(),
+                                    placement.targetContentBlockId(),
+                                    placement.orderNo()
+                            );
+                        } else if (placement.isAssessment()) {
+                            Assessment assessment = assessmentDAO.lockById(connection, placement.itemId())
+                                    .orElseThrow(() -> new IllegalArgumentException("Assessment not found: " + placement.itemId()));
+                            if (!Objects.equals(assessment.contentBlockId(), placement.sourceContentBlockId())) {
+                                throw new IllegalArgumentException("Assessment source block is stale");
+                            }
+                            assessmentDAO.updateBlockPlacement(
+                                    connection,
+                                    placement.itemId(),
+                                    placement.targetContentBlockId(),
+                                    placement.orderNo()
+                            );
+                        } else {
+                            throw new IllegalArgumentException("Unsupported pedagogical item type: " + placement.itemType());
+                        }
+                    }
+                    if (!contentPlacements.isEmpty()) {
+                        contentAssociationDAO.updateBlockContentPlacements(connection, contentPlacements);
+                    }
+                    auditService.record(connection, actorUserId, sessionId, "BLOCK_ACTIVITY_REORDER",
+                            "class_group", Long.toString(classGroupId), "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "BLOCK_ACTIVITY_REORDER",
+                    "class_group", Long.toString(classGroupId), sourceIp);
+            throw wrap(exception, "Failed to reorder block pedagogical items");
         }
     }
 
@@ -382,9 +501,20 @@ public final class ContentAssociationService {
             long contentItemId,
             String sourceIp
     ) {
+        auditFailure(actorUserId, sessionId, operationType, "content_item", Long.toString(contentItemId), sourceIp);
+    }
+
+    private void auditFailure(
+            long actorUserId,
+            Long sessionId,
+            String operationType,
+            String affectedEntityType,
+            String affectedEntityIdentifier,
+            String sourceIp
+    ) {
         Long safeActorId = actorUserId <= 0 ? null : actorUserId;
         auditService.record(safeActorId, sessionId, operationType,
-                "content_item", Long.toString(contentItemId), "failure", sourceIp);
+                affectedEntityType, affectedEntityIdentifier, "failure", sourceIp);
     }
 
     private static RuntimeException wrap(Exception exception, String message) {

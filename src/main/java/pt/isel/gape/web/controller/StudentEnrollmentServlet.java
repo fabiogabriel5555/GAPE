@@ -27,6 +27,11 @@ import pt.isel.gape.learning.dao.ContentBlockDAO;
 import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.dao.EnrollmentDAO;
+import pt.isel.gape.learning.dao.AssessmentDAO;
+import pt.isel.gape.learning.dao.AttemptDAO;
+import pt.isel.gape.learning.dao.QuestionDAO;
+import pt.isel.gape.learning.dao.QuestionOptionDAO;
+import pt.isel.gape.learning.dao.ResponseDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupEnrollment;
@@ -48,6 +53,7 @@ import pt.isel.gape.structure.dao.OrganizationDAO;
 import pt.isel.gape.structure.dao.TeachClassGroupDAO;
 import pt.isel.gape.web.view.ClassGroupEnrollmentView;
 import pt.isel.gape.web.view.ClassGroupView;
+import pt.isel.gape.web.view.AssessmentView;
 import pt.isel.gape.web.view.BlockActivityView;
 import pt.isel.gape.web.view.BlockContentItemView;
 import pt.isel.gape.web.view.ContentBlockView;
@@ -88,7 +94,9 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
     private final ClassGroupDAO classGroupDAO;
     private final ClassGroupEnrollmentDAO classGroupEnrollmentDAO;
     private final ContentBlockDAO contentBlockDAO;
+    private final AssessmentDAO assessmentDAO;
     private final LearningViewFactory viewFactory;
+    private final AssessmentViewFactory assessmentViewFactory;
     private final Clock clock;
 
     public StudentEnrollmentServlet() {
@@ -107,6 +115,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                 new ClassGroupDAO(connectionProvider),
                 new ClassGroupEnrollmentDAO(connectionProvider),
                 new ContentBlockDAO(connectionProvider),
+                new AssessmentDAO(connectionProvider),
                 new LearningViewFactory(
                         new OrganizationDAO(connectionProvider),
                         new OrganicUnitDAO(connectionProvider),
@@ -119,6 +128,17 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                         new ContentBlockDAO(connectionProvider),
                         new UserDAO(connectionProvider),
                         new TeachClassGroupDAO(connectionProvider)
+                ),
+                new AssessmentViewFactory(
+                        new AssessmentDAO(connectionProvider),
+                        new QuestionDAO(connectionProvider),
+                        new QuestionOptionDAO(connectionProvider),
+                        new AttemptDAO(connectionProvider),
+                        new ResponseDAO(connectionProvider),
+                        new SubjectDAO(connectionProvider),
+                        new ContentBlockDAO(connectionProvider),
+                        new ClassGroupDAO(connectionProvider),
+                        new UserDAO(connectionProvider)
                 ),
                 clock
         );
@@ -135,7 +155,9 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             ClassGroupDAO classGroupDAO,
             ClassGroupEnrollmentDAO classGroupEnrollmentDAO,
             ContentBlockDAO contentBlockDAO,
+            AssessmentDAO assessmentDAO,
             LearningViewFactory viewFactory,
+            AssessmentViewFactory assessmentViewFactory,
             Clock clock
     ) {
         this.enrollmentService = enrollmentService;
@@ -148,7 +170,9 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
         this.classGroupDAO = classGroupDAO;
         this.classGroupEnrollmentDAO = classGroupEnrollmentDAO;
         this.contentBlockDAO = contentBlockDAO;
+        this.assessmentDAO = assessmentDAO;
         this.viewFactory = viewFactory;
+        this.assessmentViewFactory = assessmentViewFactory;
         this.clock = clock;
     }
 
@@ -481,6 +505,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             request.setAttribute("contentBlocks", classGroupItem.getContentBlocks());
             request.setAttribute("blockContentsByBlock", classGroupItem.getBlockContentsByBlock());
             request.setAttribute("blockLessonsByBlock", classGroupItem.getBlockLessonsByBlock());
+            request.setAttribute("blockAssessmentsByBlock", classGroupItem.getBlockAssessmentsByBlock());
             request.setAttribute("blockActivitiesByBlock", classGroupItem.getBlockActivitiesByBlock());
             request.setAttribute("returnTo", "/student/class-groups/" + classGroupId);
             request.setAttribute("studentClassGroupContextId", classGroupItem.getClassGroup().getId());
@@ -1348,8 +1373,11 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
         Map<Long, List<pt.isel.gape.web.view.LessonView>> blockLessonsByBlock = enrollmentView != null && enrollmentView.isActive()
                 ? visibleStudentBlockLessons(actor, request, contentBlocks)
                 : Map.of();
+        Map<Long, List<AssessmentView>> blockAssessmentsByBlock = enrollmentView != null && enrollmentView.isActive()
+                ? visibleStudentBlockAssessments(actor, contentBlocks)
+                : Map.of();
         Map<Long, List<BlockActivityView>> blockActivitiesByBlock = enrollmentView != null && enrollmentView.isActive()
-                ? visibleStudentBlockActivities(contentBlocks, blockContentsByBlock, blockLessonsByBlock)
+                ? visibleStudentBlockActivities(contentBlocks, blockContentsByBlock, blockLessonsByBlock, blockAssessmentsByBlock)
                 : Map.of();
         return StudentClassGroupView.of(
                 classGroupView,
@@ -1357,6 +1385,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                 contentBlocks,
                 blockContentsByBlock,
                 blockLessonsByBlock,
+                blockAssessmentsByBlock,
                 blockActivitiesByBlock,
                 eligibleForEnrollment
         );
@@ -1365,7 +1394,8 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
     private Map<Long, List<BlockActivityView>> visibleStudentBlockActivities(
             List<ContentBlockView> contentBlocks,
             Map<Long, List<BlockContentItemView>> blockContentsByBlock,
-            Map<Long, List<pt.isel.gape.web.view.LessonView>> blockLessonsByBlock
+            Map<Long, List<pt.isel.gape.web.view.LessonView>> blockLessonsByBlock,
+            Map<Long, List<AssessmentView>> blockAssessmentsByBlock
     ) {
         Map<Long, List<BlockActivityView>> result = new LinkedHashMap<>();
         for (ContentBlockView block : contentBlocks) {
@@ -1376,13 +1406,43 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             blockLessonsByBlock.getOrDefault(block.getId(), List.of()).stream()
                     .map(BlockActivityView::fromLesson)
                     .forEach(activities::add);
-            activities.sort(Comparator
-                    .comparing(BlockActivityView::getSortDate)
-                    .thenComparingInt(BlockActivityView::getSortKind)
-                    .thenComparingLong(BlockActivityView::getSortId));
+            blockAssessmentsByBlock.getOrDefault(block.getId(), List.of()).stream()
+                    .map(BlockActivityView::fromAssessment)
+                    .forEach(activities::add);
+            activities.sort(BlockActivityView.pedagogicalOrder());
             result.put(block.getId(), activities);
         }
         return result;
+    }
+
+    private Map<Long, List<AssessmentView>> visibleStudentBlockAssessments(
+            SessionUser actor,
+            List<ContentBlockView> contentBlocks
+    ) {
+        Map<Long, List<AssessmentView>> result = new LinkedHashMap<>();
+        for (ContentBlockView block : contentBlocks) {
+            try {
+                List<AssessmentView> assessments = assessmentDAO.findByContentBlock(block.getId()).stream()
+                        .filter(assessment -> assessment.state() == pt.isel.gape.learning.model.AssessmentState.ACTIVE)
+                        .filter(assessment -> assessment.mode() == pt.isel.gape.learning.model.AssessmentMode.ONLINE)
+                        .map(assessmentViewFactory::assessmentView)
+                        .filter(assessment -> assessment.getQuestionCount() > 0)
+                        .filter(assessment -> hasCurrentStudentAssessmentAccess(actor.userId(), assessment.getId()))
+                        .toList();
+                result.put(block.getId(), assessments);
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to load block assessments", exception);
+            }
+        }
+        return result;
+    }
+
+    private boolean hasCurrentStudentAssessmentAccess(long studentUserId, long assessmentId) {
+        try {
+            return assessmentDAO.hasCurrentStudentAccess(studentUserId, assessmentId);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to check student assessment access", exception);
+        }
     }
 
     private Map<Long, List<pt.isel.gape.web.view.LessonView>> visibleStudentBlockLessons(

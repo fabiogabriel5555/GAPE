@@ -54,7 +54,6 @@ public final class OrganizationAdministratorView {
         return switch (assignmentState) {
             case ACTIVE -> "Active";
             case INACTIVE -> "Inactive";
-            case ARCHIVED -> "Archived";
         };
     }
 

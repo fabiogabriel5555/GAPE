@@ -28,13 +28,13 @@
     <link rel="stylesheet" href="assets/css/animate.css">
     <!-- dataTables.dataTables -->
     <link rel="stylesheet" href="assets/css/dataTables.dataTables.min.css">
-    
+
     <link rel="stylesheet" href="assets/css/aos.css">
     <!-- Main css -->
     <link rel="stylesheet" href="assets/css/main.css">
-</head> 
+</head>
 <body>
-    
+
 <!--==================== Preloader Start ====================-->
   <div class="preloader">
     <img src="assets/images/icons/preloader.gif" alt="">
@@ -65,7 +65,7 @@
             <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
-            
+
 <ul class="nav-menu flex-align nav-menu--mobile">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
     <li class="nav-menu__item has-submenu">
@@ -133,7 +133,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -154,7 +154,7 @@
                 <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -178,7 +178,7 @@
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -193,7 +193,7 @@
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -225,7 +225,7 @@
     </select>
 </div>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -245,7 +245,7 @@
                     </a>
                 </div>
                 <!-- Logo End  -->
-    
+
                 <!-- Select Start -->
                 <div class="d-sm-block d-none">
                     <div class="header-select border border-neutral-30 bg-main-25 rounded-pill position-relative">
@@ -268,10 +268,10 @@
 </div>
                 </div>
                 <!-- Select End -->
-    
+
                 <!-- Menu Start  -->
                 <div class="header-menu d-lg-block d-none">
-                    
+
 <ul class="nav-menu flex-align ">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
     <li class="nav-menu__item has-submenu">
@@ -339,7 +339,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -360,7 +360,7 @@
                 <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -384,7 +384,7 @@
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -399,7 +399,7 @@
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -426,7 +426,7 @@
                     <%@ include file="/WEB-INF/fragments/user-avatar-content.jspf" %>
                 </a>
                 <button type="button" class="toggle-mobileMenu d-lg-none text-neutral-200 flex-center">
-                    <i class="ph ph-list"></i> 
+                    <i class="ph ph-list"></i>
                 </button>
             </div>
             <!-- Header Right End  -->
@@ -443,7 +443,7 @@
     <img src="assets/images/shapes/shape3.png" alt="" class="shape three animation-walking">
     <img src="assets/images/shapes/shape4.png" alt="" class="shape four animation-scalation">
     <img src="assets/images/shapes/shape5.png" alt="" class="shape five animation-walking">
-    
+
     <div class="container">
         <div class="row gy-5 align-items-center">
             <div class="col-xl-6">
@@ -452,7 +452,7 @@
                         <span class="w-8 h-8 bg-main-600 rounded-circle"></span>
                         <h5 class="text-main-600 mb-0"> Your Future, Achieve Success</h5>
                     </div>
-                    
+
                     <h1 class="display2 mb-24 wow bounceInLeft">Find Your <span class="text-main-two-600 wow bounceInRight" data-wow-duration="2s" data-wow-delay=".5s">Ideal</span>
                         Course, Build <span class="text-main-600 wow bounceInUp" data-wow-duration="1s" data-wow-delay=".5s">Skills</span>
                     </h1>
@@ -682,7 +682,7 @@
         <div class="tab-content" id="pills-tabContent">
             <div class="tab-pane fade show active" id="pills-categories" role="tabpanel" aria-labelledby="pills-categories-tab" tabindex="0">
                 <div class="row gy-4">
-    
+
     <div class="col-lg-4 col-sm-6 wow fadeInUp" data-aos="fade-up" data-aos-duration="200">
         <div class="course-item bg-white rounded-16 p-12 h-100 box-shadow-md">
             <div class="course-item__thumb rounded-12 overflow-hidden position-relative">
@@ -1018,7 +1018,7 @@
             </div>
             <div class="tab-pane fade" id="pills-design" role="tabpanel" aria-labelledby="pills-design-tab" tabindex="0">
                 <div class="row gy-4">
-    
+
     <div class="col-lg-4 col-sm-6 wow fadeInUp" data-aos="fade-up" data-aos-duration="200">
         <div class="course-item bg-white rounded-16 p-12 h-100 box-shadow-md">
             <div class="course-item__thumb rounded-12 overflow-hidden position-relative">
@@ -1354,7 +1354,7 @@
             </div>
             <div class="tab-pane fade" id="pills-programming" role="tabpanel" aria-labelledby="pills-programming-tab" tabindex="0">
                 <div class="row gy-4">
-    
+
     <div class="col-lg-4 col-sm-6 wow fadeInUp" data-aos="fade-up" data-aos-duration="200">
         <div class="course-item bg-white rounded-16 p-12 h-100 box-shadow-md">
             <div class="course-item__thumb rounded-12 overflow-hidden position-relative">
@@ -1690,7 +1690,7 @@
             </div>
             <div class="tab-pane fade" id="pills-webDesign" role="tabpanel" aria-labelledby="pills-webDesign-tab" tabindex="0">
                 <div class="row gy-4">
-    
+
     <div class="col-lg-4 col-sm-6 wow fadeInUp" data-aos="fade-up" data-aos-duration="200">
         <div class="course-item bg-white rounded-16 p-12 h-100 box-shadow-md">
             <div class="course-item__thumb rounded-12 overflow-hidden position-relative">
@@ -2026,7 +2026,7 @@
             </div>
             <div class="tab-pane fade" id="pills-Academic" role="tabpanel" aria-labelledby="pills-Academic-tab" tabindex="0">
                 <div class="row gy-4">
-    
+
     <div class="col-lg-4 col-sm-6 wow fadeInUp" data-aos="fade-up" data-aos-duration="200">
         <div class="course-item bg-white rounded-16 p-12 h-100 box-shadow-md">
             <div class="course-item__thumb rounded-12 overflow-hidden position-relative">
@@ -2362,7 +2362,7 @@
             </div>
             <div class="tab-pane fade" id="pills-marketing" role="tabpanel" aria-labelledby="pills-marketing-tab" tabindex="0">
                 <div class="row gy-4">
-    
+
     <div class="col-lg-4 col-sm-6 wow fadeInUp" data-aos="fade-up" data-aos-duration="200">
         <div class="course-item bg-white rounded-16 p-12 h-100 box-shadow-md">
             <div class="course-item__thumb rounded-12 overflow-hidden position-relative">
@@ -2700,7 +2700,7 @@
     </div>
  </section>
 <!-- ================================== Explore Course Section End =========================== -->
-    
+
     <!-- ================================ About Section Start ==================================== -->
  <section class="about py-120 position-relative z-1 mash-bg-main mash-bg-main-two">
     <img src="assets/images/shapes/shape2.png" alt="" class="shape one animation-scalation">
@@ -2712,7 +2712,7 @@
                 <div class="col-xl-6">
                     <div class="about-thumbs position-relative pe-lg-5">
                         <img src="assets/images/shapes/shape7.png" alt="" class="shape seven animation-scalation">
-    
+
                         <div class="offer-message px-24 py-12 rounded-12 bg-main-two-50 fw-medium flex-align d-inline-flex gap-16 border border-neutral-30 animation-upDown">
                             <span class="flex-shrink-0 w-48 h-48 bg-main-two-600 text-white text-2xl flex-center rounded-circle"><i class="ph ph-watch"></i></span>
                             <div>
@@ -2726,11 +2726,11 @@
                             </div>
                             <div class="col-sm-6">
                                 <div class="flex-align gap-24 mb-24">
-                                    <div class="bg-main-600 rounded-12 text-center py-24 px-2 w-50-percent" data-aos="fade-right">    
+                                    <div class="bg-main-600 rounded-12 text-center py-24 px-2 w-50-percent" data-aos="fade-right">
                                         <h1 class="mb-0 text-white counter">16+</h1>
                                         <span class="text-white">Years of experience</span>
                                     </div>
-                                    <div class="bg-neutral-700 rounded-12 text-center py-24 px-2 w-50-percent" data-aos="fade-left">    
+                                    <div class="bg-neutral-700 rounded-12 text-center py-24 px-2 w-50-percent" data-aos="fade-left">
                                         <h1 class="mb-0 text-white counter">3.2k</h1>
                                         <span class="text-white">Years of experience</span>
                                     </div>
@@ -2750,7 +2750,7 @@
                             <h2 class="mb-24 wow bounceIn">The Place Where You Can Achieve</h2>
                             <p class="text-neutral-500 text-line-2 wow bounceInUp">Welcome to GAPE, where learning knows no bounds. Whether you're a student, professional, or lifelong learner...</p>
                         </div>
-    
+
                         <div class="flex-align align-items-start gap-28 mb-32" data-aos="fade-left" data-aos-duration="200">
                             <span class="w-80 h-80 bg-main-25 border border-neutral-30 flex-center rounded-circle flex-shrink-0">
                                 <img src="assets/images/icons/about-img1.png" alt="">
@@ -2769,7 +2769,7 @@
                                 <p class="text-neutral-500">A professional seeking to upskill, or a lifelong learner exploring new horizons, we're here to accompany you every step of the way. </p>
                             </div>
                         </div>
-    
+
                         <div class="flex-align flex-wrap gap-32 pt-40 border-top border-neutral-50 mt-40 border-dashed border-0" data-aos="fade-left" data-aos-duration="600">
                             <a href="course.jsp" class="btn btn-main rounded-pill flex-align gap-8">
                                 Read More
@@ -2792,8 +2792,8 @@
     </div>
  </section>
 <!-- ================================ About Section End ==================================== -->
-    
-    
+
+
 
     <!-- =========================== CHoose Us Section Start ================================ -->
 <section class="choose-us pt-120 position-relative z-1 mash-bg-main mash-bg-main-two">
@@ -2935,7 +2935,7 @@
  <section class="testimonials py-120 position-relative z-1 bg-main-25">
     <img src="assets/images/shapes/shape2.png" alt="" class="shape six animation-scalation">
     <img src="assets/images/shapes/shape3.png" alt="" class="shape four animation-rotation">
-    
+
     <div class="container">
         <div class="row gy-5">
             <div class="col-lg-6">
@@ -2968,7 +2968,7 @@
                                 <li class="text-warning-600 text-xl d-flex"><i class="ph-fill ph-star"></i></li>
                                 <li class="text-warning-600 text-xl d-flex"><i class="ph-fill ph-star-half"></i></li>
                             </ul>
-                            <p class="text-neutral-700" data-aos="fade-left" data-aos-duration="1200">"Enrolling in courses at GAPE was one of the best decisions I've made for my career. The flexibility of the online learning platform allowed me to study at my own pace while balancing my workÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â</p>
+                            <p class="text-neutral-700" data-aos="fade-left" data-aos-duration="1200">"Enrolling in courses at GAPE was one of the best decisions I have made for my career. The flexibility of the online learning platform allowed me to study at my own pace while balancing my work."</p>
                             <h4 class="mt-48 mb-8" data-aos="fade-left">Kathryn Murphy</h4>
                             <span class="text-neutral-700" data-aos="fade-left">Software Developer</span>
                         </div>
@@ -3020,7 +3020,7 @@
                             </div>
                         </div>
                         <div class="col-xl-6 d-xl-block d-none">
-                            <div class="certificate__thumb" data-aos="fade-up-left">    
+                            <div class="certificate__thumb" data-aos="fade-up-left">
                                 <img src="assets/images/thumbs/certificate-img.png" alt="" data-tilt data-tilt-max="8" data-tilt-speed="500" data-tilt-perspective="5000" data-tilt-full-page-listening>
                             </div>
                         </div>
@@ -3031,8 +3031,8 @@
     </div>
  </div>
 <!-- ================================= Certificate Section End ================================= -->
-    
-    
+
+
 <!-- ==================== Footer Start Here ==================== -->
 <footer class="footer bg-main-25 position-relative z-1">
     <div class="container">
@@ -3050,7 +3050,7 @@
     </div>
 </footer>
 <!-- ==================== Footer End Here ==================== -->
-  
+
 
         <!-- Jquery js -->
     <script src="assets/js/jquery-3.7.1.min.js"></script>
@@ -3085,20 +3085,13 @@
     <script src="assets/js/wow.min.js"></script>
 
     <script src="assets/js/aos.js"></script>
-    
+
     <!-- main js -->
     <script src="assets/js/main.js"></script>
 
 
-    
 
-   
+
+
     </body>
 </html>
-
-
-
-
-
-
-

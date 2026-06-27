@@ -183,24 +183,26 @@ public final class LessonService {
     ) {
         try {
             LocalDateTime now = currentMinute();
-            validateCreateCommand(command, now);
+            LessonCreateCommand effectiveCommand = deriveTemporalState(command, now);
+            validateCreateCommand(effectiveCommand, now);
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
                 try {
                     synchronizeTemporalStates(connection, now);
-                    ClassGroup classGroup = requireClassGroup(connection, command.classGroupId());
-                    ContentBlock contentBlock = requireContentBlock(connection, command.contentBlockId());
+                    ClassGroup classGroup = requireClassGroup(connection, effectiveCommand.classGroupId());
+                    ContentBlock contentBlock = requireContentBlock(connection, effectiveCommand.contentBlockId());
                     requireLessonManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
                     requireActiveContext(classGroup, contentBlock);
                     LessonCreateCommand normalizedCommand = normalizeCreateCommand(
                             connection,
-                            command,
+                            effectiveCommand,
                             classGroup,
                             null,
                             now
                     );
                     long lessonId = lessonDAO.create(connection, normalizedCommand);
+                    synchronizeTemporalStates(connection, now);
                     auditService.record(connection, actorUserId, sessionId, "LESSON_CREATE",
                             "lesson", Long.toString(lessonId), "success", sourceIp);
                     Lesson lesson = requireLesson(connection, lessonId);
@@ -232,6 +234,9 @@ public final class LessonService {
                 Lesson lesson = requireLesson(connection, lessonId);
                 ClassGroup classGroup = requireClassGroup(connection, lesson.classGroupId());
                 requireLessonReadAccess(connection, actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
+                if (actorProfileType == AccessProfileType.STUDENT && !isStudentVisible(lesson)) {
+                    throw new SecurityException("Lesson is not visible to students");
+                }
                 if (actorProfileType == AccessProfileType.STUDENT
                         && lesson.accessUrl() != null
                         && !lesson.accessUrl().isBlank()) {
@@ -332,29 +337,31 @@ public final class LessonService {
     ) {
         try {
             LocalDateTime now = currentMinute();
-            validateUpdateCommand(command, now);
+            LessonUpdateCommand effectiveCommand = deriveTemporalState(command, now);
+            validateUpdateCommand(effectiveCommand, now);
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
                 try {
                     synchronizeTemporalStates(connection, now);
                     Lesson current = requireLessonLocked(connection, lessonId);
-                    if (current.classGroupId() != command.classGroupId()) {
+                    if (current.classGroupId() != effectiveCommand.classGroupId()) {
                         throw new IllegalArgumentException("Lesson class group cannot be changed after creation");
                     }
                     ClassGroup classGroup = requireClassGroup(connection, current.classGroupId());
-                    ContentBlock contentBlock = requireContentBlock(connection, command.contentBlockId());
+                    ContentBlock contentBlock = requireContentBlock(connection, effectiveCommand.contentBlockId());
                     requireLessonManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
                     requireActiveContext(classGroup, contentBlock);
                     LessonUpdateCommand normalizedCommand = normalizeUpdateCommand(
                             connection,
-                            command,
+                            effectiveCommand,
                             classGroup,
                             lessonId,
                             current.state(),
                             now
                     );
                     lessonDAO.update(connection, lessonId, normalizedCommand);
+                    synchronizeTemporalStates(connection, now);
                     auditService.record(connection, actorUserId, sessionId, "LESSON_UPDATE",
                             "lesson", Long.toString(lessonId), "success", sourceIp);
                     Lesson lesson = requireLesson(connection, lessonId);
@@ -473,7 +480,7 @@ public final class LessonService {
             Long excludedLessonId,
             LocalDateTime now
     ) throws SQLException {
-        LessonState effectiveState = temporalState(command.startsAt(), command.endsAt(), now);
+        LessonState effectiveState = command.state();
         NormalizedLessonAccess access = normalizeLessonAccess(
                 connection,
                 classGroup,
@@ -510,9 +517,7 @@ public final class LessonService {
             LessonState currentState,
             LocalDateTime now
     ) throws SQLException {
-        LessonState effectiveState = currentState == LessonState.CANCELLED
-                ? LessonState.CANCELLED
-                : temporalState(command.startsAt(), command.endsAt(), now);
+        LessonState effectiveState = command.state();
         NormalizedLessonAccess access = normalizeLessonAccess(
                 connection,
                 classGroup,
@@ -555,17 +560,6 @@ public final class LessonService {
 
     private LocalDateTime currentMinute() {
         return LocalDateTime.now(clock).truncatedTo(ChronoUnit.MINUTES);
-    }
-
-    private static LessonState temporalState(LocalDateTime startsAt, LocalDateTime endsAt, LocalDateTime now) {
-        LocalDateTime currentMinute = now.truncatedTo(ChronoUnit.MINUTES);
-        if (!endsAt.isAfter(currentMinute)) {
-            return LessonState.COMPLETED;
-        }
-        if (!startsAt.isAfter(currentMinute)) {
-            return LessonState.ACTIVE;
-        }
-        return LessonState.SCHEDULED;
     }
 
     private NormalizedLessonAccess normalizeLessonAccess(
@@ -669,11 +663,11 @@ public final class LessonService {
     }
 
     private static void requireActiveContext(ClassGroup classGroup, ContentBlock contentBlock) {
-        if (classGroup.state() == ClassGroupState.ARCHIVED) {
-            throw new IllegalStateException("Archived class groups cannot receive lessons");
+        if (classGroup.state() != ClassGroupState.ACTIVE && classGroup.state() != ClassGroupState.SCHEDULED) {
+            throw new IllegalStateException("Lessons require an active or scheduled class group");
         }
-        if (contentBlock.state() == ContentBlockState.ARCHIVED) {
-            throw new IllegalStateException("Archived content blocks cannot receive lessons");
+        if (contentBlock.state() == ContentBlockState.INACTIVE) {
+            throw new IllegalStateException("Inactive content blocks cannot receive lessons");
         }
         if (contentBlock.classGroupId() != classGroup.id()) {
             throw new IllegalArgumentException("Lesson content block must belong to the same class group");
@@ -820,6 +814,7 @@ public final class LessonService {
                 command.title(),
                 command.description(),
                 command.type(),
+                command.state(),
                 command.startsAt(),
                 command.endsAt(),
                 now
@@ -834,10 +829,60 @@ public final class LessonService {
                 command.title(),
                 command.description(),
                 command.type(),
+                command.state(),
                 command.startsAt(),
                 command.endsAt(),
                 now
         );
+    }
+
+    private static LessonCreateCommand deriveTemporalState(LessonCreateCommand command, LocalDateTime now) {
+        Objects.requireNonNull(command, "command is required");
+        return new LessonCreateCommand(
+                command.classGroupId(),
+                command.contentBlockId(),
+                command.physicalRoomCode(),
+                command.title(),
+                command.description(),
+                command.type(),
+                command.provider(),
+                command.accessUrl(),
+                command.attendanceRequired(),
+                deriveTemporalState(command.startsAt(), command.endsAt(), now),
+                command.startsAt(),
+                command.endsAt()
+        );
+    }
+
+    private static LessonUpdateCommand deriveTemporalState(LessonUpdateCommand command, LocalDateTime now) {
+        Objects.requireNonNull(command, "command is required");
+        return new LessonUpdateCommand(
+                command.classGroupId(),
+                command.contentBlockId(),
+                command.physicalRoomCode(),
+                command.title(),
+                command.description(),
+                command.type(),
+                command.provider(),
+                command.accessUrl(),
+                command.attendanceRequired(),
+                deriveTemporalState(command.startsAt(), command.endsAt(), now),
+                command.startsAt(),
+                command.endsAt()
+        );
+    }
+
+    private static LessonState deriveTemporalState(LocalDateTime startsAt, LocalDateTime endsAt, LocalDateTime now) {
+        if (startsAt == null) {
+            return LessonState.DRAFT;
+        }
+        if (endsAt != null && !endsAt.isAfter(now)) {
+            return LessonState.COMPLETED;
+        }
+        if (!startsAt.isAfter(now)) {
+            return LessonState.ACTIVE;
+        }
+        return LessonState.SCHEDULED;
     }
 
     private static void validateCommonCommand(
@@ -846,6 +891,7 @@ public final class LessonService {
             String title,
             String description,
             LessonType type,
+            LessonState state,
             LocalDateTime startsAt,
             LocalDateTime endsAt,
             LocalDateTime now
@@ -860,14 +906,30 @@ public final class LessonService {
         requireMaxLength(title.trim(), TITLE_MAX_LENGTH, "Lesson title is too long");
         requireMaxLength(description, DESCRIPTION_MAX_LENGTH, "Lesson description is too long");
         Objects.requireNonNull(type, "lesson type is required");
-        Objects.requireNonNull(startsAt, "lesson start date is required");
-        Objects.requireNonNull(endsAt, "lesson end date is required");
-        if (startsAt.isBefore(now.truncatedTo(ChronoUnit.MINUTES))) {
+        Objects.requireNonNull(state, "lesson state is required");
+        requireValidDates(startsAt, endsAt, now);
+    }
+
+    private static void requireValidDates(LocalDateTime startsAt, LocalDateTime endsAt, LocalDateTime now) {
+        Objects.requireNonNull(now, "now is required");
+        if (endsAt != null && startsAt == null) {
+            throw new IllegalArgumentException("Lesson end date requires a start date");
+        }
+        if (startsAt != null && startsAt.isBefore(now)) {
             throw new IllegalArgumentException("Lesson start date cannot be in the past");
         }
-        if (!endsAt.isAfter(startsAt)) {
+        if (endsAt != null && endsAt.isBefore(now)) {
+            throw new IllegalArgumentException("Lesson end date cannot be in the past");
+        }
+        if (startsAt != null && endsAt != null && !endsAt.isAfter(startsAt)) {
             throw new IllegalArgumentException("Lesson end date must be after start date");
         }
+    }
+
+    private static boolean isStudentVisible(Lesson lesson) {
+        return lesson.state() == LessonState.SCHEDULED
+                || lesson.state() == LessonState.ACTIVE
+                || lesson.state() == LessonState.COMPLETED;
     }
 
     private static void requireText(String value, String message) {

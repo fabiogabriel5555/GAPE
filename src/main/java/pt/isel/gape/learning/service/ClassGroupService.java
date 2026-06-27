@@ -47,6 +47,7 @@ public final class ClassGroupService {
     private final TeachClassGroupDAO teachClassGroupDAO;
     private final PermissionChecker permissionChecker;
     private final AuditService auditService;
+    private final Clock clock;
 
     public ClassGroupService(
             ConnectionProvider connectionProvider,
@@ -66,6 +67,7 @@ public final class ClassGroupService {
         this.teachClassGroupDAO = Objects.requireNonNull(teachClassGroupDAO, "teachClassGroupDAO is required");
         this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
+        this.clock = Clock.systemDefaultZone();
     }
 
     public ClassGroupService(ConnectionProvider connectionProvider, Clock clock) {
@@ -82,8 +84,31 @@ public final class ClassGroupService {
                         new CoordinateSubjectDAO(connectionProvider),
                         new TeachClassGroupDAO(connectionProvider)
                 ),
-                new AuditService(new ActivityLogDAO(connectionProvider), clock)
+                new AuditService(new ActivityLogDAO(connectionProvider), clock),
+                clock
         );
+    }
+
+    private ClassGroupService(
+            ConnectionProvider connectionProvider,
+            ClassGroupDAO classGroupDAO,
+            CourseDAO courseDAO,
+            SubjectDAO subjectDAO,
+            CourseSubjectDAO courseSubjectDAO,
+            TeachClassGroupDAO teachClassGroupDAO,
+            PermissionChecker permissionChecker,
+            AuditService auditService,
+            Clock clock
+    ) {
+        this.connectionProvider = Objects.requireNonNull(connectionProvider, "connectionProvider is required");
+        this.classGroupDAO = Objects.requireNonNull(classGroupDAO, "classGroupDAO is required");
+        this.courseDAO = Objects.requireNonNull(courseDAO, "courseDAO is required");
+        this.subjectDAO = Objects.requireNonNull(subjectDAO, "subjectDAO is required");
+        this.courseSubjectDAO = Objects.requireNonNull(courseSubjectDAO, "courseSubjectDAO is required");
+        this.teachClassGroupDAO = Objects.requireNonNull(teachClassGroupDAO, "teachClassGroupDAO is required");
+        this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
+        this.auditService = Objects.requireNonNull(auditService, "auditService is required");
+        this.clock = Objects.requireNonNull(clock, "clock is required");
     }
 
     public ClassGroup createClassGroup(
@@ -94,17 +119,20 @@ public final class ClassGroupService {
             String sourceIp
     ) {
         try {
-            validateCreateCommand(command);
+            LocalDate today = LocalDate.now(clock);
+            ClassGroupCreateCommand effectiveCommand = deriveTemporalState(command, today);
+            validateCreateCommand(effectiveCommand, today);
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
                 try {
-                    Course course = requireCourse(connection, command.courseId());
-                    Subject subject = requireSubject(connection, command.subjectId());
+                    synchronizeTemporalStates(connection);
+                    Course course = requireCourse(connection, effectiveCommand.courseId());
+                    Subject subject = requireSubject(connection, effectiveCommand.subjectId());
                     CourseSubjectAssociation association = requireAssociation(
                             connection,
-                            command.courseId(),
-                            command.subjectId()
+                            effectiveCommand.courseId(),
+                            effectiveCommand.subjectId()
                     );
                     requireClassGroupCreationManager(
                             actorUserId,
@@ -115,7 +143,8 @@ public final class ClassGroupService {
                             sourceIp
                     );
                     validateActiveContext(course, subject, association);
-                    long classGroupId = classGroupDAO.create(connection, command);
+                    long classGroupId = classGroupDAO.create(connection, effectiveCommand);
+                    synchronizeTemporalStates(connection);
                     auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_CREATE",
                             "class_group", Long.toString(classGroupId), "success", sourceIp);
                     connection.commit();
@@ -142,9 +171,12 @@ public final class ClassGroupService {
             String sourceIp
     ) {
         try {
-            ClassGroup classGroup = requireClassGroup(classGroupId);
-            requireClassGroupOperationalManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
-            return classGroup;
+            try (Connection connection = connectionProvider.getConnection()) {
+                synchronizeTemporalStates(connection);
+                ClassGroup classGroup = requireClassGroup(connection, classGroupId);
+                requireClassGroupOperationalManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
+                return classGroup;
+            }
         } catch (RuntimeException | SQLException exception) {
             throw wrap(exception, "Failed to read class group");
         }
@@ -158,6 +190,9 @@ public final class ClassGroupService {
             String sourceIp
     ) {
         try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                synchronizeTemporalStates(connection);
+            }
             requireCourse(courseId);
             return classGroupDAO.findByCourse(courseId)
                     .stream()
@@ -182,6 +217,9 @@ public final class ClassGroupService {
             String sourceIp
     ) {
         try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                synchronizeTemporalStates(connection);
+            }
             ClassGroup classGroup = requireClassGroup(classGroupId);
             return classGroupReadDecision(actorUserId, sessionId, actorProfileType, classGroup, sourceIp).allowed();
         } catch (RuntimeException | SQLException exception) {
@@ -197,6 +235,9 @@ public final class ClassGroupService {
             String sourceIp
     ) {
         try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                synchronizeTemporalStates(connection);
+            }
             ClassGroup classGroup = requireClassGroup(classGroupId);
             return classGroupOperationalDecision(actorUserId, sessionId, actorProfileType, classGroup, sourceIp)
                     .allowed();
@@ -213,6 +254,9 @@ public final class ClassGroupService {
             String sourceIp
     ) {
         try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                synchronizeTemporalStates(connection);
+            }
             ClassGroup classGroup = requireClassGroup(classGroupId);
             return classGroupStructuralDecision(actorUserId, sessionId, actorProfileType, classGroup, sourceIp)
                     .allowed();
@@ -229,6 +273,9 @@ public final class ClassGroupService {
             String sourceIp
     ) {
         try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                synchronizeTemporalStates(connection);
+            }
             ClassGroup classGroup = requireClassGroup(classGroupId);
             return classGroupEnrollmentDecision(actorUserId, sessionId, actorProfileType, classGroup, sourceIp)
                     .allowed();
@@ -268,28 +315,32 @@ public final class ClassGroupService {
             String sourceIp
     ) {
         try {
-            validateUpdateCommand(command);
+            LocalDate today = LocalDate.now(clock);
+            ClassGroupUpdateCommand effectiveCommand = deriveTemporalState(command, today);
+            validateUpdateCommand(effectiveCommand, today);
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
                 try {
+                    synchronizeTemporalStates(connection);
                     ClassGroup current = requireClassGroup(connection, classGroupId);
+                    ensureClassGroupCanBeUpdated(current);
                     requireClassGroupOperationalManager(actorUserId, sessionId, actorProfileType, current, sourceIp);
-                    requireNotArchived(current);
-                    requireClassGroupContextChangeAllowed(actorProfileType, current, command);
-                    Course course = requireCourse(connection, command.courseId());
-                    Subject subject = requireSubject(connection, command.subjectId());
+                    requireClassGroupContextChangeAllowed(actorProfileType, current, effectiveCommand);
+                    Course course = requireCourse(connection, effectiveCommand.courseId());
+                    Subject subject = requireSubject(connection, effectiveCommand.subjectId());
                     CourseSubjectAssociation association = requireAssociation(
                             connection,
-                            command.courseId(),
-                            command.subjectId()
+                            effectiveCommand.courseId(),
+                            effectiveCommand.subjectId()
                     );
                     validateActiveContext(course, subject, association);
                     long activeEnrollments = classGroupDAO.countActiveEnrollments(connection, classGroupId);
-                    if (command.maxStudents() != null && activeEnrollments > command.maxStudents()) {
+                    if (effectiveCommand.maxStudents() != null && activeEnrollments > effectiveCommand.maxStudents()) {
                         throw new IllegalStateException("Class group max students cannot be below active enrollments");
                     }
-                    classGroupDAO.update(connection, classGroupId, command);
+                    classGroupDAO.update(connection, classGroupId, effectiveCommand);
+                    synchronizeTemporalStates(connection);
                     auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_UPDATE",
                             "class_group", Long.toString(classGroupId), "success", sourceIp);
                     connection.commit();
@@ -322,8 +373,7 @@ public final class ClassGroupService {
                 try {
                     ClassGroup current = requireClassGroup(connection, classGroupId);
                     requireClassGroupStructuralManager(actorUserId, sessionId, actorProfileType, current, sourceIp);
-                    requireNotArchived(current);
-                    classGroupDAO.updateState(connection, classGroupId, ClassGroupState.ARCHIVED);
+                    classGroupDAO.updateState(connection, classGroupId, ClassGroupState.COMPLETED);
                     auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_ARCHIVE",
                             "class_group", Long.toString(classGroupId), "success", sourceIp);
                     connection.commit();
@@ -354,7 +404,6 @@ public final class ClassGroupService {
                 try {
                     ClassGroup current = requireClassGroup(connection, classGroupId);
                     requireClassGroupStructuralManager(actorUserId, sessionId, actorProfileType, current, sourceIp);
-                    requireNotArchived(current);
                     if (classGroupDAO.hasDomainDependencies(connection, classGroupId)) {
                         throw new IllegalStateException("Class group with domain dependencies cannot be deleted");
                     }
@@ -393,7 +442,6 @@ public final class ClassGroupService {
                 try {
                     ClassGroup current = requireClassGroup(connection, classGroupId);
                     requireClassGroupStructuralManager(actorUserId, sessionId, actorProfileType, current, sourceIp);
-                    requireNotArchived(current);
                     if (!teachClassGroupDAO.canAssign(connection, teacherUserId, classGroupId)) {
                         throw new IllegalArgumentException("Teacher assignment requires active teacher and active class group");
                     }
@@ -432,7 +480,6 @@ public final class ClassGroupService {
                 try {
                     ClassGroup current = requireClassGroup(connection, classGroupId);
                     requireClassGroupStructuralManager(actorUserId, sessionId, actorProfileType, current, sourceIp);
-                    requireNotArchived(current);
                     if (!teachClassGroupDAO.deactivate(connection, teacherUserId, classGroupId, removalDate)) {
                         throw new IllegalArgumentException("Teacher assignment not found");
                     }
@@ -495,11 +542,11 @@ public final class ClassGroupService {
         if (course.organizationId() != subject.organizationId()) {
             throw new IllegalArgumentException("Class group course and subject must belong to the same organization");
         }
-        if (course.state() == CourseState.ARCHIVED) {
-            throw new IllegalStateException("Archived courses cannot receive class groups");
+        if (course.state() != CourseState.ACTIVE) {
+            throw new IllegalStateException("Class groups require an active course");
         }
-        if (subject.state() == SubjectState.ARCHIVED) {
-            throw new IllegalStateException("Archived subjects cannot receive class groups");
+        if (subject.state() != SubjectState.ACTIVE) {
+            throw new IllegalStateException("Class groups require an active subject");
         }
         if (association.state() != CourseSubjectState.ACTIVE) {
             throw new IllegalStateException("Class group requires an active course-subject association");
@@ -781,7 +828,7 @@ public final class ClassGroupService {
                 : AuthorizationDecision.deny(learningDecision.reason() + "/" + enrollmentDecision.reason());
     }
 
-    private static void validateCreateCommand(ClassGroupCreateCommand command) {
+    private static void validateCreateCommand(ClassGroupCreateCommand command, LocalDate today) {
         Objects.requireNonNull(command, "command is required");
         validateCommonCommand(
                 command.courseId(),
@@ -793,11 +840,12 @@ public final class ClassGroupService {
                 command.maxStudents(),
                 command.startsAt(),
                 command.endsAt(),
-                command.shift()
+                command.shift(),
+                today
         );
     }
 
-    private static void validateUpdateCommand(ClassGroupUpdateCommand command) {
+    private static void validateUpdateCommand(ClassGroupUpdateCommand command, LocalDate today) {
         Objects.requireNonNull(command, "command is required");
         validateCommonCommand(
                 command.courseId(),
@@ -809,8 +857,72 @@ public final class ClassGroupService {
                 command.maxStudents(),
                 command.startsAt(),
                 command.endsAt(),
-                command.shift()
+                command.shift(),
+                today
         );
+    }
+
+    private static ClassGroupCreateCommand deriveTemporalState(
+            ClassGroupCreateCommand command,
+            LocalDate today
+    ) {
+        Objects.requireNonNull(command, "command is required");
+        return new ClassGroupCreateCommand(
+                command.subjectId(),
+                command.courseId(),
+                command.code(),
+                command.modality(),
+                deriveTemporalState(command.startsAt(), command.endsAt(), today),
+                command.minStudents(),
+                command.maxStudents(),
+                command.startsAt(),
+                command.endsAt(),
+                command.shift(),
+                command.showContentThumbnails()
+        );
+    }
+
+    private static ClassGroupUpdateCommand deriveTemporalState(
+            ClassGroupUpdateCommand command,
+            LocalDate today
+    ) {
+        Objects.requireNonNull(command, "command is required");
+        return new ClassGroupUpdateCommand(
+                command.subjectId(),
+                command.courseId(),
+                command.code(),
+                command.modality(),
+                deriveTemporalState(command.startsAt(), command.endsAt(), today),
+                command.minStudents(),
+                command.maxStudents(),
+                command.startsAt(),
+                command.endsAt(),
+                command.shift(),
+                command.showContentThumbnails()
+        );
+    }
+
+    private static ClassGroupState deriveTemporalState(
+            LocalDate startsAt,
+            LocalDate endsAt,
+            LocalDate today
+    ) {
+        if (startsAt == null) {
+            return ClassGroupState.DRAFT;
+        }
+        if (endsAt != null && !endsAt.isAfter(today)) {
+            return ClassGroupState.COMPLETED;
+        }
+        if (!startsAt.isAfter(today)) {
+            return ClassGroupState.ACTIVE;
+        }
+        return ClassGroupState.SCHEDULED;
+    }
+
+    private static void ensureClassGroupCanBeUpdated(ClassGroup classGroup) {
+        if (classGroup.state() == ClassGroupState.COMPLETED) {
+            throw new IllegalStateException("Completed class groups cannot be changed");
+        }
     }
 
     private static void requireClassGroupContextChangeAllowed(
@@ -835,7 +947,8 @@ public final class ClassGroupService {
             Integer maxStudents,
             LocalDate startsAt,
             LocalDate endsAt,
-            ClassGroupShift shift
+            ClassGroupShift shift,
+            LocalDate today
     ) {
         if (courseId <= 0) {
             throw new IllegalArgumentException("Class group course is required");
@@ -848,11 +961,8 @@ public final class ClassGroupService {
         Objects.requireNonNull(modality, "class group modality is required");
         Objects.requireNonNull(state, "class group state is required");
         Objects.requireNonNull(shift, "class group shift is required");
-        if (state == ClassGroupState.ARCHIVED) {
-            throw new IllegalArgumentException("Use the archive operation to archive class groups");
-        }
         requireStudentRange(minStudents, maxStudents);
-        requireValidDates(startsAt, endsAt, "Class group end date cannot be before start date");
+        requireClassGroupTemporalDates(startsAt, endsAt, today);
     }
 
     private static void requireStudentRange(Integer minStudents, Integer maxStudents) {
@@ -867,16 +977,38 @@ public final class ClassGroupService {
         }
     }
 
+    private static void requireClassGroupTemporalDates(LocalDate startDate, LocalDate endDate, LocalDate today) {
+        Objects.requireNonNull(today, "today is required");
+        if (endDate != null && startDate == null) {
+            throw new IllegalArgumentException("Class group end date requires a start date");
+        }
+        if (startDate != null && startDate.isBefore(today)) {
+            throw new IllegalArgumentException("Class group start date cannot be in the past");
+        }
+        if (endDate != null && endDate.isBefore(today)) {
+            throw new IllegalArgumentException("Class group end date cannot be in the past");
+        }
+        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("Class group end date cannot be before start date");
+        }
+    }
+
     private static void requireValidDates(LocalDate startDate, LocalDate endDate, String message) {
         if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
             throw new IllegalArgumentException(message);
         }
     }
 
-    private static void requireNotArchived(ClassGroup classGroup) {
-        if (classGroup.state() == ClassGroupState.ARCHIVED) {
-            throw new IllegalStateException("Archived class groups cannot be changed");
+    public int synchronizeTemporalStates() {
+        try (Connection connection = connectionProvider.getConnection()) {
+            return synchronizeTemporalStates(connection);
+        } catch (SQLException exception) {
+            throw wrap(exception, "Failed to synchronize class group states");
         }
+    }
+
+    private int synchronizeTemporalStates(Connection connection) throws SQLException {
+        return classGroupDAO.synchronizeTemporalStates(connection, LocalDate.now(clock));
     }
 
     private static void requireText(String value, String message) {

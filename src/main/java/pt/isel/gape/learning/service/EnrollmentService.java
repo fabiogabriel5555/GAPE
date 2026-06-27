@@ -175,7 +175,7 @@ public final class EnrollmentService {
                     Course course = requireCourse(connection, courseId);
                     requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
                             studentUserId, course.organizationId(), course.id(), null, sourceIp, false);
-                    requireNotArchived(course);
+                    requireActiveCourse(course);
                     CourseEnrollment current = enrollmentDAO.findCourseEnrollment(connection, studentUserId, courseId)
                             .orElseThrow(() -> new IllegalArgumentException("Course enrollment not found"));
                     if (current.startDate() != null && withdrawalDate.isBefore(current.startDate())) {
@@ -224,7 +224,7 @@ public final class EnrollmentService {
                     Course course = requireCourse(connection, courseId);
                     requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
                             studentUserId, course.organizationId(), course.id(), null, sourceIp, false);
-                    requireNotArchived(course);
+                    requireActiveCourse(course);
                     CourseEnrollment current = enrollmentDAO.findCourseEnrollment(connection, studentUserId, courseId)
                             .orElseThrow(() -> new IllegalArgumentException("Course enrollment not found"));
                     LocalDate effectiveEndDate = effectiveCourseEnrollmentEndDate(state, endDate);
@@ -283,7 +283,7 @@ public final class EnrollmentService {
                     Course course = requireCourse(connection, courseId);
                     requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
                             studentUserId, course.organizationId(), course.id(), null, sourceIp, false);
-                    requireNotArchived(course);
+                    requireActiveCourse(course);
                     enrollmentDAO.findCourseEnrollment(connection, studentUserId, courseId)
                             .orElseThrow(() -> new IllegalArgumentException("Course enrollment not found"));
                     classGroupEnrollmentDAO.deleteInCourse(connection, studentUserId, courseId);
@@ -793,9 +793,9 @@ public final class EnrollmentService {
                     Course course = requireCourse(connection, courseId);
                     requireEnrollmentAccess(actorUserId, sessionId, actorProfileType,
                             studentUserId, course.organizationId(), course.id(), subjectId, sourceIp, true);
-                    requireNotArchived(course);
+                    requireActiveCourse(course);
                     Subject subject = requireSubject(connection, subjectId);
-                    requireNotArchived(subject);
+                    requireActiveSubject(subject);
                     SubjectEnrollment current = enrollmentDAO
                             .findSubjectEnrollment(connection, studentUserId, courseId, subjectId)
                             .orElseThrow(() -> new IllegalArgumentException("Subject enrollment not found"));
@@ -1056,18 +1056,6 @@ public final class EnrollmentService {
     private static void requireActiveSubject(Subject subject) {
         if (subject.state() != SubjectState.ACTIVE) {
             throw new IllegalStateException("Enrollment requires an active subject");
-        }
-    }
-
-    private static void requireNotArchived(Course course) {
-        if (course.state() == CourseState.ARCHIVED) {
-            throw new IllegalStateException("Archived courses cannot be changed");
-        }
-    }
-
-    private static void requireNotArchived(Subject subject) {
-        if (subject.state() == SubjectState.ARCHIVED) {
-            throw new IllegalStateException("Archived subjects cannot be changed");
         }
     }
 

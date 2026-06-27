@@ -129,7 +129,6 @@ public final class CourseSubjectService {
                     CourseSubjectAssociation current = requireAssociation(connection, command.courseId(), command.subjectId());
                     requireCourseSubjectManager(actorUserId, sessionId, actorProfileType,
                             course.id(), subject.id(), sourceIp);
-                    requireNotArchived(current);
                     validateActiveContext(course, subject);
                     courseSubjectDAO.update(connection, command);
                     auditService.record(connection, actorUserId, sessionId, "COURSE_SUBJECT_UPDATE",
@@ -168,9 +167,8 @@ public final class CourseSubjectService {
                     CourseSubjectAssociation current = requireAssociation(connection, courseId, subjectId);
                     requireCourseSubjectManager(actorUserId, sessionId, actorProfileType,
                             course.id(), current.subjectId(), sourceIp);
-                    requireNotArchived(current);
-                    requireSubjectKeepsNonArchivedAssociation(connection, subjectId);
-                    courseSubjectDAO.updateState(connection, courseId, subjectId, CourseSubjectState.ARCHIVED);
+                    requireSubjectKeepsActiveAssociation(connection, subjectId);
+                    courseSubjectDAO.updateState(connection, courseId, subjectId, CourseSubjectState.INACTIVE);
                     auditService.record(connection, actorUserId, sessionId, "COURSE_SUBJECT_ARCHIVE",
                             "course_subject", identifier(courseId, subjectId), "success", sourceIp);
                     connection.commit();
@@ -204,7 +202,6 @@ public final class CourseSubjectService {
                     CourseSubjectAssociation current = requireAssociation(connection, courseId, subjectId);
                     requireCourseSubjectManager(actorUserId, sessionId, actorProfileType,
                             course.id(), current.subjectId(), sourceIp);
-                    requireNotArchived(current);
                     requireSubjectKeepsAssociation(connection, current);
                     if (courseSubjectDAO.hasDomainDependencies(connection, courseId, subjectId)) {
                         throw new IllegalStateException("Course-subject association with dependencies cannot be deleted");
@@ -264,11 +261,11 @@ public final class CourseSubjectService {
         if (course.organizationId() != subject.organizationId()) {
             throw new IllegalArgumentException("Course and subject must belong to the same organization");
         }
-        if (course.state() == CourseState.ARCHIVED) {
-            throw new IllegalStateException("Archived courses cannot receive subject associations");
+        if (course.state() != CourseState.ACTIVE) {
+            throw new IllegalStateException("Inactive courses cannot receive subject associations");
         }
-        if (subject.state() == SubjectState.ARCHIVED) {
-            throw new IllegalStateException("Archived subjects cannot be associated with courses");
+        if (subject.state() != SubjectState.ACTIVE) {
+            throw new IllegalStateException("Inactive subjects cannot be associated with courses");
         }
     }
 
@@ -440,20 +437,11 @@ public final class CourseSubjectService {
         if (command.curricularYear() != null && command.curricularYear() <= 0) {
             throw new IllegalArgumentException("Curricular year must be positive");
         }
-        if (command.state() == CourseSubjectState.ARCHIVED) {
-            throw new IllegalArgumentException("Use the archive operation to archive course-subject associations");
-        }
     }
 
-    private static void requireNotArchived(CourseSubjectAssociation association) {
-        if (association.state() == CourseSubjectState.ARCHIVED) {
-            throw new IllegalStateException("Archived course-subject associations cannot be changed");
-        }
-    }
-
-    private void requireSubjectKeepsNonArchivedAssociation(Connection connection, long subjectId) throws SQLException {
-        if (courseSubjectDAO.countNonArchivedBySubject(connection, subjectId) <= 1) {
-            throw new IllegalStateException("Subject must remain associated with at least one course");
+    private void requireSubjectKeepsActiveAssociation(Connection connection, long subjectId) throws SQLException {
+        if (courseSubjectDAO.countActiveBySubject(connection, subjectId) <= 1) {
+            throw new IllegalStateException("Subject must remain associated with at least one active course");
         }
     }
 
@@ -464,8 +452,8 @@ public final class CourseSubjectService {
         if (courseSubjectDAO.countBySubject(connection, association.subjectId()) <= 1) {
             throw new IllegalStateException("Subject must remain associated with at least one course");
         }
-        if (association.state() != CourseSubjectState.ARCHIVED) {
-            requireSubjectKeepsNonArchivedAssociation(connection, association.subjectId());
+        if (association.state() == CourseSubjectState.ACTIVE) {
+            requireSubjectKeepsActiveAssociation(connection, association.subjectId());
         }
     }
 

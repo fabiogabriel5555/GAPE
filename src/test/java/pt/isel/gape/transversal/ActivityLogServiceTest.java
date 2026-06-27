@@ -109,7 +109,7 @@ class ActivityLogServiceTest {
     }
 
     @Test
-    void requiredFieldsAreValidatedBeforeInsert() {
+    void requiredFieldsAreValidtedBeforeInsert() {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> activityLogService.record(1L, null, " ", "user_account", "4", "success", "127.0.0.1")

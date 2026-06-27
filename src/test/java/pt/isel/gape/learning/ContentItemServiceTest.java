@@ -73,7 +73,7 @@ class ContentItemServiceTest {
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                command("Conteudo " + format.name(), format, source),
+                command("Content " + format.name(), format, source),
                 SOURCE_IP
         );
 
@@ -93,7 +93,7 @@ class ContentItemServiceTest {
                         3L,
                         null,
                         AccessProfileType.TEACHER,
-                        command("Conteudo invalido " + format.name(), format, source),
+                        command("Invalid content " + format.name(), format, source),
                         SOURCE_IP
                 )
         );
@@ -107,7 +107,7 @@ class ContentItemServiceTest {
                         0L,
                         null,
                         AccessProfileType.TEACHER,
-                        command("Sem responsavel", ContentFormat.PDF, "contents/sem-responsavel.pdf"),
+                        command("Without owner", ContentFormat.PDF, "contents/without-owner.pdf"),
                         SOURCE_IP
                 )
         );
@@ -119,7 +119,7 @@ class ContentItemServiceTest {
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                command("Link fora do repositorio", ContentFormat.URL, "https://example.com/link"),
+                command("Link outside repository", ContentFormat.URL, "https://example.com/link"),
                 SOURCE_IP
         );
 
@@ -140,7 +140,10 @@ class ContentItemServiceTest {
                 || item.format() == ContentFormat.TEXT
                 || item.format() == ContentFormat.IMAGE
                 || item.format() == ContentFormat.VIDEO
-                || item.format() == ContentFormat.AUDIO));
+                || item.format() == ContentFormat.AUDIO
+                || item.format() == ContentFormat.ARCHIVE
+                || (item.format() == ContentFormat.OTHER && item.source().startsWith("assessment:"))));
+        assertTrue(items.stream().anyMatch(item -> "assessment:90".equals(item.source())));
         ReusableContentFile pdf = items.stream()
                 .filter(item -> item.repositoryContentItemId() == 70L)
                 .findFirst()
@@ -149,22 +152,22 @@ class ContentItemServiceTest {
     }
 
     @Test
-    void repositoryForTargetContextIncludesFilesFromAnyOriginalContext() throws Exception {
+    void repositoryForNonStudentActorIgnoresOriginalAndTargetContextAuthorization() throws Exception {
         ContentItem otherContextContent = contentItemService.createContentItem(
                 1L,
                 null,
                 AccessProfileType.ADMINISTRATOR,
-                command("Ficheiro de outra turma", ContentFormat.PDF, "contents/other-class/private.pdf"),
+                command("File from another class group", ContentFormat.PDF, "contents/other-class/private.pdf"),
                 SOURCE_IP
         );
         associateContentToBlock62(otherContextContent.id(), false);
 
         List<ReusableContentFile> items = contentItemService.listReusableFileBackedContent(
-                999L,
+                3L,
                 null,
-                AccessProfileType.STUDENT,
+                AccessProfileType.TEACHER,
                 ContentAssociationType.CLASS_GROUP,
-                50L,
+                999_999L,
                 SOURCE_IP
         );
 
@@ -176,20 +179,20 @@ class ContentItemServiceTest {
     }
 
     @Test
-    void repositoryFileReadIgnoresOriginalAndTargetContextAuthorization() throws Exception {
+    void repositoryFileReadIsFreeForNonStudentActor() throws Exception {
         ContentItem otherContextContent = contentItemService.createContentItem(
                 1L,
                 null,
                 AccessProfileType.ADMINISTRATOR,
-                command("Ficheiro privado", ContentFormat.PDF, "contents/other-class/private-target.pdf"),
+                command("Private file", ContentFormat.PDF, "contents/other-class/private-target.pdf"),
                 SOURCE_IP
         );
         associateContentToBlock62(otherContextContent.id(), false);
 
         ReusableContentFile reusableFile = contentItemService.getReusableFileBackedContent(
-                999L,
+                3L,
                 null,
-                AccessProfileType.STUDENT,
+                AccessProfileType.TEACHER,
                 otherContextContent.id(),
                 ContentAssociationType.CLASS_GROUP,
                 999_999L,
@@ -201,26 +204,63 @@ class ContentItemServiceTest {
     }
 
     @Test
-    void reusableFileBackedContentReadIsFreeForDownloadPreview() throws Exception {
+    void reusableFileBackedContentPreviewIsFreeForNonStudentActor() throws Exception {
         ContentItem otherContextContent = contentItemService.createContentItem(
                 1L,
                 null,
                 AccessProfileType.ADMINISTRATOR,
-                command("Ficheiro para preview livre", ContentFormat.PDF, "contents/other-class/free-preview.pdf"),
+                command("File for public preview", ContentFormat.PDF, "contents/other-class/free-preview.pdf"),
                 SOURCE_IP
         );
         associateContentToBlock62(otherContextContent.id(), false);
 
         ContentItem contentItem = contentItemService.getContentItem(
-                999L,
+                3L,
                 null,
-                AccessProfileType.STUDENT,
+                AccessProfileType.TEACHER,
                 otherContextContent.id(),
                 SOURCE_IP
         );
 
         assertEquals(otherContextContent.id(), contentItem.id());
         assertEquals(otherContextContent.source(), contentItem.source());
+    }
+
+    @Test
+    void studentCannotUseReusableRepository() {
+        assertThrows(SecurityException.class, () -> contentItemService.listReusableFileBackedContent(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                SOURCE_IP
+        ));
+        assertThrows(SecurityException.class, () -> contentItemService.getReusableFileBackedContent(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                70L,
+                SOURCE_IP
+        ));
+    }
+
+    @Test
+    void studentReusableFileBackedContentPreviewStillRequiresContentAccessContext() throws Exception {
+        ContentItem otherContextContent = contentItemService.createContentItem(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                command("File for private student preview", ContentFormat.PDF, "contents/other-class/student-preview.pdf"),
+                SOURCE_IP
+        );
+        associateContentToBlock62(otherContextContent.id(), false);
+
+        assertThrows(SecurityException.class, () -> contentItemService.getContentItem(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                otherContextContent.id(),
+                SOURCE_IP
+        ));
     }
 
     @Test
@@ -241,7 +281,7 @@ class ContentItemServiceTest {
 
     @Test
     void authorWithoutManagementContextCannotDeleteDetachedContentItem() throws Exception {
-        ContentItem contentItem = createTextContent("Conteudo do autor");
+        ContentItem contentItem = createTextContent("Content by author");
 
         assertThrows(
                 SecurityException.class,
@@ -259,7 +299,7 @@ class ContentItemServiceTest {
 
     @Test
     void uploadCleanupCanDiscardActorOwnedDetachedPendingContentItem() throws Exception {
-        ContentItem contentItem = createTextContent("Conteudo pendente do upload");
+        ContentItem contentItem = createTextContent("Content pending upload");
 
         contentItemService.discardPendingDetachedContentItem(
                 3L,
@@ -274,7 +314,7 @@ class ContentItemServiceTest {
 
     @Test
     void uploadCleanupCannotDiscardAssociatedContentItem() throws Exception {
-        ContentItem contentItem = createTextContent("Conteudo ja associado");
+        ContentItem contentItem = createTextContent("Content ja associado");
         associateContentToBlock60(contentItem.id(), false);
 
         assertThrows(
@@ -294,7 +334,7 @@ class ContentItemServiceTest {
 
     @Test
     void administratorCanPhysicallyDeleteDetachedContentItem() throws Exception {
-        ContentItem contentItem = createTextContent("Conteudo para administrador");
+        ContentItem contentItem = createTextContent("Content for administrator");
 
         ContentDeletionResult result = contentItemService.deleteContentItem(
                 1L,
@@ -314,7 +354,7 @@ class ContentItemServiceTest {
                 1L,
                 null,
                 AccessProfileType.ADMINISTRATOR,
-                command("Conteudo criado por admin", ContentFormat.PDF,
+                command("Content created by admin", ContentFormat.PDF,
                         "contents/items/context-manager/delete-generic-by-manager.pdf"),
                 SOURCE_IP
         );
@@ -343,14 +383,14 @@ class ContentItemServiceTest {
                 SOURCE_IP
         );
 
-        assertEquals(ContentDeletionResult.ARCHIVED, result);
+        assertEquals(ContentDeletionResult.INACTIVATED, result);
         assertTrue(contentItemExists(70L));
-        assertEquals("archived", contentItemState(70L));
+        assertEquals("inactive", contentItemState(70L));
     }
 
     @Test
     void contentLinkedToSubmittedAssessmentAttemptIsArchivedInsteadOfPhysicallyDeleted() throws Exception {
-        ContentItem contentItem = createTextContent("Conteudo com tentativa");
+        ContentItem contentItem = createTextContent("Content with attempt");
         associateContentToAssessment90(contentItem.id());
 
         ContentDeletionResult result = contentItemService.deleteContentItem(
@@ -361,9 +401,9 @@ class ContentItemServiceTest {
                 SOURCE_IP
         );
 
-        assertEquals(ContentDeletionResult.ARCHIVED, result);
+        assertEquals(ContentDeletionResult.INACTIVATED, result);
         assertTrue(contentItemExists(contentItem.id()));
-        assertEquals("archived", contentItemState(contentItem.id()));
+        assertEquals("inactive", contentItemState(contentItem.id()));
     }
 
     @Test
@@ -372,7 +412,7 @@ class ContentItemServiceTest {
                 1L,
                 null,
                 AccessProfileType.ADMINISTRATOR,
-                command("Conteudo criado por admin", ContentFormat.PDF,
+                command("Content created by admin", ContentFormat.PDF,
                         "contents/items/context-manager/delete-by-manager.pdf"),
                 SOURCE_IP
         );
@@ -395,7 +435,7 @@ class ContentItemServiceTest {
 
     @Test
     void studentCannotDeletePedagogicalContentFromBlock() throws Exception {
-        ContentItem contentItem = createContent("Conteudo protegido contra aluno",
+        ContentItem contentItem = createContent("Content protected against student",
                 "contents/items/student-delete/protected.pdf");
         associateContentToBlock60(contentItem.id(), false);
 
@@ -417,7 +457,7 @@ class ContentItemServiceTest {
 
     @Test
     void deletingMandatoryContentFromActiveBlockArchivesInsteadOfPhysicallyDeleting() throws Exception {
-        ContentItem contentItem = createContent("Conteudo obrigatorio ativo",
+        ContentItem contentItem = createContent("Content active required",
                 "contents/items/mandatory-active/protected.pdf");
         associateContentToBlock60(contentItem.id(), true);
 
@@ -430,16 +470,16 @@ class ContentItemServiceTest {
                 SOURCE_IP
         );
 
-        assertEquals(ContentDeletionResult.ARCHIVED, result.deletionResult());
+        assertEquals(ContentDeletionResult.INACTIVATED, result.deletionResult());
         assertTrue(result.orphanedRelativePaths().isEmpty());
         assertTrue(contentItemExists(contentItem.id()));
-        assertEquals("archived", contentItemState(contentItem.id()));
+        assertEquals("inactive", contentItemState(contentItem.id()));
         assertTrue(blockAssociationExists(60L, contentItem.id()));
     }
 
     @Test
     void deletingContentFromBlockDeletesItemAndReturnsUniqueStoredFile() throws Exception {
-        ContentItem contentItem = createContent("Conteudo unico no bloco", "contents/items/test-unique/processed/content.txt");
+        ContentItem contentItem = createContent("Content unique in block", "contents/items/test-unique/processed/content.txt");
         associateContentToBlock60(contentItem.id(), false);
 
         ContentRemovalResult result = contentItemService.deleteContentItemFromBlock(
@@ -460,8 +500,8 @@ class ContentItemServiceTest {
     @Test
     void deletingContentFromBlockKeepsStoredFileWhenAnotherItemReusesIt() throws Exception {
         String sharedSource = "contents/items/shared/processed/content.pdf";
-        ContentItem contentItem = createContent("Conteudo reutilizado no bloco", sharedSource);
-        ContentItem reusedItem = createContent("Outro item com o mesmo ficheiro", sharedSource);
+        ContentItem contentItem = createContent("Content reused in block", sharedSource);
+        ContentItem reusedItem = createContent("Another item with the same file", sharedSource);
         associateContentToBlock60(contentItem.id(), false);
 
         ContentRemovalResult result = contentItemService.deleteContentItemFromBlock(
@@ -549,7 +589,7 @@ class ContentItemServiceTest {
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                command(title, ContentFormat.TEXT, "contents/texto-apoio-testes.txt"),
+                command(title, ContentFormat.TEXT, "contents/test-support-text.txt"),
                 SOURCE_IP
         );
     }
@@ -571,7 +611,7 @@ class ContentItemServiceTest {
     private static ContentItemCreateCommand command(String title, ContentFormat format, String source) {
         return new ContentItemCreateCommand(
                 title,
-                "Conteudo criado pelos testes de servico",
+                "Content created by service tests",
                 format,
                 source,
                 ContentItemState.ACTIVE
@@ -580,16 +620,17 @@ class ContentItemServiceTest {
 
     private static Stream<Arguments> validContentReferences() {
         return Stream.of(
-                Arguments.of(ContentFormat.TEXT, "contents/texto-integral-aula.txt"),
-                Arguments.of(ContentFormat.IMAGE, "contents/imagem.png"),
+                Arguments.of(ContentFormat.TEXT, "contents/full-lesson-text.txt"),
+                Arguments.of(ContentFormat.IMAGE, "contents/image.png"),
                 Arguments.of(ContentFormat.VIDEO, "contents/video.mp4"),
                 Arguments.of(ContentFormat.AUDIO, "contents/audio.mp3"),
-                Arguments.of(ContentFormat.PDF, "contents/guia.pdf"),
-                Arguments.of(ContentFormat.URL, "https://example.com/guia"),
-                Arguments.of(ContentFormat.SCORM, "contents/scorm/pacote.zip"),
-                Arguments.of(ContentFormat.XAPI, "contents/xapi/pacote.zip"),
-                Arguments.of(ContentFormat.PRESENTATION, "contents/slides/aula.pdf"),
-                Arguments.of(ContentFormat.EMBED, "https://player.example.com/embed/aula"),
+                Arguments.of(ContentFormat.PDF, "contents/guide.pdf"),
+                Arguments.of(ContentFormat.ARCHIVE, "contents/archive/package.zip"),
+                Arguments.of(ContentFormat.URL, "https://example.com/guide"),
+                Arguments.of(ContentFormat.SCORM, "contents/scorm/package.zip"),
+                Arguments.of(ContentFormat.XAPI, "contents/xapi/package.zip"),
+                Arguments.of(ContentFormat.PRESENTATION, "contents/slides/lesson.pdf"),
+                Arguments.of(ContentFormat.EMBED, "https://player.example.com/embed/lesson"),
                 Arguments.of(ContentFormat.OTHER, null)
         );
     }
@@ -597,10 +638,10 @@ class ContentItemServiceTest {
     private static Stream<Arguments> invalidContentReferences() {
         return Stream.of(
                 Arguments.of(ContentFormat.TEXT, " "),
-                Arguments.of(ContentFormat.PDF, "../guia.pdf"),
-                Arguments.of(ContentFormat.PDF, "contents/guia.txt"),
-                Arguments.of(ContentFormat.IMAGE, "/contents/imagem.png"),
-                Arguments.of(ContentFormat.URL, "ftp://example.com/guia"),
+                Arguments.of(ContentFormat.PDF, "../guide.pdf"),
+                Arguments.of(ContentFormat.PDF, "contents/guide.txt"),
+                Arguments.of(ContentFormat.IMAGE, "/contents/image.png"),
+                Arguments.of(ContentFormat.URL, "ftp://example.com/guide"),
                 Arguments.of(ContentFormat.EMBED, "ftp://example.com/embed"),
                 Arguments.of(ContentFormat.EMBED, null)
         );

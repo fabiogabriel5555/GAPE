@@ -95,7 +95,6 @@ public final class PhysicalRoomView {
             case ACTIVE -> "Active";
             case INACTIVE -> "Inactive";
             case UNAVAILABLE -> "Unavailable";
-            case ARCHIVED -> "Archived";
         };
     }
 
@@ -104,7 +103,6 @@ public final class PhysicalRoomView {
             case ACTIVE -> "bg-success-50 text-success-600";
             case INACTIVE -> "bg-warning-30 text-warning-600";
             case UNAVAILABLE -> "bg-danger-50 text-danger-600";
-            case ARCHIVED -> "bg-neutral-30 text-neutral-600";
         };
     }
 
@@ -113,7 +111,7 @@ public final class PhysicalRoomView {
     }
 
     public boolean isArchived() {
-        return room.state() == PhysicalRoomState.ARCHIVED;
+        return room.state() == PhysicalRoomState.INACTIVE;
     }
 
     public String getOrganizationName() {

@@ -22,7 +22,7 @@ public final class DatabaseBootstrapService {
 
         try (Connection connection = DatabaseConfig.getConnection()) {
             initialize(connection, mode);
-            System.out.println("[GAPE][DB] Bootstrap concluido com modo: " + mode.name().toLowerCase());
+            System.out.println("[GAPE][DB] Bootstrap completed with mode: " + mode.name().toLowerCase());
         } catch (SQLException | IOException exception) {
             throw new IllegalStateException("Failed to bootstrap database with mode " + mode.name().toLowerCase(), exception);
         }

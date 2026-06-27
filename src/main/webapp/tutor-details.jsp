@@ -28,13 +28,13 @@
     <link rel="stylesheet" href="assets/css/animate.css">
     <!-- dataTables.dataTables -->
     <link rel="stylesheet" href="assets/css/dataTables.dataTables.min.css">
-    
+
     <link rel="stylesheet" href="assets/css/aos.css">
     <!-- Main css -->
     <link rel="stylesheet" href="assets/css/main.css">
-</head> 
+</head>
 <body>
-    
+
 <!--==================== Preloader Start ====================-->
   <div class="preloader">
     <img src="assets/images/icons/preloader.gif" alt="">
@@ -65,10 +65,10 @@
             <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
-            
+
 <ul class="nav-menu flex-align nav-menu--mobile">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -134,7 +134,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -155,7 +155,7 @@
                 <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -179,7 +179,7 @@
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -194,7 +194,7 @@
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -226,7 +226,7 @@
     </select>
 </div>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -246,7 +246,7 @@
                     </a>
                 </div>
                 <!-- Logo End  -->
-    
+
                 <!-- Select Start -->
                 <div class="d-sm-block d-none">
                     <div class="header-select border border-neutral-30 bg-main-25 rounded-pill position-relative">
@@ -269,13 +269,13 @@
 </div>
                 </div>
                 <!-- Select End -->
-    
+
                 <!-- Menu Start  -->
                 <div class="header-menu d-lg-block d-none">
-                    
+
 <ul class="nav-menu flex-align ">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -341,7 +341,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -362,7 +362,7 @@
                 <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -386,7 +386,7 @@
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -401,7 +401,7 @@
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -428,7 +428,7 @@
                     <%@ include file="/WEB-INF/fragments/user-avatar-content.jspf" %>
                 </a>
                 <button type="button" class="toggle-mobileMenu d-lg-none text-neutral-200 flex-center">
-                    <i class="ph ph-list"></i> 
+                    <i class="ph ph-list"></i>
                 </button>
             </div>
             <!-- Header Right End  -->
@@ -445,7 +445,7 @@
     <img src="assets/images/shapes/shape5.png" alt="" class="shape six animation-walking d-md-block d-none">
     <img src="assets/images/shapes/shape4.png" alt="" class="shape four animation-scalation">
     <img src="assets/images/shapes/shape4.png" alt="" class="shape nine animation-scalation">
-    
+
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8">
@@ -453,20 +453,20 @@
                     <h1 class="breadcrumb__title display-4 fw-semibold text-center"> Tutors Details</h1>
                     <ul class="breadcrumb__list d-flex align-items-center justify-content-center gap-4">
                         <li class="breadcrumb__item">
-                            <a href="index.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium"> 
+                            <a href="index.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium">
                                 <i class="text-lg d-inline-flex ph-bold ph-house"></i> Home</a>
                          </li>
                         <li class="breadcrumb__item">
                             <i class="text-neutral-500 d-flex ph-bold ph-caret-right"></i>
                         </li>
                         <li class="breadcrumb__item">
-                            <a href="course.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium"> </a> 
+                            <a href="course.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium"> </a>
                         </li>
                         <li class="breadcrumb__item d-none">
                             <i class="text-neutral-500 d-flex ph-bold ph-caret-right"></i>
                         </li>
-                        <li class="breadcrumb__item"> 
-                            <span class="text-main-two-600"> Tutors Details </span> 
+                        <li class="breadcrumb__item">
+                            <span class="text-main-two-600"> Tutors Details </span>
                         </li>
                     </ul>
                 </div>
@@ -643,7 +643,7 @@
                                             </li>
                                             <li class="d-flex align-items-start px-32 py-16">
                                                 <span class="w-50-percent fw-semibold text-neutral-700">Preferred Subjects</span>
-                                                <span class="w-50-percent fw-normal text-neutral-500 text-md"> General Maths (Class 9), Higher Math (Class 10), Agricultural Education (Class 6), All (Class 7), Bangla (Class 7), Bangladesh & Global Studies (Class 7), Bangladesh And Global Studies (Class 10), BGS (SSC), Biology (Class 9), Chemistry (Class 9), English (Class 7), General Science (Class 7), Genaral Math (Class 10), Higher maths (Class 9), Higher Maths (HSC-2nd YEAR), History (SSC), Home economics (Class 8), ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â½Home Science (Class 10), Home Economics (Class 9), ICT (Class 6), Maths (SSC), Others (Class 5), Mathematics (Class 9), Physics (Class 9), Science (Class 9), Islamic Studies (Class 8), Social science (Class 7)</span>
+                                                <span class="w-50-percent fw-normal text-neutral-500 text-md"> General Maths (Class 9), Higher Math (Class 10), Agricultural Education (Class 6), All (Class 7), Bangla (Class 7), Bangladesh & Global Studies (Class 7), Bangladesh And Global Studies (Class 10), BGS (SSC), Biology (Class 9), Chemistry (Class 9), English (Class 7), General Science (Class 7), Genaral Math (Class 10), Higher maths (Class 9), Higher Maths (HSC-2nd YEAR), History (SSC), Home economics (Class 8), Home Science (Class 10), Home Economics (Class 9), ICT (Class 6), Maths (SSC), Others (Class 5), Mathematics (Class 9), Physics (Class 9), Science (Class 9), Islamic Studies (Class 8), Social science (Class 7)</span>
                                             </li>
                                             <li class="d-flex align-items-start px-32 py-16">
                                                 <span class="w-50-percent fw-semibold text-neutral-700">Preferred Time</span>
@@ -721,7 +721,7 @@
                                     <div class="border border-neutral-30 rounded-12 bg-main-25 p-32">
                                         <h5 class="mb-0">Average Reviews</h5>
                                         <span class="d-block border border-neutral-30 my-32 border-dashed"></span>
-                
+
                                         <div class="d-flex flex-sm-row flex-column gap-36">
                                             <div class="rounded-16 px-40 py-24 flex-center flex-column flex-shrink-0 text-center bg-main-600 text-white">
                                                 <h2 class="mb-8 text-white">4.8</h2>
@@ -734,7 +734,7 @@
                                                 </div>
                                                 <span class="mt-8 text-gray-500">26 Rating</span>
                                             </div>
-                
+
                                             <div class="flex-grow-1">
                                                 <div class="flex-align gap-20 mb-8">
                                                     <div class="flex-align gap-8">
@@ -802,7 +802,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                
+
                                         <!-- Review Item -->
                                         <div class="border border-neutral-30 rounded-12 bg-white p-32">
                                             <div class="flex-align gap-8 mb-16">
@@ -822,7 +822,7 @@
                                                 </div>
                                             </div>
                                             <span class="d-block border border-neutral-30 my-24 border-dashed"></span>
-                
+
                                             <div class="flex-align flex-wrap gap-40">
                                                 <button type="button" class="like-button flex-align gap-8 text-neutral-500 hover-text-main-600">
                                                     <span class="like-button__icon text-xl d-flex"><i class="ph-bold ph-thumbs-up"></i></span>
@@ -839,7 +839,7 @@
                                             </div>
                                         </div>
                                         <!-- Review Item -->
-                
+
                                         <!-- Review Item -->
                                         <div class="border border-neutral-30 rounded-12 bg-white p-32 mt-24">
                                             <div class="flex-align gap-8 mb-16">
@@ -859,7 +859,7 @@
                                                 </div>
                                             </div>
                                             <span class="d-block border border-neutral-30 my-24 border-dashed"></span>
-                
+
                                             <div class="flex-align flex-wrap gap-40">
                                                 <button type="button" class="like-button flex-align gap-8 text-neutral-500 hover-text-main-600">
                                                     <span class="like-button__icon text-xl d-flex"><i class="ph-bold ph-thumbs-up"></i></span>
@@ -872,7 +872,7 @@
                                             </div>
                                         </div>
                                         <!-- Review Item -->
-                
+
                                         <!-- Review Item -->
                                         <div class="border border-neutral-30 rounded-12 bg-white p-32 mt-24">
                                             <div class="flex-align gap-8 mb-16">
@@ -892,7 +892,7 @@
                                                 </div>
                                             </div>
                                             <span class="d-block border border-neutral-30 my-24 border-dashed"></span>
-                
+
                                             <div class="flex-align flex-wrap gap-40">
                                                 <button type="button" class="like-button flex-align gap-8 text-neutral-500 hover-text-main-600">
                                                     <span class="like-button__icon text-xl d-flex"><i class="ph-bold ph-thumbs-up"></i></span>
@@ -905,7 +905,7 @@
                                             </div>
                                         </div>
                                         <!-- Review Item -->
-                
+
                                         <button type="button" class="btn btn-main rounded-pill flex-center gap-8 mt-40">
                                             See All Reviews
                                             <i class="ph-bold ph-arrow-up-right d-flex text-lg"></i>
@@ -927,7 +927,7 @@
                                             </div>
                                             <div class="mb-24">
                                                 <label class="text-neutral-700 text-lg fw-medium mb-12">Star Reviews </label>
-                                                
+
                                                 <div id="half-star-rating">
                                                     <div class="rating-group">
                                                         <input class="rating__input rating__input--none" checked="" name="rating2" id="rating2-0" value="0" type="radio">
@@ -954,7 +954,7 @@
                                                         <input class="rating__input" name="rating2" id="rating2-50" value="5" type="radio">
                                                     </div>
                                                 </div>
-                
+
                                             </div>
                                             <div class="mb-24">
                                                 <label for="desc" class="text-neutral-700 text-lg fw-medium mb-12">Your Question </label>
@@ -979,7 +979,7 @@
         </div>
     </section>
     <!-- ============================== Tutor Details Section End ============================== -->
-    
+
     <!-- ================================= Certificate Section Start ================================= -->
 <div class="certificate">
     <div class="container container--lg">
@@ -1001,7 +1001,7 @@
                             </div>
                         </div>
                         <div class="col-xl-6 d-xl-block d-none">
-                            <div class="certificate__thumb" data-aos="fade-up-left">    
+                            <div class="certificate__thumb" data-aos="fade-up-left">
                                 <img src="assets/images/thumbs/certificate-img.png" alt="" data-tilt data-tilt-max="8" data-tilt-speed="500" data-tilt-perspective="5000" data-tilt-full-page-listening>
                             </div>
                         </div>
@@ -1012,8 +1012,8 @@
     </div>
  </div>
 <!-- ================================= Certificate Section End ================================= -->
-    
-    
+
+
 <!-- ==================== Footer Start Here ==================== -->
 <footer class="footer bg-main-25 position-relative z-1">
     <div class="container">
@@ -1031,7 +1031,7 @@
     </div>
 </footer>
 <!-- ==================== Footer End Here ==================== -->
-  
+
 
         <!-- Jquery js -->
     <script src="assets/js/jquery-3.7.1.min.js"></script>
@@ -1066,22 +1066,14 @@
     <script src="assets/js/wow.min.js"></script>
 
     <script src="assets/js/aos.js"></script>
-    
+
     <!-- main js -->
     <script src="assets/js/main.js"></script>
 
 
-    
+
 
 
 
     </body>
 </html>
-
-
-
-
-
-
-
-

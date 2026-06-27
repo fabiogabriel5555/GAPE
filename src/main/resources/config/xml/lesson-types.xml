@@ -2,12 +2,12 @@
 <lessonTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
   <type code="online">
-    <label>Aula online</label>
+    <label>Online class</label>
   </type>
   <type code="onsite">
-    <label>Aula presencial</label>
+    <label>In-person class</label>
   </type>
   <type code="hybrid">
-    <label>Aula hibrida</label>
+    <label>Hybrid class</label>
   </type>
 </lessonTypes>

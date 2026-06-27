@@ -222,6 +222,20 @@
             overflow: hidden;
         }
 
+        .cg-drag-handle {
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .cg-dragging {
+            opacity: 0.58;
+        }
+
+        .cg-drop-target {
+            outline: 2px dashed rgba(0, 169, 145, 0.32);
+            outline-offset: 3px;
+        }
+
         .cg-block-header {
             background: linear-gradient(180deg, #ffffff 0%, #f7fffd 100%);
             border-bottom: 2px solid rgba(0, 169, 145, 0.18);
@@ -391,7 +405,7 @@
         }
 
         .cg-content-details-panel {
-            background: #f8fbfb;
+            background: #fff;
             border: 1px solid var(--cg-border);
             border-radius: 8px;
             padding: 16px;
@@ -484,6 +498,39 @@
             max-height: 420px;
             overflow-y: auto;
             padding-right: 6px;
+        }
+
+        .cg-assessment-option {
+            background: #fff;
+            border-color: var(--cg-border);
+            gap: 12px;
+            min-height: 0;
+            padding: 10px 12px;
+        }
+
+        .cg-assessment-option .cg-activity-icon {
+            font-size: 22px;
+            height: 42px;
+            width: 42px;
+        }
+
+        .cg-assessment-option > span:last-child > span.text-13 {
+            line-height: 1.35;
+            overflow: visible;
+            white-space: normal;
+        }
+
+        .cg-content-details-panel.is-assessment-mode {
+            background: transparent;
+            border: 0;
+            padding: 0;
+        }
+
+        .cg-assessment-create-form {
+            background: #fff;
+            border: 1px solid rgba(36, 45, 58, 0.08);
+            border-radius: 8px;
+            padding: 14px;
         }
 
         .cg-repository-group,
@@ -649,7 +696,7 @@
                         <span class="cg-mode-icon bg-main-50 text-main-600 text-24 mb-14"><i class="ph ph-stack"></i></span>
                         <span class="text-20 fw-semibold text-neutral-800 d-block mb-8">Learning Plan</span>
                         <span class="text-14 text-neutral-500 d-block mb-12">Pedagogical blocks, contents and critical actions.</span>
-                        <span class="text-13 text-main-600 fw-semibold"><c:out value="${classGroup.blockCount}"/> blocks | <c:out value="${blockContentCount}"/> contents | <c:out value="${lessonCount}"/> lessons</span>
+                        <span class="text-13 text-main-600 fw-semibold"><c:out value="${classGroup.blockCount}"/> blocks | <c:out value="${blockContentCount}"/> contents | <c:out value="${lessonCount}"/> lessons | <c:out value="${assessmentCount}"/> assessments</span>
                     </button>
                     <button type="button" class="cg-mode-card" data-cg-tab="info" aria-selected="false">
                         <span class="cg-mode-icon bg-success-50 text-success-600 text-24 mb-14"><i class="ph ph-users-three"></i></span>
@@ -665,11 +712,14 @@
                             <div class="px-22 py-22 d-flex align-items-start justify-content-between gap-16 flex-wrap">
                                 <div>
                                     <h3 class="text-20 fw-semibold text-neutral-800 mb-6">Structure</h3>
-                                    <span class="text-14 text-neutral-500">Blocks, learning resources, exam files and questionnaires in their class order.</span>
+                                    <span class="text-14 text-neutral-500">Blocks, learning resources and assessments in their class order.</span>
                                 </div>
                                 <div class="d-flex align-items-center gap-10 flex-wrap">
                                     <span class="bg-main-50 text-main-600 px-14 py-8 rounded-pill text-13">
                                         <i class="ph ph-files me-6"></i><c:out value="${blockContentCount}"/> contents
+                                    </span>
+                                    <span class="bg-warning-50 text-warning-600 px-14 py-8 rounded-pill text-13">
+                                        <i class="ph ph-seal-question me-6"></i><c:out value="${assessmentCount}"/> assessments
                                     </span>
                                     <c:choose>
                                         <c:when test="${blockContentLoadSuccess}">
@@ -691,7 +741,7 @@
                                 </div>
                             </div>
 
-                            <div class="d-flex flex-column gap-16 px-18 pb-18">
+                            <div class="d-flex flex-column gap-16 px-18 pb-18" data-class-group-structure data-block-reorder-url="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/reorder" data-content-reorder-url="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/contents/reorder" data-csrf-token="${sessionScope['gape.auth.csrfToken']}">
                                 <c:set var="activeBlockNumber" value="${0}"/>
                                 <c:forEach var="block" items="${contentBlocks}" varStatus="blockLoop">
                                     <c:choose>
@@ -703,11 +753,16 @@
                                             <c:set var="displayBlockNumber" value="${activeBlockNumber}"/>
                                         </c:otherwise>
                                     </c:choose>
-                                    <article id="block-${block.id}" class="cg-surface cg-block ${block.archived ? 'is-archived' : ''}">
+                                    <article id="block-${block.id}" class="cg-surface cg-block ${block.archived ? 'is-archived' : ''}" data-block-card data-block-id="${block.id}" draggable="${canManageClassGroupStructure and not block.archived}">
                                         <div class="cg-block-header">
                                             <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap">
                                                 <div class="d-flex align-items-start gap-16 min-w-0">
-                                                    <div class="cg-block-number">
+                                                    <c:if test="${canManageClassGroupStructure and not block.archived}">
+                                                        <button type="button" class="cg-icon-button cg-drag-handle" data-block-drag-handle draggable="true" title="Move block" aria-label="Move block">
+                                                            <i class="ph ph-dots-six-vertical text-20"></i>
+                                                        </button>
+                                                    </c:if>
+                                                    <div class="cg-block-number" data-block-number>
                                                         <c:choose>
                                                             <c:when test="${displayBlockNumber lt 10}">0<c:out value="${displayBlockNumber}"/></c:when>
                                                             <c:otherwise><c:out value="${displayBlockNumber}"/></c:otherwise>
@@ -744,7 +799,7 @@
                                                                 <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/edit" class="cg-icon-button" title="Edit block">
                                                                     <i class="ph ph-pencil-simple-line text-20"></i>
                                                                 </a>
-                                                                <button type="button" class="cg-icon-button" title="Archive block" data-bs-toggle="modal" data-bs-target="#archiveBlock${block.id}">
+                                                                <button type="button" class="cg-icon-button" title="Deactivate block" data-bs-toggle="modal" data-bs-target="#archiveBlock${block.id}">
                                                                     <i class="ph ph-archive-box text-20"></i>
                                                                 </button>
                                                                 <button type="button" class="cg-icon-button" title="Delete block" data-bs-toggle="modal" data-bs-target="#deleteBlock${block.id}">
@@ -758,7 +813,7 @@
                                         </div>
 
                                         <c:set var="blockActivities" value="${blockActivitiesByBlock[block.id]}"/>
-                                        <div class="cg-content-list">
+                                        <div class="cg-content-list" data-content-list data-target-block-id="${block.id}">
                                             <c:choose>
                                                 <c:when test="${not empty blockContentLoadError}">
                                                     <div class="cg-empty d-flex align-items-center justify-content-center px-18 py-18 text-warning-600 text-14">
@@ -767,7 +822,7 @@
                                                 </c:when>
                                                 <c:when test="${empty blockActivities}">
                                                     <div class="cg-empty d-flex align-items-center justify-content-center px-18 py-18 text-neutral-500 text-14">
-                                                        <i class="ph ph-folder-open me-8 text-20"></i>No contents or lessons registered for this block.
+                                                        <i class="ph ph-folder-open me-8 text-20"></i>No contents, lessons or assessments registered for this block.
                                                     </div>
                                                 </c:when>
                                                 <c:otherwise>
@@ -782,8 +837,13 @@
                                                                     <c:param name="disposition" value="inline"/>
                                                                 </c:url>
                                                                 <c:url var="contentDownloadUrl" value="/contents/download/${content.id}"/>
-                                                                <div class="cg-content-row">
+                                                                <div class="cg-content-row" data-content-row data-source-block-id="${block.id}" data-content-id="${content.id}" data-item-kind="content" data-item-id="${content.id}" draggable="${canManageClassGroupStructure and not block.archived}">
                                                                     <div class="d-flex align-items-start gap-14 min-w-0">
+                                                                        <c:if test="${canManageClassGroupStructure and not block.archived}">
+                                                                            <button type="button" class="cg-icon-button cg-drag-handle flex-shrink-0" data-content-drag-handle draggable="true" title="Move content" aria-label="Move content">
+                                                                                <i class="ph ph-dots-six-vertical text-20"></i>
+                                                                            </button>
+                                                                        </c:if>
                                                                         <c:choose>
                                                                             <c:when test="${classGroup.showContentThumbnails and content.visualThumbnailAvailable}">
                                                                                 <span class="cg-content-thumb-wrap" data-content-thumbnail>
@@ -809,6 +869,17 @@
                                                                     </div>
                                                                     <div class="d-flex align-items-center justify-content-end gap-8 flex-wrap">
                                                                         <c:choose>
+                                                                            <c:when test="${content.assessmentReference}">
+                                                                                <a href="${pageContext.request.contextPath}/learning/assessments/${content.assessmentReferenceId}" class="cg-outline-button text-13 px-12 py-8" title="Detail">
+                                                                                    <i class="ph ph-eye"></i>
+                                                                                </a>
+                                                                                <a href="${pageContext.request.contextPath}/learning/assessments/${content.assessmentReferenceId}" class="cg-icon-button" title="Edit">
+                                                                                    <i class="ph ph-pencil-simple-line text-20"></i>
+                                                                                </a>
+                                                                                <a href="${pageContext.request.contextPath}/learning/assessments/${content.assessmentReferenceId}/pdf" class="cg-primary-button text-13 px-12 py-8" title="Download">
+                                                                                    <i class="ph ph-download-simple"></i>
+                                                                                </a>
+                                                                            </c:when>
                                                                             <c:when test="${content.downloadable}">
                                                                                 <a href="${contentInlineUrl}" target="_blank" rel="noopener noreferrer" class="cg-outline-button text-13 px-12 py-8" title="View">
                                                                                     <i class="ph ph-eye"></i>
@@ -841,8 +912,13 @@
                                                             </c:when>
                                                             <c:when test="${activity.lessonActivity}">
                                                                 <c:set var="lesson" value="${activity.lesson}"/>
-                                                                <div class="cg-content-row">
+                                                                <div class="cg-content-row" data-content-row data-source-block-id="${block.id}" data-item-kind="lesson" data-item-id="${lesson.id}" draggable="${canManageClassGroupStructure and not block.archived}">
                                                                     <div class="d-flex align-items-start gap-14 min-w-0">
+                                                                        <c:if test="${canManageClassGroupStructure and not block.archived}">
+                                                                            <button type="button" class="cg-icon-button cg-drag-handle flex-shrink-0" data-content-drag-handle draggable="true" title="Move lesson" aria-label="Move lesson">
+                                                                                <i class="ph ph-dots-six-vertical text-20"></i>
+                                                                            </button>
+                                                                        </c:if>
                                                                         <span class="cg-content-icon ${lesson.typeBadgeClass} text-22">
                                                                             <i class="${lesson.typeIconClass}"></i>
                                                                         </span>
@@ -869,7 +945,52 @@
                                                                             <form action="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/delete" method="post" class="m-0">
                                                                                 <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                                                                 <button type="submit" class="cg-icon-button" title="Delete lesson">
-                                                                                    <i class="ph ph-trash text-20"></i>
+                                                                                    <i class="ph ph-x text-20"></i>
+                                                                                </button>
+                                                                            </form>
+                                                                        </c:if>
+                                                                    </div>
+                                                                </div>
+                                                            </c:when>
+                                                            <c:when test="${activity.assessmentActivity}">
+                                                                <c:set var="assessmentItem" value="${activity.assessment}"/>
+                                                                <div class="cg-content-row" data-content-row data-source-block-id="${block.id}" data-item-kind="assessment" data-item-id="${assessmentItem.id}" draggable="${canManageClassGroupStructure and not block.archived}">
+                                                                    <div class="d-flex align-items-start gap-14 min-w-0">
+                                                                        <c:if test="${canManageClassGroupStructure and not block.archived}">
+                                                                            <button type="button" class="cg-icon-button cg-drag-handle flex-shrink-0" data-content-drag-handle draggable="true" title="Move assessment" aria-label="Move assessment">
+                                                                                <i class="ph ph-dots-six-vertical text-20"></i>
+                                                                            </button>
+                                                                        </c:if>
+                                                                        <span class="cg-content-icon ${assessmentItem.softClass} text-22">
+                                                                            <i class="${assessmentItem.iconClass}"></i>
+                                                                        </span>
+                                                                        <div class="min-w-0">
+                                                                            <div class="d-flex align-items-center gap-8 flex-wrap mb-6">
+                                                                                <h5 class="text-15 fw-semibold text-neutral-800 mb-0"><c:out value="${assessmentItem.title}"/></h5>
+                                                                                <span class="${assessmentItem.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${assessmentItem.stateLabel}"/></span>
+                                                                                <span class="bg-neutral-20 text-neutral-600 px-10 py-5 rounded-pill text-12"><c:out value="${assessmentItem.typeLabel}"/></span>
+                                                                            </div>
+                                                                            <p class="text-13 text-neutral-500 mb-0">
+                                                                                <c:out value="${assessmentItem.questionCountLabel}"/> | <c:out value="${assessmentItem.attemptCountLabel}"/> | <c:out value="${assessmentItem.correctionModeLabel}"/> correction
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="d-flex align-items-center justify-content-end gap-8 flex-wrap">
+                                                                        <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}" class="cg-outline-button text-13 px-12 py-8" title="Detail">
+                                                                            <i class="ph ph-eye"></i>
+                                                                        </a>
+                                                                        <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}" class="cg-icon-button" title="Edit">
+                                                                            <i class="ph ph-pencil-simple-line text-20"></i>
+                                                                        </a>
+                                                                        <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}/pdf" class="cg-primary-button text-13 px-12 py-8" title="Download">
+                                                                            <i class="ph ph-download-simple"></i>
+                                                                        </a>
+                                                                        <c:if test="${canManageClassGroup and not block.archived}">
+                                                                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}/delete" method="post" class="m-0">
+                                                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                                                <input type="hidden" name="returnTo" value="/learning/class-groups/${classGroup.id}#block-${block.id}">
+                                                                                <button type="submit" class="cg-icon-button" title="Delete assessment">
+                                                                                    <i class="ph ph-x text-20"></i>
                                                                                 </button>
                                                                             </form>
                                                                         </c:if>
@@ -903,19 +1024,15 @@
                                                         </div>
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                     </div>
-                                                    <form action="${pageContext.request.contextPath}/contents/upload" method="post" enctype="multipart/form-data" data-content-upload-form data-content-upload-action="${pageContext.request.contextPath}/contents/upload" data-lesson-action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/lessons">
+                                                    <form id="contentUploadForm${block.id}" action="${pageContext.request.contextPath}/contents/upload" method="post" enctype="multipart/form-data" data-content-upload-form data-content-upload-action="${pageContext.request.contextPath}/contents/upload" data-lesson-action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/lessons" data-assessment-action="${pageContext.request.contextPath}/learning/assessments" data-assessment-return-anchor="block-${block.id}">
                                                         <div class="cg-activity-shell">
                                                             <div class="cg-activity-side">
                                                                 <input type="search" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 mb-14" placeholder="Search activity" data-activity-search>
                                                                 <div class="d-flex flex-column gap-4">
                                                                     <button type="button" class="cg-activity-category is-active" data-content-category="multimedia"><i class="ph ph-monitor-play"></i>Multimedia</button>
                                                                     <button type="button" class="cg-activity-category" data-content-category="repository"><i class="ph ph-folder-open"></i>Repository</button>
-                                                                    <button type="button" class="cg-activity-category" data-content-category="live_classes"><i class="ph ph-video-camera"></i>Online/Hybr. Classes</button>
-                                                                    <button type="button" class="cg-activity-category" data-content-category="in_person_classes"><i class="ph ph-chalkboard-teacher"></i>In-Person Classes</button>
-                                                                    <button type="button" class="cg-activity-category" data-content-category="live_exams"><i class="ph ph-monitor"></i>Live Exams</button>
-                                                                    <button type="button" class="cg-activity-category" data-content-category="in_person_exams"><i class="ph ph-clipboard-text"></i>In-person Exams</button>
-                                                                    <button type="button" class="cg-activity-category" data-content-category="live_forms"><i class="ph ph-list-checks"></i>Live Forms</button>
-                                                                    <button type="button" class="cg-activity-category" data-content-category="in_person_forms"><i class="ph ph-note-pencil"></i>In-person Forms</button>
+                                                                    <button type="button" class="cg-activity-category" data-content-category="class"><i class="ph ph-chalkboard-teacher"></i>Class</button>
+                                                                    <button type="button" class="cg-activity-category" data-content-category="assessment"><i class="ph ph-eye"></i>Assessment</button>
                                                                     <button type="button" class="cg-activity-category" data-content-category="grade_sheet"><i class="ph ph-table"></i>Grade Sheet</button>
                                                                     <button type="button" class="cg-activity-category" data-content-category="embed"><i class="ph ph-code"></i>Embed</button>
                                                                 </div>
@@ -1054,51 +1171,54 @@
                                                                         </div>
                                                                     </div>
                                                                     <div class="cg-repository-empty text-center py-32 px-16 border border-neutral-30 rounded-8 bg-neutral-20" data-repository-empty data-category="repository" hidden>
-                                                                        <span class="text-14 text-neutral-500">No reusable pedagogical files are available yet.</span>
+                                                                        <span class="text-14 text-neutral-500">No reusable pedagogical items are available yet.</span>
                                                                     </div>
-                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="live_classes" data-supported="true" data-source-kind="lesson" data-lesson-type="online" data-title="Online Class" data-submit-label="Create Lesson">
+                                                                    <div class="cg-repository-group" data-repository-group data-category="repository" hidden>
+                                                                        <div class="d-flex align-items-center justify-content-between gap-12 mb-8">
+                                                                            <span class="text-13 fw-semibold text-neutral-600 text-uppercase">Assessments</span>
+                                                                            <span class="h-1 bg-neutral-30 flex-grow-1"></span>
+                                                                        </div>
+                                                                        <div class="cg-repository-list">
+                                                                            <c:forEach var="repositoryItem" items="${contentRepository}">
+                                                                                <c:if test="${repositoryItem.assessmentReference}">
+                                                                                    <div class="cg-repository-item" data-repository-item>
+                                                                                        <button type="button" class="cg-activity-option" data-content-option data-category="repository" data-supported="true" data-format="${repositoryItem.format}" data-role="${repositoryItem.defaultRole}" data-source-kind="repository" data-content-id="${repositoryItem.id}" data-assessment-reference="true" data-preview-url="${pageContext.request.contextPath}/learning/assessments/${repositoryItem.assessmentReferenceId}/pdf?disposition=inline" data-original-title="${repositoryItem.rawTitleAttribute}" data-original-description="${repositoryItem.rawDescriptionAttribute}" data-original-mandatory="${repositoryItem.defaultMandatory}" data-submit-label="Reuse Assessment">
+                                                                                            <span class="cg-activity-icon ${repositoryItem.formatBadgeClass}"><i class="${repositoryItem.formatIconClass}"></i></span>
+                                                                                            <span><strong class="text-15 text-neutral-800 d-block mb-4"><c:out value="${repositoryItem.title}"/></strong><span class="text-13 text-neutral-500 cg-truncate-2"><c:out value="${repositoryItem.description}"/></span></span>
+                                                                                        </button>
+                                                                                        <a href="${pageContext.request.contextPath}/learning/assessments/${repositoryItem.assessmentReferenceId}/pdf?disposition=inline" target="_blank" rel="noopener noreferrer" class="cg-repository-preview" title="Preview" aria-label="Preview">
+                                                                                            <i class="ph ph-eye"></i>
+                                                                                        </a>
+                                                                                    </div>
+                                                                                </c:if>
+                                                                            </c:forEach>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="class" data-supported="true" data-source-kind="lesson" data-lesson-type="online" data-title="Online" data-submit-label="Create Lesson">
                                                                         <span class="cg-activity-icon bg-success-600"><i class="ph ph-video-camera"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Online Class</strong><span class="text-13 text-neutral-500">Meeting link and schedule.</span></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Online</strong><span class="text-13 text-neutral-500">Meeting link and schedule.</span></span>
                                                                     </button>
-                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="live_classes" data-supported="true" data-source-kind="lesson" data-lesson-type="hybrid" data-title="Hybrid Class" data-submit-label="Create Lesson">
-                                                                        <span class="cg-activity-icon bg-info-600"><i class="ph ph-broadcast"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Hybrid Class</strong><span class="text-13 text-neutral-500">Meeting link and physical room.</span></span>
-                                                                    </button>
-                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="in_person_classes" data-supported="true" data-source-kind="lesson" data-lesson-type="onsite" data-title="In-person Class" data-submit-label="Create Lesson">
+                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="class" data-supported="true" data-source-kind="lesson" data-lesson-type="onsite" data-title="In-Person" data-submit-label="Create Lesson">
                                                                         <span class="cg-activity-icon bg-main-two-600"><i class="ph ph-book-open"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">In-person Class</strong><span class="text-13 text-neutral-500">Room, schedule and attendance.</span></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">In-Person</strong><span class="text-13 text-neutral-500">Room, schedule and attendance.</span></span>
                                                                     </button>
-                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="live_exams" data-supported="false" data-format="other" data-role="live_exam" data-source-kind="assessment" data-title="Live Exam">
-                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-exam"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Live Exam</strong><span class="text-13 text-neutral-500">Exam workflow.</span></span>
+                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="class" data-supported="true" data-source-kind="lesson" data-lesson-type="hybrid" data-title="Hybrid" data-submit-label="Create Lesson">
+                                                                        <span class="cg-activity-icon bg-info-600"><i class="ph ph-broadcast"></i></span>
+                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Hybrid</strong><span class="text-13 text-neutral-500">Meeting link and physical room.</span></span>
                                                                     </button>
-                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="live_exams" data-supported="false" data-format="other" data-role="live_quiz" data-source-kind="assessment" data-title="Live Quiz">
-                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-list-checks"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Live Quiz</strong><span class="text-13 text-neutral-500">Quiz workflow.</span></span>
+                                                                    <button type="button" class="cg-activity-option cg-assessment-option" data-content-option data-category="assessment" data-supported="true" data-format="other" data-role="assessment" data-source-kind="assessment-create" data-title="Online Assessment" data-submit-label="Create" data-assessment-type="form" data-assessment-mode="online" data-assessment-correction-mode="automatic" data-assessment-subject-id="${classGroup.subjectId}" data-assessment-content-block-id="${block.id}" data-assessment-summary="Reusable online assessment with setup, questions, enrollment policy and attempts." data-assessment-settings="Assessment | Online | Automatic correction">
+                                                                        <span class="cg-activity-icon bg-info-600"><i class="ph ph-eye"></i></span>
+                                                                        <span>
+                                                                            <strong class="text-15 text-neutral-800 d-block mb-4">Online</strong>
+                                                                            <span class="text-13 text-neutral-500">Form, test or exam completed online.</span>
+                                                                        </span>
                                                                     </button>
-                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="in_person_exams" data-supported="false" data-format="other" data-role="in_person_exam" data-source-kind="assessment" data-title="In-person Exam">
-                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-clipboard-text"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">In-person Exam</strong><span class="text-13 text-neutral-500">Exam schedule.</span></span>
-                                                                    </button>
-                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="in_person_exams" data-supported="false" data-format="other" data-role="oral_exam" data-source-kind="assessment" data-title="Oral Exam">
-                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-microphone"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Oral Exam</strong><span class="text-13 text-neutral-500">Oral grading.</span></span>
-                                                                    </button>
-                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="live_forms" data-supported="false" data-format="other" data-role="live_form" data-source-kind="form" data-title="Live Form">
-                                                                        <span class="cg-activity-icon bg-success-600"><i class="ph ph-file"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Live Form</strong><span class="text-13 text-neutral-500">Form workflow.</span></span>
-                                                                    </button>
-                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="live_forms" data-supported="false" data-format="other" data-role="live_survey" data-source-kind="form" data-title="Live Survey">
-                                                                        <span class="cg-activity-icon bg-success-600"><i class="ph ph-graduation-cap"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Live Survey</strong><span class="text-13 text-neutral-500">Survey workflow.</span></span>
-                                                                    </button>
-                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="in_person_forms" data-supported="false" data-format="other" data-role="in_person_form" data-source-kind="form" data-title="In-person Form">
-                                                                        <span class="cg-activity-icon bg-success-600"><i class="ph ph-note-pencil"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">In-person Form</strong><span class="text-13 text-neutral-500">Response form.</span></span>
-                                                                    </button>
-                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="in_person_forms" data-supported="false" data-format="other" data-role="attendance_form" data-source-kind="form" data-title="Attendance Form">
-                                                                        <span class="cg-activity-icon bg-success-600"><i class="ph ph-check-square"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Attendance Form</strong><span class="text-13 text-neutral-500">Attendance form.</span></span>
+                                                                    <button type="button" class="cg-activity-option cg-assessment-option" data-content-option data-category="assessment" data-supported="true" data-format="other" data-role="assessment" data-source-kind="assessment-create" data-title="In-Person Assessment" data-submit-label="Create" data-assessment-type="form" data-assessment-mode="onsite" data-assessment-correction-mode="manual" data-assessment-subject-id="${classGroup.subjectId}" data-assessment-content-block-id="${block.id}" data-assessment-summary="Reusable in-person assessment with setup, questions, enrollment policy and attempts." data-assessment-settings="Assessment | In-Person | Manual correction">
+                                                                        <span class="cg-activity-icon bg-main-two-600"><i class="ph ph-eye"></i></span>
+                                                                        <span>
+                                                                            <strong class="text-15 text-neutral-800 d-block mb-4">In-Person</strong>
+                                                                            <span class="text-13 text-neutral-500">Form, test or exam delivered in the classroom.</span>
+                                                                        </span>
                                                                     </button>
                                                                     <button type="button" class="cg-activity-option is-planned" data-content-option data-category="grade_sheet" data-supported="false" data-format="other" data-role="grade_sheet" data-source-kind="grade" data-title="Grade Sheet">
                                                                         <span class="cg-activity-icon bg-info-600"><i class="ph ph-table"></i></span>
@@ -1137,8 +1257,8 @@
                                                                     </div>
                                                                 </div>
 
-                                                                <div class="cg-content-details-panel">
-                                                                <div class="cg-content-section-label">Item details</div>
+                                                                <div class="cg-content-details-panel" data-content-details-panel>
+                                                                <div class="cg-content-section-label" data-content-details-label>Item details</div>
                                                                 <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                                                 <input type="hidden" name="contextType" value="content_block">
                                                                 <input type="hidden" name="contextId" value="${block.id}">
@@ -1149,7 +1269,63 @@
                                                                 <input type="hidden" name="type" value="" data-lesson-type-input>
                                                                 <input type="hidden" name="repositorySourceContentItemId" value="" data-repository-content-id>
                                                                 <input type="hidden" name="repositoryMetadataMode" value="custom" data-repository-metadata-mode>
-                                                                <div class="row gy-3">
+                                                                <div class="cg-assessment-create-form d-none" data-assessment-create-fields>
+                                                                        <input type="hidden" value="${classGroup.subjectId}" data-assessment-field="subjectId" disabled>
+                                                                        <input type="hidden" value="${block.id}" data-assessment-field="contentBlockId" disabled>
+                                                                        <input type="hidden" value="online" data-assessment-field="mode" disabled>
+                                                                        <div class="cg-content-section-label">Assessment Details</div>
+                                                                        <div class="row gy-3">
+                                                                            <div class="col-lg-8">
+                                                                                <label for="assessmentTitle${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Title</label>
+                                                                                <input id="assessmentTitle${block.id}" type="text" maxlength="160" required class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="title" disabled>
+                                                                            </div>
+                                                                            <div class="col-lg-4">
+                                                                                <label class="fw-medium text-base text-neutral-800 mb-10 d-block">State</label>
+                                                                                <span class="d-inline-flex align-items-center gap-8 px-14 py-11 bg-neutral-20 border border-neutral-30 rounded-8 text-14 fw-semibold text-neutral-700" data-assessment-state-display>Draft</span>
+                                                                            </div>
+                                                                            <div class="col-12">
+                                                                                <label for="assessmentDescription${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Description</label>
+                                                                                <textarea id="assessmentDescription${block.id}" rows="2" maxlength="500" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="description" disabled></textarea>
+                                                                            </div>
+                                                                            <div class="col-lg-4">
+                                                                                <label for="assessmentCorrectionMode${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Correction</label>
+                                                                                <select id="assessmentCorrectionMode${block.id}" required class="form-select px-18 py-11 text-14 bg-neutral-20 border-neutral-30 border rounded-8" data-assessment-field="correctionMode" disabled>
+                                                                                    <option value="automatic">Automatic</option>
+                                                                                    <option value="mixed">Mixed</option>
+                                                                                    <option value="manual">Manual</option>
+                                                                                </select>
+                                                                            </div>
+                                                                            <div class="col-lg-4">
+                                                                                <label for="assessmentMaxGrade${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Maximum Grade</label>
+                                                                                <input id="assessmentMaxGrade${block.id}" type="number" step="0.01" min="0.01" required value="20.00" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="maxGrade" disabled>
+                                                                            </div>
+                                                                            <div class="col-lg-4">
+                                                                                <label for="assessmentPassingGrade${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Passing Grade</label>
+                                                                                <input id="assessmentPassingGrade${block.id}" type="number" step="0.01" min="0" required value="10.00" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="passingGrade" disabled>
+                                                                            </div>
+                                                                            <div class="col-lg-4">
+                                                                                <label for="assessmentAttemptsLimit${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Attempts Limit</label>
+                                                                                <input id="assessmentAttemptsLimit${block.id}" type="number" min="1" placeholder="Unlimited" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="attemptsLimit" disabled>
+                                                                            </div>
+                                                                            <div class="col-lg-4">
+                                                                                <label for="assessmentType${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Type</label>
+                                                                                <select id="assessmentType${block.id}" required class="form-select px-18 py-11 text-14 bg-neutral-20 border-neutral-30 border rounded-8" data-assessment-field="type" disabled>
+                                                                                    <option value="exam">Exam</option>
+                                                                                    <option value="test">Test</option>
+                                                                                    <option value="form" selected>Form</option>
+                                                                                </select>
+                                                                            </div>
+                                                                            <div class="col-lg-6">
+                                                                                <label for="assessmentAvailableFrom${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Available From</label>
+                                                                                <input id="assessmentAvailableFrom${block.id}" type="datetime-local" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="availableFrom" disabled>
+                                                                            </div>
+                                                                            <div class="col-lg-6">
+                                                                                <label for="assessmentAvailableUntil${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Available Until</label>
+                                                                                <input id="assessmentAvailableUntil${block.id}" type="datetime-local" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="availableUntil" disabled>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                <div class="row gy-3" data-content-details-fields>
                                                                     <div class="col-12 d-none" data-repository-metadata-wrapper>
                                                                         <label class="fw-medium text-base text-neutral-800 mb-10 d-block">Item details</label>
                                                                         <div class="d-flex flex-wrap gap-10">
@@ -1186,11 +1362,15 @@
                                                                         <label for="contentSource${block.id}" class="fw-medium text-base text-neutral-800 mb-10" data-source-label>Source</label>
                                                                         <textarea id="contentSource${block.id}" name="source" rows="2" maxlength="1000" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-source-input></textarea>
                                                                     </div>
-                                                                    <div class="col-md-6 d-none" data-lesson-schedule-wrapper>
+                                                                    <div class="col-md-4 d-none" data-lesson-schedule-wrapper>
+                                                                        <label class="fw-medium text-base text-neutral-800 mb-10 d-block">State</label>
+                                                                        <span class="d-inline-flex align-items-center gap-8 px-14 py-11 bg-neutral-20 border border-neutral-30 rounded-8 text-14 fw-semibold text-neutral-700" data-lesson-state-display>Draft</span>
+                                                                    </div>
+                                                                    <div class="col-md-4 d-none" data-lesson-schedule-wrapper>
                                                                         <label for="lessonStartsAt${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Starts At</label>
                                                                         <input id="lessonStartsAt${block.id}" name="startsAt" type="datetime-local" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-lesson-starts-at>
                                                                     </div>
-                                                                    <div class="col-md-6 d-none" data-lesson-schedule-wrapper>
+                                                                    <div class="col-md-4 d-none" data-lesson-schedule-wrapper>
                                                                         <label for="lessonEndsAt${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Ends At</label>
                                                                         <input id="lessonEndsAt${block.id}" name="endsAt" type="datetime-local" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-lesson-ends-at>
                                                                     </div>
@@ -1232,9 +1412,9 @@
                                                         </div>
                                                         <div class="modal-footer border-neutral-30">
                                                             <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
-                                                            <button type="submit" class="cg-primary-button cg-upload-button" data-content-submit data-idle-label="Upload PDF">
+                                                            <button type="submit" class="cg-primary-button cg-upload-button" form="contentUploadForm${block.id}" data-content-submit data-idle-label="Add Content">
                                                                 <span class="cg-upload-button-progress" data-upload-button-progress></span>
-                                                                <span data-upload-button-label>Upload PDF</span>
+                                                                <span data-upload-button-label>Add Content</span>
                                                                 <span class="cg-upload-button-spinner" aria-hidden="true"><i class="ph ph-circle-notch"></i></span>
                                                             </button>
                                                         </div>
@@ -1247,7 +1427,7 @@
                                             <div class="modal-dialog modal-dialog-centered">
                                                 <div class="modal-content rounded-8 border-0">
                                                     <div class="modal-header border-neutral-30">
-                                                        <h5 class="modal-title text-18 fw-semibold">Archive Content Block</h5>
+                                                        <h5 class="modal-title text-18 fw-semibold">Deactivate Content Block</h5>
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                     </div>
                                                     <div class="modal-body">
@@ -1257,7 +1437,7 @@
                                                         <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
                                                         <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/archive" method="post" class="m-0">
                                                             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                            <button type="submit" class="cg-warning-button">Archive</button>
+                                                            <button type="submit" class="cg-warning-button">Deactivate</button>
                                                         </form>
                                                     </div>
                                                 </div>
@@ -1322,10 +1502,10 @@
                                 <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap">
                                     <div>
                                         <h3 class="text-18 fw-semibold text-neutral-800 mb-6">Critical Actions</h3>
-                                        <span class="text-14 text-neutral-500">Archive or delete this class group when its lifecycle ends.</span>
+                                        <span class="text-14 text-neutral-500">Complete or delete this class group when its lifecycle ends.</span>
                                     </div>
                                     <div class="d-flex align-items-center gap-10 flex-wrap">
-                                        <button type="button" class="cg-warning-button" data-bs-toggle="modal" data-bs-target="#archiveClassGroup">Archive</button>
+                                        <button type="button" class="cg-warning-button" data-bs-toggle="modal" data-bs-target="#archiveClassGroup">Complete</button>
                                         <button type="button" class="cg-danger-button" data-bs-toggle="modal" data-bs-target="#deleteClassGroup">Delete</button>
                                     </div>
                                 </div>
@@ -1544,10 +1724,10 @@
                                 <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap">
                                     <div>
                                         <h3 class="text-18 fw-semibold text-neutral-800 mb-6">Critical Actions</h3>
-                                        <span class="text-14 text-neutral-500">Archive or delete this class group when its lifecycle ends.</span>
+                                        <span class="text-14 text-neutral-500">Complete or delete this class group when its lifecycle ends.</span>
                                     </div>
                                     <div class="d-flex align-items-center gap-10 flex-wrap">
-                                        <button type="button" class="cg-warning-button" data-bs-toggle="modal" data-bs-target="#archiveClassGroup">Archive</button>
+                                        <button type="button" class="cg-warning-button" data-bs-toggle="modal" data-bs-target="#archiveClassGroup">Complete</button>
                                         <button type="button" class="cg-danger-button" data-bs-toggle="modal" data-bs-target="#deleteClassGroup">Delete</button>
                                     </div>
                                 </div>
@@ -1566,7 +1746,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-8 border-0">
             <div class="modal-header border-neutral-30">
-                <h5 class="modal-title text-18 fw-semibold">Archive Class Group</h5>
+                <h5 class="modal-title text-18 fw-semibold">Complete Class Group</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -1576,7 +1756,7 @@
                 <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
                 <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/archive" method="post" class="m-0">
                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                    <button type="submit" class="cg-warning-button">Archive</button>
+                    <button type="submit" class="cg-warning-button">Complete</button>
                 </form>
             </div>
         </div>
@@ -1671,6 +1851,7 @@
                 return;
             }
             status.textContent = message || '';
+            status.classList.toggle('d-none', !message);
             status.classList.toggle('text-danger-600', !!isError);
             status.classList.toggle('text-neutral-600', !isError && !!message);
         }
@@ -1740,8 +1921,15 @@
             var mandatoryInput = modal.querySelector('[data-mandatory-input]');
             var descriptionWrapper = modal.querySelector('[data-description-wrapper]');
             var descriptionInput = modal.querySelector('textarea[name="description"]');
+            var contentDetailsPanel = modal.querySelector('[data-content-details-panel]');
+            var contentDetailsLabel = modal.querySelector('[data-content-details-label]');
+            var contentDetailsFields = modal.querySelector('[data-content-details-fields]');
+            var assessmentCreateFields = modal.querySelector('[data-assessment-create-fields]');
+            var assessmentFieldInputs = modal.querySelectorAll('[data-assessment-field]');
+            var assessmentStateDisplay = modal.querySelector('[data-assessment-state-display]');
             var lessonTypeInput = modal.querySelector('[data-lesson-type-input]');
             var lessonScheduleWrappers = modal.querySelectorAll('[data-lesson-schedule-wrapper]');
+            var lessonStateDisplay = modal.querySelector('[data-lesson-state-display]');
             var lessonStartsAtInput = modal.querySelector('[data-lesson-starts-at]');
             var lessonEndsAtInput = modal.querySelector('[data-lesson-ends-at]');
             var lessonMeetingWrappers = modal.querySelectorAll('[data-lesson-meeting-wrapper]');
@@ -1812,6 +2000,74 @@
                 }
             }
 
+            function setAssessmentFieldValue(name, value) {
+                var field = modal.querySelector('[data-assessment-field="' + name + '"]');
+                if (field) {
+                    field.value = value || '';
+                }
+            }
+
+            function toggleAssessmentFields(show) {
+                if (assessmentCreateFields) {
+                    assessmentCreateFields.classList.toggle('d-none', !show);
+                }
+                assessmentFieldInputs.forEach(function (field) {
+                    field.disabled = !show;
+                    field.setCustomValidity('');
+                });
+                syncAssessmentCorrectionMode();
+            }
+
+            function syncAssessmentCorrectionMode() {
+                var modeField = modal.querySelector('[data-assessment-field="mode"]');
+                var correctionField = modal.querySelector('[data-assessment-field="correctionMode"]');
+                if (!modeField || !correctionField) {
+                    return;
+                }
+                var isInPerson = modeField.value === 'onsite';
+                if (isInPerson) {
+                    correctionField.value = 'manual';
+                }
+                correctionField.disabled = isInPerson || correctionField.closest('.d-none') !== null;
+            }
+
+            function clearAssessmentValidation() {
+                assessmentFieldInputs.forEach(function (field) {
+                    field.setCustomValidity('');
+                });
+                if (status && selectedOption
+                        && selectedOption.getAttribute('data-source-kind') === 'assessment-create') {
+                    setUploadStatus(status, '', false);
+                }
+            }
+
+            function updateAssessmentDetails(option, show) {
+                if (contentDetailsPanel) {
+                    contentDetailsPanel.classList.toggle('is-assessment-mode', show);
+                }
+                if (contentDetailsLabel) {
+                    contentDetailsLabel.classList.toggle('d-none', show);
+                }
+                if (contentDetailsFields) {
+                    contentDetailsFields.classList.toggle('d-none', show);
+                }
+                toggleAssessmentFields(show);
+                if (!show || !option) {
+                    return;
+                }
+                var assessmentType = option.getAttribute('data-assessment-type') || 'form';
+                var assessmentMode = option.getAttribute('data-assessment-mode') || 'online';
+                var assessmentCorrectionMode = option.getAttribute('data-assessment-correction-mode') || 'automatic';
+                setAssessmentFieldValue('subjectId', option.getAttribute('data-assessment-subject-id') || '');
+                setAssessmentFieldValue('contentBlockId', option.getAttribute('data-assessment-content-block-id') || '');
+                setAssessmentFieldValue('type', assessmentType);
+                setAssessmentFieldValue('mode', assessmentMode);
+                setAssessmentFieldValue('title', option.getAttribute('data-title') || '');
+                setAssessmentFieldValue('description', option.getAttribute('data-assessment-summary') || '');
+                setAssessmentFieldValue('correctionMode', assessmentCorrectionMode);
+                syncAssessmentCorrectionMode();
+            }
+
             function repositoryMetadataMode() {
                 var checked = modal.querySelector('[data-repository-metadata-choice]:checked');
                 return checked ? checked.value : 'custom';
@@ -1832,6 +2088,41 @@
                 });
             }
 
+            function localMinuteValue() {
+                var now = new Date();
+                now.setSeconds(0, 0);
+                var month = String(now.getMonth() + 1).padStart(2, '0');
+                var day = String(now.getDate()).padStart(2, '0');
+                var hours = String(now.getHours()).padStart(2, '0');
+                var minutes = String(now.getMinutes()).padStart(2, '0');
+                return now.getFullYear() + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
+            }
+
+            function temporalStateLabel(startsAtValue, endsAtValue) {
+                var now = localMinuteValue();
+                if (!startsAtValue) {
+                    return 'Draft';
+                }
+                if (endsAtValue && endsAtValue <= now) {
+                    return 'Completed';
+                }
+                return startsAtValue <= now ? 'Active' : 'Scheduled';
+            }
+
+            function updateLessonStateDisplay() {
+                if (lessonStateDisplay && lessonStartsAtInput && lessonEndsAtInput) {
+                    lessonStateDisplay.textContent = temporalStateLabel(lessonStartsAtInput.value, lessonEndsAtInput.value);
+                }
+            }
+
+            function updateAssessmentStateDisplay() {
+                var availableFrom = modal.querySelector('[data-assessment-field="availableFrom"]');
+                var availableUntil = modal.querySelector('[data-assessment-field="availableUntil"]');
+                if (assessmentStateDisplay && availableFrom && availableUntil) {
+                    assessmentStateDisplay.textContent = temporalStateLabel(availableFrom.value, availableUntil.value);
+                }
+            }
+
             function resetLessonFields() {
                 if (lessonTypeInput) {
                     lessonTypeInput.value = '';
@@ -1843,6 +2134,9 @@
                 }
                 if (lessonAttendanceWrapper) {
                     lessonAttendanceWrapper.classList.add('d-none');
+                }
+                if (lessonStateDisplay) {
+                    lessonStateDisplay.textContent = 'Draft';
                 }
                 [lessonStartsAtInput, lessonEndsAtInput, lessonProviderInput, lessonAccessUrlInput, lessonRoomInput].forEach(function (input) {
                     if (!input) {
@@ -1881,10 +2175,10 @@
                     lessonAttendanceWrapper.classList.toggle('d-none', !expectsLesson);
                 }
                 if (lessonStartsAtInput) {
-                    lessonStartsAtInput.required = expectsLesson;
+                    lessonStartsAtInput.required = false;
                 }
                 if (lessonEndsAtInput) {
-                    lessonEndsAtInput.required = expectsLesson;
+                    lessonEndsAtInput.required = false;
                 }
                 if (lessonAccessUrlInput) {
                     lessonAccessUrlInput.required = expectsLesson && (lessonType === 'online' || lessonType === 'hybrid');
@@ -1916,16 +2210,9 @@
                         lessonAttendanceInput.checked = true;
                     }
                 }
+                updateLessonStateDisplay();
                 validateLessonSchedule();
                 validateMeetingLink();
-            }
-
-            function minimumDateTimeValue() {
-                var now = new Date();
-                now.setSeconds(0, 0);
-                var offset = now.getTimezoneOffset();
-                var local = new Date(now.getTime() - offset * 60000);
-                return local.toISOString().slice(0, 16);
             }
 
             function providerHost(providerValue) {
@@ -1968,27 +2255,40 @@
                 if (!lessonStartsAtInput || !lessonEndsAtInput) {
                     return;
                 }
-                var minValue = minimumDateTimeValue();
-                lessonStartsAtInput.min = minValue;
-                lessonEndsAtInput.min = lessonStartsAtInput.value || minValue;
+                var now = localMinuteValue();
+                lessonStartsAtInput.required = false;
+                lessonStartsAtInput.min = now;
+                lessonEndsAtInput.min = lessonStartsAtInput.value || now;
                 lessonStartsAtInput.setCustomValidity('');
                 lessonEndsAtInput.setCustomValidity('');
-                if (lessonStartsAtInput.value && lessonStartsAtInput.value < minValue) {
+                if (lessonEndsAtInput.value && !lessonStartsAtInput.value) {
+                    lessonStartsAtInput.setCustomValidity('Start date is required when an end date is set.');
+                }
+                if (lessonStartsAtInput.value && lessonStartsAtInput.value < now) {
                     lessonStartsAtInput.setCustomValidity('Start date cannot be in the past.');
+                }
+                if (lessonEndsAtInput.value && lessonEndsAtInput.value < now) {
+                    lessonEndsAtInput.setCustomValidity('End date cannot be in the past.');
                 }
                 if (lessonStartsAtInput.value && lessonEndsAtInput.value && lessonEndsAtInput.value <= lessonStartsAtInput.value) {
                     lessonEndsAtInput.setCustomValidity('End date must be after start date.');
                 }
+                updateLessonStateDisplay();
             }
 
             function applyRepositoryMetadataMode() {
                 var expectsRepository = selectedOption
                         && selectedOption.getAttribute('data-supported') === 'true'
                         && selectedOption.getAttribute('data-source-kind') === 'repository';
+                var expectsAssessmentRepository = expectsRepository
+                        && selectedOption.getAttribute('data-assessment-reference') === 'true';
                 var expectsLesson = selectedOption
                         && selectedOption.getAttribute('data-supported') === 'true'
                         && selectedOption.getAttribute('data-source-kind') === 'lesson';
-                if (!expectsRepository) {
+                var expectsAssessmentCreate = selectedOption
+                        && selectedOption.getAttribute('data-supported') === 'true'
+                        && selectedOption.getAttribute('data-source-kind') === 'assessment-create';
+                if (!expectsRepository || expectsAssessmentRepository) {
                     if (repositoryMetadataWrapper) {
                         repositoryMetadataWrapper.classList.add('d-none');
                     }
@@ -1996,14 +2296,14 @@
                         repositoryMetadataModeInput.value = 'custom';
                     }
                     if (titleInput) {
-                        titleInput.disabled = false;
-                        titleInput.required = true;
+                        titleInput.disabled = expectsAssessmentCreate || expectsAssessmentRepository;
+                        titleInput.required = !expectsAssessmentCreate && !expectsAssessmentRepository;
                     }
                     if (descriptionInput) {
-                        descriptionInput.disabled = false;
+                        descriptionInput.disabled = expectsAssessmentCreate || expectsAssessmentRepository;
                     }
                     if (mandatoryInput) {
-                        mandatoryInput.disabled = expectsLesson;
+                        mandatoryInput.disabled = expectsLesson || expectsAssessmentCreate || expectsAssessmentRepository;
                     }
                     return;
                 }
@@ -2056,6 +2356,7 @@
                         repositoryMetadataWrapper.classList.add('d-none');
                     }
                     updateSelectedRepositoryFile(null);
+                    updateAssessmentDetails(null, false);
                     if (fileWrapper && fileInput) {
                         fileWrapper.classList.add('d-none');
                         fileInput.required = false;
@@ -2096,11 +2397,12 @@
                 var supported = option.getAttribute('data-supported') === 'true';
                 var sourceKind = option.getAttribute('data-source-kind');
                 var expectsLesson = supported && sourceKind === 'lesson';
+                var expectsAssessmentCreate = supported && sourceKind === 'assessment-create';
                 var optionTitle = option.getAttribute('data-title') || '';
                 formatInput.value = option.getAttribute('data-format') || 'pdf';
                 roleInput.value = option.getAttribute('data-role') || 'support_material';
                 if (selectedTypeInput) {
-                    selectedTypeInput.value = optionTitle;
+                        selectedTypeInput.value = optionTitle;
                 }
                 if (titleInput) {
                     titleInput.value = optionTitle;
@@ -2111,38 +2413,42 @@
                     resetUploadButton(submit);
                 }
                 if (status) {
-                    setUploadStatus(status, supported
+                    setUploadStatus(status, expectsAssessmentCreate
                             ? ''
-                            : (option.getAttribute('data-unavailable-message') || 'This content type is represented in the GAPE data model but does not yet have a complete creation workflow here.'), !supported);
+                            : (supported
+                            ? ''
+                            : (option.getAttribute('data-unavailable-message') || 'This content type is represented in the GAPE data model but does not yet have a complete creation workflow here.')), !supported);
                 }
                 var expectsFile = supported && sourceKind === 'file';
                 var expectsSource = supported && (sourceKind === 'url' || sourceKind === 'embed');
                 var expectsRepository = supported && sourceKind === 'repository';
+                var expectsAssessmentRepository = expectsRepository && option.getAttribute('data-assessment-reference') === 'true';
                 applyLessonFields(option, sourceKind);
                 if (repositoryInput) {
                     repositoryInput.value = expectsRepository ? (option.getAttribute('data-content-id') || '') : '';
                 }
                 updateSelectedRepositoryFile(option);
+                updateAssessmentDetails(option, expectsAssessmentCreate);
                 if (expectsRepository) {
                     resetRepositoryMetadataMode();
                 }
                 if (titleWrapper && titleInput) {
-                    titleWrapper.classList.remove('d-none');
-                    titleInput.required = supported;
-                    titleInput.disabled = false;
+                    titleWrapper.classList.toggle('d-none', expectsAssessmentCreate || expectsAssessmentRepository);
+                    titleInput.required = supported && !expectsAssessmentCreate && !expectsAssessmentRepository;
+                    titleInput.disabled = expectsAssessmentCreate || expectsAssessmentRepository;
                 }
                 if (mandatoryWrapper) {
-                    mandatoryWrapper.classList.toggle('d-none', expectsLesson);
+                    mandatoryWrapper.classList.toggle('d-none', expectsLesson || expectsAssessmentCreate || expectsAssessmentRepository);
                 }
                 if (mandatoryInput) {
-                    mandatoryInput.disabled = expectsLesson;
-                    if (expectsLesson) {
+                    mandatoryInput.disabled = expectsLesson || expectsAssessmentCreate || expectsAssessmentRepository;
+                    if (expectsLesson || expectsAssessmentCreate || expectsAssessmentRepository) {
                         mandatoryInput.value = 'false';
                     }
                 }
                 if (descriptionWrapper && descriptionInput) {
-                    descriptionWrapper.classList.remove('d-none');
-                    descriptionInput.disabled = false;
+                    descriptionWrapper.classList.toggle('d-none', expectsAssessmentCreate || expectsAssessmentRepository);
+                    descriptionInput.disabled = expectsAssessmentCreate || expectsAssessmentRepository;
                 }
                 if (fileWrapper && fileInput) {
                     fileWrapper.classList.toggle('d-none', !expectsFile);
@@ -2201,17 +2507,25 @@
             repositoryMetadataChoices.forEach(function (choice) {
                 choice.addEventListener('change', applyRepositoryMetadataMode);
             });
+            assessmentFieldInputs.forEach(function (field) {
+                field.addEventListener('input', function () {
+                    clearAssessmentValidation();
+                    updateAssessmentStateDisplay();
+                });
+                field.addEventListener('change', function () {
+                    clearAssessmentValidation();
+                    updateAssessmentStateDisplay();
+                });
+            });
             applyFilter();
             selectOption(modal.querySelector('[data-content-option].is-selected'));
+            updateAssessmentStateDisplay();
+            updateLessonStateDisplay();
+            window.setInterval(function () {
+                validateLessonSchedule();
+                updateAssessmentStateDisplay();
+            }, 30000);
         });
-
-        function minimumLessonDateTimeValue() {
-            var now = new Date();
-            now.setSeconds(0, 0);
-            var offset = now.getTimezoneOffset();
-            var local = new Date(now.getTime() - offset * 60000);
-            return local.toISOString().slice(0, 16);
-        }
 
         function expectedLessonProviderHost(providerValue) {
             switch ((providerValue || '').toLowerCase()) {
@@ -2226,6 +2540,16 @@
             }
         }
 
+        function currentLocalMinuteValue() {
+            var now = new Date();
+            now.setSeconds(0, 0);
+            var month = String(now.getMonth() + 1).padStart(2, '0');
+            var day = String(now.getDate()).padStart(2, '0');
+            var hours = String(now.getHours()).padStart(2, '0');
+            var minutes = String(now.getMinutes()).padStart(2, '0');
+            return now.getFullYear() + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
+        }
+
         function lessonHostMatches(host, expectedHost) {
             return host === expectedHost || host.endsWith('.' + expectedHost);
         }
@@ -2235,14 +2559,21 @@
             var endsAt = form.querySelector('[data-lesson-ends-at]');
             var provider = form.querySelector('[data-lesson-provider]');
             var accessUrl = form.querySelector('[data-lesson-access-url]');
-            var minValue = minimumLessonDateTimeValue();
             if (startsAt && endsAt) {
-                startsAt.min = minValue;
-                endsAt.min = startsAt.value || minValue;
+                var now = currentLocalMinuteValue();
+                startsAt.required = false;
+                startsAt.min = now;
+                endsAt.min = startsAt.value || now;
                 startsAt.setCustomValidity('');
                 endsAt.setCustomValidity('');
-                if (startsAt.value && startsAt.value < minValue) {
+                if (endsAt.value && !startsAt.value) {
+                    startsAt.setCustomValidity('Start date is required when an end date is set.');
+                }
+                if (startsAt.value && startsAt.value < now) {
                     startsAt.setCustomValidity('Start date cannot be in the past.');
+                }
+                if (endsAt.value && endsAt.value < now) {
+                    endsAt.setCustomValidity('End date cannot be in the past.');
                 }
                 if (startsAt.value && endsAt.value && endsAt.value <= startsAt.value) {
                     endsAt.setCustomValidity('End date must be after start date.');
@@ -2265,15 +2596,150 @@
             return form.checkValidity();
         }
 
+        function validateAssessmentForm(form) {
+            var maxGrade = form.querySelector('[data-assessment-field="maxGrade"]');
+            var passingGrade = form.querySelector('[data-assessment-field="passingGrade"]');
+            var attemptsLimit = form.querySelector('[data-assessment-field="attemptsLimit"]');
+            var availableFrom = form.querySelector('[data-assessment-field="availableFrom"]');
+            var availableUntil = form.querySelector('[data-assessment-field="availableUntil"]');
+            [maxGrade, passingGrade, attemptsLimit, availableFrom, availableUntil].forEach(function (field) {
+                if (field) {
+                    field.setCustomValidity('');
+                }
+            });
+            var now = currentLocalMinuteValue();
+            if (availableFrom && availableUntil) {
+                availableFrom.min = now;
+                availableUntil.min = availableFrom.value || now;
+            }
+            if (availableUntil && availableUntil.value && availableFrom && !availableFrom.value) {
+                availableFrom.setCustomValidity('Availability start is required when an end is set.');
+            }
+            if (availableFrom && availableFrom.value && availableFrom.value < now) {
+                availableFrom.setCustomValidity('Availability start cannot be in the past.');
+            }
+            if (availableUntil && availableUntil.value && availableUntil.value < now) {
+                availableUntil.setCustomValidity('Availability end cannot be in the past.');
+            }
+            if (maxGrade && passingGrade && maxGrade.value && passingGrade.value
+                    && parseFloat(passingGrade.value) > parseFloat(maxGrade.value)) {
+                passingGrade.setCustomValidity('Passing grade cannot exceed maximum grade.');
+            }
+            if (availableFrom && availableUntil && availableFrom.value && availableUntil.value
+                    && availableUntil.value < availableFrom.value) {
+                availableUntil.setCustomValidity('Availability end cannot be before start.');
+            }
+            if (attemptsLimit && attemptsLimit.value && parseInt(attemptsLimit.value, 10) <= 0) {
+                attemptsLimit.setCustomValidity('Attempts limit must be greater than zero.');
+            }
+            return form.checkValidity();
+        }
+
+        function assessmentRequestBody(form) {
+            var requestBody = new URLSearchParams();
+            var csrfToken = form.querySelector('input[name="csrfToken"]');
+            if (csrfToken) {
+                requestBody.append('csrfToken', csrfToken.value);
+            }
+            requestBody.append('modalCreate', 'true');
+            form.querySelectorAll('[data-assessment-field]').forEach(function (field) {
+                if (!field.disabled) {
+                    requestBody.append(field.getAttribute('data-assessment-field'), field.value || '');
+                }
+            });
+            return requestBody.toString();
+        }
+
+        function withCurrentUrlSession(targetUrl) {
+            var sessionIndex = window.location.pathname.indexOf(';jsessionid=');
+            var learningIndex = window.location.pathname.indexOf('/learning/');
+            if (!targetUrl || sessionIndex < 0 || learningIndex < 0 || targetUrl.indexOf(';jsessionid=') >= 0 || targetUrl.charAt(0) !== '/') {
+                return targetUrl;
+            }
+            var currentContextWithSession = window.location.pathname.substring(0, learningIndex);
+            var currentContext = currentContextWithSession.substring(0, sessionIndex);
+            var targetPath = targetUrl.indexOf(currentContext + '/') === 0
+                    ? targetUrl.substring(currentContext.length)
+                    : targetUrl;
+            return currentContextWithSession + targetPath;
+        }
+
+        function returnToAssessmentBlock(form) {
+            var returnAnchor = form.getAttribute('data-assessment-return-anchor') || '';
+            if (returnAnchor) {
+                window.location.hash = returnAnchor;
+            }
+            window.location.reload();
+        }
+
         document.querySelectorAll('[data-content-upload-form]').forEach(function (form) {
             form.addEventListener('submit', function (event) {
                 event.preventDefault();
                 var status = form.querySelector('[data-upload-status]');
-                var submit = form.querySelector('button[type="submit"]');
+                var formModal = form.closest('.cg-activity-modal');
+                var submit = form.querySelector('[data-content-submit]')
+                        || (formModal ? formModal.querySelector('[data-content-submit]') : null);
                 if (submit && submit.disabled) {
                     return;
                 }
                 var selectedSubmitOption = form.querySelector('[data-content-option].is-selected');
+                var createsAssessment = selectedSubmitOption
+                        && selectedSubmitOption.getAttribute('data-source-kind') === 'assessment-create';
+                if (createsAssessment) {
+                    if (!validateAssessmentForm(form)) {
+                        form.reportValidity();
+                        setUploadStatus(status, 'Please review the assessment fields.', true);
+                        return;
+                    }
+                    var assessmentRequest = new XMLHttpRequest();
+                    assessmentRequest.open('POST', withCurrentUrlSession(form.getAttribute('data-assessment-action') || form.action), true);
+                    assessmentRequest.timeout = 30000;
+                    assessmentRequest.withCredentials = true;
+                    assessmentRequest.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;charset=UTF-8');
+                    assessmentRequest.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                    if (submit) {
+                        submit.disabled = true;
+                        setUploadButtonProgress(submit, 35, 'Creating...', false);
+                    }
+                    setUploadStatus(status, 'Creating assessment...', false);
+                    assessmentRequest.addEventListener('load', function () {
+                        if (assessmentRequest.status >= 200
+                                && assessmentRequest.status < 300) {
+                            setUploadButtonProgress(submit, 100, 'Ready', false);
+                            setUploadStatus(status, 'Assessment created. Returning to class group...', false);
+                            returnToAssessmentBlock(form);
+                            return;
+                        }
+                        setUploadStatus(status, readableUploadError(assessmentRequest.responseText, assessmentRequest.getResponseHeader('content-type')), true);
+                        if (submit) {
+                            submit.disabled = false;
+                            resetUploadButton(submit);
+                        }
+                    });
+                    assessmentRequest.addEventListener('error', function () {
+                        setUploadStatus(status, 'Assessment could not be created. Please try again.', true);
+                        if (submit) {
+                            submit.disabled = false;
+                            resetUploadButton(submit);
+                        }
+                    });
+                    assessmentRequest.addEventListener('abort', function () {
+                        setUploadStatus(status, 'Assessment creation was cancelled.', true);
+                        if (submit) {
+                            submit.disabled = false;
+                            resetUploadButton(submit);
+                        }
+                    });
+                    assessmentRequest.addEventListener('timeout', function () {
+                        setUploadStatus(status, 'Assessment creation took too long. Please try again.', true);
+                        if (submit) {
+                            submit.disabled = false;
+                            resetUploadButton(submit);
+                        }
+                    });
+                    assessmentRequest.send(assessmentRequestBody(form));
+                    return;
+                }
                 var createsLesson = selectedSubmitOption
                         && selectedSubmitOption.getAttribute('data-source-kind') === 'lesson';
                 if (createsLesson && !validateLessonForm(form)) {
@@ -2346,6 +2812,183 @@
             });
         });
 
+        (function setupStructureReorder() {
+            var root = document.querySelector('[data-class-group-structure]');
+            if (!root || !root.dataset.csrfToken) {
+                return;
+            }
+            var draggedBlock = null;
+            var draggedContent = null;
+
+            function postForm(url, formData) {
+                return fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin',
+                    headers: {'X-Requested-With': 'XMLHttpRequest'}
+                }).then(function (response) {
+                    if (response.ok) {
+                        return response;
+                    }
+                    return response.text().then(function (text) {
+                        throw new Error(text || 'Order could not be saved.');
+                    });
+                });
+            }
+
+            function syncBlockNumbers() {
+                Array.prototype.slice.call(root.querySelectorAll('[data-block-card]')).forEach(function (block, index) {
+                    var number = block.querySelector('[data-block-number]');
+                    if (!number) {
+                        return;
+                    }
+                    var value = index + 1;
+                    number.textContent = value < 10 ? '0' + value : String(value);
+                });
+            }
+
+            function saveBlockOrder() {
+                if (!root.dataset.blockReorderUrl) {
+                    return;
+                }
+                var formData = new FormData();
+                formData.append('csrfToken', root.dataset.csrfToken);
+                Array.prototype.slice.call(root.querySelectorAll('[data-block-card]')).forEach(function (block) {
+                    formData.append('blockId', block.dataset.blockId);
+                });
+                postForm(root.dataset.blockReorderUrl, formData).catch(function () {
+                    window.location.reload();
+                });
+            }
+
+            function saveContentOrder() {
+                if (!root.dataset.contentReorderUrl) {
+                    return;
+                }
+                var formData = new FormData();
+                formData.append('csrfToken', root.dataset.csrfToken);
+                Array.prototype.slice.call(root.querySelectorAll('[data-content-list]')).forEach(function (list) {
+                    var targetBlockId = list.dataset.targetBlockId;
+                    Array.prototype.slice.call(list.querySelectorAll('[data-content-row]')).forEach(function (row) {
+                        formData.append('itemPlacement', [
+                            row.dataset.itemKind || 'content',
+                            row.dataset.sourceBlockId,
+                            targetBlockId,
+                            row.dataset.itemId || row.dataset.contentId
+                        ].join(':'));
+                    });
+                });
+                postForm(root.dataset.contentReorderUrl, formData).then(function () {
+                    Array.prototype.slice.call(root.querySelectorAll('[data-content-list]')).forEach(function (list) {
+                        var targetBlockId = list.dataset.targetBlockId;
+                        Array.prototype.slice.call(list.querySelectorAll('[data-content-row]')).forEach(function (row) {
+                            row.dataset.sourceBlockId = targetBlockId;
+                        });
+                    });
+                    refreshEmptyStates();
+                }).catch(function () {
+                    window.location.reload();
+                });
+            }
+
+            function refreshEmptyStates() {
+                Array.prototype.slice.call(root.querySelectorAll('[data-content-list]')).forEach(function (list) {
+                    var hasRows = !!list.querySelector('[data-content-row]');
+                    Array.prototype.slice.call(list.querySelectorAll('.cg-empty')).forEach(function (empty) {
+                        empty.hidden = hasRows;
+                    });
+                });
+            }
+
+            root.addEventListener('dragstart', function (event) {
+                var blockHandle = event.target.closest('[data-block-drag-handle]');
+                var contentHandle = event.target.closest('[data-content-drag-handle]');
+                if (blockHandle) {
+                    draggedBlock = blockHandle.closest('[data-block-card]');
+                    if (draggedBlock) {
+                        draggedBlock.classList.add('cg-dragging');
+                        event.dataTransfer.effectAllowed = 'move';
+                        event.dataTransfer.setData('text/plain', 'block:' + draggedBlock.dataset.blockId);
+                    }
+                    return;
+                }
+                if (contentHandle) {
+                    draggedContent = contentHandle.closest('[data-content-row]');
+                    if (draggedContent) {
+                        draggedContent.classList.add('cg-dragging');
+                        event.dataTransfer.effectAllowed = 'move';
+                        event.dataTransfer.setData('text/plain', (draggedContent.dataset.itemKind || 'content') + ':' + (draggedContent.dataset.itemId || draggedContent.dataset.contentId));
+                    }
+                }
+            });
+
+            root.addEventListener('dragend', function () {
+                if (draggedBlock) {
+                    draggedBlock.classList.remove('cg-dragging');
+                    draggedBlock = null;
+                    syncBlockNumbers();
+                }
+                if (draggedContent) {
+                    draggedContent.classList.remove('cg-dragging');
+                    draggedContent = null;
+                    refreshEmptyStates();
+                }
+                Array.prototype.slice.call(root.querySelectorAll('.cg-drop-target')).forEach(function (target) {
+                    target.classList.remove('cg-drop-target');
+                });
+            });
+
+            root.addEventListener('dragover', function (event) {
+                if (draggedBlock) {
+                    var overBlock = event.target.closest('[data-block-card]');
+                    if (!overBlock || overBlock === draggedBlock) {
+                        return;
+                    }
+                    event.preventDefault();
+                    var rect = overBlock.getBoundingClientRect();
+                    var after = event.clientY > rect.top + rect.height / 2;
+                    root.insertBefore(draggedBlock, after ? overBlock.nextSibling : overBlock);
+                    syncBlockNumbers();
+                    return;
+                }
+                if (draggedContent) {
+                    var list = event.target.closest('[data-content-list]');
+                    if (!list) {
+                        return;
+                    }
+                    event.preventDefault();
+                    list.classList.add('cg-drop-target');
+                    var rows = Array.prototype.slice.call(list.querySelectorAll('[data-content-row]:not(.cg-dragging)'));
+                    var before = rows.find(function (row) {
+                        var rect = row.getBoundingClientRect();
+                        return event.clientY < rect.top + rect.height / 2;
+                    });
+                    list.insertBefore(draggedContent, before || null);
+                    refreshEmptyStates();
+                }
+            });
+
+            root.addEventListener('dragleave', function (event) {
+                var list = event.target.closest('[data-content-list]');
+                if (list && !list.contains(event.relatedTarget)) {
+                    list.classList.remove('cg-drop-target');
+                }
+            });
+
+            root.addEventListener('drop', function (event) {
+                if (draggedBlock) {
+                    event.preventDefault();
+                    syncBlockNumbers();
+                    saveBlockOrder();
+                    return;
+                }
+                if (draggedContent) {
+                    event.preventDefault();
+                    saveContentOrder();
+                }
+            });
+        })();
+
         function readableUploadError(message, contentType) {
             if (!message || !message.trim()) {
                 return 'Content could not be saved.';
@@ -2354,6 +2997,10 @@
             if (normalizedType.indexOf('text/html') >= 0 || message.trim().charAt(0) === '<') {
                 try {
                     var parsed = new DOMParser().parseFromString(message, 'text/html');
+                    var alert = parsed.querySelector('.alert-danger');
+                    if (alert && alert.textContent.trim()) {
+                        return alert.textContent.trim();
+                    }
                     var title = parsed.querySelector('title');
                     if (title && title.textContent.trim()) {
                         return title.textContent.trim();

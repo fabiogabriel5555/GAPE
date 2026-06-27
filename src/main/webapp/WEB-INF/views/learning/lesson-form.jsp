@@ -24,7 +24,6 @@
 
                 <form action="${formAction}" method="post" class="bg-white rounded-10 px-32 py-32 border border-neutral-30" data-lesson-form>
                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                    <input type="hidden" name="state" value="<c:out value='${form.state}'/>">
                     <c:if test="${not empty formReturnTo}">
                         <input type="hidden" name="returnTo" value="<c:out value='${formReturnTo}'/>">
                     </c:if>
@@ -86,7 +85,11 @@
                             <label for="description" class="fw-medium text-base text-neutral-800 mb-12">Description</label>
                             <textarea id="description" name="description" maxlength="500" rows="3" class="form-control px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8"><c:out value="${form.description}"/></textarea>
                         </div>
-                        <div class="col-lg-4">
+                        <div class="col-lg-3">
+                            <label class="fw-medium text-base text-neutral-800 mb-12 d-block">State</label>
+                            <span class="d-inline-flex align-items-center gap-8 px-16 py-14 bg-neutral-20 border border-neutral-30 rounded-8 text-14 fw-semibold text-neutral-700" data-lesson-state-display>Draft</span>
+                        </div>
+                        <div class="col-lg-3">
                             <label for="type" class="fw-medium text-base text-neutral-800 mb-12">Type</label>
                             <select id="type" name="type" required class="form-select px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8" data-lesson-type>
                                 <c:forEach var="type" items="${lessonTypes}">
@@ -94,13 +97,13 @@
                                 </c:forEach>
                             </select>
                         </div>
-                        <div class="col-lg-4">
+                        <div class="col-lg-3">
                             <label for="startsAt" class="fw-medium text-base text-neutral-800 mb-12">Starts At</label>
-                            <input id="startsAt" name="startsAt" type="datetime-local" required value="<c:out value='${form.startsAt}'/>" class="form-control px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                            <input id="startsAt" name="startsAt" type="datetime-local" value="<c:out value='${form.startsAt}'/>" class="form-control px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
                         </div>
-                        <div class="col-lg-4">
+                        <div class="col-lg-3">
                             <label for="endsAt" class="fw-medium text-base text-neutral-800 mb-12">Ends At</label>
-                            <input id="endsAt" name="endsAt" type="datetime-local" required value="<c:out value='${form.endsAt}'/>" class="form-control px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                            <input id="endsAt" name="endsAt" type="datetime-local" value="<c:out value='${form.endsAt}'/>" class="form-control px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
                         </div>
                         <div class="col-lg-4" data-room-field>
                             <label for="physicalRoomCode" class="fw-medium text-base text-neutral-800 mb-12">Physical Room</label>
@@ -164,6 +167,7 @@
             var block = form.querySelector('[data-lesson-block]');
             var room = form.querySelector('[data-lesson-room]');
             var type = form.querySelector('[data-lesson-type]');
+            var stateDisplay = form.querySelector('[data-lesson-state-display]');
             var provider = form.querySelector('[data-lesson-provider]');
             var accessUrl = form.querySelector('#accessUrl');
             var startsAt = form.querySelector('#startsAt');
@@ -321,14 +325,6 @@
                 validateSchedule();
             }
 
-            function minimumDateTimeValue() {
-                var now = new Date();
-                now.setSeconds(0, 0);
-                var offset = now.getTimezoneOffset();
-                var local = new Date(now.getTime() - offset * 60000);
-                return local.toISOString().slice(0, 16);
-            }
-
             function providerHost(providerValue) {
                 switch ((providerValue || '').toLowerCase()) {
                     case 'zoom':
@@ -369,17 +365,48 @@
                 if (!startsAt || !endsAt) {
                     return;
                 }
-                var minValue = minimumDateTimeValue();
-                startsAt.min = minValue;
-                endsAt.min = startsAt.value || minValue;
+                var now = localMinuteValue();
+                startsAt.min = now;
+                endsAt.required = false;
+                endsAt.min = startsAt.value || now;
                 startsAt.setCustomValidity('');
                 endsAt.setCustomValidity('');
-                if (startsAt.value && startsAt.value < minValue) {
+                if (endsAt.value && !startsAt.value) {
+                    startsAt.setCustomValidity('Start date is required when an end date is set.');
+                }
+                if (startsAt.value && startsAt.value < now) {
                     startsAt.setCustomValidity('Start date cannot be in the past.');
+                }
+                if (endsAt.value && endsAt.value < now) {
+                    endsAt.setCustomValidity('End date cannot be in the past.');
                 }
                 if (startsAt.value && endsAt.value && endsAt.value <= startsAt.value) {
                     endsAt.setCustomValidity('End date must be after start date.');
                 }
+                if (stateDisplay) {
+                    stateDisplay.textContent = computedStateLabel();
+                }
+            }
+
+            function localMinuteValue() {
+                var now = new Date();
+                now.setSeconds(0, 0);
+                var month = String(now.getMonth() + 1).padStart(2, '0');
+                var day = String(now.getDate()).padStart(2, '0');
+                var hours = String(now.getHours()).padStart(2, '0');
+                var minutes = String(now.getMinutes()).padStart(2, '0');
+                return now.getFullYear() + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
+            }
+
+            function computedStateLabel() {
+                var now = localMinuteValue();
+                if (!startsAt.value) {
+                    return 'Draft';
+                }
+                if (endsAt.value && endsAt.value <= now) {
+                    return 'Completed';
+                }
+                return startsAt.value <= now ? 'Active' : 'Scheduled';
             }
 
             if (classGroup) {
@@ -404,6 +431,7 @@
                 endsAt.addEventListener('input', validateSchedule);
             }
             syncContextFields();
+            window.setInterval(validateSchedule, 30000);
         });
     })();
 </script>

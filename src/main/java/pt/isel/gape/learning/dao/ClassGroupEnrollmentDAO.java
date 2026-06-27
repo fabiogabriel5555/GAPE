@@ -91,7 +91,7 @@ public final class ClassGroupEnrollmentDAO {
                 SET state = ?, start_date = ?, end_date = ?
                 WHERE id_student_user = ?
                   AND id_class_group = ?
-                  AND state IN ('inactive', 'rejected', 'withdrawn', 'archived')
+                  AND state IN ('inactive', 'rejected', 'withdrawn')
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {

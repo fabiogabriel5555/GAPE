@@ -70,7 +70,7 @@ public final class LessonFormData {
                 "",
                 "",
                 true,
-                LessonState.SCHEDULED.name(),
+                LessonState.DRAFT.name(),
                 "",
                 ""
         );
@@ -88,9 +88,9 @@ public final class LessonFormData {
                 lesson.provider(),
                 lesson.accessUrl(),
                 lesson.attendanceRequired(),
-                lesson.state().name(),
-                INPUT_DATE_TIME.format(lesson.startsAt()),
-                INPUT_DATE_TIME.format(lesson.endsAt())
+                editableState(lesson.state()).name(),
+                formatDateTime(lesson.startsAt()),
+                formatDateTime(lesson.endsAt())
         );
     }
 
@@ -106,7 +106,7 @@ public final class LessonFormData {
                 valueOrEmpty(request.getParameter("provider")),
                 valueOrEmpty(request.getParameter("accessUrl")),
                 "true".equalsIgnoreCase(request.getParameter("attendanceRequired")),
-                normalizeState(request.getParameter("state"), LessonState.SCHEDULED).name(),
+                normalizeState(request.getParameter("state"), LessonState.DRAFT).name(),
                 valueOrEmpty(request.getParameter("startsAt")),
                 valueOrEmpty(request.getParameter("endsAt"))
         );
@@ -193,11 +193,11 @@ public final class LessonFormData {
     }
 
     public LocalDateTime startsAtDateTime() {
-        return LocalDateTime.parse(startsAt);
+        return startsAt == null || startsAt.isBlank() ? null : LocalDateTime.parse(startsAt);
     }
 
     public LocalDateTime endsAtDateTime() {
-        return LocalDateTime.parse(endsAt);
+        return endsAt == null || endsAt.isBlank() ? null : LocalDateTime.parse(endsAt);
     }
 
     private static LessonType normalizeType(String value, LessonType fallback) {
@@ -241,5 +241,13 @@ public final class LessonFormData {
             return null;
         }
         return value.trim();
+    }
+
+    private static LessonState editableState(LessonState state) {
+        return state == LessonState.DRAFT ? LessonState.DRAFT : LessonState.SCHEDULED;
+    }
+
+    private static String formatDateTime(LocalDateTime value) {
+        return value == null ? "" : INPUT_DATE_TIME.format(value);
     }
 }

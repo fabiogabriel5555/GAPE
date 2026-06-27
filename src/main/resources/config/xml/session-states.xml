@@ -2,12 +2,12 @@
 <sessionStates xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
   <state code="active">
-    <label>Sessao ativa</label>
+    <label>Active session</label>
   </state>
   <state code="expired">
-    <label>Sessao expirada</label>
+    <label>Expired session</label>
   </state>
   <state code="closed">
-    <label>Sessao terminada</label>
+    <label>Closed session</label>
   </state>
 </sessionStates>

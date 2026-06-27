@@ -4,8 +4,7 @@ import java.util.Locale;
 
 public enum OrganizationState {
     ACTIVE("active"),
-    INACTIVE("inactive"),
-    ARCHIVED("archived");
+    INACTIVE("inactive");
 
     private final String databaseValue;
 

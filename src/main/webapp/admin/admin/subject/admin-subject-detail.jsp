@@ -182,7 +182,6 @@
                                                                 <select id="coordinatorAssignmentState${assignment.coordinatorUserId}" name="state" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
                                                                     <option value="active" ${assignment.stateValue == 'active' ? 'selected' : ''}>Active</option>
                                                                     <option value="inactive" ${assignment.stateValue == 'inactive' ? 'selected' : ''}>Inactive</option>
-                                                                    <option value="archived" ${assignment.stateValue == 'archived' ? 'selected' : ''}>Archived</option>
                                                                 </select>
                                                             </div>
                                                             <div class="col-md-4">
@@ -394,7 +393,7 @@
                     <div class="bg-white rounded-10 px-24 py-24">
                         <h3 class="text-16 fw-medium text-neutral-700 mb-16">Critical Actions</h3>
                         <div class="d-flex align-items-center gap-16 flex-wrap">
-                            <button type="button" class="gape-action-button gape-action-archive px-24 py-12 rounded-12 fw-semibold transition-03" data-bs-toggle="modal" data-bs-target="#archiveSubject">Archive</button>
+                            <button type="button" class="gape-action-button gape-action-archive px-24 py-12 rounded-12 fw-semibold transition-03" data-bs-toggle="modal" data-bs-target="#archiveSubject">Deactivate</button>
                             <button type="button" class="gape-action-button gape-action-delete px-24 py-12 rounded-12 fw-semibold transition-03" data-bs-toggle="modal" data-bs-target="#deleteSubject">Delete</button>
                         </div>
                     </div>
@@ -410,7 +409,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-12 border-0">
             <div class="modal-header border-neutral-30">
-                <h5 class="modal-title text-18 fw-semibold">Archive Subject</h5>
+                <h5 class="modal-title text-18 fw-semibold">Deactivate Subject</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -420,7 +419,7 @@
                 <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
                 <form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/archive" method="post" class="m-0">
                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                    <button type="submit" class="gape-action-button gape-action-archive px-20 py-10 rounded-12 fw-semibold transition-03">Archive</button>
+                    <button type="submit" class="gape-action-button gape-action-archive px-20 py-10 rounded-12 fw-semibold transition-03">Deactivate</button>
                 </form>
             </div>
         </div>

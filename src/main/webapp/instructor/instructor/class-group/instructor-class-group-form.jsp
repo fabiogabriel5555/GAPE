@@ -100,13 +100,9 @@
                                 </c:forEach>
                             </select>
                         </div>
-                        <div class="col-lg-4 gape-select-field">
-                            <label for="state" class="fw-medium text-base text-neutral-800 mb-12">State</label>
-                            <select id="state" name="state" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
-                                <option value="ACTIVE" ${form.state == 'ACTIVE' ? 'selected' : ''}>Active</option>
-                                <option value="INACTIVE" ${form.state == 'INACTIVE' ? 'selected' : ''}>Inactive</option>
-                                <option value="CLOSED" ${form.state == 'CLOSED' ? 'selected' : ''}>Closed</option>
-                            </select>
+                        <div class="col-lg-4">
+                            <label class="fw-medium text-base text-neutral-800 mb-12 d-block">State</label>
+                            <span class="d-inline-flex align-items-center gap-8 px-18 py-14 bg-neutral-20 border border-neutral-30 rounded-14 text-14 fw-semibold text-neutral-700" data-class-group-state-display>Draft</span>
                         </div>
                         <div class="col-lg-3">
                             <label for="minStudents" class="fw-medium text-base text-neutral-800 mb-12">Min Students</label>
@@ -152,5 +148,75 @@
     </div>
 </div>
 <%@ include file="/WEB-INF/fragments/template-base-scripts.jspf" %>
+<script>
+    (function () {
+        function ready(callback) {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', callback);
+                return;
+            }
+            callback();
+        }
+
+        ready(function () {
+            var stateDisplay = document.querySelector('[data-class-group-state-display]');
+            var startsAt = document.querySelector('#startsAt');
+            var endsAt = document.querySelector('#endsAt');
+
+            function todayValue() {
+                var now = new Date();
+                var month = String(now.getMonth() + 1).padStart(2, '0');
+                var day = String(now.getDate()).padStart(2, '0');
+                return now.getFullYear() + '-' + month + '-' + day;
+            }
+
+            function computedStateLabel() {
+                var today = todayValue();
+                if (!startsAt.value) {
+                    return 'Draft';
+                }
+                if (endsAt.value && endsAt.value <= today) {
+                    return 'Completed';
+                }
+                return startsAt.value <= today ? 'Active' : 'Scheduled';
+            }
+
+            function syncDates() {
+                if (!startsAt || !endsAt) {
+                    return;
+                }
+                var today = todayValue();
+                startsAt.min = today;
+                endsAt.min = startsAt.value || today;
+                startsAt.setCustomValidity('');
+                endsAt.setCustomValidity('');
+                if (endsAt.value && !startsAt.value) {
+                    startsAt.setCustomValidity('Start date is required when an end date is set.');
+                }
+                if (startsAt.value && startsAt.value < today) {
+                    startsAt.setCustomValidity('Start date cannot be in the past.');
+                }
+                if (endsAt.value && endsAt.value < today) {
+                    endsAt.setCustomValidity('End date cannot be in the past.');
+                }
+                if (startsAt.value && endsAt.value && startsAt.value > endsAt.value) {
+                    endsAt.setCustomValidity('End date cannot be before start date.');
+                }
+                if (stateDisplay) {
+                    stateDisplay.textContent = computedStateLabel();
+                }
+            }
+
+            if (startsAt) {
+                startsAt.addEventListener('input', syncDates);
+            }
+            if (endsAt) {
+                endsAt.addEventListener('input', syncDates);
+            }
+            syncDates();
+            window.setInterval(syncDates, 30000);
+        });
+    })();
+</script>
 </body>
 </html>

@@ -8,8 +8,7 @@ public enum EnrollmentState {
     INACTIVE("inactive"),
     REJECTED("rejected"),
     COMPLETED("completed"),
-    WITHDRAWN("withdrawn"),
-    ARCHIVED("archived");
+    WITHDRAWN("withdrawn");
 
     private final String databaseValue;
 

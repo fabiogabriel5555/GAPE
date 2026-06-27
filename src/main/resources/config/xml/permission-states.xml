@@ -5,6 +5,6 @@
     <label>Permissao ativa</label>
   </state>
   <state code="inactive">
-    <label>Permissao inativa</label>
+    <label>Inactive permission</label>
   </state>
 </permissionStates>

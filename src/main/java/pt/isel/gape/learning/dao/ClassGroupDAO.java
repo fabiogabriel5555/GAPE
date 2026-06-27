@@ -212,6 +212,34 @@ public final class ClassGroupDAO {
         }
     }
 
+    public int synchronizeTemporalStates(Connection connection, LocalDate today) throws SQLException {
+        int completed = updateTemporalState(
+                connection,
+                """
+                UPDATE class_group
+                SET state = 'completed'
+                WHERE state IN ('scheduled', 'active')
+                  AND ends_at IS NOT NULL
+                  AND ends_at <= ?
+                """,
+                today
+        );
+        int active = updateTemporalState(
+                connection,
+                """
+                UPDATE class_group
+                SET state = 'active'
+                WHERE state = 'scheduled'
+                  AND starts_at IS NOT NULL
+                  AND starts_at <= ?
+                  AND (ends_at IS NULL OR ends_at > ?)
+                """,
+                today,
+                today
+        );
+        return completed + active;
+    }
+
     public long countActiveEnrollments(Connection connection, long classGroupId) throws SQLException {
         String sql = """
                 SELECT COUNT(*)
@@ -322,6 +350,16 @@ public final class ClassGroupDAO {
             statement.setNull(index, java.sql.Types.DATE);
         } else {
             statement.setDate(index, Date.valueOf(value));
+        }
+    }
+
+    private static int updateTemporalState(Connection connection, String sql, LocalDate... values)
+            throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (int index = 0; index < values.length; index++) {
+                statement.setDate(index + 1, Date.valueOf(values[index]));
+            }
+            return statement.executeUpdate();
         }
     }
 }

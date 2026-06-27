@@ -120,6 +120,7 @@ public final class LessonView {
 
     public String getStateLabel() {
         return switch (lesson.state()) {
+            case DRAFT -> "Draft";
             case SCHEDULED -> "Scheduled";
             case ACTIVE -> "Active";
             case COMPLETED -> "Completed";
@@ -129,6 +130,7 @@ public final class LessonView {
 
     public String getStateBadgeClass() {
         return switch (lesson.state()) {
+            case DRAFT -> "bg-neutral-30 text-neutral-600";
             case SCHEDULED -> "bg-main-50 text-main-600";
             case ACTIVE -> "bg-success-50 text-success-600";
             case COMPLETED -> "bg-info-50 text-info-600";
@@ -137,19 +139,19 @@ public final class LessonView {
     }
 
     public String getStartsAt() {
-        return DISPLAY_DATE_TIME.format(lesson.startsAt());
+        return lesson.startsAt() == null ? "" : DISPLAY_DATE_TIME.format(lesson.startsAt());
     }
 
     public String getEndsAt() {
-        return DISPLAY_DATE_TIME.format(lesson.endsAt());
+        return lesson.endsAt() == null ? "" : DISPLAY_DATE_TIME.format(lesson.endsAt());
     }
 
     public String getStartsAtInput() {
-        return INPUT_DATE_TIME.format(lesson.startsAt());
+        return lesson.startsAt() == null ? "" : INPUT_DATE_TIME.format(lesson.startsAt());
     }
 
     public String getEndsAtInput() {
-        return INPUT_DATE_TIME.format(lesson.endsAt());
+        return lesson.endsAt() == null ? "" : INPUT_DATE_TIME.format(lesson.endsAt());
     }
 
     public LocalDateTime getStartsAtRaw() {
@@ -160,15 +162,30 @@ public final class LessonView {
         return lesson.endsAt();
     }
 
+    public Integer getOrderNoRaw() {
+        return lesson.orderNo();
+    }
+
     public String getDateRangeLabel() {
-        return getStartsAt() + " to " + getEndsAt();
+        if (lesson.startsAt() == null && lesson.endsAt() == null) {
+            return "Not scheduled";
+        }
+        return (lesson.startsAt() == null ? "-" : getStartsAt()) + " to " + (lesson.endsAt() == null ? "-" : getEndsAt());
     }
 
     public String getCompactDateRangeLabel() {
-        return COMPACT_DATE_TIME.format(lesson.startsAt()) + " to " + COMPACT_DATE_TIME.format(lesson.endsAt());
+        if (lesson.startsAt() == null && lesson.endsAt() == null) {
+            return "Not scheduled";
+        }
+        return (lesson.startsAt() == null ? "-" : COMPACT_DATE_TIME.format(lesson.startsAt()))
+                + " to "
+                + (lesson.endsAt() == null ? "-" : COMPACT_DATE_TIME.format(lesson.endsAt()));
     }
 
     public String getDurationLabel() {
+        if (lesson.startsAt() == null || lesson.endsAt() == null) {
+            return "-";
+        }
         long minutes = Duration.between(lesson.startsAt(), lesson.endsAt()).toMinutes();
         if (minutes < 60) {
             return minutes + " min";

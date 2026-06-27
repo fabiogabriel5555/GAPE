@@ -2,12 +2,12 @@
 <contentAccessModes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                     xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
   <mode code="open">
-    <label>Acesso livre</label>
+    <label>Open access</label>
   </mode>
   <mode code="restricted">
-    <label>Acesso condicionado</label>
+    <label>Conditional access</label>
   </mode>
   <mode code="scheduled">
-    <label>Acesso por calendarizacao</label>
+    <label>Scheduled access</label>
   </mode>
 </contentAccessModes>

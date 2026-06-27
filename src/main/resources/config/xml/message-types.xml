@@ -29,6 +29,6 @@
     <label>Anexo</label>
   </type>
   <type code="other">
-    <label>Outro</label>
+    <label>Other</label>
   </type>
 </messageTypes>

@@ -31,13 +31,13 @@
     <link rel="stylesheet" href="assets/css/animate.css">
     <!-- dataTables.dataTables -->
     <link rel="stylesheet" href="assets/css/dataTables.dataTables.min.css">
-    
+
     <link rel="stylesheet" href="assets/css/aos.css">
     <!-- Main css -->
     <link rel="stylesheet" href="assets/css/main.css">
-</head> 
+</head>
 <body>
-    
+
 <!--==================== Preloader Start ====================-->
   <div class="preloader">
     <img src="assets/images/icons/preloader.gif" alt="">
@@ -68,10 +68,10 @@
             <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
-            
+
 <ul class="nav-menu flex-align nav-menu--mobile">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -137,7 +137,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -158,7 +158,7 @@
                 <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -182,7 +182,7 @@
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -197,7 +197,7 @@
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -229,7 +229,7 @@
     </select>
 </div>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -240,7 +240,7 @@
 <div class="dashbord bg-main-25 w-100 overflow-hidden">
     <div class="d-flex">
 
-        
+
 <!-- ========Dashdord Sidebar start======== -->
 <%@ include file="/WEB-INF/fragments/dashboard-sidebar.jspf" %>
 <!-- ========Dashdord Sidebar end======== -->
@@ -477,7 +477,7 @@
                         </div>
                         <span class="mt-20 mb-20 border-bottom-solid d-inline-block w-100"></span>
                         <div id="react-chart">
-                            
+
                         </div>
                         <div class="d-flex justify-content-center text-center">
                             <ul class="d-flex align-items-center gap-24">
@@ -492,7 +492,7 @@
                             </ul>
                         </div>
                     </div>
-                </div> 
+                </div>
 
                  <div class="col-xl-4">
                     <div class="px-20 py-20 bg-white rounded-10 z-n1">
@@ -548,7 +548,7 @@
                         </div>
                         <span class="mt-20 border-bottom-solid d-inline-block w-100"></span>
                     </div>
-                </div> 
+                </div>
 
                  <div class="col-xl-6">
                     <div class="px-24 py-24 bg-white rounded-10">
@@ -569,7 +569,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-        
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-22 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -588,7 +588,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-                                        
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-22 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -607,7 +607,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-        
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-22 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -626,7 +626,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-        
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-22 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -645,7 +645,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-        
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-22 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -664,7 +664,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-        
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-22 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -683,7 +683,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-        
+
                                         <tr class="hover-bg-neutral-20 border-neutral-25 border-bottom transition-03">
                                             <td class="py-22 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -702,13 +702,13 @@
                                                 </div>
                                             </td>
                                         </tr>
-        
+
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
-                </div> 
+                </div>
 
                  <div class="col-xl-6">
                     <div class="px-24 py-24 bg-white rounded-10">
@@ -728,7 +728,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-    
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-22 line-height-1 px-20 shadow-none">
                                                 <div class="d-flex align-items-center gap-12">
@@ -744,7 +744,7 @@
                                             <td class="text-14 fw-normal text-neutral-500 py-22 line-height-1 px-20 shadow-none">10</td>
                                             <td class="py-22 line-height-1 px-20 shadow-none text-14 fw-normal text-neutral-500">193</td>
                                         </tr>
-    
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-22 line-height-1 px-20 shadow-none">
                                                 <div class="d-flex align-items-center gap-12">
@@ -760,7 +760,7 @@
                                             <td class="text-14 fw-normal py-22 line-height-1 px-20 shadow-none text-neutral-500">16</td>
                                             <td class="py-22 line-height-1 px-20 shadow-none text-14 fw-normal text-neutral-500">193</td>
                                         </tr>
-                                        
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-22 line-height-1 px-20 shadow-none">
                                                 <div class="d-flex align-items-center gap-12">
@@ -776,7 +776,7 @@
                                             <td class="text-14 fw-normal py-22 line-height-1 px-20 shadow-none text-neutral-500">5</td>
                                             <td class="py-22 line-height-1 px-20 shadow-none text-14 fw-normal text-neutral-500">542</td>
                                         </tr>
-    
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-22 line-height-1 px-20 shadow-none">
                                                 <div class="d-flex align-items-center gap-12">
@@ -792,7 +792,7 @@
                                             <td class="text-14 fw-normal py-22 line-height-1 px-20 shadow-none text-neutral-500">20</td>
                                             <td class="py-22 line-height-1 px-20 shadow-none text-14 fw-normal text-neutral-500">321</td>
                                         </tr>
-    
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-22 line-height-1 px-20 shadow-none">
                                                 <div class="d-flex align-items-center gap-12">
@@ -808,7 +808,7 @@
                                             <td class="text-14 fw-normal py-22 line-height-1 px-20 shadow-none text-neutral-500">12</td>
                                             <td class="py-22 line-height-1 px-20 shadow-none text-14 fw-normal text-neutral-500">113</td>
                                         </tr>
-    
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-22 line-height-1 px-20 shadow-none">
                                                 <div class="d-flex align-items-center gap-12">
@@ -824,7 +824,7 @@
                                             <td class="text-14 fw-normal py-22 line-height-1 px-20 shadow-none text-neutral-500">8</td>
                                             <td class="py-22 line-height-1 px-20 shadow-none text-14 fw-normal text-neutral-500">4734</td>
                                         </tr>
-    
+
                                         <tr class="hover-bg-neutral-20 border-neutral-25 border-bottom transition-03">
                                             <td class="py-22 line-height-1 px-20 shadow-none">
                                                 <div class="d-flex align-items-center gap-12">
@@ -840,13 +840,13 @@
                                             <td class="text-14 fw-normal py-22 line-height-1 px-20 shadow-none text-neutral-500">7</td>
                                             <td class="py-22 line-height-1 px-20 shadow-none text-14 fw-normal text-neutral-500">472</td>
                                         </tr>
-    
+
                                     </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
-                </div> 
+                </div>
 
                 <div class="col-xl-6">
                     <div class="px-24 py-24 bg-white rounded-10">
@@ -986,7 +986,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-    
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-20 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -1000,7 +1000,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-    
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-20 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -1014,7 +1014,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-                                        
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-20 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -1028,7 +1028,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-    
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-20 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -1042,7 +1042,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-    
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-20 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -1056,7 +1056,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-    
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-20 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -1070,7 +1070,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-    
+
                                         <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                             <td class="py-20 px-20 shadow-none line-height-1">
                                                 <div class="d-flex align-items-center gap-12">
@@ -1084,7 +1084,7 @@
                                                 </div>
                                             </td>
                                         </tr>
-    
+
                                     </tbody>
                                 </table>
                             </div>
@@ -1102,7 +1102,7 @@
 
                             <div class="overflow-x-auto">
                                 <div class="min-w-max">
-                                    <div class="table-responsive"> 
+                                    <div class="table-responsive">
                                               <table id="example-five" class="display nowrap" style="width:100%"><thead>
                                                 <tr class="bg-main-25 border-bottom border-neutral-30">
                                                     <th class="text-12 fw-medium text-neutral-500 py-16 px-20">Course Name</th>
@@ -1111,7 +1111,7 @@
                                                 </tr>
                                             </thead>
                                             <tbody>
-                        
+
                                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                                     <td class="py-28 px-20 shadow-none line-height-1">
                                                         <span class="fw-normal text-14 text-neutral-500">Automation System</span>
@@ -1129,7 +1129,7 @@
                                                     </td>
                                                     <td class="py-28 px-20 shadow-none line-height-1 fw-normal text-14 text-neutral-500">8</td>
                                                 </tr>
-                        
+
                                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                                     <td class="py-28 px-20 shadow-none line-height-1">
                                                         <span class="fw-normal text-14 text-neutral-500">Laboratory Expansion</span>
@@ -1147,7 +1147,7 @@
                                                     </td>
                                                     <td class="py-28 px-20 shadow-none line-height-1 fw-normal text-14 text-neutral-500">13</td>
                                                 </tr>
-                        
+
                                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                                     <td class="py-28 px-20 shadow-none line-height-1">
                                                         <span class="fw-normal text-14 text-neutral-500">Cleanroom Upgrade</span>
@@ -1165,7 +1165,7 @@
                                                     </td>
                                                     <td class="py-28 px-20 shadow-none line-height-1 fw-normal text-14 text-neutral-500">24</td>
                                                 </tr>
-                        
+
                                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                                     <td class="py-28 px-20 shadow-none line-height-1">
                                                         <span class="fw-normal text-14 text-neutral-500">Quality Control</span>
@@ -1183,7 +1183,7 @@
                                                     </td>
                                                     <td class="py-28 px-20 shadow-none line-height-1 fw-normal text-14 text-neutral-500">30</td>
                                                 </tr>
-                        
+
                                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                                     <td class="py-28 px-20 shadow-none line-height-1">
                                                         <span class="fw-normal text-14 text-neutral-500">Analytical Equipment</span>
@@ -1201,7 +1201,7 @@
                                                     </td>
                                                     <td class="py-28 px-20 shadow-none line-height-1 fw-normal text-14 text-neutral-500">11</td>
                                                 </tr>
-                        
+
                                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                                     <td class="py-28 px-20 shadow-none line-height-1">
                                                         <span class="fw-normal text-14 text-neutral-500">Vaccine Development</span>
@@ -1219,7 +1219,7 @@
                                                     </td>
                                                     <td class="py-28 px-20 shadow-none line-height-1 fw-normal text-14 text-neutral-500">33</td>
                                                 </tr>
-                        
+
                                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                                     <td class="py-28 px-20 shadow-none line-height-1">
                                                         <span class="fw-normal text-14 text-neutral-500">Packaging Line</span>
@@ -1237,7 +1237,7 @@
                                                     </td>
                                                     <td class="py-28 px-20 shadow-none line-height-1 fw-normal text-14 text-neutral-500">40</td>
                                                 </tr>
-                        
+
                                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                                     <td class="py-28 px-20 shadow-none line-height-1">
                                                         <span class="fw-normal text-14 text-neutral-500">IT Infrastructure</span>
@@ -1255,7 +1255,7 @@
                                                     </td>
                                                     <td class="py-28 px-20 shadow-none line-height-1 fw-normal text-14 text-neutral-500">14</td>
                                                 </tr>
-                        
+
                                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                                     <td class="py-28 px-20 shadow-none line-height-1">
                                                         <span class="fw-normal text-14 text-neutral-500">Clinical Trials</span>
@@ -1273,7 +1273,7 @@
                                                     </td>
                                                     <td class="py-28 px-20 shadow-none line-height-1 fw-normal text-14 text-neutral-500">36</td>
                                                 </tr>
-                        
+
                                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                                     <td class="py-28 px-20 shadow-none line-height-1">
                                                         <span class="fw-normal text-14 text-neutral-500">Clinical Trials</span>
@@ -1291,7 +1291,7 @@
                                                     </td>
                                                     <td class="py-28 px-20 shadow-none line-height-1 fw-normal text-14 text-neutral-500">17</td>
                                                 </tr>
-                        
+
                                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                                     <td class="py-28 px-20 shadow-none line-height-1">
                                                         <span class="fw-normal text-14 text-neutral-500">Cold Chain</span>
@@ -1309,7 +1309,7 @@
                                                     </td>
                                                     <td class="py-28 px-20 shadow-none line-height-1 fw-normal text-14 text-neutral-500">22</td>
                                                 </tr>
-                        
+
                                                 <tr class="hover-bg-neutral-20 transition-03">
                                                     <td class="py-28 px-20 shadow-none line-height-1">
                                                         <span class="fw-normal text-14 text-neutral-500">IT Infrastructure</span>
@@ -1327,15 +1327,15 @@
                                                     </td>
                                                     <td class="py-28 px-20 shadow-none line-height-1 fw-normal text-14 text-neutral-500">3</td>
                                                 </tr>
-                        
+
                                             </tbody>
                                         </table>
                                     </div>
 
                                  </div>
-                            </div> 
+                            </div>
 
-                            
+
 
 
                         </div>
@@ -1379,12 +1379,12 @@
             </div>
         </div>
          <!-- =====dashbord body item end===== -->
-       
+
           <!-- =========message profile footer start============== -->
 <div class="bg-neutral-20 border-neutral-40 border-top px-24 py-16 mt-auto">
     <div class="d-flex align-items-center gap-24 justify-content-between flex-wrap">
         <p class="fw-medium text-14 text-neutral-500">
-            Copyright &copy; 2026 
+            Copyright &copy; 2026
             <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="text-main-600 fw-medium">GAPE</a>.
             All Rights Reserved
         </p>
@@ -1434,18 +1434,18 @@
     <script src="assets/js/wow.min.js"></script>
 
     <script src="assets/js/aos.js"></script>
-    
+
     <!-- main js -->
     <script src="${pageContext.request.contextPath}/assets/js/main.js?v=20260616-sidebar"></script>
 
 
-    
+
 
 
 
 <script>
 
-    
+
 // ============== Overview charts start===================
 var options = {
   series: [
@@ -1457,7 +1457,7 @@ var options = {
     }
   ],
   chart: {
-    
+
     height: 350,
     type: 'line',
     dropShadow: {
@@ -1511,7 +1511,7 @@ chart.render();
 // ============== Overview charts End ===================
 
 
-    
+
 // =========================== Pie charts start=======================
 var options = {
   series: [44, 55, 41, 17, 15],
@@ -1544,13 +1544,3 @@ chart.render();
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-

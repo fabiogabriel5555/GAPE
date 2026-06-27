@@ -13,7 +13,4 @@
   <state code="revoked">
     <label>Revogado</label>
   </state>
-  <state code="archived">
-    <label>Arquivado</label>
-  </state>
 </certificateStates>

@@ -42,6 +42,8 @@ class TemplateAssetReferenceTest {
             "/learning/class-groups/",
             "learning/calendar/",
             "/learning/calendar/",
+            "learning/assessments/",
+            "/learning/assessments/",
             "learning/lessons/",
             "/learning/lessons/",
             "learning/rooms/",
@@ -50,6 +52,8 @@ class TemplateAssetReferenceTest {
             "/student/enrollments/",
             "student/calendar/",
             "/student/calendar/",
+            "student/assessments/",
+            "/student/assessments/",
             "student/class-groups/",
             "/student/class-groups/",
             "student/courses/",
@@ -88,6 +92,8 @@ class TemplateAssetReferenceTest {
             "/learning/class-groups",
             "learning/calendar",
             "/learning/calendar",
+            "learning/assessments",
+            "/learning/assessments",
             "learning/lessons",
             "/learning/lessons",
             "learning/rooms",
@@ -98,6 +104,8 @@ class TemplateAssetReferenceTest {
             "/student/enrollments",
             "student/calendar",
             "/student/calendar",
+            "student/assessments",
+            "/student/assessments",
             "student/class-groups",
             "/student/class-groups",
             "student/courses",
@@ -204,7 +212,7 @@ class TemplateAssetReferenceTest {
 
         for (Path file : markupFiles()) {
             for (String reference : findReferences(file, HTML_REF_PATTERN, 1)) {
-                if (shouldValidateAsLocalPath(reference)) {
+                if (shouldValidteAsLocalPath(reference)) {
                     validateResolvedPath(file, reference, missing, ReferenceMode.WEBAPP_RELATIVE);
                 }
             }
@@ -212,7 +220,7 @@ class TemplateAssetReferenceTest {
 
         for (Path cssFile : cssFiles()) {
             for (String reference : findReferences(cssFile, CSS_URL_PATTERN, 2)) {
-                if (shouldValidateAsLocalPath(reference)) {
+                if (shouldValidteAsLocalPath(reference)) {
                     validateResolvedPath(cssFile, reference, missing, ReferenceMode.FILE_RELATIVE);
                 }
             }
@@ -312,7 +320,7 @@ class TemplateAssetReferenceTest {
         return stripQueryAndFragment(stripContextPathPrefix(reference));
     }
 
-    private static boolean shouldValidateAsLocalPath(String reference) {
+    private static boolean shouldValidteAsLocalPath(String reference) {
         String normalized = stripContextPathPrefix(reference).trim();
 
         if (normalized.isEmpty()) {
@@ -346,7 +354,7 @@ class TemplateAssetReferenceTest {
             List<String> missing,
             ReferenceMode referenceMode
     ) {
-        if (!shouldValidateAsLocalPath(reference)) {
+        if (!shouldValidteAsLocalPath(reference)) {
             return;
         }
 

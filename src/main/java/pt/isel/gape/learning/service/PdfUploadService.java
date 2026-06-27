@@ -53,6 +53,7 @@ public final class PdfUploadService {
     public static final long DEFAULT_MAX_IMAGE_BYTES = 50L * 1024L * 1024L;
     public static final long DEFAULT_MAX_VIDEO_BYTES = 2L * 1024L * 1024L * 1024L;
     public static final long DEFAULT_MAX_AUDIO_BYTES = 750L * 1024L * 1024L;
+    public static final long DEFAULT_MAX_ARCHIVE_BYTES = DEFAULT_MAX_VIDEO_BYTES;
 
     private static final int MAX_IMAGE_SIDE = 2560;
     private static final float WEBP_QUALITY = 0.82f;
@@ -320,6 +321,10 @@ public final class PdfUploadService {
             case VIDEO -> processVideo(inputFile, finalFile, thumbnailFile);
             case AUDIO -> {
                 processAudio(inputFile, finalFile);
+                yield null;
+            }
+            case ARCHIVE -> {
+                Files.copy(inputFile, finalFile, StandardCopyOption.REPLACE_EXISTING);
                 yield null;
             }
             default -> throw new IllegalArgumentException("Unsupported file-backed content format");
@@ -676,6 +681,7 @@ public final class PdfUploadService {
             case IMAGE -> "image";
             case VIDEO -> "video";
             case AUDIO -> "audio";
+            case ARCHIVE -> "archive";
             default -> throw new IllegalArgumentException("Unsupported file-backed content format");
         };
     }
@@ -747,7 +753,8 @@ public final class PdfUploadService {
                 || format == ContentFormat.TEXT
                 || format == ContentFormat.IMAGE
                 || format == ContentFormat.VIDEO
-                || format == ContentFormat.AUDIO;
+                || format == ContentFormat.AUDIO
+                || format == ContentFormat.ARCHIVE;
     }
 
     private static BufferedImage readImage(Path path) throws IOException {
@@ -877,6 +884,7 @@ public final class PdfUploadService {
         limits.put(ContentFormat.IMAGE, configuredMaxBytes("gape.content.image.max-bytes", DEFAULT_MAX_IMAGE_BYTES));
         limits.put(ContentFormat.VIDEO, configuredMaxBytes("gape.content.video.max-bytes", DEFAULT_MAX_VIDEO_BYTES));
         limits.put(ContentFormat.AUDIO, configuredMaxBytes("gape.content.audio.max-bytes", DEFAULT_MAX_AUDIO_BYTES));
+        limits.put(ContentFormat.ARCHIVE, configuredMaxBytes("gape.content.archive.max-bytes", DEFAULT_MAX_ARCHIVE_BYTES));
         return limits;
     }
 
@@ -887,6 +895,7 @@ public final class PdfUploadService {
         limits.put(ContentFormat.IMAGE, DEFAULT_MAX_IMAGE_BYTES);
         limits.put(ContentFormat.VIDEO, maxMediaBytes);
         limits.put(ContentFormat.AUDIO, maxMediaBytes);
+        limits.put(ContentFormat.ARCHIVE, maxMediaBytes);
         return limits;
     }
 
@@ -896,7 +905,8 @@ public final class PdfUploadService {
                 ContentFormat.TEXT,
                 ContentFormat.IMAGE,
                 ContentFormat.VIDEO,
-                ContentFormat.AUDIO
+                ContentFormat.AUDIO,
+                ContentFormat.ARCHIVE
         )) {
             Long value = limits.get(format);
             if (value == null || value <= 0L) {
@@ -1068,6 +1078,7 @@ public final class PdfUploadService {
                 case IMAGE -> new UploadSpec(originalName, originalExtension, ".webp", "image/webp", normalizedContentType);
                 case VIDEO -> new UploadSpec(originalName, originalExtension, ".mp4", "video/mp4", normalizedContentType);
                 case AUDIO -> new UploadSpec(originalName, originalExtension, ".m4a", "audio/mp4", normalizedContentType);
+                case ARCHIVE -> new UploadSpec(originalName, originalExtension, originalExtension, normalizedContentType, normalizedContentType);
                 default -> throw new IllegalArgumentException("Unsupported file-backed content format");
             };
         }
@@ -1101,6 +1112,7 @@ public final class PdfUploadService {
                 case AUDIO -> contentType.startsWith("audio/")
                         || "application/ogg".equals(contentType)
                         || "application/x-ogg".equals(contentType);
+                case ARCHIVE -> isArchiveContentType(contentType);
                 default -> false;
             };
             if (!allowed) {
@@ -1115,6 +1127,7 @@ public final class PdfUploadService {
                 case IMAGE -> new String[]{".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp"};
                 case VIDEO -> new String[]{".mp4", ".webm", ".mov", ".m4v", ".mkv", ".avi", ".mpeg", ".mpg", ".3gp", ".3gpp"};
                 case AUDIO -> new String[]{".mp3", ".m4a", ".wav", ".ogg", ".flac", ".aac", ".weba", ".opus"};
+                case ARCHIVE -> new String[]{".zip", ".rar", ".7z", ".tar", ".tar.gz", ".tgz", ".tar.bz2", ".tbz2", ".tar.xz", ".txz", ".gz", ".bz2", ".xz"};
                 default -> new String[0];
             };
         }
@@ -1126,6 +1139,7 @@ public final class PdfUploadService {
                 case IMAGE -> "Image upload must use .jpg, .jpeg, .png, .webp, .gif or .bmp";
                 case VIDEO -> "Video upload must use .mp4, .webm, .mov, .m4v, .mkv, .avi, .mpeg, .mpg, .3gp or .3gpp";
                 case AUDIO -> "Audio upload must use .mp3, .m4a, .wav, .ogg, .flac, .aac, .weba or .opus";
+                case ARCHIVE -> "Archive upload must use .zip, .rar, .7z, .tar, .gz, .bz2 or .xz";
                 default -> "Unsupported file-backed content format";
             };
         }
@@ -1137,8 +1151,22 @@ public final class PdfUploadService {
                 case IMAGE -> "Image upload must use a supported image content type";
                 case VIDEO -> "Video upload must use a supported video content type";
                 case AUDIO -> "Audio upload must use a supported audio content type";
+                case ARCHIVE -> "Archive upload must use a supported archive content type";
                 default -> "Unsupported file-backed content format";
             };
+        }
+
+        private static boolean isArchiveContentType(String contentType) {
+            return "application/zip".equals(contentType)
+                    || "application/x-zip-compressed".equals(contentType)
+                    || "application/vnd.rar".equals(contentType)
+                    || "application/x-rar-compressed".equals(contentType)
+                    || "application/x-7z-compressed".equals(contentType)
+                    || "application/x-tar".equals(contentType)
+                    || "application/gzip".equals(contentType)
+                    || "application/x-gzip".equals(contentType)
+                    || "application/x-bzip2".equals(contentType)
+                    || "application/x-xz".equals(contentType);
         }
     }
 }

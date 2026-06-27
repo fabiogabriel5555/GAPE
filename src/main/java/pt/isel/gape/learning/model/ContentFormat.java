@@ -8,6 +8,7 @@ public enum ContentFormat {
     VIDEO("video"),
     AUDIO("audio"),
     PDF("pdf"),
+    ARCHIVE("archive"),
     URL("url"),
     SCORM("scorm"),
     XAPI("xapi"),
@@ -31,7 +32,7 @@ public enum ContentFormat {
 
     public boolean isFileBacked() {
         return switch (this) {
-            case TEXT, IMAGE, VIDEO, AUDIO, PDF, SCORM, XAPI, PRESENTATION -> true;
+            case TEXT, IMAGE, VIDEO, AUDIO, PDF, ARCHIVE, SCORM, XAPI, PRESENTATION -> true;
             case URL, EMBED, OTHER -> false;
         };
     }

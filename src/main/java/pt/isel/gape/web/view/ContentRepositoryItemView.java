@@ -9,6 +9,7 @@ public final class ContentRepositoryItemView {
     private final String title;
     private final String description;
     private final ContentFormat format;
+    private final String source;
     private final boolean defaultMandatory;
 
     private ContentRepositoryItemView(ReusableContentFile reusableContentFile) {
@@ -16,6 +17,7 @@ public final class ContentRepositoryItemView {
         this.title = reusableContentFile.title();
         this.description = reusableContentFile.description();
         this.format = reusableContentFile.format();
+        this.source = reusableContentFile.source();
         this.defaultMandatory = reusableContentFile.defaultMandatory();
     }
 
@@ -60,47 +62,76 @@ public final class ContentRepositoryItemView {
     }
 
     public String getFormatLabel() {
+        if (isAssessmentReference()) {
+            return "Assessment";
+        }
         return switch (format) {
             case PDF -> "PDF";
             case TEXT -> "Text";
             case IMAGE -> "Image";
             case VIDEO -> "Video";
             case AUDIO -> "Audio";
+            case ARCHIVE -> "Archive";
             default -> "Content";
         };
     }
 
     public String getFormatIconClass() {
+        if (isAssessmentReference()) {
+            return "ph ph-eye";
+        }
         return switch (format) {
             case PDF -> "ph ph-file-pdf";
             case TEXT -> "ph ph-text-aa";
             case IMAGE -> "ph ph-image";
             case VIDEO -> "ph ph-video";
             case AUDIO -> "ph ph-speaker-high";
+            case ARCHIVE -> "ph ph-file-zip";
             default -> "ph ph-file";
         };
     }
 
     public String getFormatBadgeClass() {
+        if (isAssessmentReference()) {
+            return "bg-info-600";
+        }
         return switch (format) {
             case PDF -> "bg-danger-600";
             case TEXT -> "bg-main-two-600";
             case IMAGE -> "bg-success-600";
             case VIDEO -> "bg-main-600";
             case AUDIO -> "bg-main-600";
+            case ARCHIVE -> "bg-success-600";
             default -> "bg-neutral-600";
         };
     }
 
     public String getDefaultRole() {
+        if (isAssessmentReference()) {
+            return "assessment";
+        }
         return switch (format) {
             case PDF -> "support_material";
             case TEXT -> "text";
             case IMAGE -> "image";
             case VIDEO -> "video";
             case AUDIO -> "audio";
+            case ARCHIVE -> "support_material";
             default -> "support_material";
         };
+    }
+
+    public boolean isAssessmentReference() {
+        return format == ContentFormat.OTHER
+                && source != null
+                && source.trim().startsWith("assessment:");
+    }
+
+    public String getAssessmentReferenceId() {
+        if (!isAssessmentReference()) {
+            return "";
+        }
+        return source.trim().substring("assessment:".length());
     }
 
     private static String htmlAttribute(String value) {

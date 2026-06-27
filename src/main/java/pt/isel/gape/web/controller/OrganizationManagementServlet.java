@@ -646,7 +646,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                     organizationId,
                     request.getRemoteAddr()
             );
-            flashSuccess(request, "Organization archived.");
+            flashSuccess(request, "Organization deactivated.");
             redirect(request, response, "/admin/organizations");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
@@ -1177,7 +1177,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
             return true;
         }
         for (OrganicUnit unit : units) {
-            if (!unit.state().equals(OrganicUnitState.ARCHIVED)
+            if (!unit.state().equals(OrganicUnitState.INACTIVE)
                     && organicUnitService.canCreateOrganicUnit(
                             actor.userId(),
                             currentSessionId(request),

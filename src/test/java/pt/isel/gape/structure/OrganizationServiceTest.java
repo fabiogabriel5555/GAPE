@@ -90,7 +90,7 @@ class OrganizationServiceTest {
                         null,
                         AccessProfileType.ADMINISTRATOR,
                         new OrganizationCreateCommand(
-                                "Academia Sem Admin",
+                                "Academy Without Admin",
                                 "ASA",
                                 null,
                                 OrganizationType.COMPANY,
@@ -125,16 +125,31 @@ class OrganizationServiceTest {
 
     @Test
     void manageAllAdministratorCannotActivateOrganizationWithoutActiveAdministrator() {
+        Organization organization = organizationService.createOrganization(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new OrganizationCreateCommand(
+                        "Organization Without Active Admin",
+                        "OSAA",
+                        null,
+                        OrganizationType.TRAINING_COMPANY,
+                        OrganizationState.INACTIVE,
+                        Set.of()
+                ),
+                "127.0.0.1"
+        );
+
         assertThrows(
                 IllegalStateException.class,
                 () -> organizationService.updateOrganization(
                         1L,
                         null,
                         AccessProfileType.ADMINISTRATOR,
-                        11L,
+                        organization.id(),
                         new OrganizationUpdateCommand(
-                                "Organizacao Externa Atualizada",
-                                "ORGX",
+                                organization.name(),
+                                organization.acronym(),
                                 null,
                                 OrganizationType.TRAINING_COMPANY,
                                 OrganizationState.ACTIVE
@@ -163,14 +178,14 @@ class OrganizationServiceTest {
                 AccessProfileType.ADMINISTRATOR,
                 11L,
                 new OrganizationUpdateCommand(
-                        "Organizacao Externa Atualizada",
+                        "Organization Externa Updated",
                         "ORGX",
                         null,
                         OrganizationType.TRAINING_COMPANY,
                         OrganizationState.ACTIVE
                 ),
                 "127.0.0.1"
-        ).name().contains("Atualizada"));
+        ).name().contains("Updated"));
     }
 
     @Test

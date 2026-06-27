@@ -241,7 +241,7 @@ public final class PhysicalRoomDAO {
                 SELECT COUNT(*)
                 FROM organization
                 WHERE id_organization = ?
-                  AND state <> 'archived'
+                  AND state = 'active'
                 """, organizationId);
     }
 
@@ -255,7 +255,7 @@ public final class PhysicalRoomDAO {
                 FROM organic_unit
                 WHERE id_organic_unit = ?
                   AND id_organization = ?
-                  AND state <> 'archived'
+                  AND state = 'active'
                 """, organicUnitId, organizationId);
     }
 
@@ -275,7 +275,7 @@ public final class PhysicalRoomDAO {
                 WHERE cs.id_coordinator_user = ?
                   AND s.id_organization = ?
                   AND cs.state = 'active'
-                  AND s.state <> 'archived'
+                  AND s.state = 'active'
                   AND u.state = 'active'
                   AND gc.cod_permission = ?
                   AND p.state = 'active'

@@ -25,6 +25,7 @@ public final class CsrfFilter implements Filter {
             "/learning",
             "/coordinator/subjects",
             "/student/enrollments",
+            "/student/assessments",
             "/admin/deletion-requests",
             "/contents",
             "/auth/logout"

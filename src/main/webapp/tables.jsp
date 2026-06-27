@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="${pageContext.request.contextPath}/">
     <!-- Title -->
-    <title>GAPE - Dashbord Quiz Attempts</title>
+    <title>GAPE - Dashbord Assessments</title>
     <!-- Favicon -->
     <link rel="shortcut icon" href="assets/images/logo/favicon.png">
     <!-- Bootstrap -->
@@ -28,13 +28,13 @@
     <link rel="stylesheet" href="assets/css/animate.css">
     <!-- dataTables.dataTables -->
     <link rel="stylesheet" href="assets/css/dataTables.dataTables.min.css">
-    
+
     <link rel="stylesheet" href="assets/css/aos.css">
     <!-- Main css -->
     <link rel="stylesheet" href="assets/css/main.css">
-</head> 
+</head>
 <body>
-    
+
 <!--==================== Preloader Start ====================-->
   <div class="preloader">
     <img src="assets/images/icons/preloader.gif" alt="">
@@ -65,10 +65,10 @@
             <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
-            
+
 <ul class="nav-menu flex-align nav-menu--mobile">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -134,7 +134,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -155,7 +155,7 @@
                 <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -179,7 +179,7 @@
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -194,7 +194,7 @@
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -226,7 +226,7 @@
     </select>
 </div>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -236,7 +236,7 @@
 <!-- ==========message dashbord start=========== -->
 <div class="dashbord bg-main-25">
     <div class="d-flex">
-        
+
 <!-- ========Dashdord Sidebar start======== -->
 <div class="dashboard-sidebar px-20 py-24 max-w-288-px bg-white w-100 border-end border-neutral-40 position-relative">
     <a href="#">
@@ -244,7 +244,7 @@
     </a>
     <span class="w-100 bg-neutral-40 mb-24 mt-24 h-1"></span>
      <div class="overflow-x-auto">
-        <div class="scrollbar min-w-max"> 
+        <div class="scrollbar min-w-max">
             <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome Henry,</span>
                <ul>
                    <li class="mb-8">
@@ -273,9 +273,9 @@
                        Reviews</a>
                    </li>
                    <li class="mb-8">
-                       <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="${pageContext.request.contextPath}/learning/assessments" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-seal-question"></i></span>
-                       Quiz Attempts</a>
+                       Assessments</a>
                    </li>
                    <li class="mb-8">
                        <span class="fw-normal text-14 text-neutral-500">Admin</span>
@@ -429,13 +429,13 @@
     </div>
 </div>
 <!-- =====message nab end======== -->
-        
+
             <!-- ============Feedbacks start============ -->
                 <div class="px-24 py-24">
-            
+
                 <div class="px-24 py-24 bg-white rounded-10">
                     <div class="mb-24">
-                        <h6 class="fw-medium text-16 text-neutral-500 mb-24">My Quiz Attempts</h6>
+                        <h6 class="fw-medium text-16 text-neutral-500 mb-24">Assessment Attempts</h6>
                         <div class="row gy-4">
 
                             <div class="col-lg-4 col-md-2">
@@ -444,8 +444,8 @@
                                     <select class="form-select pe-24 border-neutral-40 border rounded-pill bg-main-25 px-20 py-10 w-100 text-12 fw-normal  text-neutral-700 line-height-105">
                                         <option value="1">All</option>
                                         <option value="2">Everyone</option>
-                                        <option value="3">One</option>  
-                                        <option value="4">Two</option>  
+                                        <option value="3">One</option>
+                                        <option value="4">Two</option>
                                     </select>
                                 </div>
                             </div>
@@ -492,7 +492,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none line-height-105">
                                             <h4 class="fw-medium text-14 text-neutral-500 mb-1">Financial Planning for Millennials</h4>
@@ -512,7 +512,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none line-height-105">
                                             <h4 class="fw-medium text-14 text-neutral-500 mb-1">Photography for Beginners</h4>
@@ -532,7 +532,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none line-height-105">
                                             <h4 class="fw-medium text-14 text-neutral-500 mb-1">Adobe Photoshop Essentials</h4>
@@ -552,7 +552,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none line-height-105">
                                             <h4 class="fw-medium text-14 text-neutral-500 mb-1">Leadership and Management Essentials</h4>
@@ -572,7 +572,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none line-height-105">
                                             <h4 class="fw-medium text-14 text-neutral-500 mb-1">Web Development Bootcamp</h4>
@@ -592,7 +592,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none line-height-105">
                                             <h4 class="fw-medium text-14 text-neutral-500 mb-1">Digital Marketing Fundamentals</h4>
@@ -612,7 +612,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none line-height-105">
                                             <h4 class="fw-medium text-14 text-neutral-500 mb-1">Digital Marketing 101</h4>
@@ -632,7 +632,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none line-height-105">
                                             <h4 class="fw-medium text-14 text-neutral-500 mb-1">Introduction to Python Programming</h4>
@@ -652,7 +652,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none line-height-105">
                                             <h4 class="fw-medium text-14 text-neutral-500 mb-1">Social Media Strategy</h4>
@@ -672,7 +672,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none line-height-105">
                                             <h4 class="fw-medium text-14 text-neutral-500 mb-1">Project Management Fundamentals</h4>
@@ -692,7 +692,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none line-height-105">
                                             <h4 class="fw-medium text-14 text-neutral-500 mb-1">Social Media Strategy</h4>
@@ -712,7 +712,7 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
                                         <td class="py-28 px-20 shadow-none line-height-105">
                                             <h4 class="fw-medium text-14 text-neutral-500 mb-1">Creative Writing Essentials</h4>
@@ -732,20 +732,20 @@
                                             </div>
                                         </td>
                                     </tr>
-            
+
                                 </tbody>
                             </table>
                         </div>
 
                     </div>
-        
+
                     <div class="d-flex align-items-center gap-24 justify-content-between flex-wrap">
                         <div class="form-check form-switch">
                             <input class="form-check-input focus-box-shadow" type="checkbox" role="switch" id="flexSwitchCheckDefault">
                             <label class="form-check-label text-14 fw-normal text-neutral-500" for="flexSwitchCheckDefault">Dense</label>
                         </div>
                         <div class="d-flex align-items-center gap-40 flex-wrap">
-        
+
                             <div class="d-flex align-items-center gap-16">
                                 <span class="fw-normal text-14 text-neutral-500">Rows per page:</span>
                                 <select class="form-select w-auto pe-32 text-14 fw-normal text-neutral-500 bg-transparent border-0">
@@ -755,7 +755,7 @@
                                     <option value="1">15</option>
                                 </select>
                             </div>
-        
+
                             <div class="d-flex align-items-center gap-16">
                                 <span class="fw-normal text-14 text-neutral-500">1-12 of 100</span>
                                 <div class="d-flex align-items-center gpa-8">
@@ -767,11 +767,11 @@
                                     </span>
                                 </div>
                             </div>
-        
+
                         </div>
-        
+
                     </div>
-        
+
                 </div>
                 </div>
             <!-- ============Feedbacks end============ -->
@@ -780,7 +780,7 @@
 <div class="bg-neutral-20 border-neutral-40 border-top px-24 py-16 mt-auto">
     <div class="d-flex align-items-center gap-24 justify-content-between flex-wrap">
         <p class="fw-medium text-14 text-neutral-500">
-            Copyright &copy; 2026 
+            Copyright &copy; 2026
             <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="text-main-600 fw-medium">GAPE</a>.
             All Rights Reserved
         </p>
@@ -830,23 +830,14 @@
     <script src="assets/js/wow.min.js"></script>
 
     <script src="assets/js/aos.js"></script>
-    
+
     <!-- main js -->
     <script src="assets/js/main.js"></script>
 
 
-    
+
 
 
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-

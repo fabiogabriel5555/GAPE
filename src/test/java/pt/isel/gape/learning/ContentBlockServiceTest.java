@@ -139,7 +139,7 @@ class ContentBlockServiceTest {
                         new ContentBlockCreateCommand(
                                 50L,
                                 "BLK-NO-START",
-                                "Sem inicio",
+                                "Without start",
                                 null,
                                 2,
                                 ContentBlockAccessMode.SCHEDULED,
@@ -163,7 +163,7 @@ class ContentBlockServiceTest {
                         new ContentBlockCreateCommand(
                                 50L,
                                 "BLK-END-NO-START",
-                                "Fim sem inicio",
+                                "End without start",
                                 null,
                                 2,
                                 ContentBlockAccessMode.OPEN,
@@ -187,7 +187,7 @@ class ContentBlockServiceTest {
                         new ContentBlockCreateCommand(
                                 50L,
                                 "BLK-BAD-RANGE",
-                                "Intervalo invalido",
+                                "Invalid interval",
                                 null,
                                 2,
                                 ContentBlockAccessMode.OPEN,
@@ -235,7 +235,7 @@ class ContentBlockServiceTest {
                         50L,
                         "BLK-01",
                         "Introducao atualizada",
-                        "Primeiro bloco atualizado",
+                        "First block updated",
                         1,
                         ContentBlockAccessMode.OPEN,
                         ContentBlockState.ACTIVE,
@@ -261,7 +261,7 @@ class ContentBlockServiceTest {
                                 52L,
                                 "BLK-01",
                                 "Introducao atualizada",
-                                "Primeiro bloco",
+                                "First block",
                                 1,
                                 ContentBlockAccessMode.OPEN,
                                 ContentBlockState.ACTIVE,
@@ -294,7 +294,7 @@ class ContentBlockServiceTest {
                                 50L,
                                 "BLK-01",
                                 "Introducao atualizada",
-                                "Primeiro bloco",
+                                "First block",
                                 1,
                                 ContentBlockAccessMode.OPEN,
                                 ContentBlockState.ACTIVE,
@@ -318,7 +318,7 @@ class ContentBlockServiceTest {
                 "127.0.0.1"
         );
 
-        assertEquals("archived", contentBlockState(block.id()));
+        assertEquals("inactive", contentBlockState(block.id()));
     }
 
     @Test
@@ -358,7 +358,7 @@ class ContentBlockServiceTest {
                 new ContentBlockCreateCommand(
                         50L,
                         code,
-                        "Bloco sem dependencias",
+                        "Block without dependencies",
                         null,
                         orderNo,
                         ContentBlockAccessMode.OPEN,

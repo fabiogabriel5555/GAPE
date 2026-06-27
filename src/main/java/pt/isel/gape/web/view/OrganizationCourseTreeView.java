@@ -66,7 +66,6 @@ public final class OrganizationCourseTreeView {
         return switch (state) {
             case ACTIVE -> "Active";
             case INACTIVE -> "Inactive";
-            case ARCHIVED -> "Archived";
         };
     }
 
@@ -74,12 +73,11 @@ public final class OrganizationCourseTreeView {
         return switch (state) {
             case ACTIVE -> "bg-success-50 text-success-600";
             case INACTIVE -> "bg-warning-30 text-warning-600";
-            case ARCHIVED -> "bg-danger-50 text-danger-600";
         };
     }
 
     public boolean isArchived() {
-        return state == CourseState.ARCHIVED;
+        return state == CourseState.INACTIVE;
     }
 
     public int getSubjectCount() {

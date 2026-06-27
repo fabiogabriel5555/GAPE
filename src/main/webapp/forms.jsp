@@ -28,13 +28,13 @@
     <link rel="stylesheet" href="assets/css/animate.css">
     <!-- dataTables.dataTables -->
     <link rel="stylesheet" href="assets/css/dataTables.dataTables.min.css">
-    
+
     <link rel="stylesheet" href="assets/css/aos.css">
     <!-- Main css -->
     <link rel="stylesheet" href="assets/css/main.css">
-</head> 
+</head>
 <body>
-    
+
 <!--==================== Preloader Start ====================-->
   <div class="preloader">
     <img src="assets/images/icons/preloader.gif" alt="">
@@ -65,10 +65,10 @@
             <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
-            
+
 <ul class="nav-menu flex-align nav-menu--mobile">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -134,7 +134,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
@@ -155,7 +155,7 @@
                 <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -179,7 +179,7 @@
                 <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -194,7 +194,7 @@
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-quiz-attempts.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -226,7 +226,7 @@
     </select>
 </div>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -236,7 +236,7 @@
 <!-- ==========message dashbord start=========== -->
 <div class="dashbord bg-main-25">
     <div class="d-flex">
-        
+
 <!-- ========Dashdord Sidebar start======== -->
 <div class="dashboard-sidebar px-20 py-24 max-w-288-px bg-white w-100 border-end border-neutral-40 position-relative">
     <a href="#">
@@ -244,7 +244,7 @@
     </a>
     <span class="w-100 bg-neutral-40 mb-24 mt-24 h-1"></span>
      <div class="overflow-x-auto">
-        <div class="scrollbar min-w-max"> 
+        <div class="scrollbar min-w-max">
             <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome Henry,</span>
                <ul>
                    <li class="mb-8">
@@ -273,9 +273,9 @@
                        Reviews</a>
                    </li>
                    <li class="mb-8">
-                       <a href="${pageContext.request.contextPath}/admin/admin-quiz-attempts.jsp" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                       <a href="${pageContext.request.contextPath}/learning/assessments" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-seal-question"></i></span>
-                       Quiz Attempts</a>
+                       Assessments</a>
                    </li>
                    <li class="mb-8">
                        <span class="fw-normal text-14 text-neutral-500">Admin</span>
@@ -429,7 +429,7 @@
     </div>
 </div>
 <!-- =====message nab end======== -->
-        
+
             <!-- ============Feedbacks start============ -->
         <div class="px-24 py-24">
 
@@ -455,7 +455,7 @@
                                 </div>
                             </div>
                         </div>
-                    </form>   
+                    </form>
 
                     <div class="mt-24 row align-items-center gy-4 mb-24">
                         <div class="col-lg-6">
@@ -516,7 +516,7 @@
                         <h4 class="text-18 fw-medium text-neutral-700 mb-16">Tagline :</h4>
                         <div class="border-neutral-30 border rounded-16">
                             <div class="px-32 py-16">
-                                
+
                                <!-- Editor Toolbar Start -->
                                     <div class="editor">
                                         <div id="editor" class="bg-neutral-20 border-0 border-top border-neutral-30 w-100">
@@ -624,7 +624,7 @@
                             <span class="toggle-password text-16 position-absolute inset-inline-end-3-percent inset-block-start-18-px ph-bold ph-eye-closed" id="#confirmPassword"></span>
                         </div>
                     </div>
-                   
+
                 </div>
                 <div class="mb-40">
                     <h4 class="fw-medium text-18 text-neutral-700 mb-16">New password must contain :</h4>
@@ -668,7 +668,7 @@
 <div class="bg-neutral-20 border-neutral-40 border-top px-24 py-16 mt-auto">
     <div class="d-flex align-items-center gap-24 justify-content-between flex-wrap">
         <p class="fw-medium text-14 text-neutral-500">
-            Copyright &copy; 2026 
+            Copyright &copy; 2026
             <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="text-main-600 fw-medium">GAPE</a>.
             All Rights Reserved
         </p>
@@ -718,12 +718,12 @@
     <script src="assets/js/wow.min.js"></script>
 
     <script src="assets/js/aos.js"></script>
-    
+
     <!-- main js -->
     <script src="assets/js/main.js"></script>
 
 
-    
+
 
 
 
@@ -745,7 +745,7 @@
     $("#imageUpload").change(function() {
     readURL(this);
     });
-// =============dashbord settings end================== 
+// =============dashbord settings end==================
 
 
 // ================== Password Show Hide Js Start ==========
@@ -762,33 +762,20 @@ $(".toggle-password").on('click', function() {
     }
   });
   // ========================= Password Show Hide Js End ===========================
-    
-// ============================= Initialize Quill editor js Start ============================= 
+
+// ============================= Initialize Quill editor js Start =============================
 
 function editorFunction (editorId) {
             const quill = new Quill(editorId, {
                 theme: 'snow'
             });
         }
-        editorFunction('#editor'); 
-        // editorFunction('#editorTwo'); 
- // ============================= Initialize Quill editor js End ============================= 
+        editorFunction('#editor');
+        // editorFunction('#editorTwo');
+ // ============================= Initialize Quill editor js End =============================
 
 </script>
 
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-

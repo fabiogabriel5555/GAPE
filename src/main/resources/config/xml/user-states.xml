@@ -5,7 +5,7 @@
     <label>Conta ativa</label>
   </state>
   <state code="inactive">
-    <label>Conta inativa</label>
+    <label>Inactive account</label>
   </state>
   <state code="blocked">
     <label>Conta bloqueada</label>

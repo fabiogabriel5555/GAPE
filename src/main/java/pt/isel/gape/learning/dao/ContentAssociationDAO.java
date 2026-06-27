@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.learning.model.BlockContentPlacement;
 import pt.isel.gape.learning.model.BlockContentItem;
 import pt.isel.gape.learning.model.ContentAssociation;
 import pt.isel.gape.learning.model.ContentAssociationCommand;
@@ -187,7 +188,8 @@ public final class ContentAssociationDAO {
                 FROM associate_block_content assoc
                 JOIN content_item ci ON ci.id_content_item = assoc.id_content_item
                 WHERE assoc.id_content_block = ?
-                ORDER BY ci.created_at ASC,
+                ORDER BY COALESCE(assoc.order_no, 2147483647) ASC,
+                         ci.created_at ASC,
                          ci.id_content_item ASC
                 """;
 
@@ -228,6 +230,30 @@ public final class ContentAssociationDAO {
                     return Optional.empty();
                 }
                 return Optional.of(resultSet.getBoolean("mandatory"));
+            }
+        }
+    }
+
+    public void updateBlockContentPlacements(
+            Connection connection,
+            List<BlockContentPlacement> placements
+    ) throws SQLException {
+        String sql = """
+                UPDATE associate_block_content
+                SET id_content_block = ?, order_no = ?
+                WHERE id_content_block = ?
+                  AND id_content_item = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (BlockContentPlacement placement : placements) {
+                statement.setLong(1, placement.targetContentBlockId());
+                statement.setInt(2, placement.orderNo());
+                statement.setLong(3, placement.sourceContentBlockId());
+                statement.setLong(4, placement.itemId());
+                if (statement.executeUpdate() == 0) {
+                    throw new SQLException("Block content association not found: " + placement.itemId());
+                }
             }
         }
     }
@@ -379,7 +405,7 @@ public final class ContentAssociationDAO {
                 FROM integrate_subject
                 WHERE id_course = ?
                   AND id_subject = ?
-                  AND state <> 'archived'
+                  AND state = 'active'
                 """, courseId, subjectId);
     }
 

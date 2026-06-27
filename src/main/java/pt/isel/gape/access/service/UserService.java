@@ -1434,7 +1434,7 @@ public final class UserService {
 
         for (long organizationId : selectedOrganizationIds) {
             if (!manageOrganizationDAO.canAssign(connection, targetUserId, organizationId)) {
-                throw new IllegalArgumentException("Organization assignment requires active administrator and non-archived organization");
+                throw new IllegalArgumentException("Organization assignment requires active administrator and active organization");
             }
         }
         manageOrganizationDAO.synchronizeAssignments(

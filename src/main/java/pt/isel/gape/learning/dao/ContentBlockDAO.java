@@ -101,6 +101,28 @@ public final class ContentBlockDAO {
         }
     }
 
+    public List<ContentBlock> findByClassGroup(Connection connection, long classGroupId, boolean lock)
+            throws SQLException {
+        String sql = """
+                SELECT id_content_block, id_class_group, cod_content_block, name, description,
+                       order_no, access_mode, state, available_from, available_until
+                FROM content_block
+                WHERE id_class_group = ?
+                ORDER BY order_no, name
+                """ + (lock ? " FOR UPDATE" : "");
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, classGroupId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<ContentBlock> blocks = new ArrayList<>();
+                while (resultSet.next()) {
+                    blocks.add(mapContentBlock(resultSet));
+                }
+                return blocks;
+            }
+        }
+    }
+
     public void update(Connection connection, long contentBlockId, ContentBlockUpdateCommand command)
             throws SQLException {
         String sql = """
@@ -133,6 +155,37 @@ public final class ContentBlockDAO {
             statement.setLong(2, contentBlockId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Content block not found: " + contentBlockId);
+            }
+        }
+    }
+
+    public void reorderWithinClassGroup(Connection connection, long classGroupId, List<Long> orderedBlockIds)
+            throws SQLException {
+        String offsetSql = """
+                UPDATE content_block
+                SET order_no = order_no + 10000
+                WHERE id_class_group = ?
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(offsetSql)) {
+            statement.setLong(1, classGroupId);
+            statement.executeUpdate();
+        }
+
+        String updateSql = """
+                UPDATE content_block
+                SET order_no = ?
+                WHERE id_class_group = ?
+                  AND id_content_block = ?
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(updateSql)) {
+            int order = 1;
+            for (Long blockId : orderedBlockIds) {
+                statement.setInt(1, order++);
+                statement.setLong(2, classGroupId);
+                statement.setLong(3, blockId);
+                if (statement.executeUpdate() == 0) {
+                    throw new SQLException("Content block not found in class group: " + blockId);
+                }
             }
         }
     }

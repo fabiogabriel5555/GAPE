@@ -38,7 +38,7 @@ public final class ManageOrganizationDAO {
                 JOIN organization o ON o.id_organization = ?
                 WHERE ap.id_user = ?
                   AND u.state = 'active'
-                  AND o.state <> 'archived'
+                  AND o.state IN ('active', 'inactive')
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -97,7 +97,7 @@ public final class ManageOrganizationDAO {
                   AND mo.id_organization = ?
                   AND mo.state = 'active'
                   AND u.state = 'active'
-                  AND o.state <> 'archived'
+                  AND o.state = 'active'
                   AND (mo.start_date IS NULL OR mo.start_date <= CURRENT_DATE)
                   AND (mo.end_date IS NULL OR mo.end_date >= CURRENT_DATE)
                 """;
@@ -129,7 +129,7 @@ public final class ManageOrganizationDAO {
                 WHERE mo.id_admin_user = ?
                   AND mo.state = 'active'
                   AND u.state = 'active'
-                  AND o.state <> 'archived'
+                  AND o.state = 'active'
                   AND (mo.start_date IS NULL OR mo.start_date <= CURRENT_DATE)
                   AND (mo.end_date IS NULL OR mo.end_date >= CURRENT_DATE)
                 ORDER BY mo.id_organization
@@ -202,10 +202,10 @@ public final class ManageOrganizationDAO {
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, RoleAssignmentState.ARCHIVED.toDatabaseValue());
+            statement.setString(1, RoleAssignmentState.INACTIVE.toDatabaseValue());
             statement.setLong(2, adminUserId);
             statement.setLong(3, organizationId);
-            statement.setString(4, RoleAssignmentState.ARCHIVED.toDatabaseValue());
+            statement.setString(4, RoleAssignmentState.INACTIVE.toDatabaseValue());
             statement.executeUpdate();
         }
     }

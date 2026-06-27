@@ -26,6 +26,6 @@
     <label>Direcao</label>
   </type>
   <type code="other">
-    <label>Outro tipo de unidade organica</label>
+    <label>Other organic unit type</label>
   </type>
 </organicUnitTypes>

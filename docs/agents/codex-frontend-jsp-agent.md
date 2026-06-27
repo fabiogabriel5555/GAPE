@@ -58,6 +58,7 @@ Deve analisar o template EduAll completo e decidir autonomamente todas as pagina
 - Encaminhar formularios para Servlets com `action`, `method` e nomes de campos coerentes.
 - Mostrar mensagens de erro e sucesso vindas do backend.
 - Registar o que foi alterado e por que motivo, para facilitar manutencao.
+- Para validacao visual ou funcional no browser, consultar primeiro `docs/tests/browser-validation.md` e usar os defaults locais de Brave/Playwright, Tomcat e limpeza de processos.
 
 ## Saidas Esperadas
 

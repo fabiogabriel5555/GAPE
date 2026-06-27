@@ -134,9 +134,11 @@ public final class ContentItemService {
         validateActor(actorUserId, actorProfileType);
         try (Connection connection = connectionProvider.getConnection()) {
             ContentItem contentItem = requireContentItem(connection, contentItemId);
-            if (!isReusableFileBackedContent(contentItem)) {
-                requireContentAccess(connection, actorUserId, sessionId, actorProfileType, contentItem, sourceIp);
+            if (canReadReusableRepositoryContent(connection, actorUserId, sessionId, actorProfileType, contentItem,
+                    sourceIp)) {
+                return contentItem;
             }
+            requireContentAccess(connection, actorUserId, sessionId, actorProfileType, contentItem, sourceIp);
             return contentItem;
         } catch (RuntimeException | SQLException exception) {
             throw wrap(exception, "Failed to read content item");
@@ -153,7 +155,8 @@ public final class ContentItemService {
         validateActor(actorUserId, actorProfileType);
         try (Connection connection = connectionProvider.getConnection()) {
             ContentItem contentItem = requireContentItem(connection, contentItemId);
-            if (!isReusableFileBackedContent(contentItem)) {
+            if (!canReadReusableRepositoryContent(connection, actorUserId, sessionId, actorProfileType, contentItem,
+                    sourceIp)) {
                 requireContentAccess(connection, actorUserId, sessionId, actorProfileType, contentItem, sourceIp);
             }
             if (!isStoredFileBackedContent(contentItem)) {
@@ -184,6 +187,8 @@ public final class ContentItemService {
         try {
             validateActor(actorUserId, actorProfileType);
             try (Connection connection = connectionProvider.getConnection()) {
+                requireRepositoryReuseActor(actorUserId, sessionId, actorProfileType, sourceIp);
+                contentItemDAO.ensureAssessmentRepositoryReferences(connection, actorUserId, LocalDateTime.now(clock));
                 Map<String, ReusableContentFile> filesBySource = new LinkedHashMap<>();
                 for (ContentItem contentItem : contentItemDAO.findReusableFileBackedItems(connection)) {
                     String sourceKey = contentItem.source().trim();
@@ -207,6 +212,8 @@ public final class ContentItemService {
         try {
             validateActor(actorUserId, actorProfileType);
             try (Connection connection = connectionProvider.getConnection()) {
+                requireRepositoryReuseActor(actorUserId, sessionId, actorProfileType, sourceIp);
+                contentItemDAO.ensureAssessmentRepositoryReferences(connection, actorUserId, LocalDateTime.now(clock));
                 Map<String, ReusableContentFile> filesBySource = new LinkedHashMap<>();
                 for (ContentItem contentItem : contentItemDAO.findReusableFileBackedItems(connection)) {
                     String sourceKey = contentItem.source().trim();
@@ -229,6 +236,7 @@ public final class ContentItemService {
         try {
             validateActor(actorUserId, actorProfileType);
             try (Connection connection = connectionProvider.getConnection()) {
+                requireRepositoryReuseActor(actorUserId, sessionId, actorProfileType, sourceIp);
                 ContentItem contentItem = requireContentItem(connection, contentItemId);
                 if (!isReusableFileBackedContent(contentItem)) {
                     throw new IllegalArgumentException("Reusable content file not found: " + contentItemId);
@@ -252,6 +260,7 @@ public final class ContentItemService {
         try {
             validateActor(actorUserId, actorProfileType);
             try (Connection connection = connectionProvider.getConnection()) {
+                requireRepositoryReuseActor(actorUserId, sessionId, actorProfileType, sourceIp);
                 ContentItem contentItem = requireContentItem(connection, contentItemId);
                 if (!isReusableFileBackedContent(contentItem)) {
                     throw new IllegalArgumentException("Reusable content file not found: " + contentItemId);
@@ -326,10 +335,10 @@ public final class ContentItemService {
                         contentItemDAO.updateState(
                                 connection,
                                 contentItemId,
-                                ContentItemState.ARCHIVED,
+                                ContentItemState.INACTIVE,
                                 LocalDateTime.now(clock)
                         );
-                        result = ContentDeletionResult.ARCHIVED;
+                        result = ContentDeletionResult.INACTIVATED;
                     } else {
                         contentItemDAO.delete(connection, contentItemId);
                         result = ContentDeletionResult.PHYSICALLY_DELETED;
@@ -450,10 +459,10 @@ public final class ContentItemService {
                         contentItemDAO.updateState(
                                 connection,
                                 contentItemId,
-                                ContentItemState.ARCHIVED,
+                                ContentItemState.INACTIVE,
                                 LocalDateTime.now(clock)
                         );
-                        result = ContentDeletionResult.ARCHIVED;
+                        result = ContentDeletionResult.INACTIVATED;
                     } else {
                         orphanedPaths = orphanedStoredPaths(connection, contentItem);
                         if (orphanedPaths.isEmpty()) {
@@ -514,6 +523,33 @@ public final class ContentItemService {
             return;
         }
         throw new SecurityException("Missing content access context");
+    }
+
+    private boolean canReadReusableRepositoryContent(
+            Connection connection,
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            ContentItem contentItem,
+            String sourceIp
+    ) throws SQLException {
+        if (!isReusableFileBackedContent(contentItem) || actorProfileType == AccessProfileType.STUDENT) {
+            return false;
+        }
+        requireRepositoryReuseActor(actorUserId, sessionId, actorProfileType, sourceIp);
+        return true;
+    }
+
+    private void requireRepositoryReuseActor(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            String sourceIp
+    ) {
+        if (actorProfileType == AccessProfileType.STUDENT) {
+            throw new SecurityException("Students cannot reuse repository content");
+        }
+        contentAccessPolicy.requireActiveProfile(actorUserId, sessionId, actorProfileType, sourceIp);
     }
 
     private void requireDeletionPrivilege(
@@ -597,7 +633,7 @@ public final class ContentItemService {
 
     private static boolean isReusableFileBackedContent(ContentItem contentItem) {
         return contentItem.state() == ContentItemState.ACTIVE
-                && isStoredFileBackedContent(contentItem);
+                && (isStoredFileBackedContent(contentItem) || isAssessmentReference(contentItem));
     }
 
     private static boolean isStoredFileBackedContent(ContentItem contentItem) {
@@ -611,6 +647,12 @@ public final class ContentItemService {
                 && !contentItem.source().startsWith("contents/pending/");
     }
 
+    private static boolean isAssessmentReference(ContentItem contentItem) {
+        return contentItem.format() == ContentFormat.OTHER
+                && contentItem.source() != null
+                && contentItem.source().trim().startsWith("assessment:");
+    }
+
     private static void validateCreateCommand(ContentItemCreateCommand command) {
         Objects.requireNonNull(command, "command is required");
         requireText(command.title(), "Content title is required");
@@ -619,9 +661,6 @@ public final class ContentItemService {
         requireMaxLength(command.description(), DESCRIPTION_MAX_LENGTH, "Content description is too long");
         Objects.requireNonNull(command.format(), "content format is required");
         Objects.requireNonNull(command.state(), "content state is required");
-        if (command.state() == ContentItemState.ARCHIVED) {
-            throw new IllegalArgumentException("Use the archive/delete operation to archive content items");
-        }
         validateSource(command.format(), command.source());
     }
 
@@ -668,6 +707,7 @@ public final class ContentItemService {
                     || normalized.endsWith(".wav")
                     || normalized.endsWith(".ogg")
                     || normalized.endsWith(".m4a");
+            case ARCHIVE -> isArchiveSource(normalized);
             case SCORM, XAPI -> normalized.endsWith(".zip");
             case PRESENTATION -> normalized.endsWith(".pdf")
                     || normalized.endsWith(".ppt")
@@ -677,6 +717,22 @@ public final class ContentItemService {
         if (!valid) {
             throw new IllegalArgumentException("Content source extension is not compatible with " + format.toDatabaseValue());
         }
+    }
+
+    private static boolean isArchiveSource(String normalized) {
+        return normalized.endsWith(".zip")
+                || normalized.endsWith(".rar")
+                || normalized.endsWith(".7z")
+                || normalized.endsWith(".tar")
+                || normalized.endsWith(".tar.gz")
+                || normalized.endsWith(".tgz")
+                || normalized.endsWith(".tar.bz2")
+                || normalized.endsWith(".tbz2")
+                || normalized.endsWith(".tar.xz")
+                || normalized.endsWith(".txz")
+                || normalized.endsWith(".gz")
+                || normalized.endsWith(".bz2")
+                || normalized.endsWith(".xz");
     }
 
     private static void requireHttpUrl(String source) {

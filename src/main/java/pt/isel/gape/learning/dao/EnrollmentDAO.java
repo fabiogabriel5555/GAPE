@@ -436,7 +436,7 @@ public final class EnrollmentDAO {
                 WHERE id_student_user = ?
                   AND id_course = ?
                   AND id_subject = ?
-                  AND state IN ('inactive', 'rejected', 'withdrawn', 'archived')
+                  AND state IN ('inactive', 'rejected', 'withdrawn')
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {

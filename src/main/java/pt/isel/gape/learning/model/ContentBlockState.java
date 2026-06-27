@@ -3,8 +3,7 @@ package pt.isel.gape.learning.model;
 public enum ContentBlockState {
     DRAFT("draft"),
     ACTIVE("active"),
-    INACTIVE("inactive"),
-    ARCHIVED("archived");
+    INACTIVE("inactive");
 
     private final String databaseValue;
 

@@ -87,12 +87,13 @@ Expected result: the two pedagogical contents are distinct, but reference the sa
 
 ### Free File Reuse
 
-1. Login with a profile that manages one class group but not another.
+1. Login with a non-student profile that manages one class group but not another.
 2. Open the repository picker.
 3. Confirm files from other class groups are listed as reusable files.
 4. Reuse a file that originally belongs to another class group.
+5. Open the repository preview for that file.
 
-Expected result: the file is reused freely, creating a new pedagogical content item in the target block. If the user cannot manage the target block, the association itself is rejected.
+Expected result: the file is listed, previewed and reused freely for non-student actors, creating a new pedagogical content item in the target block. Students cannot use the repository picker. If the user cannot manage the target block, the association itself is rejected.
 
 ### Delete Pedagogical Content
 

@@ -1,10 +1,10 @@
 package pt.isel.gape.learning.model;
 
 public enum ClassGroupState {
+    DRAFT("draft"),
+    SCHEDULED("scheduled"),
     ACTIVE("active"),
-    INACTIVE("inactive"),
-    CLOSED("closed"),
-    ARCHIVED("archived");
+    COMPLETED("completed");
 
     private final String databaseValue;
 

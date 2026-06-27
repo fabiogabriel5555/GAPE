@@ -2,12 +2,9 @@
 <courseStates xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
               xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
   <state code="active">
-    <label>Curso ativo</label>
+    <label>Active course</label>
   </state>
   <state code="inactive">
-    <label>Curso inativo</label>
-  </state>
-  <state code="archived">
-    <label>Curso arquivado</label>
+    <label>Inactive course</label>
   </state>
 </courseStates>

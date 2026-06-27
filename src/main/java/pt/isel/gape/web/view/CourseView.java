@@ -137,7 +137,6 @@ public final class CourseView {
         return switch (state) {
             case ACTIVE -> "Active";
             case INACTIVE -> "Inactive";
-            case ARCHIVED -> "Archived";
         };
     }
 
@@ -145,7 +144,6 @@ public final class CourseView {
         return switch (state) {
             case ACTIVE -> "bg-success-50 text-success-600";
             case INACTIVE -> "bg-warning-30 text-warning-600";
-            case ARCHIVED -> "bg-danger-50 text-danger-600";
         };
     }
 
@@ -154,7 +152,7 @@ public final class CourseView {
     }
 
     public boolean isArchived() {
-        return state == CourseState.ARCHIVED;
+        return state == CourseState.INACTIVE;
     }
 
     public String getOrganizationName() {
@@ -257,7 +255,6 @@ public final class CourseView {
             case REJECTED -> "Rejected";
             case COMPLETED -> "Completed";
             case WITHDRAWN -> "Left";
-            case ARCHIVED -> "Archived";
         };
     }
 
@@ -272,7 +269,6 @@ public final class CourseView {
             case REJECTED -> "bg-danger-50 text-danger-600";
             case COMPLETED -> "bg-info-50 text-info-600";
             case WITHDRAWN -> "bg-warning-30 text-warning-600";
-            case ARCHIVED -> "bg-danger-50 text-danger-600";
         };
     }
 

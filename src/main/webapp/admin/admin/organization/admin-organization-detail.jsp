@@ -282,7 +282,7 @@
                     <div class="bg-white rounded-10 px-24 py-24">
                         <h3 class="text-16 fw-medium text-neutral-700 mb-16">Critical Actions</h3>
                         <div class="d-flex align-items-center gap-16 flex-wrap">
-                            <button type="button" class="gape-action-button gape-action-archive px-24 py-12 rounded-12 fw-semibold transition-03" data-bs-toggle="modal" data-bs-target="#archiveOrganization">Archive</button>
+                            <button type="button" class="gape-action-button gape-action-archive px-24 py-12 rounded-12 fw-semibold transition-03" data-bs-toggle="modal" data-bs-target="#archiveOrganization">Deactivate</button>
                             <button type="button" class="gape-action-button gape-action-delete px-24 py-12 rounded-12 fw-semibold transition-03" data-bs-toggle="modal" data-bs-target="#deleteOrganization">Delete</button>
                         </div>
                     </div>
@@ -298,7 +298,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-12 border-0">
             <div class="modal-header border-neutral-30">
-                <h5 class="modal-title text-18 fw-semibold">Archive Organization</h5>
+                <h5 class="modal-title text-18 fw-semibold">Deactivate Organization</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -308,7 +308,7 @@
                 <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
                 <form action="${pageContext.request.contextPath}/admin/organizations/${organization.id}/archive" method="post" class="m-0">
                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                    <button type="submit" class="gape-action-button gape-action-archive px-20 py-10 rounded-12 fw-semibold transition-03">Archive</button>
+                    <button type="submit" class="gape-action-button gape-action-archive px-20 py-10 rounded-12 fw-semibold transition-03">Deactivate</button>
                 </form>
             </div>
         </div>

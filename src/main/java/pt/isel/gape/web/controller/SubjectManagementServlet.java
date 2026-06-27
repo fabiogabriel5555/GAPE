@@ -385,7 +385,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
     }
 
     private boolean canUseInitialCourse(HttpServletRequest request, Course course) {
-        if (course.state() == CourseState.ARCHIVED) {
+        if (course.state() != CourseState.ACTIVE) {
             return false;
         }
         for (Organization organization : managedOrganizations(request)) {
@@ -682,7 +682,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         SessionUser actor = requireCurrentUser(request);
         try {
             subjectService.archiveSubject(actor.userId(), currentSessionId(request), primaryProfile(actor), subjectId, request.getRemoteAddr());
-            flashSuccess(request, "Subject archived.");
+            flashSuccess(request, "Subject deactivated.");
             redirect(request, response, subjectBasePath(request));
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
@@ -1368,7 +1368,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
     private List<CourseView> courseOptions(List<Organization> organizations) {
         return organizations.stream()
                 .flatMap(organization -> coursesByOrganization(organization.id()).stream())
-                .filter(course -> course.state() != CourseState.ARCHIVED)
+                .filter(course -> course.state() == CourseState.ACTIVE)
                 .map(viewFactory::courseView)
                 .sorted(Comparator.comparing(CourseView::getName))
                 .toList();
@@ -1385,7 +1385,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             associatedCourseIds.add(association.getCourseId());
         }
         return coursesByOrganization(subject.organizationId()).stream()
-                .filter(course -> course.state() != CourseState.ARCHIVED)
+                .filter(course -> course.state() == CourseState.ACTIVE)
                 .filter(course -> !associatedCourseIds.contains(course.id()))
                 .filter(course -> courseSubjectService.canManageAssociation(
                         actor.userId(),

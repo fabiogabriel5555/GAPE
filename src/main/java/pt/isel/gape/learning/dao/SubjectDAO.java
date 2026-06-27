@@ -74,6 +74,24 @@ public final class SubjectDAO {
         }
     }
 
+    public List<Subject> findAll() throws SQLException {
+        String sql = """
+                SELECT id_subject, id_organization, name, acronym, photo, description, ects, workload_hours, state
+                FROM subject
+                ORDER BY name, id_subject
+                """;
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            List<Subject> subjects = new ArrayList<>();
+            while (resultSet.next()) {
+                subjects.add(mapSubject(resultSet));
+            }
+            return subjects;
+        }
+    }
+
     public List<Subject> findByOrganization(long organizationId) throws SQLException {
         String sql = """
                 SELECT id_subject, id_organization, name, acronym, photo, description, ects, workload_hours, state
@@ -127,7 +145,7 @@ public final class SubjectDAO {
                 WHERE cs.id_coordinator_user = ?
                   AND cs.state = 'active'
                   AND u.state = 'active'
-                  AND s.state <> 'archived'
+                  AND s.state = 'active'
                   AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
                   AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 ORDER BY s.id_subject
@@ -162,7 +180,7 @@ public final class SubjectDAO {
                   AND tcg.state = 'active'
                   AND cg.state = 'active'
                   AND c.state = 'active'
-                  AND s.state <> 'archived'
+                  AND s.state = 'active'
                   AND u.state = 'active'
                   AND gt.cod_permission = ?
                   AND p.state = 'active'
@@ -205,7 +223,7 @@ public final class SubjectDAO {
                   AND tcg.state = 'active'
                   AND cg.state = 'active'
                   AND c.state = 'active'
-                  AND s.state <> 'archived'
+                  AND s.state = 'active'
                   AND u.state = 'active'
                   AND gt.cod_permission = ?
                   AND p.state = 'active'

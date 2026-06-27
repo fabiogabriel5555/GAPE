@@ -2,13 +2,13 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
            elementFormDefault="qualified">
 
-  <xs:include schemaLocation="transversal/calendarioAcademico.xsd"/>
-  <xs:include schemaLocation="transversal/calendarioPlurianual.xsd"/>
+  <xs:include schemaLocation="transversal/academicCalendar.xsd"/>
+  <xs:include schemaLocation="transversal/multiYearCalendar.xsd"/>
 
   <xs:annotation>
     <xs:documentation>
-      Esquema central para listas controladas do GAPE.
-      Os valores foram extraidos do documento 0. GAPE - ALL - V3.
+      Central schema for GAPE controlled lists.
+      Values were extracted from document 0. GAPE - ALL - V3.
     </xs:documentation>
   </xs:annotation>
 
@@ -105,7 +105,6 @@
     <xs:restriction base="xs:token">
       <xs:enumeration value="active"/>
       <xs:enumeration value="inactive"/>
-      <xs:enumeration value="archived"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -119,10 +118,10 @@
 
   <xs:simpleType name="classStateCodeType">
     <xs:restriction base="xs:token">
+      <xs:enumeration value="draft"/>
+      <xs:enumeration value="scheduled"/>
       <xs:enumeration value="active"/>
-      <xs:enumeration value="inactive"/>
-      <xs:enumeration value="closed"/>
-      <xs:enumeration value="archived"/>
+      <xs:enumeration value="completed"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -135,12 +134,11 @@
     </xs:restriction>
   </xs:simpleType>
 
-  <xs:simpleType name="draftActiveInactiveArchivedCodeType">
+  <xs:simpleType name="draftActiveInactiveCodeType">
     <xs:restriction base="xs:token">
       <xs:enumeration value="draft"/>
       <xs:enumeration value="active"/>
       <xs:enumeration value="inactive"/>
-      <xs:enumeration value="archived"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -159,6 +157,7 @@
       <xs:enumeration value="video"/>
       <xs:enumeration value="audio"/>
       <xs:enumeration value="pdf"/>
+      <xs:enumeration value="archive"/>
       <xs:enumeration value="url"/>
       <xs:enumeration value="scorm"/>
       <xs:enumeration value="xapi"/>
@@ -178,7 +177,8 @@
 
   <xs:simpleType name="assessmentTypeCodeType">
     <xs:restriction base="xs:token">
-      <xs:enumeration value="questionnaire"/>
+      <xs:enumeration value="form"/>
+      <xs:enumeration value="test"/>
       <xs:enumeration value="exam"/>
     </xs:restriction>
   </xs:simpleType>
@@ -187,13 +187,10 @@
     <xs:restriction base="xs:token">
       <xs:enumeration value="single_choice"/>
       <xs:enumeration value="multiple_choice"/>
-      <xs:enumeration value="dropdown"/>
       <xs:enumeration value="short_text"/>
       <xs:enumeration value="paragraph"/>
       <xs:enumeration value="file_upload"/>
-      <xs:enumeration value="date_time"/>
       <xs:enumeration value="rating"/>
-      <xs:enumeration value="other"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -222,7 +219,6 @@
       <xs:enumeration value="active"/>
       <xs:enumeration value="corrected"/>
       <xs:enumeration value="cancelled"/>
-      <xs:enumeration value="archived"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -232,7 +228,6 @@
       <xs:enumeration value="active"/>
       <xs:enumeration value="issued"/>
       <xs:enumeration value="revoked"/>
-      <xs:enumeration value="archived"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -245,7 +240,6 @@
       <xs:enumeration value="edited"/>
       <xs:enumeration value="deleted"/>
       <xs:enumeration value="cancelled"/>
-      <xs:enumeration value="archived"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -350,7 +344,7 @@
 
   <xs:complexType name="contentBlockStateEntryType">
     <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
-    <xs:attribute name="code" type="draftActiveInactiveArchivedCodeType" use="required"/>
+    <xs:attribute name="code" type="draftActiveInactiveCodeType" use="required"/>
   </xs:complexType>
 
   <xs:complexType name="contentAccessModeEntryType">
@@ -474,7 +468,7 @@
   </xs:element>
 
   <xs:element name="courseStates">
-    <xs:complexType><xs:sequence><xs:element name="state" type="courseStateEntryType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
+    <xs:complexType><xs:sequence><xs:element name="state" type="courseStateEntryType" minOccurs="2" maxOccurs="2"/></xs:sequence></xs:complexType>
     <xs:unique name="uniqueCourseStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
   </xs:element>
 
@@ -494,7 +488,7 @@
   </xs:element>
 
   <xs:element name="contentBlockStates">
-    <xs:complexType><xs:sequence><xs:element name="state" type="contentBlockStateEntryType" minOccurs="4" maxOccurs="4"/></xs:sequence></xs:complexType>
+    <xs:complexType><xs:sequence><xs:element name="state" type="contentBlockStateEntryType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
     <xs:unique name="uniqueContentBlockStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
   </xs:element>
 
@@ -504,7 +498,7 @@
   </xs:element>
 
   <xs:element name="contentFormats">
-    <xs:complexType><xs:sequence><xs:element name="format" type="contentFormatEntryType" minOccurs="11" maxOccurs="11"/></xs:sequence></xs:complexType>
+    <xs:complexType><xs:sequence><xs:element name="format" type="contentFormatEntryType" minOccurs="12" maxOccurs="12"/></xs:sequence></xs:complexType>
     <xs:unique name="uniqueContentFormatCode"><xs:selector xpath="format"/><xs:field xpath="@code"/></xs:unique>
   </xs:element>
 
@@ -514,12 +508,12 @@
   </xs:element>
 
   <xs:element name="assessmentTypes">
-    <xs:complexType><xs:sequence><xs:element name="type" type="assessmentTypeEntryType" minOccurs="2" maxOccurs="2"/></xs:sequence></xs:complexType>
+    <xs:complexType><xs:sequence><xs:element name="type" type="assessmentTypeEntryType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
     <xs:unique name="uniqueAssessmentTypeCode"><xs:selector xpath="type"/><xs:field xpath="@code"/></xs:unique>
   </xs:element>
 
   <xs:element name="questionTypes">
-    <xs:complexType><xs:sequence><xs:element name="type" type="questionTypeEntryType" minOccurs="9" maxOccurs="9"/></xs:sequence></xs:complexType>
+    <xs:complexType><xs:sequence><xs:element name="type" type="questionTypeEntryType" minOccurs="6" maxOccurs="6"/></xs:sequence></xs:complexType>
     <xs:unique name="uniqueQuestionTypeCode"><xs:selector xpath="type"/><xs:field xpath="@code"/></xs:unique>
   </xs:element>
 
@@ -537,7 +531,7 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element name="status" type="attendanceStatusEntryType" minOccurs="5" maxOccurs="5"/>
-        <xs:element name="state" type="attendanceStateEntryType" minOccurs="4" maxOccurs="4"/>
+        <xs:element name="state" type="attendanceStateEntryType" minOccurs="3" maxOccurs="3"/>
       </xs:sequence>
     </xs:complexType>
     <xs:unique name="uniqueAttendanceStatusCode"><xs:selector xpath="status"/><xs:field xpath="@code"/></xs:unique>
@@ -545,12 +539,12 @@
   </xs:element>
 
   <xs:element name="certificateStates">
-    <xs:complexType><xs:sequence><xs:element name="state" type="certificateStateEntryType" minOccurs="5" maxOccurs="5"/></xs:sequence></xs:complexType>
+    <xs:complexType><xs:sequence><xs:element name="state" type="certificateStateEntryType" minOccurs="4" maxOccurs="4"/></xs:sequence></xs:complexType>
     <xs:unique name="uniqueCertificateStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
   </xs:element>
 
   <xs:element name="messageStates">
-    <xs:complexType><xs:sequence><xs:element name="state" type="messageStateEntryType" minOccurs="8" maxOccurs="8"/></xs:sequence></xs:complexType>
+    <xs:complexType><xs:sequence><xs:element name="state" type="messageStateEntryType" minOccurs="7" maxOccurs="7"/></xs:sequence></xs:complexType>
     <xs:unique name="uniqueMessageStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
   </xs:element>
 

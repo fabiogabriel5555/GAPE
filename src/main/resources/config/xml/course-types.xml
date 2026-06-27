@@ -2,18 +2,18 @@
 <courseTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
              xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
   <type code="degree">
-    <label>Licenciatura</label>
+    <label>Degree</label>
   </type>
   <type code="master">
-    <label>Mestrado</label>
+    <label>Master</label>
   </type>
   <type code="short_course">
-    <label>Curso breve</label>
+    <label>Short course</label>
   </type>
   <type code="professional_training">
-    <label>Formacao profissional</label>
+    <label>Professional training</label>
   </type>
   <type code="other">
-    <label>Outro tipo de curso</label>
+    <label>Other course type</label>
   </type>
 </courseTypes>

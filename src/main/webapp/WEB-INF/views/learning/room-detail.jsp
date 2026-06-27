@@ -71,7 +71,7 @@
                                         <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                         <c:if test="${not empty returnTo}"><input type="hidden" name="returnTo" value="<c:out value='${returnTo}'/>"></c:if>
                                         <button type="submit" class="border-warning-600 border px-20 py-10 fw-semibold rounded-8 text-warning-600 hover-bg-warning-50 transition-03 w-100 text-start">
-                                            <i class="ph ph-archive-box me-8"></i>Archive
+                                            <i class="ph ph-archive-box me-8"></i>Deactivate
                                         </button>
                                     </form>
                                     <form action="${pageContext.request.contextPath}/learning/rooms/${room.encodedCode}/delete" method="post" class="m-0">

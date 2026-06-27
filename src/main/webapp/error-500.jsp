@@ -28,13 +28,13 @@
     <link rel="stylesheet" href="assets/css/animate.css">
     <!-- dataTables.dataTables -->
     <link rel="stylesheet" href="assets/css/dataTables.dataTables.min.css">
-    
+
     <link rel="stylesheet" href="assets/css/aos.css">
     <!-- Main css -->
     <link rel="stylesheet" href="assets/css/main.css">
-</head> 
+</head>
 <body>
-    
+
 <!--==================== Preloader Start ====================-->
   <div class="preloader">
     <img src="assets/images/icons/preloader.gif" alt="">
@@ -65,10 +65,10 @@
             <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
-            
+
 <ul class="nav-menu flex-align nav-menu--mobile">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -170,7 +170,7 @@
                 <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="forms.jsp" class="nav-submenu__link hover-bg-neutral-30">Settings</a>
@@ -194,7 +194,7 @@
                 <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -221,7 +221,7 @@
                 <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -236,7 +236,7 @@
                 <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="forms.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -268,7 +268,7 @@
     </select>
 </div>
             </div>
-            
+
         </div>
     </div>
 </div>
@@ -288,7 +288,7 @@
                     </a>
                 </div>
                 <!-- Logo End  -->
-    
+
                 <!-- Select Start -->
                 <div class="d-sm-block d-none">
                     <div class="header-select border border-neutral-30 bg-main-25 rounded-pill position-relative">
@@ -311,13 +311,13 @@
 </div>
                 </div>
                 <!-- Select End -->
-    
+
                 <!-- Menu Start  -->
                 <div class="header-menu d-lg-block d-none">
-                    
+
 <ul class="nav-menu flex-align ">
     <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
-    
+
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
@@ -419,7 +419,7 @@
                 <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="forms.jsp" class="nav-submenu__link hover-bg-neutral-30">Settings</a>
@@ -443,7 +443,7 @@
                 <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
@@ -470,7 +470,7 @@
                 <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
@@ -485,7 +485,7 @@
                 <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="tables.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Quiz Attempts</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="forms.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Account Settings</a>
@@ -512,7 +512,7 @@
                     <%@ include file="/WEB-INF/fragments/user-avatar-content.jspf" %>
                 </a>
                 <button type="button" class="toggle-mobileMenu d-lg-none text-neutral-200 flex-center">
-                    <i class="ph ph-list"></i> 
+                    <i class="ph ph-list"></i>
                 </button>
             </div>
             <!-- Header Right End  -->
@@ -529,7 +529,7 @@
     <img src="assets/images/shapes/shape5.png" alt="" class="shape six animation-walking d-md-block d-none">
     <img src="assets/images/shapes/shape4.png" alt="" class="shape four animation-scalation">
     <img src="assets/images/shapes/shape4.png" alt="" class="shape nine animation-scalation">
-    
+
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8">
@@ -537,20 +537,20 @@
                     <h1 class="breadcrumb__title display-4 fw-semibold text-center"> Erro interno</h1>
                     <ul class="breadcrumb__list d-flex align-items-center justify-content-center gap-4">
                         <li class="breadcrumb__item">
-                            <a href="index.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium"> 
+                            <a href="index.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium">
                                 <i class="text-lg d-inline-flex ph-bold ph-house"></i> Home</a>
                          </li>
                         <li class="breadcrumb__item">
                             <i class="text-neutral-500 d-flex ph-bold ph-caret-right"></i>
                         </li>
                         <li class="breadcrumb__item">
-                            <a href="courses.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium"> </a> 
+                            <a href="courses.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium"> </a>
                         </li>
                         <li class="breadcrumb__item d-none">
                             <i class="text-neutral-500 d-flex ph-bold ph-caret-right"></i>
                         </li>
-                        <li class="breadcrumb__item"> 
-                            <span class="text-main-two-600"> 500 </span> 
+                        <li class="breadcrumb__item">
+                            <span class="text-main-two-600"> 500 </span>
                         </li>
                     </ul>
                 </div>
@@ -568,9 +568,9 @@
                     <div class="bg-main-25 border border-neutral-30 rounded-16 p-40 text-center">
                         <span class="text-main-600 fw-semibold text-xl d-inline-block mb-16">500</span>
                         <h3 class="mb-16 text-neutral-500">Erro interno</h3>
-                        <p class="text-neutral-500 mb-32">Ocorreu um erro inesperado ao processar a pagina. Esta vista permanece apenas como base visual nesta fase.</p>
+                        <p class="text-neutral-500 mb-32">Ocorreu um erro inesperado ao processar to pagina. Esta vista permanece apenas como base visual nesta fase.</p>
                         <div class="d-flex justify-content-center gap-16 flex-wrap">
-                            <a href="index.jsp" class="btn btn-main rounded-pill">Voltar ao inicio</a>
+                            <a href="index.jsp" class="btn btn-main rounded-pill">Back to Home</a>
                             <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="btn btn-outline-main rounded-pill">Abrir dashboard</a>
                         </div>
                     </div>
@@ -579,8 +579,8 @@
         </div>
     </section>
     <!-- ============================== Error Section End ============================== -->
-    
-    
+
+
 <!-- ==================== Footer Start Here ==================== -->
 <footer class="footer bg-main-25 position-relative z-1">
     <div class="container">
@@ -598,7 +598,7 @@
     </div>
 </footer>
 <!-- ==================== Footer End Here ==================== -->
-  
+
 
         <!-- Jquery js -->
     <script src="assets/js/jquery-3.7.1.min.js"></script>
@@ -633,23 +633,14 @@
     <script src="assets/js/wow.min.js"></script>
 
     <script src="assets/js/aos.js"></script>
-    
+
     <!-- main js -->
     <script src="assets/js/main.js"></script>
 
 
-    
+
 
 
 
     </body>
 </html>
-
-
-
-
-
-
-
-
-

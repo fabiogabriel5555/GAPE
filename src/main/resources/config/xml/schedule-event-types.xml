@@ -2,18 +2,18 @@
 <scheduleEventTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                     xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
   <type code="lesson">
-    <label>Aula</label>
+    <label>Lesson</label>
   </type>
   <type code="assessment">
-    <label>Avaliacao</label>
+    <label>Assessment</label>
   </type>
   <type code="reminder">
-    <label>Lembrete</label>
+    <label>Reminder</label>
   </type>
   <type code="meeting">
-    <label>Reuniao</label>
+    <label>Meeting</label>
   </type>
   <type code="other">
-    <label>Outro tipo de evento</label>
+    <label>Other event type</label>
   </type>
 </scheduleEventTypes>

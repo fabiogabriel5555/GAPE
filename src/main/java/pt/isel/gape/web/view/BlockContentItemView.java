@@ -57,12 +57,16 @@ public final class BlockContentItemView {
     }
 
     public String getFormatLabel() {
+        if (isAssessmentReference()) {
+            return "Assessment";
+        }
         return switch (format) {
             case TEXT -> "Text";
             case IMAGE -> "Image";
             case VIDEO -> "Video";
             case AUDIO -> "Audio";
             case PDF -> "PDF";
+            case ARCHIVE -> "Archive";
             case URL -> "Link";
             case SCORM -> "SCORM";
             case XAPI -> "xAPI";
@@ -73,12 +77,16 @@ public final class BlockContentItemView {
     }
 
     public String getFormatIconClass() {
+        if (isAssessmentReference()) {
+            return "ph ph-eye";
+        }
         return switch (format) {
             case TEXT -> "ph ph-text-aa";
             case IMAGE -> "ph ph-image";
             case VIDEO -> "ph ph-video";
             case AUDIO -> "ph ph-speaker-high";
             case PDF -> "ph ph-file-pdf";
+            case ARCHIVE -> "ph ph-file-zip";
             case URL -> "ph ph-link";
             case SCORM, XAPI -> "ph ph-package";
             case PRESENTATION -> "ph ph-file-ppt";
@@ -88,10 +96,13 @@ public final class BlockContentItemView {
     }
 
     public String getFormatBadgeClass() {
+        if (isAssessmentReference()) {
+            return "bg-info-50 text-info-600";
+        }
         return switch (format) {
             case PDF -> "bg-danger-50 text-danger-600";
             case URL, EMBED -> "bg-main-50 text-main-600";
-            case IMAGE, VIDEO, AUDIO, PRESENTATION -> "bg-success-50 text-success-600";
+            case IMAGE, VIDEO, AUDIO, ARCHIVE, PRESENTATION -> "bg-success-50 text-success-600";
             case SCORM, XAPI -> "bg-warning-30 text-warning-600";
             case TEXT, OTHER -> "bg-neutral-30 text-neutral-600";
         };
@@ -106,7 +117,8 @@ public final class BlockContentItemView {
                 || format == ContentFormat.TEXT
                 || format == ContentFormat.IMAGE
                 || format == ContentFormat.VIDEO
-                || format == ContentFormat.AUDIO;
+                || format == ContentFormat.AUDIO
+                || format == ContentFormat.ARCHIVE;
     }
 
     public boolean isVisualThumbnailAvailable() {
@@ -120,6 +132,19 @@ public final class BlockContentItemView {
     public boolean isLinkable() {
         String normalized = getSource().trim().toLowerCase(java.util.Locale.ROOT);
         return isUrl() && (normalized.startsWith("http://") || normalized.startsWith("https://"));
+    }
+
+    public boolean isAssessmentReference() {
+        return format == ContentFormat.OTHER
+                && source != null
+                && source.trim().startsWith("assessment:");
+    }
+
+    public String getAssessmentReferenceId() {
+        if (!isAssessmentReference()) {
+            return "";
+        }
+        return source.trim().substring("assessment:".length());
     }
 
     public String getSource() {
@@ -139,7 +164,6 @@ public final class BlockContentItemView {
             case DRAFT -> "Draft";
             case ACTIVE -> "Active";
             case INACTIVE -> "Inactive";
-            case ARCHIVED -> "Archived";
         };
     }
 
@@ -148,7 +172,6 @@ public final class BlockContentItemView {
             case DRAFT -> "bg-neutral-30 text-neutral-600";
             case ACTIVE -> "bg-success-50 text-success-600";
             case INACTIVE -> "bg-warning-30 text-warning-600";
-            case ARCHIVED -> "bg-danger-50 text-danger-600";
         };
     }
 
@@ -157,7 +180,7 @@ public final class BlockContentItemView {
     }
 
     public boolean isArchived() {
-        return state == ContentItemState.ARCHIVED;
+        return state == ContentItemState.INACTIVE;
     }
 
     public String getRoleLabel() {
@@ -166,6 +189,10 @@ public final class BlockContentItemView {
 
     public String getOrderLabel() {
         return orderNo == null ? "-" : orderNo.toString();
+    }
+
+    public Integer getOrderNoRaw() {
+        return orderNo;
     }
 
     public boolean isMandatory() {

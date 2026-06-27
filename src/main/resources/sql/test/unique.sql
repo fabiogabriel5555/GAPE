@@ -1,5 +1,5 @@
 -- Testes de violacao de UNIQUE
--- Cada statement deve falhar.
+-- Each statement must fail.
 
 -- UNIQUE em user_account.email
 INSERT INTO user_account (
@@ -20,7 +20,7 @@ INSERT INTO user_account (
     (9020, 'Doc A', 'doc-a@gape.local', 'active', 'pt-PT', '2026-03-01 14:00:00', 'h_doc_a', 's_doc_a', 'PASSPORT', 'AA123456'),
     (9021, 'Doc B', 'doc-b@gape.local', 'active', 'pt-PT', '2026-03-01 14:01:00', 'h_doc_b', 's_doc_b', 'PASSPORT', 'AA123456');
 
--- Ordem do bloco unica na mesma turma
+-- Block order must be unique in the same class group
 INSERT INTO content_block (
     id_content_block, id_class_group, cod_content_block, name, description, order_no,
     access_mode, state, available_from, available_until

@@ -9,6 +9,8 @@ import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
+import pt.isel.gape.learning.service.AssessmentService;
+import pt.isel.gape.learning.service.ClassGroupService;
 import pt.isel.gape.learning.service.LessonService;
 
 @WebListener
@@ -18,17 +20,18 @@ public final class LessonStateSynchronizationListener implements ServletContextL
 
     @Override
     public void contextInitialized(ServletContextEvent event) {
-        LessonService lessonService = new LessonService(
-                ConnectionProvider.defaultProvider(),
-                ApplicationClock.system()
-        );
+        ConnectionProvider connectionProvider = ConnectionProvider.defaultProvider();
+        java.time.Clock clock = ApplicationClock.system();
+        ClassGroupService classGroupService = new ClassGroupService(connectionProvider, clock);
+        LessonService lessonService = new LessonService(connectionProvider, clock);
+        AssessmentService assessmentService = new AssessmentService(connectionProvider, clock);
         executor = Executors.newSingleThreadScheduledExecutor(task -> {
-            Thread thread = new Thread(task, "gape-lesson-state-sync");
+            Thread thread = new Thread(task, "gape-temporal-state-sync");
             thread.setDaemon(true);
             return thread;
         });
         executor.scheduleWithFixedDelay(
-                () -> synchronize(lessonService, event),
+                () -> synchronize(classGroupService, lessonService, assessmentService, event),
                 30,
                 60,
                 TimeUnit.SECONDS
@@ -42,11 +45,18 @@ public final class LessonStateSynchronizationListener implements ServletContextL
         }
     }
 
-    private static void synchronize(LessonService lessonService, ServletContextEvent event) {
+    private static void synchronize(
+            ClassGroupService classGroupService,
+            LessonService lessonService,
+            AssessmentService assessmentService,
+            ServletContextEvent event
+    ) {
         try {
+            classGroupService.synchronizeTemporalStates();
             lessonService.synchronizeTemporalStates();
+            assessmentService.synchronizeTemporalStates();
         } catch (RuntimeException exception) {
-            event.getServletContext().log("Failed to synchronize lesson states", exception);
+            event.getServletContext().log("Failed to synchronize temporal states", exception);
         }
     }
 }

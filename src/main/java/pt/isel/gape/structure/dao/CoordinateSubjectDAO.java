@@ -37,7 +37,7 @@ public final class CoordinateSubjectDAO {
                 JOIN subject s ON s.id_subject = ?
                 WHERE cp.id_user = ?
                   AND u.state = 'active'
-                  AND s.state <> 'archived'
+                  AND s.state = 'active'
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -96,7 +96,7 @@ public final class CoordinateSubjectDAO {
                   AND cs.id_subject = ?
                   AND cs.state = 'active'
                   AND u.state = 'active'
-                  AND s.state <> 'archived'
+                  AND s.state = 'active'
                   AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
                   AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 """;
@@ -180,7 +180,7 @@ public final class CoordinateSubjectDAO {
                 JOIN subject s ON s.id_subject = cs.id_subject
                 WHERE cs.id_coordinator_user = ?
                   AND cs.state = 'active'
-                  AND s.state <> 'archived'
+                  AND s.state = 'active'
                   AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
                   AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 ORDER BY cs.id_subject

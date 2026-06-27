@@ -85,7 +85,7 @@ public final class DatabaseTestSupport {
             return;
         }
 
-        dropCurrentSchemaObjectsWithoutInvalidating(connection);
+        dropCurrentSchemaObjectsWithoutInvalidting(connection);
         executeScript(connection, SQL_DIR.resolve("schema.sql"));
         fullSchemaTables = currentBaseTableNames(connection);
         fullSchemaReady = true;
@@ -100,7 +100,7 @@ public final class DatabaseTestSupport {
 
     public static synchronized void dropCurrentSchemaObjects(Connection connection) throws SQLException {
         fullSchemaReady = false;
-        dropCurrentSchemaObjectsWithoutInvalidating(connection);
+        dropCurrentSchemaObjectsWithoutInvalidting(connection);
     }
 
     public static void dropCurrentSchemaTriggers(Connection connection) throws SQLException {
@@ -380,7 +380,7 @@ public final class DatabaseTestSupport {
         }
     }
 
-    private static void dropCurrentSchemaObjectsWithoutInvalidating(Connection connection) throws SQLException {
+    private static void dropCurrentSchemaObjectsWithoutInvalidting(Connection connection) throws SQLException {
         dropCurrentSchemaTriggers(connection);
         dropCurrentSchemaTables(connection);
     }

@@ -90,6 +90,12 @@
                         Lessons
                     </a>
                 </li>
+                <li class="mb-8 ${activeMenu == 'assessments' ? 'activePage' : ''}" data-menu-key="assessments">
+                    <a href="${pageContext.request.contextPath}/student/assessments" aria-current="${activeMenu == 'assessments' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-seal-question"></i></span>
+                        Assessments
+                    </a>
+                </li>
                 <li class="mb-8 ${activeMenu == 'reviews' ? 'activePage' : ''}" data-menu-key="reviews">
                     <a href="${pageContext.request.contextPath}/student/student/review/student-reviews.jsp" aria-current="${activeMenu == 'reviews' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                         <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sparkle"></i></span>

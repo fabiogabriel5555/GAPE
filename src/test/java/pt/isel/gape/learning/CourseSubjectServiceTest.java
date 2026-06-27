@@ -124,7 +124,7 @@ class CourseSubjectServiceTest {
     @Test
     void subjectMustBelongToCourseOrganization() throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection()) {
-            insertSubject(connection, 43L, 11L, "Disciplina Externa");
+            insertSubject(connection, 43L, 11L, "Subject Externa");
         }
 
         assertThrows(

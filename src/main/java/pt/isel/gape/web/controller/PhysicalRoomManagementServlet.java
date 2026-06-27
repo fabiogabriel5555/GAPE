@@ -342,7 +342,7 @@ public final class PhysicalRoomManagementServlet extends DashboardServletSupport
                     code,
                     request.getRemoteAddr()
             );
-            flashSuccess(request, "Physical room archived.");
+            flashSuccess(request, "Physical room deactivated.");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
@@ -556,7 +556,6 @@ public final class PhysicalRoomManagementServlet extends DashboardServletSupport
 
     private static List<SelectOptionView> roomStateOptions(PhysicalRoomFormData form) {
         return Arrays.stream(PhysicalRoomState.values())
-                .filter(state -> state != PhysicalRoomState.ARCHIVED)
                 .map(state -> new SelectOptionView(state.name(), state.toDatabaseValue(), form.isStateSelected(state.name())))
                 .toList();
     }

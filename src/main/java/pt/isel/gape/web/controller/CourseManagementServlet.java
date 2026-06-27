@@ -498,7 +498,7 @@ public final class CourseManagementServlet extends DashboardServletSupport {
         }
         List<SubjectView> subjects = subjectsByOrganization(course.organizationId())
                 .stream()
-                .filter(subject -> subject.state() != SubjectState.ARCHIVED)
+                .filter(subject -> subject.state() == SubjectState.ACTIVE)
                 .filter(subject -> courseSubjectService.canManageAssociation(
                         actor.userId(),
                         currentSessionId(request),
@@ -656,7 +656,7 @@ public final class CourseManagementServlet extends DashboardServletSupport {
         SessionUser actor = requireCurrentUser(request);
         try {
             courseService.archiveCourse(actor.userId(), currentSessionId(request), primaryProfile(actor), courseId, request.getRemoteAddr());
-            flashSuccess(request, "Course archived.");
+            flashSuccess(request, "Course deactivated.");
             redirect(request, response, "/admin/courses");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
@@ -669,7 +669,7 @@ public final class CourseManagementServlet extends DashboardServletSupport {
         SessionUser actor = requireCurrentUser(request);
         try {
             courseService.unarchiveCourse(actor.userId(), currentSessionId(request), primaryProfile(actor), courseId, request.getRemoteAddr());
-            flashSuccess(request, "Course unarchived.");
+            flashSuccess(request, "Course activated.");
             redirect(request, response, "/admin/courses");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
@@ -848,7 +848,7 @@ public final class CourseManagementServlet extends DashboardServletSupport {
         SessionUser actor = requireCurrentUser(request);
         try {
             courseSubjectService.archiveAssociation(actor.userId(), currentSessionId(request), primaryProfile(actor), courseId, subjectId, request.getRemoteAddr());
-            flashSuccess(request, "Course-subject association archived.");
+            flashSuccess(request, "Course-subject association deactivated.");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }

@@ -80,7 +80,7 @@ public final class LessonDAO {
     }
 
     public List<Lesson> findByClassGroup(long classGroupId) throws SQLException {
-        String sql = selectLessonSql() + " WHERE id_class_group = ? ORDER BY starts_at, id_lesson";
+        String sql = selectLessonSql() + " WHERE id_class_group = ? ORDER BY COALESCE(order_no, 2147483647), starts_at, id_lesson";
         try (Connection connection = connectionProvider.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, classGroupId);
@@ -91,7 +91,7 @@ public final class LessonDAO {
     }
 
     public List<Lesson> findByContentBlock(long contentBlockId) throws SQLException {
-        String sql = selectLessonSql() + " WHERE id_content_block = ? ORDER BY starts_at, id_lesson";
+        String sql = selectLessonSql() + " WHERE id_content_block = ? ORDER BY COALESCE(order_no, 2147483647), starts_at, id_lesson";
         try (Connection connection = connectionProvider.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, contentBlockId);
@@ -112,13 +112,38 @@ public final class LessonDAO {
         }
     }
 
+    public void updateBlockPlacement(
+            Connection connection,
+            long lessonId,
+            long targetContentBlockId,
+            int orderNo
+    ) throws SQLException {
+        String sql = """
+                UPDATE lesson l
+                JOIN content_block cb ON cb.id_content_block = ?
+                SET l.id_content_block = ?, l.id_class_group = cb.id_class_group, l.order_no = ?
+                WHERE l.id_lesson = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, targetContentBlockId);
+            statement.setLong(2, targetContentBlockId);
+            statement.setInt(3, orderNo);
+            statement.setLong(4, lessonId);
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Lesson not found: " + lessonId);
+            }
+        }
+    }
+
     public List<Lesson> findForStudent(long studentUserId) throws SQLException {
         return findPersonalCalendarForStudent(studentUserId);
     }
 
     public List<Lesson> findPersonalCalendarForStudent(long studentUserId) throws SQLException {
         String sql = selectLessonSql() + """
-                WHERE id_class_group IN (
+                WHERE state IN ('scheduled', 'active', 'completed')
+                  AND id_class_group IN (
                     SELECT ecg.id_class_group
                     FROM enroll_class_group ecg
                     JOIN student_profile sp ON sp.id_user = ecg.id_student_user
@@ -130,7 +155,7 @@ public final class LessonDAO {
                       AND ecg.state = 'active'
                       AND cg.state = 'active'
                       AND c.state = 'active'
-                      AND s.state <> 'archived'
+                      AND s.state = 'active'
                       AND u.state = 'active'
                       AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
                       AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
@@ -148,7 +173,8 @@ public final class LessonDAO {
 
     public List<Lesson> findPersonalCalendarForTeacher(long teacherUserId) throws SQLException {
         String sql = selectLessonSql() + """
-                WHERE id_class_group IN (
+                WHERE state IN ('scheduled', 'active', 'completed')
+                  AND id_class_group IN (
                     SELECT tcg.id_class_group
                     FROM teach_class_group tcg
                     JOIN teacher_profile tp ON tp.id_user = tcg.id_teacher_user
@@ -162,7 +188,7 @@ public final class LessonDAO {
                       AND tcg.state = 'active'
                       AND cg.state = 'active'
                       AND c.state = 'active'
-                      AND s.state <> 'archived'
+                      AND s.state = 'active'
                       AND u.state = 'active'
                       AND gt.cod_permission = ?
                       AND p.state = 'active'
@@ -183,7 +209,8 @@ public final class LessonDAO {
 
     public List<Lesson> findPersonalCalendarForCoordinator(long coordinatorUserId) throws SQLException {
         String sql = selectLessonSql() + """
-                WHERE id_class_group IN (
+                WHERE state IN ('scheduled', 'active', 'completed')
+                  AND id_class_group IN (
                     SELECT cg.id_class_group
                     FROM coordinate_subject cs
                     JOIN coordinator_profile cp ON cp.id_user = cs.id_coordinator_user
@@ -197,7 +224,7 @@ public final class LessonDAO {
                       AND cs.state = 'active'
                       AND cg.state = 'active'
                       AND c.state = 'active'
-                      AND s.state <> 'archived'
+                      AND s.state = 'active'
                       AND u.state = 'active'
                       AND gc.cod_permission = ?
                       AND p.state = 'active'
@@ -218,7 +245,9 @@ public final class LessonDAO {
 
     public List<Lesson> findPersonalCalendarForStaff(long userId) throws SQLException {
         String sql = selectLessonSql() + """
-                WHERE id_class_group IN (
+                WHERE state IN ('scheduled', 'active', 'completed')
+                  AND (
+                   id_class_group IN (
                     SELECT tcg.id_class_group
                     FROM teach_class_group tcg
                     JOIN teacher_profile tp ON tp.id_user = tcg.id_teacher_user
@@ -232,7 +261,7 @@ public final class LessonDAO {
                       AND tcg.state = 'active'
                       AND cg.state = 'active'
                       AND c.state = 'active'
-                      AND s.state <> 'archived'
+                      AND s.state = 'active'
                       AND u.state = 'active'
                       AND gt.cod_permission = ?
                       AND p.state = 'active'
@@ -253,13 +282,14 @@ public final class LessonDAO {
                       AND cs.state = 'active'
                       AND cg.state = 'active'
                       AND c.state = 'active'
-                      AND s.state <> 'archived'
+                      AND s.state = 'active'
                       AND u.state = 'active'
                       AND gc.cod_permission = ?
                       AND p.state = 'active'
                       AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
                       AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 )
+                  )
                 ORDER BY starts_at, id_lesson
                 """;
         try (Connection connection = connectionProvider.getConnection();
@@ -311,6 +341,7 @@ public final class LessonDAO {
                 UPDATE lesson
                 SET state = 'completed'
                 WHERE state IN ('scheduled', 'active')
+                  AND ends_at IS NOT NULL
                   AND ends_at <= ?
                 """,
                 now
@@ -322,7 +353,7 @@ public final class LessonDAO {
                 SET state = 'active'
                 WHERE state = 'scheduled'
                   AND starts_at <= ?
-                  AND ends_at > ?
+                  AND (ends_at IS NULL OR ends_at > ?)
                 """,
                 now,
                 now
@@ -344,7 +375,10 @@ public final class LessonDAO {
                   AND state IN ('scheduled', 'active')
                   AND type IN ('onsite', 'hybrid')
                   AND (? IS NULL OR id_lesson <> ?)
-                  AND NOT (? <= starts_at OR ? >= ends_at)
+                  AND NOT (
+                        (? IS NOT NULL AND ? <= starts_at)
+                        OR (ends_at IS NOT NULL AND ? >= ends_at)
+                  )
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -356,8 +390,15 @@ public final class LessonDAO {
                 statement.setLong(2, excludedLessonId);
                 statement.setLong(3, excludedLessonId);
             }
-            statement.setTimestamp(4, Timestamp.valueOf(endsAt));
-            statement.setTimestamp(5, Timestamp.valueOf(startsAt));
+            if (endsAt == null) {
+                statement.setNull(4, java.sql.Types.TIMESTAMP);
+                statement.setNull(5, java.sql.Types.TIMESTAMP);
+            } else {
+                Timestamp endTimestamp = Timestamp.valueOf(endsAt);
+                statement.setTimestamp(4, endTimestamp);
+                statement.setTimestamp(5, endTimestamp);
+            }
+            statement.setTimestamp(6, Timestamp.valueOf(startsAt));
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 return resultSet.getLong(1) > 0;
@@ -425,7 +466,7 @@ public final class LessonDAO {
                   AND ecg.state = 'active'
                   AND cg.state = 'active'
                   AND c.state = 'active'
-                  AND s.state <> 'archived'
+                  AND s.state = 'active'
                   AND u.state = 'active'
                   AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
                   AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
@@ -482,7 +523,7 @@ public final class LessonDAO {
         return """
                 SELECT id_lesson, id_class_group, id_content_block, cod_physical_room,
                        title, description, type, provider, access_url, attendance_required,
-                       state, starts_at, ends_at
+                       state, starts_at, ends_at, order_no
                 FROM lesson
                 """;
     }
@@ -499,8 +540,8 @@ public final class LessonDAO {
         setNullableString(statement, 8, command.accessUrl());
         statement.setBoolean(9, command.attendanceRequired());
         statement.setString(10, command.state().toDatabaseValue());
-        statement.setTimestamp(11, Timestamp.valueOf(command.startsAt()));
-        statement.setTimestamp(12, Timestamp.valueOf(command.endsAt()));
+        setTimestamp(statement, 11, command.startsAt());
+        setTimestamp(statement, 12, command.endsAt());
     }
 
     private static void setStatementValues(PreparedStatement statement, LessonUpdateCommand command)
@@ -515,8 +556,8 @@ public final class LessonDAO {
         setNullableString(statement, 8, command.accessUrl());
         statement.setBoolean(9, command.attendanceRequired());
         statement.setString(10, command.state().toDatabaseValue());
-        statement.setTimestamp(11, Timestamp.valueOf(command.startsAt()));
-        statement.setTimestamp(12, Timestamp.valueOf(command.endsAt()));
+        setTimestamp(statement, 11, command.startsAt());
+        setTimestamp(statement, 12, command.endsAt());
     }
 
     private static List<Lesson> mapLessons(ResultSet resultSet) throws SQLException {
@@ -540,9 +581,28 @@ public final class LessonDAO {
                 resultSet.getString("access_url"),
                 resultSet.getBoolean("attendance_required"),
                 LessonState.fromDatabaseValue(resultSet.getString("state")),
-                resultSet.getTimestamp("starts_at").toLocalDateTime(),
-                resultSet.getTimestamp("ends_at").toLocalDateTime()
+                getTimestamp(resultSet, "starts_at"),
+                getTimestamp(resultSet, "ends_at"),
+                nullableInteger(resultSet, "order_no")
         );
+    }
+
+    private static Integer nullableInteger(ResultSet resultSet, String column) throws SQLException {
+        int value = resultSet.getInt(column);
+        return resultSet.wasNull() ? null : value;
+    }
+
+    private static LocalDateTime getTimestamp(ResultSet resultSet, String column) throws SQLException {
+        Timestamp timestamp = resultSet.getTimestamp(column);
+        return timestamp == null ? null : timestamp.toLocalDateTime();
+    }
+
+    private static void setTimestamp(PreparedStatement statement, int index, LocalDateTime value) throws SQLException {
+        if (value == null) {
+            statement.setNull(index, java.sql.Types.TIMESTAMP);
+        } else {
+            statement.setTimestamp(index, Timestamp.valueOf(value));
+        }
     }
 
     private static void setNullableString(PreparedStatement statement, int index, String value) throws SQLException {

@@ -66,7 +66,7 @@ class LessonServiceTest {
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                onlineLesson("Aula Online Valida", "https://meet.google.com/abc-defg-hij"),
+                onlineLesson("Lesson Online Valid", "https://meet.google.com/abc-defg-hij"),
                 "127.0.0.1"
         );
 
@@ -81,7 +81,7 @@ class LessonServiceTest {
                 2L,
                 null,
                 AccessProfileType.COORDINATOR,
-                onlineLesson("Aula Coordenador", "Teams", "https://teams.microsoft.com/l/meetup-join/abc"),
+                onlineLesson("Coordinator Lesson", "Teams", "https://teams.microsoft.com/l/meetup-join/abc"),
                 "127.0.0.1"
         );
 
@@ -96,7 +96,7 @@ class LessonServiceTest {
                 101L,
                 null,
                 AccessProfileType.ADMINISTRATOR,
-                onlineLesson("Aula Admin Scoped", "https://meet.google.com/scoped-admin"),
+                onlineLesson("Lesson Admin Scoped", "https://meet.google.com/scoped-admin"),
                 "127.0.0.1"
         );
 
@@ -111,7 +111,7 @@ class LessonServiceTest {
                         3L,
                         null,
                         AccessProfileType.TEACHER,
-                        onlineLesson("Aula Sem Ligacao", null),
+                        onlineLesson("Lesson Without Link", null),
                         "127.0.0.1"
                 )
         );
@@ -125,7 +125,7 @@ class LessonServiceTest {
                         3L,
                         null,
                         AccessProfileType.TEACHER,
-                        onlineLesson("Aula Link Invalido", "http://meet.google.com/abc-defg-hij"),
+                        onlineLesson("Lesson Link Invalid", "http://meet.google.com/abc-defg-hij"),
                         "127.0.0.1"
                 )
         );
@@ -139,7 +139,7 @@ class LessonServiceTest {
                         3L,
                         null,
                         AccessProfileType.TEACHER,
-                        onlineLesson("Aula Localhost", "https://localhost/meeting"),
+                        onlineLesson("Lesson Localhost", "https://localhost/meeting"),
                         "127.0.0.1"
                 )
         );
@@ -157,7 +157,7 @@ class LessonServiceTest {
                                 50L,
                                 60L,
                                 null,
-                                "Aula Sem Provider",
+                                "Lesson Without Provider",
                                 null,
                                 LessonType.ONLINE,
                                 null,
@@ -180,14 +180,14 @@ class LessonServiceTest {
                         3L,
                         null,
                         AccessProfileType.TEACHER,
-                        onlineLesson("Aula Provider Errado", "Zoom", "https://meet.google.com/abc-defg-hij"),
+                        onlineLesson("Lesson Wrong Provider", "Zoom", "https://meet.google.com/abc-defg-hij"),
                         "127.0.0.1"
                 )
         );
     }
 
     @Test
-    void lessonStartCannotBeInThePast() {
+    void scheduledLessonRequiresStartDate() {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> lessonService.createLesson(
@@ -198,14 +198,14 @@ class LessonServiceTest {
                                 50L,
                                 60L,
                                 null,
-                                "Aula No Passado",
+                                "Lesson In The Past",
                                 null,
                                 LessonType.ONLINE,
                                 "Meet",
                                 "https://meet.google.com/past-date",
                                 true,
                                 LessonState.SCHEDULED,
-                                LocalDateTime.of(2026, 6, 20, 10, 0),
+                                null,
                                 LocalDateTime.of(2026, 6, 20, 11, 0)
                         ),
                         "127.0.0.1"
@@ -225,7 +225,7 @@ class LessonServiceTest {
                         50L,
                         60L,
                         null,
-                        "Aula A Comecar Agora",
+                        "Lesson Starting Now",
                         null,
                         LessonType.ONLINE,
                         "Meet",
@@ -242,7 +242,7 @@ class LessonServiceTest {
     }
 
     @Test
-    void futureLessonSubmittedAsActiveIsSavedScheduled() {
+    void futureLessonSubmittedAsScheduledStaysScheduled() {
         Lesson lesson = lessonService.createLesson(
                 3L,
                 null,
@@ -251,13 +251,13 @@ class LessonServiceTest {
                         50L,
                         60L,
                         null,
-                        "Aula Futura Com Estado Manual",
+                        "Lesson Future With Manual State",
                         null,
                         LessonType.ONLINE,
                         "Meet",
                         "https://meet.google.com/future-manual-state",
                         true,
-                        LessonState.ACTIVE,
+                        LessonState.SCHEDULED,
                         FUTURE_START.plusDays(5),
                         FUTURE_START.plusDays(5).plusHours(1)
                 ),
@@ -270,7 +270,7 @@ class LessonServiceTest {
     @Test
     void scheduledLessonBecomesActiveWhenCurrentTimeIsInsideLessonWindow() throws Exception {
         long lessonId = insertStoredOnlineLesson(
-                "Aula Scheduled Para Active",
+                "Lesson Scheduled To Active",
                 LessonState.SCHEDULED,
                 LocalDateTime.of(2026, 6, 20, 10, 0),
                 LocalDateTime.of(2026, 6, 20, 11, 0)
@@ -290,7 +290,7 @@ class LessonServiceTest {
     @Test
     void activeLessonBecomesCompletedWhenEndTimeIsReached() throws Exception {
         long lessonId = insertStoredOnlineLesson(
-                "Aula Active Para Completed",
+                "Lesson Active To Completed",
                 LessonState.ACTIVE,
                 LocalDateTime.of(2026, 6, 20, 9, 0),
                 LocalDateTime.of(2026, 6, 20, 10, 15)
@@ -315,7 +315,7 @@ class LessonServiceTest {
                         3L,
                         null,
                         AccessProfileType.TEACHER,
-                        onsiteLesson("Aula Sem Sala", null, FUTURE_START),
+                        onsiteLesson("Lesson Without Room", null, FUTURE_START),
                         "127.0.0.1"
                 )
         );
@@ -329,7 +329,7 @@ class LessonServiceTest {
                         3L,
                         null,
                         AccessProfileType.TEACHER,
-                        onsiteLesson("Aula Sala Inexistente", "SALA-NONE", FUTURE_START),
+                        onsiteLesson("Lesson Missing Room", "SALA-NONE", FUTURE_START),
                         "127.0.0.1"
                 )
         );
@@ -343,7 +343,7 @@ class LessonServiceTest {
                         3L,
                         null,
                         AccessProfileType.TEACHER,
-                        onsiteLesson("Aula Sala Externa", "SALA-X1", FUTURE_START),
+                        onsiteLesson("Lesson External Room", "SALA-X1", FUTURE_START),
                         "127.0.0.1"
                 )
         );
@@ -355,7 +355,7 @@ class LessonServiceTest {
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                onsiteLesson("Aula Original", "SALA-A1", FUTURE_START),
+                onsiteLesson("Lesson Original", "SALA-A1", FUTURE_START),
                 "127.0.0.1"
         );
 
@@ -365,7 +365,7 @@ class LessonServiceTest {
                         3L,
                         null,
                         AccessProfileType.TEACHER,
-                        onsiteLesson("Aula Sobreposta", "SALA-A1", FUTURE_START.plusMinutes(30)),
+                        onsiteLesson("Lesson Sobreposta", "SALA-A1", FUTURE_START.plusMinutes(30)),
                         "127.0.0.1"
                 )
         );
@@ -377,7 +377,7 @@ class LessonServiceTest {
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                onsiteLesson("Aula Presencial Valida", "SALA-A1", FUTURE_START.plusHours(2)),
+                onsiteLesson("Lesson In-Person Valid", "SALA-A1", FUTURE_START.plusHours(2)),
                 "127.0.0.1"
         );
 
@@ -396,7 +396,7 @@ class LessonServiceTest {
                         3L,
                         null,
                         AccessProfileType.TEACHER,
-                        onsiteLesson("Aula Sala Pequena", "SALA-SMALL", FUTURE_START.plusHours(4)),
+                        onsiteLesson("Lesson Small Room", "SALA-SMALL", FUTURE_START.plusHours(4)),
                         "127.0.0.1"
                 )
         );
@@ -411,7 +411,7 @@ class LessonServiceTest {
                         null,
                         AccessProfileType.TEACHER,
                         hybridLesson(
-                                "Aula Hibrida Sem Sala",
+                                "Lesson Hybrid Without Room",
                                 null,
                                 "https://meet.google.com/hybrid-no-room",
                                 FUTURE_START.plusHours(2)
@@ -430,7 +430,7 @@ class LessonServiceTest {
                         null,
                         AccessProfileType.TEACHER,
                         hybridLesson(
-                                "Aula Hibrida Sem Link",
+                                "Lesson Hybrid Without Link",
                                 "SALA-A1",
                                 null,
                                 FUTURE_START.plusHours(2)
@@ -447,7 +447,7 @@ class LessonServiceTest {
                 null,
                 AccessProfileType.TEACHER,
                 hybridLesson(
-                        "Aula Hibrida Valida",
+                        "Lesson Hybrid Valid",
                         "SALA-A1",
                         "https://meet.google.com/hybrid-valid",
                         FUTURE_START.plusHours(2)
@@ -472,7 +472,7 @@ class LessonServiceTest {
                                 50L,
                                 60L,
                                 null,
-                                "Aula Datas Invalidas",
+                                "Lesson Datas Invalids",
                                 null,
                                 LessonType.ONLINE,
                                 "meet",
@@ -499,7 +499,7 @@ class LessonServiceTest {
                                 50L,
                                 62L,
                                 null,
-                                "Aula Bloco Errado",
+                                "Lesson Wrong Block",
                                 null,
                                 LessonType.ONLINE,
                                 "meet",
@@ -537,7 +537,7 @@ class LessonServiceTest {
                         52L,
                         62L,
                         null,
-                        "Aula Turma Sem Inscricao",
+                        "Lesson Class Group Without Enrollment",
                         null,
                         LessonType.ONLINE,
                         "meet",
@@ -568,7 +568,7 @@ class LessonServiceTest {
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                onlineLesson("Aula Para Atualizar", "https://meet.google.com/abc-defg-hij"),
+                onlineLesson("Lesson Para Update", "https://meet.google.com/abc-defg-hij"),
                 "127.0.0.1"
         );
 
@@ -581,20 +581,20 @@ class LessonServiceTest {
                         50L,
                         60L,
                         null,
-                        "Aula Atualizada",
+                        "Lesson Updated",
                         "Descricao atualizada",
                         LessonType.ONLINE,
                         "meet",
                         "https://meet.google.com/xyz-abcd-efg",
                         true,
-                        LessonState.ACTIVE,
+                        LessonState.SCHEDULED,
                         FUTURE_START,
                         FUTURE_START.plusHours(1)
                 ),
                 "127.0.0.1"
         );
 
-        assertEquals("Aula Atualizada", updated.title());
+        assertEquals("Lesson Updated", updated.title());
         assertEquals(LessonState.SCHEDULED, updated.state());
     }
 
@@ -604,7 +604,7 @@ class LessonServiceTest {
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                onlineLesson("Aula Para Apagar", "https://meet.google.com/abc-defg-hij"),
+                onlineLesson("Lesson Para Delete", "https://meet.google.com/abc-defg-hij"),
                 "127.0.0.1"
         );
 
@@ -690,7 +690,7 @@ class LessonServiceTest {
                 60L,
                 null,
                 title,
-                "Sessao online criada por teste",
+                "Online session created by test",
                 LessonType.ONLINE,
                 provider,
                 accessUrl,
@@ -707,7 +707,7 @@ class LessonServiceTest {
                 60L,
                 roomCode,
                 title,
-                "Sessao presencial criada por teste",
+                "In-person session created by test",
                 LessonType.ONSITE,
                 null,
                 null,
@@ -729,7 +729,7 @@ class LessonServiceTest {
                 60L,
                 roomCode,
                 title,
-                "Sessao hibrida criada por teste",
+                "Hybrid session created by test",
                 LessonType.HYBRID,
                 "meet",
                 accessUrl,
@@ -749,7 +749,7 @@ class LessonServiceTest {
                         52L,
                         62L,
                         null,
-                        "Aula Fora Do Contexto Pessoal",
+                        "Lesson Outside Personal Context",
                         null,
                         LessonType.ONLINE,
                         "meet",
@@ -792,7 +792,7 @@ class LessonServiceTest {
                      ) VALUES (50, 60, NULL, ?, ?, 'online', 'Meet', ?, 1, ?, ?, ?)
                      """, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, title);
-            statement.setString(2, "Sessao online inserida por teste");
+            statement.setString(2, "Online session inserted by test");
             statement.setString(3, "https://meet.google.com/" + title.toLowerCase().replace(' ', '-'));
             statement.setString(4, state.toDatabaseValue());
             statement.setTimestamp(5, java.sql.Timestamp.valueOf(startsAt));
@@ -813,7 +813,7 @@ class LessonServiceTest {
                      INSERT INTO physical_room (
                          cod_physical_room, id_organization, id_organic_unit, name,
                          description, capacity, location, state
-                     ) VALUES (?, 10, 20, ?, 'Sala pequena de teste', ?, 'Edificio T', 'active')
+                     ) VALUES (?, 10, 20, ?, 'Sala pequena test', ?, 'Edificio T', 'active')
                      """)) {
             statement.setString(1, code);
             statement.setString(2, "Sala " + code);

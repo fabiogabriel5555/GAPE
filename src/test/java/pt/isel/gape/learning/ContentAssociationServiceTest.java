@@ -65,7 +65,7 @@ class ContentAssociationServiceTest {
 
     @Test
     void assignedTeacherCanAssociateContentToActiveBlock() throws Exception {
-        ContentItem contentItem = createTextContent("Conteudo para bloco");
+        ContentItem contentItem = createTextContent("Content for block");
 
         contentAssociationService.associateContent(
                 3L,
@@ -87,7 +87,7 @@ class ContentAssociationServiceTest {
 
     @Test
     void administratorListsBlockContentsByOldestInsertionDateWithAssociationMetadata() throws Exception {
-        ContentItem contentItem = createTextContent("Conteudo textual mais recente");
+        ContentItem contentItem = createTextContent("Content textual mais recente");
 
         contentAssociationService.associateContent(
                 3L,
@@ -163,7 +163,7 @@ class ContentAssociationServiceTest {
 
     @Test
     void associationViolatingStructuralChainIsRejected() throws Exception {
-        ContentItem contentItem = createTextContent("Conteudo com cadeia invalida");
+        ContentItem contentItem = createTextContent("Content with invalid chain");
 
         contentAssociationService.associateContent(
                 1L,
@@ -204,7 +204,7 @@ class ContentAssociationServiceTest {
 
     @Test
     void operationWithoutPermissionIsRejected() throws Exception {
-        ContentItem contentItem = createTextContent("Conteudo sem permissao");
+        ContentItem contentItem = createTextContent("Content without permission");
 
         assertThrows(
                 SecurityException.class,
@@ -228,7 +228,7 @@ class ContentAssociationServiceTest {
     }
 
     private ContentItem createTextContent(String title) {
-        return createContent(title, ContentFormat.TEXT, "contents/texto-apoio-associacao.txt");
+        return createContent(title, ContentFormat.TEXT, "contents/association-support-text.txt");
     }
 
     private ContentItem createContent(String title, ContentFormat format, String source) {
@@ -238,7 +238,7 @@ class ContentAssociationServiceTest {
                 AccessProfileType.TEACHER,
                 new ContentItemCreateCommand(
                         title,
-                        "Conteudo criado pelos testes de associacao",
+                        "Content created by association tests",
                         format,
                         source,
                         ContentItemState.ACTIVE

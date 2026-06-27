@@ -10,6 +10,7 @@ public final class StudentClassGroupView {
     private final List<ContentBlockView> contentBlocks;
     private final Map<Long, List<BlockContentItemView>> blockContentsByBlock;
     private final Map<Long, List<LessonView>> blockLessonsByBlock;
+    private final Map<Long, List<AssessmentView>> blockAssessmentsByBlock;
     private final Map<Long, List<BlockActivityView>> blockActivitiesByBlock;
     private final boolean eligibleForEnrollment;
 
@@ -19,6 +20,7 @@ public final class StudentClassGroupView {
             List<ContentBlockView> contentBlocks,
             Map<Long, List<BlockContentItemView>> blockContentsByBlock,
             Map<Long, List<LessonView>> blockLessonsByBlock,
+            Map<Long, List<AssessmentView>> blockAssessmentsByBlock,
             Map<Long, List<BlockActivityView>> blockActivitiesByBlock,
             boolean eligibleForEnrollment
     ) {
@@ -27,6 +29,7 @@ public final class StudentClassGroupView {
         this.contentBlocks = List.copyOf(contentBlocks);
         this.blockContentsByBlock = Map.copyOf(blockContentsByBlock);
         this.blockLessonsByBlock = Map.copyOf(blockLessonsByBlock);
+        this.blockAssessmentsByBlock = Map.copyOf(blockAssessmentsByBlock);
         this.blockActivitiesByBlock = Map.copyOf(blockActivitiesByBlock);
         this.eligibleForEnrollment = eligibleForEnrollment;
     }
@@ -37,6 +40,7 @@ public final class StudentClassGroupView {
             List<ContentBlockView> contentBlocks,
             Map<Long, List<BlockContentItemView>> blockContentsByBlock,
             Map<Long, List<LessonView>> blockLessonsByBlock,
+            Map<Long, List<AssessmentView>> blockAssessmentsByBlock,
             Map<Long, List<BlockActivityView>> blockActivitiesByBlock,
             boolean eligibleForEnrollment
     ) {
@@ -46,6 +50,7 @@ public final class StudentClassGroupView {
                 contentBlocks,
                 blockContentsByBlock,
                 blockLessonsByBlock,
+                blockAssessmentsByBlock,
                 blockActivitiesByBlock,
                 eligibleForEnrollment
         );
@@ -69,6 +74,10 @@ public final class StudentClassGroupView {
 
     public Map<Long, List<LessonView>> getBlockLessonsByBlock() {
         return blockLessonsByBlock;
+    }
+
+    public Map<Long, List<AssessmentView>> getBlockAssessmentsByBlock() {
+        return blockAssessmentsByBlock;
     }
 
     public Map<Long, List<BlockActivityView>> getBlockActivitiesByBlock() {

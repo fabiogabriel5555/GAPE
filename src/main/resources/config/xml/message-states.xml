@@ -22,7 +22,4 @@
   <state code="cancelled">
     <label>Cancelada</label>
   </state>
-  <state code="archived">
-    <label>Arquivada</label>
-  </state>
 </messageStates>

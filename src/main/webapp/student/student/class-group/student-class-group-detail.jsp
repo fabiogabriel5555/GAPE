@@ -102,7 +102,7 @@
         <div class="gape-student-structure-board__header px-22 py-22 d-flex align-items-start justify-content-between gap-16 flex-wrap">
             <div>
                 <h4 class="text-22 fw-semibold text-neutral-800 mb-6">Study Path</h4>
-                <span class="text-14 text-neutral-500">Lessons and materials released for this class group, organized by pedagogical blocks.</span>
+                <span class="text-14 text-neutral-500">Lessons, materials and assessments released for this class group, organized by pedagogical blocks.</span>
             </div>
             <div class="d-flex align-items-center gap-8 flex-wrap">
                 <span class="bg-main-50 text-main-600 px-12 py-7 rounded-pill text-12 fw-semibold">
@@ -228,6 +228,34 @@
                                                     <span class="border border-neutral-30 px-12 py-7 rounded-8 text-12 fw-semibold text-neutral-400 bg-neutral-20">Preview unavailable</span>
                                                 </c:otherwise>
                                             </c:choose>
+                                        </div>
+                                    </div>
+                                </c:when>
+                                <c:when test="${activity.assessmentActivity}">
+                                    <c:set var="assessmentItem" value="${activity.assessment}"/>
+                                    <div class="gape-student-activity-row">
+                                        <span class="gape-student-activity-icon ${assessmentItem.softClass} text-22">
+                                            <i class="${assessmentItem.iconClass}"></i>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <div class="d-flex align-items-center gap-8 flex-wrap mb-5">
+                                                <h6 class="text-15 fw-semibold text-neutral-800 mb-0"><c:out value="${assessmentItem.title}"/></h6>
+                                                <span class="${assessmentItem.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${assessmentItem.stateLabel}"/></span>
+                                                <span class="bg-neutral-20 text-neutral-600 px-10 py-5 rounded-pill text-12"><c:out value="${assessmentItem.typeLabel}"/></span>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-8 flex-wrap text-12 text-neutral-500">
+                                                <span><i class="ph ph-seal-question me-4"></i><c:out value="${assessmentItem.questionCountLabel}"/></span>
+                                                <span><i class="ph ph-repeat me-4"></i><c:out value="${assessmentItem.attemptsLimitLabel}"/> attempts</span>
+                                                <span><i class="ph ph-clock me-4"></i><c:out value="${assessmentItem.availabilityLabel}"/></span>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-end gap-8">
+                                            <form action="${pageContext.request.contextPath}/student/assessments/${assessmentItem.id}/start" method="post" class="m-0">
+                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                <button type="submit" class="gape-student-card-icon-button gape-student-card-icon-button--request" aria-label="Open assessment" title="Open assessment">
+                                                    <i class="ph ph-arrow-right"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </div>
                                 </c:when>
