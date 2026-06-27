@@ -1,14 +1,14 @@
 # GAPE Uploads
 
-Esta pasta guarda apenas a estrutura local de uploads. Os ficheiros reais carregados por utilizadores nao devem ser versionados.
+This folder keeps only the local upload structure. Real files uploaded by users must not be versioned.
 
-Estrutura:
+Structure:
 
-- `users/` - fotografias reais de perfil dos utilizadores.
-- `contents/` - conteudos pedagogicos carregados na plataforma, como PDF, imagem, audio, video, apresentacao, SCORM ou outros recursos.
-- `messages/` - anexos associados a mensagens.
-- `justifications/` - anexos de justificacoes de faltas.
-- `tmp/` - area temporaria para uploads em processamento.
-- `quarantine/` - area para ficheiros rejeitados ou pendentes de validacao de seguranca.
+- `users/` - real user profile photos.
+- `contents/` - pedagogical content uploaded to the platform, such as PDF, image, audio, video, presentation, SCORM or other resources.
+- `messages/` - attachments associated with messages.
+- `justifications/` - attachments for absence justifications.
+- `tmp/` - temporary area for uploads being processed.
+- `quarantine/` - area for rejected files or files pending security validation.
 
-Em producao, a localizacao deve ser configuravel e pode apontar para uma pasta externa, por exemplo `C:\gape\uploads` ou `/var/gape/uploads`.
+In production, the location must be configurable and can point to an external folder, for example `C:\gape\uploads` or `/var/gape/uploads`.
