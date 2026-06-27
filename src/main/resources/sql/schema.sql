@@ -1093,8 +1093,12 @@ CREATE TABLE IF NOT EXISTS attendance_record (
     check_out DATETIME NULL,
     notes VARCHAR(500) NULL,
     state VARCHAR(20) NOT NULL,
+    active_record_key TINYINT GENERATED ALWAYS AS (
+        CASE WHEN state = 'active' THEN 1 ELSE NULL END
+    ) STORED,
     PRIMARY KEY (id_attendance_record),
-    UNIQUE KEY uq_attendance_lesson_student (id_lesson, id_user_student),
+    UNIQUE KEY uq_attendance_active_lesson_student (id_lesson, id_user_student, active_record_key),
+    KEY idx_attendance_student (id_user_student),
     KEY idx_attendance_state (state),
     CONSTRAINT fk_attendance_lesson
         FOREIGN KEY (id_lesson) REFERENCES lesson (id_lesson)
@@ -3240,6 +3244,10 @@ FOR EACH ROW
 BEGIN
     DECLARE v_class_group BIGINT UNSIGNED;
     DECLARE v_exists INT DEFAULT 0;
+
+    IF NEW.status = 'justified' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Justified Attendance_Record must be produced by Absence_Justification processing';
+    END IF;
 
     SELECT id_class_group
     INTO v_class_group

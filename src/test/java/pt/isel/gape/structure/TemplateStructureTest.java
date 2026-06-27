@@ -942,20 +942,24 @@ class TemplateStructureTest {
         int coordinatorCoursesLink = sidebar.indexOf("/coordinator/courses", coordinatorSection);
         int coordinatorSubjectsLink = sidebar.indexOf("/coordinator/subjects", coordinatorCoursesLink);
         int coordinatorClassGroupsLink = sidebar.indexOf("/learning/class-groups", coordinatorSubjectsLink);
-        int coordinatorRoomsLink = sidebar.indexOf("/learning/rooms", coordinatorClassGroupsLink);
+        int coordinatorLessonsLink = sidebar.indexOf("/learning/lessons", coordinatorClassGroupsLink);
         int messageHref = sidebar.indexOf("${messageHref}");
         int calendarHref = sidebar.indexOf("${calendarHref}", messageHref);
-        int quizAttemptsHref = sidebar.indexOf("${quizAttemptsHref}", coordinatorRoomsLink);
+        int roomsHref = sidebar.indexOf("/learning/rooms", calendarHref);
+        int quizAttemptsHref = sidebar.indexOf("${quizAttemptsHref}", coordinatorLessonsLink);
         int reviewsHref = sidebar.indexOf("${reviewsHref}", quizAttemptsHref);
+        int attendanceHref = sidebar.indexOf("${attendanceHref}", reviewsHref);
         assertTrue(messageHref < calendarHref
-                        && calendarHref < coordinatorSection
+                        && calendarHref < roomsHref
+                        && roomsHref < coordinatorSection
                         && coordinatorSection < coordinatorCoursesLink
                         && coordinatorCoursesLink < coordinatorSubjectsLink
                         && coordinatorSubjectsLink < coordinatorClassGroupsLink
-                        && coordinatorClassGroupsLink < coordinatorRoomsLink
-                        && coordinatorRoomsLink < quizAttemptsHref
-                        && quizAttemptsHref < reviewsHref,
-                "Coordinator sidebar must keep courses, subjects, class groups, rooms, assessments and reviews in order");
+                        && coordinatorClassGroupsLink < coordinatorLessonsLink
+                        && coordinatorLessonsLink < quizAttemptsHref
+                        && quizAttemptsHref < reviewsHref
+                        && reviewsHref < attendanceHref,
+                "Coordinator sidebar must keep rooms after calendar and attendance after reviews");
         assertTrue(subjectList.contains("${subjectBasePath}/${subject.id}")
                         && subjectDetail.contains("${subjectBasePath}/${subject.id}/edit")
                         && subjectForm.contains("subject-course-associations-panel.jspf")
@@ -973,13 +977,17 @@ class TemplateStructureTest {
 
         int messageHref = sidebar.indexOf("${messageHref}");
         int calendarHref = sidebar.indexOf("${calendarHref}", messageHref);
+        int roomsHref = sidebar.indexOf("/learning/rooms", calendarHref);
         int reviewsHref = sidebar.indexOf("${reviewsHref}", calendarHref);
+        int attendanceHref = sidebar.indexOf("${attendanceHref}", reviewsHref);
         assertTrue(sidebar.contains("/learning/calendar")
                         && sidebar.contains("/student/calendar")
                         && sidebar.contains("Calendar")
                         && messageHref < calendarHref
-                        && calendarHref < reviewsHref,
-                "Sidebar must expose Calendar immediately after Message and before Reviews, with a student route");
+                        && calendarHref < roomsHref
+                        && roomsHref < reviewsHref
+                        && reviewsHref < attendanceHref,
+                "Sidebar must expose Calendar after Message, Rooms after Calendar and Attendance after Reviews");
         assertTrue(sidebar.contains("/learning/rooms"),
                 "Sidebar must expose the physical room management route");
         assertTrue(sidebar.contains("Rooms"),
@@ -994,29 +1002,25 @@ class TemplateStructureTest {
         int coordinatorSubjects = sidebar.indexOf("/coordinator/subjects", coordinatorCourses);
         int coordinatorClassGroups = sidebar.indexOf("/learning/class-groups", coordinatorSubjects);
         int coordinatorLessons = sidebar.indexOf("/learning/lessons", coordinatorClassGroups);
-        int coordinatorRooms = sidebar.indexOf("/learning/rooms", coordinatorLessons);
         int teacherSection = sidebar.indexOf(">Teacher<");
         assertTrue(coordinatorSection > 0
                         && coordinatorCourses > coordinatorSection
                         && coordinatorSubjects > coordinatorCourses
                         && coordinatorClassGroups > coordinatorSubjects
                         && coordinatorLessons > coordinatorClassGroups
-                        && coordinatorRooms > coordinatorLessons
-                        && coordinatorRooms < teacherSection,
-                "Coordinator sidebar must show Courses, Subjects, Class Groups, Lessons and Rooms in order");
+                        && coordinatorLessons < teacherSection,
+                "Coordinator sidebar must show Courses, Subjects, Class Groups and Lessons in order");
 
         int teacherSubjects = sidebar.indexOf("/instructor/subjects", teacherSection);
         int teacherClassGroups = sidebar.indexOf("/learning/class-groups", teacherSubjects);
         int teacherLessons = sidebar.indexOf("/learning/lessons", teacherClassGroups);
-        int teacherRooms = sidebar.indexOf("/learning/rooms", teacherLessons);
         int adminSection = sidebar.indexOf(">Admin<");
         assertTrue(teacherSection > 0
                         && teacherSubjects > teacherSection
                         && teacherClassGroups > teacherSubjects
                         && teacherLessons > teacherClassGroups
-                        && teacherRooms > teacherLessons
-                        && teacherRooms < adminSection,
-                "Teacher sidebar must show Subjects, Class Groups, Lessons and Rooms in order");
+                        && teacherLessons < adminSection,
+                "Teacher sidebar must show Subjects, Class Groups and Lessons in order");
 
         int adminUsers = sidebar.indexOf("/admin/users", adminSection);
         int adminOrganizations = sidebar.indexOf("/admin/organizations", adminUsers);
@@ -1024,16 +1028,89 @@ class TemplateStructureTest {
         int adminSubjects = sidebar.indexOf("/admin/subjects", adminCourses);
         int adminClassGroups = sidebar.indexOf("/learning/class-groups", adminSubjects);
         int adminLessons = sidebar.indexOf("/learning/lessons", adminClassGroups);
-        int adminRooms = sidebar.indexOf("/learning/rooms", adminLessons);
         assertTrue(adminSection > 0
                         && adminUsers > adminSection
                         && adminOrganizations > adminUsers
                         && adminCourses > adminOrganizations
                         && adminSubjects > adminCourses
                         && adminClassGroups > adminSubjects
-                        && adminLessons > adminClassGroups
-                        && adminRooms > adminLessons,
-                "Admin sidebar must keep Users, Organizations, Courses, Subjects, Class Groups, Lessons and Rooms in order");
+                        && adminLessons > adminClassGroups,
+                "Admin sidebar must keep Users, Organizations, Courses, Subjects, Class Groups and Lessons in order");
+    }
+
+    @Test
+    void scheduleAttendanceFrontendUsesServicesAndMenus() throws IOException {
+        String sidebar = Files.readString(FRAGMENTS_DIR.resolve("dashboard-sidebar.jspf"));
+        String studentSidebar = Files.readString(FRAGMENTS_DIR.resolve("student-dashboard-sidebar.jspf"));
+        String lessonList = Files.readString(WEBAPP_DIR.resolve("WEB-INF/views/learning/lesson-list.jsp"));
+        String studentCalendar = Files.readString(WEBAPP_DIR.resolve("student/student/calendar/student-calendar.jsp"));
+        String learningAttendance = Files.readString(WEBAPP_DIR.resolve("WEB-INF/views/learning/attendance.jsp"));
+        String studentAttendance = Files.readString(WEBAPP_DIR.resolve("student/student/attendance/student-attendance.jsp"));
+        String lessonServlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/LessonManagementServlet.java"));
+        String studentLessonServlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/StudentLessonServlet.java"));
+        String attendanceServlet = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/controller/AttendanceManagementServlet.java"));
+        String attendanceService = Files.readString(JAVA_DIR.resolve("pt/isel/gape/learning/service/AttendanceRecordService.java"));
+        String attachmentStorage = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/media/JustificationAttachmentStorage.java"));
+        String csrfFilter = Files.readString(JAVA_DIR.resolve("pt/isel/gape/web/filter/CsrfFilter.java"));
+
+        assertTrue(sidebar.contains("/learning/attendance")
+                        && sidebar.contains("/student/attendance")
+                        && sidebar.contains("Attendance")
+                        && studentSidebar.contains("data-menu-key=\"attendance\"")
+                        && studentSidebar.contains("/student/attendance"),
+                "Attendance routes must be exposed in dashboard and student menus");
+        assertTrue(lessonList.contains("scheduleEvents")
+                        && lessonList.contains("/learning/calendar")
+                        && lessonList.contains("classGroupIds")
+                        && lessonList.contains("data-class-group-picker")
+                        && lessonList.contains("gape-class-group-picker__panel")
+                        && lessonList.contains("<ul class=\"list-unstyled")
+                        && lessonList.contains("<li>")
+                        && lessonList.contains("type=\"checkbox\" name=\"classGroupIds\"")
+                        && lessonList.contains("<option value=\"lesson\">Lesson</option>")
+                        && lessonList.contains("<option value=\"assessment\">Assessment</option>")
+                        && lessonList.contains("name=\"lessonId\"")
+                        && lessonList.contains("name=\"assessmentId\"")
+                        && lessonServlet.contains("ScheduleEventService")
+                        && lessonServlet.contains("createScheduleEvent")
+                        && lessonServlet.contains("listVisibleEvents")
+                        && !lessonServlet.contains("new SelectOptionView(\"questionnaire\"")
+                        && !lessonServlet.contains("new SelectOptionView(\"exam\""),
+                "Learning calendar must display and create schedule events through ScheduleEventService");
+        assertFalse(lessonList.contains("select id=\"schedule-event-class-groups\"")
+                        || lessonList.contains("name=\"classGroupIds\" multiple"),
+                "Learning calendar must keep Class Groups inside the compact checkbox list, not a visible multi-select");
+        assertTrue(studentCalendar.contains("calendarItems")
+                        && studentCalendar.contains("item.eventItem")
+                        && studentCalendar.contains("(lesson.online or lesson.hybrid) and lesson.hasMeetingLink")
+                        && studentCalendar.contains("/student/lessons/${lesson.id}/access")
+                        && studentLessonServlet.contains("ScheduleEventService")
+                        && studentLessonServlet.contains("listVisibleEvents")
+                        && studentLessonServlet.contains("calendarItems(lessons, scheduleEvents)"),
+                "Student calendar must combine schedule events and lessons in one safe ordered timeline");
+        assertTrue(attendanceServlet.contains("AttendanceRecordService")
+                        && attendanceServlet.contains("AbsenceJustificationService")
+                        && attendanceServlet.contains("@MultipartConfig")
+                        && attendanceServlet.contains("JustificationAttachmentStorage")
+                        && attendanceServlet.contains("attendanceCreationStatusOptions")
+                        && attendanceServlet.contains("attendanceCreationSourceOptions")
+                        && attendanceServlet.contains("recordAttendance")
+                        && attendanceServlet.contains("submitJustification")
+                        && attendanceServlet.contains("processJustification")
+                        && attendanceService.contains("AttendanceStatus.JUSTIFIED")
+                        && attendanceService.contains("AttendanceSource.AUTOMATIC")
+                        && learningAttendance.contains("data-default-value")
+                        && learningAttendance.contains("attendanceCreateStatusOptions")
+                        && learningAttendance.contains("/learning/attendance/justifications/${justification.id}/approve")
+                        && learningAttendance.contains("/learning/attendance/justifications/${justification.id}/reject")
+                        && studentAttendance.contains("/student/attendance/justifications")
+                        && studentAttendance.contains("enctype=\"multipart/form-data\"")
+                        && studentAttendance.contains("type=\"file\"")
+                        && studentAttendance.contains("name=\"attachmentFile\"")
+                        && attachmentStorage.contains("justifications/")
+                        && attachmentStorage.contains("ALLOWED_EXTENSIONS")
+                        && csrfFilter.contains("\"/student/attendance\""),
+                "Attendance, justification submission and processing must be wired to services and CSRF-protected routes");
     }
 
     @Test

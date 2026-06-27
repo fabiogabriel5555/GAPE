@@ -439,6 +439,78 @@ abstract class DashboardServletSupport extends HttpServlet {
         if (message.contains("Physical room with scheduled or active lessons cannot be deactivated")) {
             return "Physical rooms with scheduled or active lessons cannot be deactivated.";
         }
+        if (message.contains("Schedule event title is required")) {
+            return "Schedule event title is required.";
+        }
+        if (message.contains("schedule event start is required")) {
+            return "Schedule event start is required.";
+        }
+        if (message.contains("schedule event end is required")) {
+            return "Schedule event end is required.";
+        }
+        if (message.contains("Schedule event end cannot be before start")) {
+            return "Schedule event end cannot be before the start date.";
+        }
+        if (message.contains("Enabled reminders require minutes before")) {
+            return "Enabled reminders require minutes before.";
+        }
+        if (message.contains("Schedule event requires at least one class group")) {
+            return "Schedule event requires at least one class group.";
+        }
+        if (message.contains("Schedule event period must match the referenced lesson")) {
+            return "The event period must match the referenced lesson.";
+        }
+        if (message.contains("Student is not enrolled in the lesson class group")) {
+            return "The student is not enrolled in the lesson class group.";
+        }
+        if (message.contains("An active attendance record already exists")) {
+            return "There is already an active attendance record for this student and lesson.";
+        }
+        if (message.contains("Attendance check-out cannot be before check-in")) {
+            return "Attendance check-out cannot be before check-in.";
+        }
+        if (message.contains("Attendance check-out requires check-in")) {
+            return "Attendance check-out requires check-in.";
+        }
+        if (message.contains("Absent attendance cannot include permanence timestamps")) {
+            return "Absent records cannot include permanence timestamps.";
+        }
+        if (message.contains("Attendance notes are too long")) {
+            return "Attendance notes are too long.";
+        }
+        if (message.contains("Attendance record is not compatible with absence justification")) {
+            return "This attendance record cannot be justified.";
+        }
+        if (message.contains("Students can only justify their own attendance records")) {
+            return "Students can only justify their own attendance records.";
+        }
+        if (message.contains("Attendance record already has an absence justification")) {
+            return "This attendance record already has a justification.";
+        }
+        if (message.contains("Absence justification reason is required")) {
+            return "Justification reason is required.";
+        }
+        if (message.contains("Absence justification reason is too long")) {
+            return "Justification reason is too long.";
+        }
+        if (message.contains("Attachment path is not allowed")) {
+            return "Attachment path is not allowed.";
+        }
+        if (message.contains("Absence justification processed date cannot be before submission")) {
+            return "The processing date cannot be before the submission date.";
+        }
+        if (message.contains("Absence justification processing requires a final decision")) {
+            return "Processing requires approval or rejection.";
+        }
+        if (message.contains("Absence justification processed date is required")) {
+            return "Processing date is required.";
+        }
+        if (message.contains("Absence justification already has a final state")) {
+            return "This justification already has a final decision.";
+        }
+        if (message.contains("Decision notes are too long")) {
+            return "Decision notes are too long.";
+        }
         if (message.contains("Unknown")) {
             return "The selected record does not exist.";
         }

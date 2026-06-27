@@ -102,6 +102,12 @@
                         Reviews
                     </a>
                 </li>
+                <li class="mb-8 ${activeMenu == 'attendance' ? 'activePage' : ''}" data-menu-key="attendance">
+                    <a href="${pageContext.request.contextPath}/student/attendance" aria-current="${activeMenu == 'attendance' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-check"></i></span>
+                        Attendance
+                    </a>
+                </li>
             </ul>
         </div>
     </div>

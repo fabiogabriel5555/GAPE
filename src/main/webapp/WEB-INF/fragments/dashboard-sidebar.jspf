@@ -16,11 +16,13 @@
 <c:set var="profileHref" value="${isAdminDashboard ? '/admin/admin-my-profile.jsp' : (isStudentOnlyDashboard ? '/student/student/profile/student-profile.jsp' : '/profile')}" />
 <c:set var="messageHref" value="/admin/admin-message.jsp" />
 <c:set var="calendarHref" value="/learning/calendar" />
+<c:set var="attendanceHref" value="/learning/attendance" />
 <c:set var="reviewsHref" value="/admin/admin-reviews.jsp" />
 <c:set var="quizAttemptsHref" value="/learning/assessments" />
 <c:if test="${isStudentOnlyDashboard}">
     <c:set var="messageHref" value="/student/student/message/student-message.jsp" />
     <c:set var="calendarHref" value="/student/calendar" />
+    <c:set var="attendanceHref" value="/student/attendance" />
     <c:set var="reviewsHref" value="/student/student/review/student-reviews.jsp" />
 </c:if>
 <c:if test="${not sessionScope['gape.auth.hasAdministratorProfile'] and isCoordinatorDashboard}">
@@ -42,6 +44,7 @@
 </c:if>
 <c:set var="canOpenClassGroups" value="${sessionScope['gape.auth.canManageCourses'] or sessionScope['gape.auth.canManageSubjects'] or isCoordinatorDashboard or isTeacherDashboard}" />
 <c:set var="canOpenLessons" value="${canOpenClassGroups or sessionScope['gape.auth.hasStudentProfile']}" />
+<c:set var="canOpenAttendance" value="${canOpenClassGroups or sessionScope['gape.auth.hasStudentProfile']}" />
 <c:set var="canOpenRooms" value="${sessionScope['gape.auth.canManageOrganizations'] or isCoordinatorDashboard or isTeacherDashboard}" />
 <c:set var="isDashboardActive" value="${activeMenu == 'dashboard'
         or currentServletPath == '/dashboard'
@@ -86,6 +89,11 @@
         or fn:contains(currentRequestUri, '/student/calendar')
         or fn:startsWith(currentServletPath, '/learning/calendar')
         or fn:startsWith(currentServletPath, '/student/calendar')}" />
+<c:set var="isAttendanceActive" value="${activeMenu == 'attendance'
+        or fn:contains(currentRequestUri, '/learning/attendance')
+        or fn:contains(currentRequestUri, '/student/attendance')
+        or fn:startsWith(currentServletPath, '/learning/attendance')
+        or fn:startsWith(currentServletPath, '/student/attendance')}" />
 <c:set var="isQuizAttemptsActive" value="${activeMenu == 'assessments'
         or activeMenu == 'quiz-attempts'
         or activeMenu == 'quiz'
@@ -146,6 +154,15 @@
                         </a>
                     </li>
                 </c:if>
+                <c:if test="${canOpenRooms}">
+                    <li class="mb-8 ${isRoomsActive ? 'activePage' : ''}">
+                        <a href="${pageContext.request.contextPath}/learning/rooms" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-door"></i></span>
+                            Rooms
+                        </a>
+                        <%@ include file="/WEB-INF/fragments/dashboard-learning-room-context.jspf" %>
+                    </li>
+                </c:if>
                 <c:if test="${isStudentOnlyDashboard}">
                     <li class="mb-8">
                         <span class="fw-normal text-14 text-neutral-500">Student</span>
@@ -186,6 +203,12 @@
                         <a href="${pageContext.request.contextPath}${reviewsHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                             <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sparkle"></i></span>
                             Reviews
+                        </a>
+                    </li>
+                    <li class="mb-8 ${isAttendanceActive ? 'activePage' : ''}">
+                        <a href="${pageContext.request.contextPath}${attendanceHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-check"></i></span>
+                            Attendance
                         </a>
                     </li>
                 </c:if>
@@ -266,15 +289,6 @@
                             <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
                         </li>
                     </c:if>
-                    <c:if test="${canOpenRooms}">
-                        <li class="mb-8 ${isRoomsActive ? 'activePage' : ''}">
-                            <a href="${pageContext.request.contextPath}/learning/rooms" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-door"></i></span>
-                                Rooms
-                            </a>
-                            <%@ include file="/WEB-INF/fragments/dashboard-learning-room-context.jspf" %>
-                        </li>
-                    </c:if>
                 </c:if>
                 <c:if test="${not sessionScope['gape.auth.hasAdministratorProfile'] and not isCoordinatorDashboard and isTeacherDashboard}">
                     <li class="mb-8">
@@ -327,15 +341,6 @@
                                 Lessons
                             </a>
                             <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
-                        </li>
-                    </c:if>
-                    <c:if test="${canOpenRooms}">
-                        <li class="mb-8 ${isRoomsActive ? 'activePage' : ''}">
-                            <a href="${pageContext.request.contextPath}/learning/rooms" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-door"></i></span>
-                                Rooms
-                            </a>
-                            <%@ include file="/WEB-INF/fragments/dashboard-learning-room-context.jspf" %>
                         </li>
                     </c:if>
                 </c:if>
@@ -512,15 +517,6 @@
                             <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
                         </li>
                     </c:if>
-                    <c:if test="${canOpenRooms}">
-                        <li class="mb-8 ${isRoomsActive ? 'activePage' : ''}">
-                            <a href="${pageContext.request.contextPath}/learning/rooms" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-door"></i></span>
-                                Rooms
-                            </a>
-                            <%@ include file="/WEB-INF/fragments/dashboard-learning-room-context.jspf" %>
-                        </li>
-                    </c:if>
                 </c:if>
                 <c:if test="${not isStudentOnlyDashboard}">
                     <li class="mb-8 ${isQuizAttemptsActive ? 'activePage' : ''}">
@@ -536,6 +532,14 @@
                             Reviews
                         </a>
                     </li>
+                    <c:if test="${canOpenAttendance}">
+                        <li class="mb-8 ${isAttendanceActive ? 'activePage' : ''}">
+                            <a href="${pageContext.request.contextPath}${attendanceHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-check"></i></span>
+                                Attendance
+                            </a>
+                        </li>
+                    </c:if>
                 </c:if>
             </ul>
         </div>

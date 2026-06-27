@@ -24,10 +24,12 @@ import pt.isel.gape.learning.dao.ContentBlockDAO;
 import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.dao.EnrollmentDAO;
+import pt.isel.gape.learning.dao.LessonDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.ContentBlock;
 import pt.isel.gape.learning.model.Lesson;
 import pt.isel.gape.learning.service.LessonService;
+import pt.isel.gape.learning.service.ScheduleEventService;
 import pt.isel.gape.security.session.SessionUser;
 import pt.isel.gape.structure.dao.OrganicUnitDAO;
 import pt.isel.gape.structure.dao.OrganizationDAO;
@@ -35,6 +37,7 @@ import pt.isel.gape.structure.dao.TeachClassGroupDAO;
 import pt.isel.gape.web.view.ClassGroupView;
 import pt.isel.gape.web.view.ContentBlockView;
 import pt.isel.gape.web.view.LessonView;
+import pt.isel.gape.web.view.ScheduleEventView;
 
 @WebServlet(name = "studentLessonServlet", urlPatterns = {
         "/student/lessons",
@@ -47,9 +50,11 @@ public final class StudentLessonServlet extends DashboardServletSupport {
     private static final String STUDENT_CALENDAR_JSP = "/student/student/calendar/student-calendar.jsp";
 
     private final LessonService lessonService;
+    private final ScheduleEventService scheduleEventService;
     private final ClassGroupDAO classGroupDAO;
     private final ContentBlockDAO contentBlockDAO;
     private final LearningViewFactory viewFactory;
+    private final ScheduleAttendanceViewFactory scheduleViewFactory;
 
     public StudentLessonServlet() {
         this(ConnectionProvider.defaultProvider(), ApplicationClock.system());
@@ -58,6 +63,7 @@ public final class StudentLessonServlet extends DashboardServletSupport {
     private StudentLessonServlet(ConnectionProvider connectionProvider, Clock clock) {
         this(
                 new LessonService(connectionProvider, clock),
+                new ScheduleEventService(connectionProvider, clock),
                 new ClassGroupDAO(connectionProvider),
                 new ContentBlockDAO(connectionProvider),
                 new LearningViewFactory(
@@ -72,20 +78,42 @@ public final class StudentLessonServlet extends DashboardServletSupport {
                         new ContentBlockDAO(connectionProvider),
                         new UserDAO(connectionProvider),
                         new TeachClassGroupDAO(connectionProvider)
+                ),
+                new ScheduleAttendanceViewFactory(
+                        new ClassGroupDAO(connectionProvider),
+                        new LessonDAO(connectionProvider),
+                        new UserDAO(connectionProvider),
+                        new LearningViewFactory(
+                                new OrganizationDAO(connectionProvider),
+                                new OrganicUnitDAO(connectionProvider),
+                                new CourseDAO(connectionProvider),
+                                new SubjectDAO(connectionProvider),
+                                new CourseSubjectDAO(connectionProvider),
+                                new EnrollmentDAO(connectionProvider),
+                                new ClassGroupDAO(connectionProvider),
+                                new ClassGroupEnrollmentDAO(connectionProvider),
+                                new ContentBlockDAO(connectionProvider),
+                                new UserDAO(connectionProvider),
+                                new TeachClassGroupDAO(connectionProvider)
+                        )
                 )
         );
     }
 
     StudentLessonServlet(
             LessonService lessonService,
+            ScheduleEventService scheduleEventService,
             ClassGroupDAO classGroupDAO,
             ContentBlockDAO contentBlockDAO,
-            LearningViewFactory viewFactory
+            LearningViewFactory viewFactory,
+            ScheduleAttendanceViewFactory scheduleViewFactory
     ) {
         this.lessonService = lessonService;
+        this.scheduleEventService = scheduleEventService;
         this.classGroupDAO = classGroupDAO;
         this.contentBlockDAO = contentBlockDAO;
         this.viewFactory = viewFactory;
+        this.scheduleViewFactory = scheduleViewFactory;
     }
 
     @Override
@@ -145,9 +173,27 @@ public final class StudentLessonServlet extends DashboardServletSupport {
                 .sorted(Comparator.comparing(Lesson::startsAt).thenComparingLong(Lesson::id))
                 .map(viewFactory::lessonView)
                 .toList();
+        List<ScheduleEventView> scheduleEvents = calendarMode
+                ? scheduleEventService.listVisibleEvents(
+                                actor.userId(),
+                                currentSessionId(request),
+                                AccessProfileType.STUDENT,
+                                request.getRemoteAddr()
+                        )
+                        .stream()
+                        .map(scheduleViewFactory::scheduleEventView)
+                        .toList()
+                : List.of();
         Map<Long, ClassGroupView> classGroupById = classGroupMap(lessons);
         Map<Long, ContentBlockView> contentBlockById = contentBlockMap(lessons);
+        List<StudentCalendarItemView> calendarItems = calendarMode
+                ? calendarItems(lessons, scheduleEvents)
+                : List.of();
         request.setAttribute("lessons", lessons);
+        request.setAttribute("scheduleEvents", scheduleEvents);
+        request.setAttribute("calendarItems", calendarItems);
+        request.setAttribute("scheduleEventCount", scheduleEvents.size());
+        request.setAttribute("calendarItemCount", lessons.size() + scheduleEvents.size());
         request.setAttribute("classGroupById", classGroupById);
         request.setAttribute("contentBlockById", contentBlockById);
         request.setAttribute("lessonCourseGroups", lessonCourseGroups(lessons, classGroupById));
@@ -158,6 +204,25 @@ public final class StudentLessonServlet extends DashboardServletSupport {
 
     private static boolean isCalendarRequest(HttpServletRequest request) {
         return "/student/calendar".equals(request.getServletPath());
+    }
+
+    private static List<StudentCalendarItemView> calendarItems(
+            List<LessonView> lessons,
+            List<ScheduleEventView> scheduleEvents
+    ) {
+        List<StudentCalendarItemView> items = new ArrayList<>();
+        for (ScheduleEventView event : scheduleEvents) {
+            items.add(StudentCalendarItemView.event(event));
+        }
+        for (LessonView lesson : lessons) {
+            items.add(StudentCalendarItemView.lesson(lesson));
+        }
+        return items.stream()
+                .sorted(Comparator
+                        .comparing(StudentCalendarItemView::getStartsAtRaw)
+                        .thenComparing(StudentCalendarItemView::getSortOrder)
+                        .thenComparingLong(StudentCalendarItemView::getId))
+                .toList();
     }
 
     private Map<Long, ClassGroupView> classGroupMap(List<LessonView> lessons) {
@@ -272,6 +337,53 @@ public final class StudentLessonServlet extends DashboardServletSupport {
 
         void addSubjectGroup(StudentLessonSubjectGroupView subjectGroup) {
             subjectGroups.add(subjectGroup);
+        }
+    }
+
+    public static final class StudentCalendarItemView {
+
+        private final ScheduleEventView event;
+        private final LessonView lesson;
+
+        private StudentCalendarItemView(ScheduleEventView event, LessonView lesson) {
+            this.event = event;
+            this.lesson = lesson;
+        }
+
+        static StudentCalendarItemView event(ScheduleEventView event) {
+            return new StudentCalendarItemView(event, null);
+        }
+
+        static StudentCalendarItemView lesson(LessonView lesson) {
+            return new StudentCalendarItemView(null, lesson);
+        }
+
+        public boolean isEventItem() {
+            return event != null;
+        }
+
+        public boolean isLessonItem() {
+            return lesson != null;
+        }
+
+        public ScheduleEventView getEvent() {
+            return event;
+        }
+
+        public LessonView getLesson() {
+            return lesson;
+        }
+
+        public java.time.LocalDateTime getStartsAtRaw() {
+            return event == null ? lesson.getStartsAtRaw() : event.getStartsAtRaw();
+        }
+
+        public int getSortOrder() {
+            return event == null ? 1 : 0;
+        }
+
+        public long getId() {
+            return event == null ? lesson.getId() : event.getId();
         }
     }
 

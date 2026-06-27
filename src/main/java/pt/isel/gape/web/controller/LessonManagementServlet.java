@@ -3,6 +3,7 @@ package pt.isel.gape.web.controller;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -25,6 +26,7 @@ import pt.isel.gape.learning.dao.ContentBlockDAO;
 import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.dao.EnrollmentDAO;
+import pt.isel.gape.learning.dao.LessonDAO;
 import pt.isel.gape.learning.dao.PhysicalRoomDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.ClassGroup;
@@ -37,8 +39,12 @@ import pt.isel.gape.learning.model.LessonType;
 import pt.isel.gape.learning.model.LessonUpdateCommand;
 import pt.isel.gape.learning.model.PhysicalRoom;
 import pt.isel.gape.learning.model.PhysicalRoomState;
+import pt.isel.gape.learning.model.ScheduleEventCreateCommand;
+import pt.isel.gape.learning.model.ScheduleEventState;
+import pt.isel.gape.learning.model.ScheduleEventType;
 import pt.isel.gape.learning.service.ClassGroupService;
 import pt.isel.gape.learning.service.LessonService;
+import pt.isel.gape.learning.service.ScheduleEventService;
 import pt.isel.gape.security.session.SessionUser;
 import pt.isel.gape.structure.dao.OrganicUnitDAO;
 import pt.isel.gape.structure.dao.OrganizationDAO;
@@ -48,6 +54,7 @@ import pt.isel.gape.web.view.ContentBlockView;
 import pt.isel.gape.web.view.LessonFormData;
 import pt.isel.gape.web.view.LessonView;
 import pt.isel.gape.web.view.PhysicalRoomView;
+import pt.isel.gape.web.view.ScheduleEventView;
 import pt.isel.gape.web.view.SelectOptionView;
 
 @WebServlet(name = "lessonManagementServlet", urlPatterns = {
@@ -66,7 +73,9 @@ public final class LessonManagementServlet extends DashboardServletSupport {
     private final ClassGroupDAO classGroupDAO;
     private final ContentBlockDAO contentBlockDAO;
     private final PhysicalRoomDAO physicalRoomDAO;
+    private final ScheduleEventService scheduleEventService;
     private final LearningViewFactory viewFactory;
+    private final ScheduleAttendanceViewFactory scheduleViewFactory;
 
     public LessonManagementServlet() {
         this(ConnectionProvider.defaultProvider(), ApplicationClock.system());
@@ -79,6 +88,7 @@ public final class LessonManagementServlet extends DashboardServletSupport {
                 new ClassGroupDAO(connectionProvider),
                 new ContentBlockDAO(connectionProvider),
                 new PhysicalRoomDAO(connectionProvider),
+                new ScheduleEventService(connectionProvider, clock),
                 new LearningViewFactory(
                         new OrganizationDAO(connectionProvider),
                         new OrganicUnitDAO(connectionProvider),
@@ -91,6 +101,24 @@ public final class LessonManagementServlet extends DashboardServletSupport {
                         new ContentBlockDAO(connectionProvider),
                         new UserDAO(connectionProvider),
                         new TeachClassGroupDAO(connectionProvider)
+                ),
+                new ScheduleAttendanceViewFactory(
+                        new ClassGroupDAO(connectionProvider),
+                        new LessonDAO(connectionProvider),
+                        new UserDAO(connectionProvider),
+                        new LearningViewFactory(
+                                new OrganizationDAO(connectionProvider),
+                                new OrganicUnitDAO(connectionProvider),
+                                new CourseDAO(connectionProvider),
+                                new SubjectDAO(connectionProvider),
+                                new CourseSubjectDAO(connectionProvider),
+                                new EnrollmentDAO(connectionProvider),
+                                new ClassGroupDAO(connectionProvider),
+                                new ClassGroupEnrollmentDAO(connectionProvider),
+                                new ContentBlockDAO(connectionProvider),
+                                new UserDAO(connectionProvider),
+                                new TeachClassGroupDAO(connectionProvider)
+                        )
                 )
         );
     }
@@ -101,14 +129,18 @@ public final class LessonManagementServlet extends DashboardServletSupport {
             ClassGroupDAO classGroupDAO,
             ContentBlockDAO contentBlockDAO,
             PhysicalRoomDAO physicalRoomDAO,
-            LearningViewFactory viewFactory
+            ScheduleEventService scheduleEventService,
+            LearningViewFactory viewFactory,
+            ScheduleAttendanceViewFactory scheduleViewFactory
     ) {
         this.lessonService = lessonService;
         this.classGroupService = classGroupService;
         this.classGroupDAO = classGroupDAO;
         this.contentBlockDAO = contentBlockDAO;
         this.physicalRoomDAO = physicalRoomDAO;
+        this.scheduleEventService = scheduleEventService;
         this.viewFactory = viewFactory;
+        this.scheduleViewFactory = scheduleViewFactory;
     }
 
     @Override
@@ -152,6 +184,10 @@ public final class LessonManagementServlet extends DashboardServletSupport {
         String[] segments = pathSegments(request.getPathInfo());
         try {
             if (isCalendarRequest(request)) {
+                if (segments.length == 0) {
+                    createScheduleEvent(request, response);
+                    return;
+                }
                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 return;
             }
@@ -186,11 +222,15 @@ public final class LessonManagementServlet extends DashboardServletSupport {
         List<LessonView> lessons = calendarMode
                 ? personalCalendarLessons(request)
                 : managedLessons(request);
+        List<ScheduleEventView> scheduleEvents = calendarMode ? visibleScheduleEvents(request) : List.of();
         List<ClassGroupView> classGroupOptions = calendarMode
-                ? classGroupOptionsFromLessons(lessons)
+                ? classGroupOptionsFromCalendar(lessons, scheduleEvents)
                 : viewFactory.classGroupViews(visibleClassGroups(request));
         if (calendarMode && !calendarFilterShowsLessons(selectedCalendarFilter)) {
             lessons = List.of();
+        }
+        if (calendarMode && !calendarFilterShowsEvents(selectedCalendarFilter)) {
+            scheduleEvents = List.of();
         }
         Map<Long, ClassGroupView> classGroupById = classGroupMap(classGroupOptions);
 
@@ -198,14 +238,22 @@ public final class LessonManagementServlet extends DashboardServletSupport {
             lessons = lessons.stream()
                     .filter(lesson -> lesson.getClassGroupId() == classGroupFilter)
                     .toList();
+            scheduleEvents = scheduleEvents.stream()
+                    .filter(event -> event.getClassGroupIds().contains(classGroupFilter))
+                    .toList();
         }
 
         lessons = lessons.stream()
                 .sorted(Comparator.comparing(LessonView::getStartsAtRaw).thenComparingLong(LessonView::getId))
                 .toList();
+        scheduleEvents = scheduleEvents.stream()
+                .sorted(Comparator.comparing(ScheduleEventView::getStartsAtRaw).thenComparingLong(ScheduleEventView::getId))
+                .toList();
 
         request.setAttribute("lessons", lessons);
+        request.setAttribute("scheduleEvents", scheduleEvents);
         request.setAttribute("classGroupOptions", classGroupOptions);
+        request.setAttribute("manageableClassGroupOptions", viewFactory.classGroupViews(manageableClassGroups(request)));
         request.setAttribute("classGroupById", classGroupById);
         request.setAttribute("canManageClassGroupById", canManageClassGroupMap(request, classGroupOptions));
         request.setAttribute("selectedClassGroupId", classGroupFilter);
@@ -213,6 +261,8 @@ public final class LessonManagementServlet extends DashboardServletSupport {
         request.setAttribute("calendarFilterOptions", calendarFilterOptions(selectedCalendarFilter));
         request.setAttribute("calendarMode", calendarMode);
         request.setAttribute("lessonCount", lessons.size());
+        request.setAttribute("scheduleEventCount", scheduleEvents.size());
+        request.setAttribute("calendarItemCount", lessons.size() + scheduleEvents.size());
         request.setAttribute("activeLessonCount", lessons.stream().filter(LessonView::isActive).count());
         request.setAttribute("scheduledLessonCount", lessons.stream().filter(LessonView::isScheduled).count());
         prepareDashboard(
@@ -223,6 +273,19 @@ public final class LessonManagementServlet extends DashboardServletSupport {
                 calendarMode || manageableClassGroups(request).isEmpty() ? null : "New Lesson"
         );
         forward(request, response, LESSON_LIST_JSP);
+    }
+
+    private List<ScheduleEventView> visibleScheduleEvents(HttpServletRequest request) {
+        SessionUser actor = requireCurrentUser(request);
+        return scheduleEventService.listVisibleEvents(
+                        actor.userId(),
+                        currentSessionId(request),
+                        primaryProfile(actor),
+                        request.getRemoteAddr()
+                )
+                .stream()
+                .map(scheduleViewFactory::scheduleEventView)
+                .toList();
     }
 
     private List<LessonView> managedLessons(HttpServletRequest request) {
@@ -260,22 +323,32 @@ public final class LessonManagementServlet extends DashboardServletSupport {
                 .toList();
     }
 
-    private List<ClassGroupView> classGroupOptionsFromLessons(List<LessonView> lessons) {
+    private List<ClassGroupView> classGroupOptionsFromCalendar(
+            List<LessonView> lessons,
+            List<ScheduleEventView> scheduleEvents
+    ) {
         Map<Long, ClassGroupView> classGroupsById = new LinkedHashMap<>();
         for (LessonView lesson : lessons) {
-            classGroupsById.computeIfAbsent(lesson.getClassGroupId(), id -> {
-                try {
-                    return classGroupDAO.findById(id)
-                            .map(viewFactory::classGroupView)
-                            .orElse(null);
-                } catch (SQLException exception) {
-                    throw new IllegalStateException("Failed to load calendar class group", exception);
-                }
-            });
+            classGroupsById.computeIfAbsent(lesson.getClassGroupId(), this::calendarClassGroupView);
+        }
+        for (ScheduleEventView event : scheduleEvents) {
+            for (Long classGroupId : event.getClassGroupIds()) {
+                classGroupsById.computeIfAbsent(classGroupId, this::calendarClassGroupView);
+            }
         }
         return classGroupsById.values().stream()
                 .filter(java.util.Objects::nonNull)
                 .toList();
+    }
+
+    private ClassGroupView calendarClassGroupView(long classGroupId) {
+        try {
+            return classGroupDAO.findById(classGroupId)
+                    .map(viewFactory::classGroupView)
+                    .orElse(null);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load calendar class group", exception);
+        }
     }
 
     private void showDetail(HttpServletRequest request, HttpServletResponse response, long lessonId)
@@ -311,6 +384,24 @@ public final class LessonManagementServlet extends DashboardServletSupport {
 
     private static boolean isCalendarRequest(HttpServletRequest request) {
         return "/learning/calendar".equals(request.getServletPath());
+    }
+
+    private void createScheduleEvent(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            scheduleEventService.createEvent(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    createScheduleCommand(request),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Schedule event created.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirect(request, response, "/learning/calendar");
     }
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response, String error)
@@ -491,6 +582,24 @@ public final class LessonManagementServlet extends DashboardServletSupport {
         );
     }
 
+    private ScheduleEventCreateCommand createScheduleCommand(HttpServletRequest request) {
+        boolean reminderEnabled = request.getParameter("reminderEnabled") != null;
+        return new ScheduleEventCreateCommand(
+                optionalLong(request, "lessonId"),
+                optionalLong(request, "assessmentId"),
+                text(request, "title"),
+                nullIfBlank(text(request, "description")),
+                ScheduleEventType.parse(defaultText(request, "type", "other")),
+                dateTimeParameter(request, "startsAt"),
+                dateTimeParameter(request, "endsAt"),
+                request.getParameter("allDay") != null,
+                reminderEnabled,
+                reminderEnabled ? optionalInteger(request, "reminderMinutesBefore") : null,
+                ScheduleEventState.parse(defaultText(request, "state", "active")),
+                longList(request.getParameterValues("classGroupIds"))
+        );
+    }
+
     private LessonUpdateCommand updateCommand(LessonFormData form) {
         return new LessonUpdateCommand(
                 requiredLong(form.getClassGroupId(), "classGroupId"),
@@ -664,8 +773,7 @@ public final class LessonManagementServlet extends DashboardServletSupport {
         }
         return switch (value.trim().toLowerCase(java.util.Locale.ROOT)) {
             case "lessons" -> "lessons";
-            case "questionnaire" -> "questionnaire";
-            case "exam" -> "exam";
+            case "events" -> "events";
             default -> "all";
         };
     }
@@ -674,12 +782,15 @@ public final class LessonManagementServlet extends DashboardServletSupport {
         return "all".equals(filter) || "lessons".equals(filter);
     }
 
+    private static boolean calendarFilterShowsEvents(String filter) {
+        return "all".equals(filter) || "events".equals(filter);
+    }
+
     private static List<SelectOptionView> calendarFilterOptions(String selected) {
         return List.of(
                 new SelectOptionView("all", "All", "all".equals(selected)),
                 new SelectOptionView("lessons", "Lessons", "lessons".equals(selected)),
-                new SelectOptionView("questionnaire", "Questionnaire", "questionnaire".equals(selected)),
-                new SelectOptionView("exam", "Exam", "exam".equals(selected))
+                new SelectOptionView("events", "Events", "events".equals(selected))
         );
     }
 
@@ -697,6 +808,35 @@ public final class LessonManagementServlet extends DashboardServletSupport {
     private static Long optionalLong(HttpServletRequest request, String name) {
         String value = text(request, name);
         return value == null ? null : Long.parseLong(value);
+    }
+
+    private static Integer optionalInteger(HttpServletRequest request, String name) {
+        String value = text(request, name);
+        return value == null ? null : Integer.parseInt(value);
+    }
+
+    private static LocalDateTime dateTimeParameter(HttpServletRequest request, String name) {
+        String value = text(request, name);
+        if (value == null) {
+            throw new IllegalArgumentException(name + " is required");
+        }
+        return LocalDateTime.parse(value);
+    }
+
+    private static List<Long> longList(String[] values) {
+        if (values == null || values.length == 0) {
+            return List.of();
+        }
+        return Arrays.stream(values)
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .map(Long::parseLong)
+                .toList();
+    }
+
+    private static String defaultText(HttpServletRequest request, String name, String fallback) {
+        String value = text(request, name);
+        return value == null ? fallback : value;
     }
 
     private static long requiredLong(Long value, String name) {
