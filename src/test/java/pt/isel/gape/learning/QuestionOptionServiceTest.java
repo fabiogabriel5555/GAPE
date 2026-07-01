@@ -34,9 +34,7 @@ import pt.isel.gape.learning.model.QuestionConfiguration;
 import pt.isel.gape.learning.model.QuestionCreateCommand;
 import pt.isel.gape.learning.model.QuestionOption;
 import pt.isel.gape.learning.model.QuestionOptionCreateCommand;
-import pt.isel.gape.learning.model.QuestionOptionState;
 import pt.isel.gape.learning.model.QuestionOptionUpdateCommand;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
 import pt.isel.gape.learning.service.AssessmentService;
 import pt.isel.gape.learning.service.QuestionOptionService;
@@ -165,8 +163,7 @@ class QuestionOptionServiceTest {
         QuestionOptionUpdateCommand command = new QuestionOptionUpdateCommand(
                 1,
                 "Option updated",
-                true,
-                QuestionOptionState.ACTIVE
+                true
         );
 
         assertThrows(IllegalStateException.class, () -> optionService.updateOption(
@@ -180,14 +177,14 @@ class QuestionOptionServiceTest {
     }
 
     @Test
-    void archiveOptionPromotesRemainingOptionWhenOnlyCorrectIsRemoved() {
+    void deleteOptionPromotesRemainingOptionWhenOnlyCorrectIsRemoved() {
         Question question = createQuestion("Form Promotion", QuestionType.MULTIPLE_CHOICE);
         QuestionOption correct = optionService.createOption(3L, null, AccessProfileType.TEACHER,
                 option(question.id(), 1, "Certa", true), IP);
         QuestionOption remaining = optionService.createOption(3L, null, AccessProfileType.TEACHER,
                 option(question.id(), 2, "Distrator", false), IP);
 
-        List<QuestionOption> activeOptions = optionService.archiveOption(
+        List<QuestionOption> options = optionService.archiveOption(
                 3L,
                 null,
                 AccessProfileType.TEACHER,
@@ -195,13 +192,13 @@ class QuestionOptionServiceTest {
                 IP
         );
 
-        assertEquals(1, activeOptions.size());
-        assertEquals(remaining.id(), activeOptions.getFirst().id());
-        assertTrue(Boolean.TRUE.equals(activeOptions.getFirst().correct()));
+        assertEquals(1, options.size());
+        assertEquals(remaining.id(), options.getFirst().id());
+        assertTrue(Boolean.TRUE.equals(options.getFirst().correct()));
     }
 
     @Test
-    void archiveOptionRejectsDeletingLastActiveOption() {
+    void archiveOptionRejectsDeletingLastOption() {
         Question question = createQuestion("Form Last Option", QuestionType.SINGLE_CHOICE);
         QuestionOption option = optionService.createOption(3L, null, AccessProfileType.TEACHER,
                 option(question.id(), 1, "Unica", true), IP);
@@ -253,8 +250,7 @@ class QuestionOptionServiceTest {
                         bd("10.00"),
                         type == QuestionType.RATING
                                 ? QuestionConfiguration.ratingExpectedAnswer("stars_integer", "5", "5")
-                                : null,
-                        QuestionState.ACTIVE
+                                : null
                 ),
                 IP
         );
@@ -265,8 +261,7 @@ class QuestionOptionServiceTest {
                 questionId,
                 order,
                 text,
-                correct,
-                QuestionOptionState.ACTIVE
+                correct
         );
     }
 

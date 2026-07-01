@@ -30,6 +30,16 @@ public final class AssessmentDAO {
 
     private final ConnectionProvider connectionProvider;
 
+    public record ClassGroupAssessmentWeightSummary(int assessmentCount, BigDecimal totalWeight) {
+        public boolean hasAssessments() {
+            return assessmentCount > 0;
+        }
+
+        public boolean totalIsOneHundred() {
+            return totalWeight != null && totalWeight.compareTo(new BigDecimal("100.00")) == 0;
+        }
+    }
+
     public AssessmentDAO(ConnectionProvider connectionProvider) {
         this.connectionProvider = connectionProvider;
     }
@@ -38,8 +48,9 @@ public final class AssessmentDAO {
         String sql = """
                 INSERT INTO assessment (
                     id_subject, id_content_block, title, description, type, mode, correction_mode,
-                    max_grade, passing_grade, attempts_limit, enrollment_mode, state, available_from, available_until
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    max_grade, passing_grade, final_grade_weight, attempts_limit, enrollment_mode, state,
+                    available_from, available_until
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -201,13 +212,14 @@ public final class AssessmentDAO {
                 UPDATE assessment
                 SET id_subject = ?, id_content_block = ?, title = ?, description = ?, type = ?,
                     mode = ?, correction_mode = ?, max_grade = ?, passing_grade = ?,
-                    attempts_limit = ?, enrollment_mode = ?, state = ?, available_from = ?, available_until = ?
+                    final_grade_weight = ?, attempts_limit = ?, enrollment_mode = ?, state = ?,
+                    available_from = ?, available_until = ?
                 WHERE id_assessment = ?
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             setStatementValues(statement, command);
-            statement.setLong(15, assessmentId);
+            statement.setLong(16, assessmentId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Assessment not found: " + assessmentId);
             }
@@ -441,6 +453,100 @@ public final class AssessmentDAO {
         }
     }
 
+    public void upsertWeightForMatchingGradeSheets(
+            Connection connection,
+            long assessmentId,
+            BigDecimal finalGradeWeight
+    ) throws SQLException {
+        String sql = """
+                INSERT INTO based_on_assessment (id_grade_sheet, id_assessment, weight)
+                SELECT DISTINCT matched.id_grade_sheet, ?, ?
+                FROM (
+                    SELECT boa.id_grade_sheet
+                    FROM based_on_assessment boa
+                    WHERE boa.id_assessment = ?
+                    UNION
+                    SELECT gs.id_grade_sheet
+                    FROM grade_sheet gs
+                    JOIN assessment a ON a.id_assessment = ?
+                    LEFT JOIN content_block cb ON cb.id_content_block = a.id_content_block
+                    LEFT JOIN class_group block_cg ON block_cg.id_class_group = cb.id_class_group
+                    WHERE NOT EXISTS (
+                            SELECT 1
+                            FROM associate_grade_sheet_class_group agscg
+                            WHERE agscg.id_grade_sheet = gs.id_grade_sheet
+                        )
+                      AND (
+                            a.id_subject = gs.id_subject
+                            OR block_cg.id_subject = gs.id_subject
+                        )
+                    UNION
+                    SELECT gs.id_grade_sheet
+                    FROM grade_sheet gs
+                    JOIN associate_grade_sheet_class_group agscg
+                      ON agscg.id_grade_sheet = gs.id_grade_sheet
+                    JOIN assessment a ON a.id_assessment = ?
+                    LEFT JOIN content_block cb ON cb.id_content_block = a.id_content_block
+                    LEFT JOIN assessment_class_group acg
+                      ON acg.id_assessment = a.id_assessment
+                    WHERE (
+                            cb.id_class_group = agscg.id_class_group
+                            OR acg.id_class_group = agscg.id_class_group
+                        )
+                      AND (
+                            a.id_subject IS NULL
+                            OR a.id_subject = gs.id_subject
+                        )
+                ) matched
+                ON DUPLICATE KEY UPDATE weight = VALUES(weight)
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, assessmentId);
+            statement.setBigDecimal(2, finalGradeWeight);
+            statement.setLong(3, assessmentId);
+            statement.setLong(4, assessmentId);
+            statement.setLong(5, assessmentId);
+            statement.executeUpdate();
+        }
+    }
+
+    public ClassGroupAssessmentWeightSummary summarizeAssessmentWeightsForClassGroup(
+            long classGroupId
+    ) throws SQLException {
+        try (Connection connection = connectionProvider.getConnection()) {
+            return summarizeAssessmentWeightsForClassGroup(connection, classGroupId);
+        }
+    }
+
+    public ClassGroupAssessmentWeightSummary summarizeAssessmentWeightsForClassGroup(
+            Connection connection,
+            long classGroupId
+    ) throws SQLException {
+        String sql = """
+                SELECT COUNT(*) AS assessment_count,
+                       COALESCE(SUM(final_grade_weight), 0) AS total_weight
+                FROM (
+                    SELECT DISTINCT a.id_assessment, a.final_grade_weight
+                    FROM assessment a
+                    LEFT JOIN content_block cb ON cb.id_content_block = a.id_content_block
+                    LEFT JOIN assessment_class_group acg ON acg.id_assessment = a.id_assessment
+                    WHERE cb.id_class_group = ?
+                       OR acg.id_class_group = ?
+                ) weights
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, classGroupId);
+            statement.setLong(2, classGroupId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return new ClassGroupAssessmentWeightSummary(
+                        resultSet.getInt("assessment_count"),
+                        resultSet.getBigDecimal("total_weight")
+                );
+            }
+        }
+    }
+
     public List<Long> findApplicableClassGroupIds(long assessmentId) throws SQLException {
         try (Connection connection = connectionProvider.getConnection()) {
             return findApplicableClassGroupIds(connection, assessmentId);
@@ -501,8 +607,6 @@ public final class AssessmentDAO {
                         WHERE ea.id_student_user = ?
                           AND ea.id_assessment = a.id_assessment
                           AND ea.state = 'active'
-                          AND (ea.start_date IS NULL OR ea.start_date <= CURRENT_DATE)
-                          AND (ea.end_date IS NULL OR ea.end_date >= CURRENT_DATE)
                   )
                   AND (
                         (
@@ -671,11 +775,12 @@ public final class AssessmentDAO {
         statement.setString(7, command.correctionMode().toDatabaseValue());
         statement.setBigDecimal(8, command.maxGrade());
         statement.setBigDecimal(9, command.passingGrade());
-        setNullableInteger(statement, 10, command.attemptsLimit());
-        statement.setString(11, command.enrollmentMode().toDatabaseValue());
-        statement.setString(12, command.state().toDatabaseValue());
-        setTimestamp(statement, 13, command.availableFrom());
-        setTimestamp(statement, 14, command.availableUntil());
+        statement.setBigDecimal(10, command.finalGradeWeight());
+        setNullableInteger(statement, 11, command.attemptsLimit());
+        statement.setString(12, command.enrollmentMode().toDatabaseValue());
+        statement.setString(13, command.state().toDatabaseValue());
+        setTimestamp(statement, 14, command.availableFrom());
+        setTimestamp(statement, 15, command.availableUntil());
     }
 
     private static void setStatementValues(PreparedStatement statement, AssessmentUpdateCommand command)
@@ -689,18 +794,19 @@ public final class AssessmentDAO {
         statement.setString(7, command.correctionMode().toDatabaseValue());
         statement.setBigDecimal(8, command.maxGrade());
         statement.setBigDecimal(9, command.passingGrade());
-        setNullableInteger(statement, 10, command.attemptsLimit());
-        statement.setString(11, command.enrollmentMode().toDatabaseValue());
-        statement.setString(12, command.state().toDatabaseValue());
-        setTimestamp(statement, 13, command.availableFrom());
-        setTimestamp(statement, 14, command.availableUntil());
+        statement.setBigDecimal(10, command.finalGradeWeight());
+        setNullableInteger(statement, 11, command.attemptsLimit());
+        statement.setString(12, command.enrollmentMode().toDatabaseValue());
+        statement.setString(13, command.state().toDatabaseValue());
+        setTimestamp(statement, 14, command.availableFrom());
+        setTimestamp(statement, 15, command.availableUntil());
     }
 
     private static String selectAssessmentSql() {
         return """
                 SELECT id_assessment, id_subject, id_content_block, title, description, type, mode,
-                       correction_mode, max_grade, passing_grade, attempts_limit, enrollment_mode, state,
-                       available_from, available_until, order_no
+                       correction_mode, max_grade, passing_grade, final_grade_weight, attempts_limit,
+                       enrollment_mode, state, available_from, available_until, order_no
                 FROM assessment
                 """;
     }
@@ -725,6 +831,7 @@ public final class AssessmentDAO {
                 AssessmentCorrectionMode.fromDatabaseValue(resultSet.getString("correction_mode")),
                 resultSet.getBigDecimal("max_grade"),
                 resultSet.getBigDecimal("passing_grade"),
+                resultSet.getBigDecimal("final_grade_weight"),
                 nullableInteger(resultSet, "attempts_limit"),
                 EnrollmentApprovalMode.fromDatabaseValue(resultSet.getString("enrollment_mode")),
                 AssessmentState.fromDatabaseValue(resultSet.getString("state")),

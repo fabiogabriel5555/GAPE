@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -20,22 +22,27 @@ import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
 import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 
+import pt.isel.gape.access.dao.UserDAO;
+import pt.isel.gape.access.model.User;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.dao.AssessmentDAO;
+import pt.isel.gape.learning.dao.AttemptDAO;
 import pt.isel.gape.learning.dao.ClassGroupDAO;
 import pt.isel.gape.learning.dao.ContentBlockDAO;
 import pt.isel.gape.learning.dao.QuestionDAO;
 import pt.isel.gape.learning.dao.QuestionOptionDAO;
+import pt.isel.gape.learning.dao.ResponseDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.Assessment;
+import pt.isel.gape.learning.model.Attempt;
+import pt.isel.gape.learning.model.AttemptState;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ContentBlock;
 import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionConfiguration;
 import pt.isel.gape.learning.model.QuestionOption;
-import pt.isel.gape.learning.model.QuestionOptionState;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
+import pt.isel.gape.learning.model.Response;
 import pt.isel.gape.learning.model.Subject;
 
 public final class AssessmentPdfService {
@@ -47,9 +54,12 @@ public final class AssessmentPdfService {
     private final AssessmentDAO assessmentDAO;
     private final QuestionDAO questionDAO;
     private final QuestionOptionDAO optionDAO;
+    private final AttemptDAO attemptDAO;
+    private final ResponseDAO responseDAO;
     private final SubjectDAO subjectDAO;
     private final ContentBlockDAO contentBlockDAO;
     private final ClassGroupDAO classGroupDAO;
+    private final UserDAO userDAO;
 
     public AssessmentPdfService(ConnectionProvider connectionProvider) {
         this(
@@ -57,9 +67,12 @@ public final class AssessmentPdfService {
                 new AssessmentDAO(connectionProvider),
                 new QuestionDAO(connectionProvider),
                 new QuestionOptionDAO(connectionProvider),
+                new AttemptDAO(connectionProvider),
+                new ResponseDAO(connectionProvider),
                 new SubjectDAO(connectionProvider),
                 new ContentBlockDAO(connectionProvider),
-                new ClassGroupDAO(connectionProvider)
+                new ClassGroupDAO(connectionProvider),
+                new UserDAO(connectionProvider)
         );
     }
 
@@ -74,9 +87,12 @@ public final class AssessmentPdfService {
                 assessmentDAO,
                 questionDAO,
                 optionDAO,
+                new AttemptDAO(connectionProvider),
+                new ResponseDAO(connectionProvider),
                 new SubjectDAO(connectionProvider),
                 new ContentBlockDAO(connectionProvider),
-                new ClassGroupDAO(connectionProvider)
+                new ClassGroupDAO(connectionProvider),
+                new UserDAO(connectionProvider)
         );
     }
 
@@ -85,17 +101,23 @@ public final class AssessmentPdfService {
             AssessmentDAO assessmentDAO,
             QuestionDAO questionDAO,
             QuestionOptionDAO optionDAO,
+            AttemptDAO attemptDAO,
+            ResponseDAO responseDAO,
             SubjectDAO subjectDAO,
             ContentBlockDAO contentBlockDAO,
-            ClassGroupDAO classGroupDAO
+            ClassGroupDAO classGroupDAO,
+            UserDAO userDAO
     ) {
         this.connectionProvider = Objects.requireNonNull(connectionProvider, "connectionProvider is required");
         this.assessmentDAO = Objects.requireNonNull(assessmentDAO, "assessmentDAO is required");
         this.questionDAO = Objects.requireNonNull(questionDAO, "questionDAO is required");
         this.optionDAO = Objects.requireNonNull(optionDAO, "optionDAO is required");
+        this.attemptDAO = Objects.requireNonNull(attemptDAO, "attemptDAO is required");
+        this.responseDAO = Objects.requireNonNull(responseDAO, "responseDAO is required");
         this.subjectDAO = Objects.requireNonNull(subjectDAO, "subjectDAO is required");
         this.contentBlockDAO = Objects.requireNonNull(contentBlockDAO, "contentBlockDAO is required");
         this.classGroupDAO = Objects.requireNonNull(classGroupDAO, "classGroupDAO is required");
+        this.userDAO = Objects.requireNonNull(userDAO, "userDAO is required");
     }
 
     public byte[] renderAssessmentPdf(long assessmentId) {
@@ -103,13 +125,11 @@ public final class AssessmentPdfService {
             Assessment assessment = assessmentDAO.findById(connection, assessmentId)
                     .orElseThrow(() -> new IllegalArgumentException("Assessment not found: " + assessmentId));
             AssessmentPdfContext context = assessmentContext(connection, assessment);
-            List<Question> questions = questionDAO.findByAssessment(connection, assessmentId).stream()
-                    .filter(question -> question.state() == QuestionState.ACTIVE)
-                    .toList();
+            List<Question> questions = questionDAO.findByAssessment(connection, assessmentId);
 
             try (PDDocument document = new PDDocument()) {
                 AssessmentPdfWriter writer = new AssessmentPdfWriter(document, context);
-                writer.header();
+                writer.header("Assessment");
                 if (questions.isEmpty()) {
                     writer.emptyState();
                 }
@@ -117,9 +137,7 @@ public final class AssessmentPdfService {
                 for (Question question : questions) {
                     List<QuestionOption> options = List.of();
                     if (question.type().allowsOptions()) {
-                        options = optionDAO.findByQuestion(connection, question.id()).stream()
-                                .filter(option -> option.state() == QuestionOptionState.ACTIVE)
-                                .toList();
+                        options = optionDAO.findByQuestion(connection, question.id());
                     }
                     writer.question(questionNumber, question, options);
                     questionNumber += 1;
@@ -128,6 +146,63 @@ public final class AssessmentPdfService {
             }
         } catch (SQLException | IOException exception) {
             throw new IllegalStateException("Failed to render assessment PDF", exception);
+        }
+    }
+
+    public byte[] renderAttemptResponsesPdf(long assessmentId, long attemptId) {
+        try (Connection connection = connectionProvider.getConnection()) {
+            Assessment assessment = assessmentDAO.findById(connection, assessmentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Assessment not found: " + assessmentId));
+            Attempt attempt = attemptDAO.findById(connection, attemptId)
+                    .orElseThrow(() -> new IllegalArgumentException("Attempt not found: " + attemptId));
+            if (attempt.assessmentId() != assessmentId) {
+                throw new IllegalArgumentException("Attempt does not belong to assessment");
+            }
+            User student = userDAO.findById(connection, attempt.studentUserId()).orElse(null);
+            AssessmentPdfContext context = assessmentContext(connection, assessment);
+            AttemptPdfContext attemptContext = new AttemptPdfContext(
+                    student == null ? "Unknown student" : student.name(),
+                    student == null ? "" : student.email(),
+                    "Attempt #" + attempt.attemptNumber(),
+                    formatDateTime(attempt.startedAt()),
+                    formatDateTime(attempt.submittedAt()),
+                    attemptScoreLabel(attempt, assessment)
+            );
+            List<Response> responses = responseDAO.findByAttempt(connection, attempt.id());
+
+            try (PDDocument document = new PDDocument()) {
+                AssessmentPdfWriter writer = new AssessmentPdfWriter(document, context);
+                writer.header("Student answers");
+                writer.attemptSummary(attemptContext);
+                if (responses.isEmpty()) {
+                    writer.emptyState("No responses available", "This attempt has no saved responses.");
+                }
+                int questionNumber = 1;
+                for (Response response : responses) {
+                    Question question = questionDAO.findById(connection, response.questionId())
+                            .orElseThrow(() -> new IllegalStateException(
+                                    "Response question not found: " + response.questionId()));
+                    List<QuestionOption> options = question.type().allowsOptions()
+                            ? optionDAO.findByQuestion(connection, question.id())
+                            : List.of();
+                    Set<Long> selectedOptionIds = optionDAO.findSelectedOptions(connection, response.id())
+                            .stream()
+                            .map(QuestionOption::id)
+                            .collect(Collectors.toUnmodifiableSet());
+                    writer.responseQuestion(
+                            questionNumber,
+                            question,
+                            options,
+                            response,
+                            selectedOptionIds,
+                            attempt.state() == AttemptState.CORRECTED
+                    );
+                    questionNumber += 1;
+                }
+                return writer.bytes();
+            }
+        } catch (SQLException | IOException exception) {
+            throw new IllegalStateException("Failed to render attempt PDF", exception);
         }
     }
 
@@ -200,6 +275,23 @@ public final class AssessmentPdfService {
         return value == null ? "-" : value.stripTrailingZeros().toPlainString();
     }
 
+    private static String attemptScoreLabel(Attempt attempt, Assessment assessment) {
+        BigDecimal score = visibleAttemptScore(attempt);
+        return score == null
+                ? "Not assigned yet"
+                : grade(score) + " / " + grade(assessment.maxGrade());
+    }
+
+    private static BigDecimal visibleAttemptScore(Attempt attempt) {
+        return attempt.state() == AttemptState.CORRECTED ? attempt.score() : null;
+    }
+
+    private static String responseScoreLabel(Response response, Question question, boolean scoresVisible) {
+        return !scoresVisible || response == null || response.score() == null
+                ? "Not assigned yet"
+                : grade(response.score()) + " / " + grade(question.score());
+    }
+
     private record AssessmentPdfContext(
             String title,
             String description,
@@ -208,6 +300,16 @@ public final class AssessmentPdfService {
             String endsAt,
             String type,
             String mode
+    ) {
+    }
+
+    private record AttemptPdfContext(
+            String studentName,
+            String studentEmail,
+            String attemptLabel,
+            String startedAt,
+            String submittedAt,
+            String score
     ) {
     }
 
@@ -233,7 +335,7 @@ public final class AssessmentPdfService {
             newPage();
         }
 
-        private void header() throws IOException {
+        private void header(String eyebrow) throws IOException {
             List<String> titleLines = wrap(context.title(), bold, 18f, CONTENT_WIDTH);
             List<String> descriptionLines = context.description() == null || context.description().isBlank()
                     ? List.of()
@@ -244,7 +346,7 @@ public final class AssessmentPdfService {
             ensureSpace(height);
 
             float top = y;
-            drawText("Assessment", bold, 9.5f, 0, 150, 136, MARGIN, top - 10f);
+            drawText(eyebrow, bold, 9.5f, 0, 150, 136, MARGIN, top - 10f);
             float titleY = top - 34f;
             for (String line : titleLines) {
                 drawText(line, bold, 18f, 28, 38, 52, MARGIN, titleY);
@@ -276,8 +378,49 @@ public final class AssessmentPdfService {
             y = nextY - 24f;
         }
 
+        private void attemptSummary(AttemptPdfContext attempt) throws IOException {
+            float height = 104f;
+            ensureSpace(height + 14f);
+            float top = y;
+            float bottom = top - height;
+            strokeRoundRect(MARGIN, bottom, CONTENT_WIDTH, height, 8f, 218, 226, 234, 0.9f);
+            float columnGap = 16f;
+            float columnWidth = (CONTENT_WIDTH - 36f - columnGap) / 2f;
+            float leftX = MARGIN + 18f;
+            float rightX = leftX + columnWidth + columnGap;
+            drawInfoPair("Student", attempt.studentName(), leftX, top - 20f, columnWidth);
+            drawInfoPair("Email", attempt.studentEmail(), rightX, top - 20f, columnWidth);
+            drawInfoPair("Attempt", attempt.attemptLabel(), leftX, top - 50f, columnWidth);
+            drawInfoPair("Score", attempt.score(), rightX, top - 50f, columnWidth);
+            drawInfoPair("Started", attempt.startedAt(), leftX, top - 80f, columnWidth);
+            drawInfoPair("Submitted", attempt.submittedAt(), rightX, top - 80f, columnWidth);
+            y = bottom - 18f;
+        }
+
         private void question(int number, Question question, List<QuestionOption> options) throws IOException {
-            QuestionLayout layout = measureQuestion(number, question, options);
+            drawQuestion(number, question, options, null, Set.of(), false);
+        }
+
+        private void responseQuestion(
+                int number,
+                Question question,
+                List<QuestionOption> options,
+                Response response,
+                Set<Long> selectedOptionIds,
+                boolean scoresVisible
+        ) throws IOException {
+            drawQuestion(number, question, options, response, selectedOptionIds, scoresVisible);
+        }
+
+        private void drawQuestion(
+                int number,
+                Question question,
+                List<QuestionOption> options,
+                Response response,
+                Set<Long> selectedOptionIds,
+                boolean scoresVisible
+        ) throws IOException {
+            QuestionLayout layout = measureQuestion(number, question, options, response);
             float pageCapacity = PAGE_HEIGHT - (MARGIN * 2f);
             if (y - (layout.height + 18f) < MARGIN || layout.height > pageCapacity) {
                 newPage();
@@ -285,34 +428,35 @@ public final class AssessmentPdfService {
 
             float top = y;
             float bottom = top - layout.height;
-            strokeRoundRect(MARGIN, bottom, CONTENT_WIDTH, layout.height, 8f, 218, 226, 234, 0.9f);
+            strokeRoundRect(MARGIN, bottom, CONTENT_WIDTH, layout.height, 8f, 210, 220, 229, 0.9f);
 
             float x = MARGIN + 18f;
             float contentWidth = CONTENT_WIDTH - 36f;
             float currentY = top - 18f;
-            currentY = drawQuestionHeader(layout, question, x, currentY, contentWidth);
+            currentY = drawQuestionHeader(layout, question, response, scoresVisible, x, currentY, contentWidth);
             currentY -= 16f;
-            drawQuestionControl(question, options, x, currentY, contentWidth);
+            drawQuestionControl(question, options, response, selectedOptionIds, x, currentY, contentWidth);
             y = bottom - 18f;
         }
 
-        private QuestionLayout measureQuestion(int number, Question question, List<QuestionOption> options)
+        private QuestionLayout measureQuestion(int number, Question question, List<QuestionOption> options, Response response)
                 throws IOException {
             float contentWidth = CONTENT_WIDTH - 36f;
             List<String> statementLines = wrap(question.statement(), bold, 12.8f, contentWidth);
-            float headerHeight = 20f + (statementLines.size() * 15.5f);
-            float controlHeight = controlHeight(question, options, contentWidth);
+            float headerHeight = (response == null ? 20f : 32f) + (statementLines.size() * 15.5f);
+            float controlHeight = controlHeight(question, options, response, contentWidth);
             float total = 18f + headerHeight + 16f + controlHeight + 18f;
             return new QuestionLayout(number, statementLines, headerHeight, controlHeight, total);
         }
 
-        private float controlHeight(Question question, List<QuestionOption> options, float width) throws IOException {
+        private float controlHeight(Question question, List<QuestionOption> options, Response response, float width)
+                throws IOException {
             return switch (question.type()) {
                 case SINGLE_CHOICE, MULTIPLE_CHOICE -> optionsHeight(options, width);
-                case PARAGRAPH -> 86f;
+                case PARAGRAPH -> response == null ? 86f : responseTextHeight(response, width, 86f);
                 case FILE_UPLOAD -> 46f;
                 case RATING -> 34f;
-                case SHORT_TEXT -> 42f;
+                case SHORT_TEXT -> response == null ? 42f : responseTextHeight(response, width, 42f);
             };
         }
 
@@ -334,7 +478,20 @@ public final class AssessmentPdfService {
             return Math.max(28f, 14f + (wrap(option.text(), regular, 10.3f, width - 58f).size() * SMALL_LINE));
         }
 
-        private float drawQuestionHeader(QuestionLayout layout, Question question, float x, float top, float width)
+        private float responseTextHeight(Response response, float width, float minimumHeight) throws IOException {
+            List<String> answerLines = wrap(displayAnswer(response), bold, 10f, width - 32f);
+            return Math.max(minimumHeight, 22f + (answerLines.size() * SMALL_LINE));
+        }
+
+        private float drawQuestionHeader(
+                QuestionLayout layout,
+                Question question,
+                Response response,
+                boolean scoresVisible,
+                float x,
+                float top,
+                float width
+        )
                 throws IOException {
             drawText("Question " + layout.number(), bold, 9.8f, 0, 150, 136, x, top);
             String meta = questionTypeLabel(question.type()) + " | " + grade(question.score()) + " pts";
@@ -343,6 +500,11 @@ public final class AssessmentPdfService {
                 drawRequiredPill(x + 86f + textWidth(meta, regular, 9.3f), top + 2f);
             }
             float statementY = top - 24f;
+            if (response != null) {
+                drawText("Score: " + responseScoreLabel(response, question, scoresVisible), regular, 9.3f, 100, 116, 139,
+                        x + 78f, top - 13f);
+                statementY = top - 36f;
+            }
             for (String line : layout.statementLines()) {
                 drawText(line, bold, 12.8f, 28, 38, 52, x, statementY);
                 statementY -= 15.5f;
@@ -350,19 +512,38 @@ public final class AssessmentPdfService {
             return top - layout.headerHeight();
         }
 
-        private void drawQuestionControl(Question question, List<QuestionOption> options, float x, float top, float width)
+        private void drawQuestionControl(
+                Question question,
+                List<QuestionOption> options,
+                Response response,
+                Set<Long> selectedOptionIds,
+                float x,
+                float top,
+                float width
+        )
                 throws IOException {
             switch (question.type()) {
-                case SINGLE_CHOICE -> drawChoiceOptions(options, x, top, width, false);
-                case MULTIPLE_CHOICE -> drawChoiceOptions(options, x, top, width, true);
-                case SHORT_TEXT -> drawTextInput(x, top, width, 42f, "Type here");
-                case PARAGRAPH -> drawTextInput(x, top, width, 86f, "Type here");
-                case FILE_UPLOAD -> drawUploadButton(x, top);
-                case RATING -> drawRating(question, x, top);
+                case SINGLE_CHOICE -> drawChoiceOptions(options, selectedOptionIds, x, top, width, false);
+                case MULTIPLE_CHOICE -> drawChoiceOptions(options, selectedOptionIds, x, top, width, true);
+                case SHORT_TEXT -> drawTextInput(x, top, width,
+                        response == null ? 42f : responseTextHeight(response, width, 42f),
+                        response == null ? "Type here" : displayAnswer(response));
+                case PARAGRAPH -> drawTextInput(x, top, width,
+                        response == null ? 86f : responseTextHeight(response, width, 86f),
+                        response == null ? "Type here" : displayAnswer(response));
+                case FILE_UPLOAD -> drawUploadAnswer(response, x, top, width);
+                case RATING -> drawRating(question, response, x, top);
             }
         }
 
-        private void drawChoiceOptions(List<QuestionOption> options, float x, float top, float width, boolean multiple)
+        private void drawChoiceOptions(
+                List<QuestionOption> options,
+                Set<Long> selectedOptionIds,
+                float x,
+                float top,
+                float width,
+                boolean multiple
+        )
                 throws IOException {
             if (options.isEmpty()) {
                 drawText("No options configured.", regular, 10f, 100, 116, 139, x, top - 18f);
@@ -370,17 +551,27 @@ public final class AssessmentPdfService {
             }
             float currentTop = top;
             for (QuestionOption option : options) {
+                boolean selected = selectedOptionIds.contains(option.id());
                 float height = optionHeight(option, width);
                 float controlCenterY = currentTop - (height / 2f);
                 if (multiple) {
-                    drawCheckbox(x, controlCenterY - 6f, 12f);
+                    drawCheckbox(x, controlCenterY - 6f, 12f, selected);
                 } else {
-                    drawRadio(x + 6f, controlCenterY, 6f);
+                    drawRadio(x + 6f, controlCenterY, 6f, selected);
                 }
-                strokeRoundRect(x + 24f, currentTop - height, width - 24f, height, 8f, 78, 93, 109, 0.9f);
+                if (selected) {
+                    fillRoundRect(x + 24f, currentTop - height, width - 24f, height, 8f, 65, 196, 183);
+                    strokeRoundRect(x + 24f, currentTop - height, width - 24f, height, 8f, 39, 141, 132, 0.9f);
+                } else {
+                    strokeRoundRect(x + 24f, currentTop - height, width - 24f, height, 8f, 78, 93, 109, 1.1f);
+                }
                 float textY = currentTop - 17f;
                 for (String line : wrap(option.text(), regular, 10.3f, width - 58f)) {
-                    drawText(line, bold, 10.3f, 71, 85, 105, x + 36f, textY);
+                    if (selected) {
+                        drawText(line, bold, 10.3f, 255, 255, 255, x + 36f, textY);
+                    } else {
+                        drawText(line, bold, 10.3f, 71, 85, 105, x + 36f, textY);
+                    }
                     textY -= SMALL_LINE;
                 }
                 currentTop -= height + 9f;
@@ -389,7 +580,11 @@ public final class AssessmentPdfService {
 
         private void drawTextInput(float x, float top, float width, float height, String placeholder) throws IOException {
             strokeRoundRect(x, top - height, width, height, 6f, 78, 93, 109, 1.0f);
-            drawText(placeholder, bold, 10f, 71, 85, 105, x + 16f, top - 23f);
+            float textY = top - 23f;
+            for (String line : wrap(placeholder, bold, 10f, width - 32f)) {
+                drawText(line, bold, 10f, 71, 85, 105, x + 16f, textY);
+                textY -= SMALL_LINE;
+            }
         }
 
         private void drawUploadButton(float x, float top) throws IOException {
@@ -401,11 +596,22 @@ public final class AssessmentPdfService {
             drawText("Upload", bold, 10f, 255, 255, 255, x + 33f, top - 21f);
         }
 
-        private void drawRating(Question question, float x, float top) throws IOException {
+        private void drawUploadAnswer(Response response, float x, float top, float width) throws IOException {
+            drawUploadButton(x, top);
+            if (response != null && response.attachment() != null && !response.attachment().isBlank()) {
+                drawText(fileName(response.attachment()), bold, 10f, 71, 85, 105, x + 104f, top - 21f);
+            } else if (response != null) {
+                drawText("No file uploaded", bold, 10f, 100, 116, 139, x + 104f, top - 21f);
+            }
+        }
+
+        private void drawRating(Question question, Response response, float x, float top) throws IOException {
             int max = Math.min(QuestionConfiguration.ratingMax(question.expectedAnswer()), 10);
+            BigDecimal value = ratingValue(question, response);
             float currentX = x;
             for (int index = 0; index < max; index += 1) {
-                drawStar(currentX + 10f, top - 17f, 10f, 4.3f, 255, 193, 7, false);
+                boolean filled = value.compareTo(BigDecimal.valueOf(index + 1L)) >= 0;
+                drawStar(currentX + 10f, top - 17f, 10f, 4.3f, 255, 193, 7, filled);
                 currentX += 24f;
             }
         }
@@ -419,11 +625,15 @@ public final class AssessmentPdfService {
         }
 
         private void emptyState() throws IOException {
+            emptyState("No questions available", "This assessment has no questions.");
+        }
+
+        private void emptyState(String title, String description) throws IOException {
             float height = 72f;
             ensureSpace(height);
             strokeRoundRect(MARGIN, y - height, CONTENT_WIDTH, height, 8f, 218, 226, 234, 0.9f);
-            drawText("No questions available", bold, 13f, 28, 38, 52, MARGIN + 18f, y - 28f);
-            drawText("This assessment has no active questions.", regular, 10f, 100, 116, 139, MARGIN + 18f, y - 48f);
+            drawText(title, bold, 13f, 28, 38, 52, MARGIN + 18f, y - 28f);
+            drawText(description, regular, 10f, 100, 116, 139, MARGIN + 18f, y - 48f);
             y -= height + 18f;
         }
 
@@ -444,21 +654,70 @@ public final class AssessmentPdfService {
             }
         }
 
-        private void drawCheckbox(float x, float yBottom, float size) throws IOException {
-            strokeRoundRect(x, yBottom, size, size, 2f, 78, 93, 109, 0.9f);
+        private static String displayAnswer(Response response) {
+            if (response == null || response.answer() == null || response.answer().isBlank()) {
+                return "No answer.";
+            }
+            return response.answer();
         }
 
-        private void drawRadio(float centerX, float centerY, float radius) throws IOException {
+        private static String fileName(String attachment) {
+            String normalized = attachment == null ? "" : attachment.replace('\\', '/');
+            int slashIndex = normalized.lastIndexOf('/');
+            return slashIndex >= 0 ? normalized.substring(slashIndex + 1) : normalized;
+        }
+
+        private static BigDecimal ratingValue(Question question, Response response) {
+            if (response == null || response.answer() == null || response.answer().isBlank()) {
+                return BigDecimal.ZERO;
+            }
+            try {
+                return QuestionConfiguration.ratingAnswerValue(response.answer(), question.expectedAnswer());
+            } catch (IllegalArgumentException exception) {
+                return BigDecimal.ZERO;
+            }
+        }
+
+        private void drawCheckbox(float x, float yBottom, float size, boolean selected) throws IOException {
+            if (selected) {
+                fillRoundRect(x, yBottom, size, size, 2f, 65, 196, 183);
+                strokeRoundRect(x, yBottom, size, size, 2f, 39, 141, 132, 0.9f);
+                stream.setStrokingColor(255 / 255f, 255 / 255f, 255 / 255f);
+                stream.setLineWidth(1.4f);
+                stream.moveTo(x + 3.2f, yBottom + 6.5f);
+                stream.lineTo(x + 5.5f, yBottom + 3.8f);
+                stream.lineTo(x + 9.2f, yBottom + 8.6f);
+                stream.stroke();
+                return;
+            }
+            strokeRoundRect(x, yBottom, size, size, 2f, 78, 93, 109, 1.1f);
+        }
+
+        private void drawRadio(float centerX, float centerY, float radius, boolean selected) throws IOException {
+            if (selected) {
+                drawCircle(centerX, centerY, radius, 39, 141, 132, true);
+                return;
+            }
+            drawCircle(centerX, centerY, radius, 78, 93, 109, false);
+        }
+
+        private void drawCircle(float centerX, float centerY, float radius, int r, int g, int b, boolean filled)
+                throws IOException {
             float c = radius * 0.55228475f;
-            stream.setStrokingColor(78 / 255f, 93 / 255f, 109 / 255f);
-            stream.setLineWidth(0.9f);
+            stream.setStrokingColor(r / 255f, g / 255f, b / 255f);
+            stream.setNonStrokingColor(65 / 255f, 196 / 255f, 183 / 255f);
+            stream.setLineWidth(1.1f);
             stream.moveTo(centerX + radius, centerY);
             stream.curveTo(centerX + radius, centerY + c, centerX + c, centerY + radius, centerX, centerY + radius);
             stream.curveTo(centerX - c, centerY + radius, centerX - radius, centerY + c, centerX - radius, centerY);
             stream.curveTo(centerX - radius, centerY - c, centerX - c, centerY - radius, centerX, centerY - radius);
             stream.curveTo(centerX + c, centerY - radius, centerX + radius, centerY - c, centerX + radius, centerY);
             stream.closePath();
-            stream.stroke();
+            if (filled) {
+                stream.fillAndStroke();
+            } else {
+                stream.stroke();
+            }
         }
 
         private void drawStar(

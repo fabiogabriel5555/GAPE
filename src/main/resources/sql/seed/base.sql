@@ -131,39 +131,39 @@ INSERT INTO lesson (
 
 INSERT INTO assessment (
     id_assessment, id_subject, id_content_block, title, description, type, mode, correction_mode,
-    max_grade, passing_grade, attempts_limit, state, available_from, available_until
+    max_grade, passing_grade, final_grade_weight, attempts_limit, state, available_from, available_until
 ) VALUES
     (90, 40, 60, 'Form 1', 'Formative assessment', 'form', 'online', 'automatic',
-     20.00, 9.50, 2, 'active', '2026-02-10 00:00:00', '2026-02-20 23:59:59'),
+     20.00, 9.50, 50.00, 2, 'active', '2026-02-10 00:00:00', '2026-02-20 23:59:59'),
     (91, 41, 62, 'Form 2', 'Mathematics assessment', 'form', 'online', 'automatic',
-     20.00, 10.00, 1, 'active', '2026-03-02 00:00:00', '2026-03-10 23:59:59'),
+     20.00, 10.00, 100.00, 1, 'active', '2026-03-02 00:00:00', '2026-03-10 23:59:59'),
     (92, 40, NULL, 'Final Exam', 'Final subject assessment', 'exam', 'onsite', 'manual',
-     20.00, 9.50, 1, 'draft', '2026-06-20 09:00:00', '2026-06-20 11:00:00');
+     20.00, 9.50, 50.00, 1, 'draft', '2026-06-20 09:00:00', '2026-06-20 11:00:00');
 
 INSERT INTO assessment_class_group (id_assessment, id_class_group) VALUES
     (92, 50);
 
 INSERT INTO question (
-    id_question, id_assessment, cod_question, statement, type, order_no, required_flag, score, expected_answer, state
+    id_question, id_assessment, cod_question, statement, type, order_no, required_flag, score, expected_answer
 ) VALUES
-    (100, 90, 'Q1', 'What is the definition of a functional requirement?', 'single_choice', 1, 1, 10.00, NULL, 'active'),
-    (101, 91, 'Q1', 'What is 2 + 2?', 'single_choice', 1, 1, 20.00, NULL, 'active');
+    (100, 90, 'Q1', 'What is the definition of a functional requirement?', 'single_choice', 1, 1, 10.00, NULL),
+    (101, 91, 'Q1', 'What is 2 + 2?', 'single_choice', 1, 1, 20.00, NULL);
 
 INSERT INTO question_option (
-    id_option, id_question, order_no, text, correct_flag, state
+    id_option, id_question, order_no, text, correct_flag
 ) VALUES
-    (110, 100, 1, 'Correct option', 1, 'active'),
-    (111, 100, 2, 'Incorrect option', 0, 'active'),
-    (112, 101, 1, '4', 1, 'active'),
-    (113, 101, 2, '5', 0, 'active');
+    (110, 100, 1, 'Correct option', 1),
+    (111, 100, 2, 'Incorrect option', 0),
+    (112, 101, 1, '4', 1),
+    (113, 101, 2, '5', 0);
 
-INSERT INTO enroll_assessment (id_student_user, id_assessment, state, start_date, end_date) VALUES
-    (4, 90, 'active', '2026-02-10', NULL);
+INSERT INTO enroll_assessment (id_student_user, id_assessment, state) VALUES
+    (4, 90, 'active');
 
 INSERT INTO attempt (
     id_attempt, id_student_user, id_assessment, attempt_number, score, state, started_at, submitted_at
 ) VALUES
-    (120, 4, 90, 1, 10.00, 'submitted', '2026-02-11 10:00:00', '2026-02-11 10:10:00');
+    (120, 4, 90, 1, NULL, 'submitted', '2026-02-11 10:00:00', '2026-02-11 10:10:00');
 
 INSERT INTO response (
     id_response, id_attempt, id_question, cod_response, answer, attachment, score, answered_at
@@ -210,17 +210,18 @@ INSERT INTO based_on_assessment (id_grade_sheet, id_assessment, weight) VALUES
     (170, 90, 100.00);
 
 INSERT INTO grade_record (
-    id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, recorded_at, notes, state
+    id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, state, recorded_at, notes
 ) VALUES
-    (180, 170, 4, 120, 'GR-001', 10.00, 'approved', '2026-02-12 12:00:00', NULL, 'active');
+    (180, 170, 4, 120, 'GR-001', 10.00, 'approved', 'archived', '2026-02-10 12:00:00',
+     'Archived seed record; active final grades are calculated automatically only after every weighted assessment has a corrected score.');
 
 INSERT INTO certificate (
-    id_certificate, id_course, id_user_student, title, notes, type, template, validation_code, issued_at, final_grade, state
+    id_certificate, id_course, id_user_student, title, notes, type, template, validation_code, issued_at, state, revoked_at, final_grade
 ) VALUES
     (191, 30, 4, 'Participation Certificate', 'Participation completed', 'attendance', 'template-v1',
-     'VAL-2026-0001', '2026-07-01 11:00:00', 10.00, 'issued'),
+     NULL, NULL, 'draft', NULL, NULL),
     (192, 31, 4, 'Alternative Certificate', 'Used for inconsistency tests', 'completion', 'template-v1',
-     NULL, NULL, NULL, 'draft');
+     'VAL-2026-0005', '2026-07-01 11:30:00', 'draft', NULL, NULL);
 
 INSERT INTO based_on_grade_sheet_certificate (id_certificate, id_grade_sheet) VALUES
     (191, 170);

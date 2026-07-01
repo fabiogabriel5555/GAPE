@@ -48,9 +48,9 @@ INSERT INTO lesson (
 
 -- Option without an existing question
 INSERT INTO question_option (
-    id_option, id_question, order_no, text, correct_flag, state
+    id_option, id_question, order_no, text, correct_flag
 ) VALUES
-    (9014, 999999, 1, 'Option without question', 0, 'active');
+    (9014, 999999, 1, 'Option without question', 0);
 
 -- Attempt without an existing student
 INSERT INTO attempt (
@@ -72,15 +72,15 @@ INSERT INTO response (
 
 -- Certificate without an existing course
 INSERT INTO certificate (
-    id_certificate, id_course, id_user_student, title, notes, type, template, validation_code, issued_at, final_grade, state
+    id_certificate, id_course, id_user_student, title, notes, type, template, validation_code, issued_at, final_grade
 ) VALUES
-    (9018, 999999, 4, 'Course FK Certificate', NULL, 'completion', NULL, 'CERT-FK-COURSE', NULL, NULL, 'draft');
+    (9018, 999999, 4, 'Course FK Certificate', NULL, 'completion', NULL, 'CERT-FK-COURSE', '2026-07-01 10:00:00', NULL);
 
 -- Certificate without an existing student
 INSERT INTO certificate (
-    id_certificate, id_course, id_user_student, title, notes, type, template, validation_code, issued_at, final_grade, state
+    id_certificate, id_course, id_user_student, title, notes, type, template, validation_code, issued_at, final_grade
 ) VALUES
-    (9019, 30, 999999, 'Cert FK Aluno', NULL, 'completion', NULL, 'CERT-FK-STUDENT', NULL, NULL, 'draft');
+    (9019, 30, 999999, 'Cert FK Aluno', NULL, 'completion', NULL, 'CERT-FK-STUDENT', '2026-07-01 10:05:00', NULL);
 
 -- FK para permission inexistente
 INSERT INTO grant_teacher (id_teacher_user, cod_permission)

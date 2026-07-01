@@ -128,13 +128,17 @@
                         </div>
                         <div class="col-lg-3">
                             <label for="ects" class="fw-medium text-base text-neutral-800 mb-12">ECTS</label>
-                            <input id="ects" name="ects" type="number" min="0" step="0.01" value="<c:out value='${form.ects}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                            <input id="ects" name="ects" type="number" min="0.01" step="0.01" required value="<c:out value='${form.ects}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
-                        <div class="col-lg-4">
+                        <div class="col-lg-3">
+                            <label for="certificateMaxGrade" class="fw-medium text-base text-neutral-800 mb-12">Certificate max grade</label>
+                            <input id="certificateMaxGrade" name="certificateMaxGrade" type="number" min="0.01" step="0.01" required value="<c:out value='${form.certificateMaxGrade}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                        </div>
+                        <div class="col-lg-3">
                             <label for="duration" class="fw-medium text-base text-neutral-800 mb-12">Duration (in years)</label>
                             <input id="duration" name="duration" type="number" min="0" step="1" inputmode="numeric" pattern="[0-9]*" value="<c:out value='${form.duration}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
-                        <div class="col-lg-4 gape-select-field">
+                        <div class="col-lg-3 gape-select-field">
                             <label for="type" class="fw-medium text-base text-neutral-800 mb-12">Type</label>
                             <select id="type" name="type" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
                                 <option value="DEGREE" ${form.type == 'DEGREE' ? 'selected' : ''}>Degree</option>
@@ -144,7 +148,7 @@
                                 <option value="OTHER" ${form.type == 'OTHER' ? 'selected' : ''}>Other</option>
                             </select>
                         </div>
-                        <div class="col-lg-4 gape-select-field">
+                        <div class="col-lg-3 gape-select-field">
                             <label for="state" class="fw-medium text-base text-neutral-800 mb-12">State</label>
                             <select id="state" name="state" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
                                 <option value="ACTIVE" ${form.state == 'ACTIVE' ? 'selected' : ''}>Active</option>

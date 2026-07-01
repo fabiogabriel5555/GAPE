@@ -14,7 +14,6 @@ import java.util.Optional;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionCreateCommand;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
 import pt.isel.gape.learning.model.QuestionUpdateCommand;
 
@@ -30,8 +29,8 @@ public final class QuestionDAO {
         String sql = """
                 INSERT INTO question (
                     id_assessment, cod_question, statement, type, order_no,
-                    required_flag, score, expected_answer, state
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    required_flag, score, expected_answer
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setLong(1, command.assessmentId());
@@ -124,12 +123,7 @@ public final class QuestionDAO {
     }
 
     public int countActiveByAssessment(Connection connection, long assessmentId) throws SQLException {
-        String sql = """
-                SELECT COUNT(*)
-                FROM question
-                WHERE id_assessment = ?
-                  AND state = 'active'
-                """;
+        String sql = "SELECT COUNT(*) FROM question WHERE id_assessment = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, assessmentId);
             try (ResultSet resultSet = statement.executeQuery()) {
@@ -150,12 +144,12 @@ public final class QuestionDAO {
         String sql = """
                 UPDATE question
                 SET cod_question = ?, statement = ?, type = ?, order_no = ?,
-                    required_flag = ?, score = ?, expected_answer = ?, state = ?
+                    required_flag = ?, score = ?, expected_answer = ?
                 WHERE id_question = ?
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             setStatementValues(statement, command);
-            statement.setLong(9, questionId);
+            statement.setLong(8, questionId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Question not found: " + questionId);
             }
@@ -191,7 +185,6 @@ public final class QuestionDAO {
                 SELECT COALESCE(SUM(score), 0)
                 FROM question
                 WHERE id_assessment = ?
-                  AND state = 'active'
                   AND (? IS NULL OR id_question <> ?)
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -219,7 +212,6 @@ public final class QuestionDAO {
                   ON r.id_question = q.id_question
                  AND r.id_attempt = ?
                 WHERE q.id_assessment = ?
-                  AND q.state = 'active'
                   AND q.required_flag = 1
                   AND r.id_response IS NULL
                 """;
@@ -242,7 +234,6 @@ public final class QuestionDAO {
                   ON r.id_question = q.id_question
                  AND r.id_attempt = ?
                 WHERE q.id_assessment = ?
-                  AND q.state = 'active'
                   AND (r.id_response IS NULL OR r.score IS NULL)
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -264,7 +255,6 @@ public final class QuestionDAO {
         statement.setBoolean(6, command.required());
         statement.setBigDecimal(7, command.score());
         setNullableString(statement, 8, command.expectedAnswer());
-        statement.setString(9, command.state().toDatabaseValue());
     }
 
     private static void setStatementValues(PreparedStatement statement, QuestionUpdateCommand command)
@@ -276,13 +266,12 @@ public final class QuestionDAO {
         statement.setBoolean(5, command.required());
         statement.setBigDecimal(6, command.score());
         setNullableString(statement, 7, command.expectedAnswer());
-        statement.setString(8, command.state().toDatabaseValue());
     }
 
     private static String selectQuestionSql() {
         return """
                 SELECT id_question, id_assessment, cod_question, statement, type,
-                       order_no, required_flag, score, expected_answer, state
+                       order_no, required_flag, score, expected_answer
                 FROM question
                 """;
     }
@@ -305,8 +294,7 @@ public final class QuestionDAO {
                 resultSet.getInt("order_no"),
                 resultSet.getBoolean("required_flag"),
                 resultSet.getBigDecimal("score"),
-                resultSet.getString("expected_answer"),
-                QuestionState.fromDatabaseValue(resultSet.getString("state"))
+                resultSet.getString("expected_answer")
         );
     }
 

@@ -1,4 +1,14 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<c:if test="${learningAssessmentActiveChild == 'new'}">
+    <ul class="mt-8 ps-24">
+        <li class="mb-6 activePage">
+            <a href="${pageContext.request.contextPath}/learning/assessments/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-plus-circle"></i></span>
+                Create
+            </a>
+        </li>
+    </ul>
+</c:if>
 <c:if test="${not empty learningAssessmentContextId}">
     <c:url var="learningAssessmentDetailUrl" value="/learning/assessments/${learningAssessmentContextId}"/>
     <c:url var="learningAssessmentEditUrl" value="/learning/assessments/${learningAssessmentContextId}/edit"/>

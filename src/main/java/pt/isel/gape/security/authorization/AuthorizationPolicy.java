@@ -170,6 +170,8 @@ public final class AuthorizationPolicy {
                 || path.equals("/contact.jsp")
                 || path.equals("/courses")
                 || isPathOrChild(path, "/courses")
+                || path.equals("/certificates/validate")
+                || isPathOrChild(path, "/certificates/validate")
                 || path.equals("/courses.jsp")
                 || path.equals("/course.jsp")
                 || path.equals("/course-list-view.jsp")

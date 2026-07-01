@@ -185,11 +185,9 @@ public final class ResponseDAO {
 
     public BigDecimal sumScoresByActiveQuestionsByAttempt(Connection connection, long attemptId) throws SQLException {
         String sql = """
-                SELECT COALESCE(SUM(r.score), 0)
-                FROM response r
-                JOIN question q ON q.id_question = r.id_question
-                WHERE r.id_attempt = ?
-                  AND q.state = 'active'
+                SELECT COALESCE(SUM(score), 0)
+                FROM response
+                WHERE id_attempt = ?
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, attemptId);

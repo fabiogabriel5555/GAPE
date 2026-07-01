@@ -2,6 +2,7 @@ package pt.isel.gape.learning.service;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.List;
 import java.util.Objects;
@@ -646,6 +647,8 @@ public final class CourseService {
         requireNoInitialPhoto(command.photo(), "Course photo");
         Objects.requireNonNull(command.type(), "course type is required");
         Objects.requireNonNull(command.state(), "course state is required");
+        requirePositiveDecimal(command.ects(), "Course ECTS is required");
+        requirePositiveDecimal(command.certificateMaxGrade(), "Course certificate max grade is required");
         requireDurationInYears(command.duration());
     }
 
@@ -659,6 +662,8 @@ public final class CourseService {
         MediaPathValidator.optionalSafeRelativePath(command.photo(), "Course photo");
         Objects.requireNonNull(command.type(), "course type is required");
         Objects.requireNonNull(command.state(), "course state is required");
+        requirePositiveDecimal(command.ects(), "Course ECTS is required");
+        requirePositiveDecimal(command.certificateMaxGrade(), "Course certificate max grade is required");
         requireDurationInYears(command.duration());
     }
 
@@ -668,6 +673,12 @@ public final class CourseService {
         }
         if (!value.trim().matches("\\d+")) {
             throw new IllegalArgumentException("Course duration must contain only digits");
+        }
+    }
+
+    private static void requirePositiveDecimal(BigDecimal value, String message) {
+        if (value == null || value.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException(message);
         }
     }
 

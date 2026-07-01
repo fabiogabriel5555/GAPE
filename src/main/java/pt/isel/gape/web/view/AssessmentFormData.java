@@ -20,6 +20,7 @@ public final class AssessmentFormData {
     private final String correctionMode;
     private final String maxGrade;
     private final String passingGrade;
+    private final String finalGradeWeight;
     private final String attemptsLimit;
     private final String enrollmentMode;
     private final String state;
@@ -38,6 +39,7 @@ public final class AssessmentFormData {
             String correctionMode,
             String maxGrade,
             String passingGrade,
+            String finalGradeWeight,
             String attemptsLimit,
             String enrollmentMode,
             String state,
@@ -55,6 +57,7 @@ public final class AssessmentFormData {
         this.correctionMode = defaultValue(correctionMode, "automatic");
         this.maxGrade = defaultValue(maxGrade, "20.00");
         this.passingGrade = defaultValue(passingGrade, "10.00");
+        this.finalGradeWeight = defaultValue(finalGradeWeight, "100.00");
         this.attemptsLimit = attemptsLimit;
         this.enrollmentMode = defaultValue(enrollmentMode, "auto_approve");
         this.state = defaultValue(state, "draft");
@@ -107,6 +110,7 @@ public final class AssessmentFormData {
                 safeCorrectionMode,
                 "20.00",
                 "10.00",
+                "100.00",
                 "",
                 "auto_approve",
                 "draft",
@@ -128,6 +132,7 @@ public final class AssessmentFormData {
                 assessment.correctionMode().toDatabaseValue(),
                 assessment.maxGrade() == null ? "" : assessment.maxGrade().toPlainString(),
                 assessment.passingGrade() == null ? "" : assessment.passingGrade().toPlainString(),
+                assessment.finalGradeWeight() == null ? "" : assessment.finalGradeWeight().toPlainString(),
                 stringValue(assessment.attemptsLimit()),
                 assessment.enrollmentMode().toDatabaseValue(),
                 editableState(assessment.state()).toDatabaseValue(),
@@ -151,6 +156,7 @@ public final class AssessmentFormData {
                 assessment.correctionMode().toDatabaseValue(),
                 assessment.maxGrade() == null ? "" : assessment.maxGrade().toPlainString(),
                 assessment.passingGrade() == null ? "" : assessment.passingGrade().toPlainString(),
+                assessment.finalGradeWeight() == null ? "" : assessment.finalGradeWeight().toPlainString(),
                 stringValue(assessment.attemptsLimit()),
                 assessment.enrollmentMode().toDatabaseValue(),
                 editableState(assessment.state()).toDatabaseValue(),
@@ -172,6 +178,7 @@ public final class AssessmentFormData {
                 text(request, "correctionMode"),
                 text(request, "maxGrade"),
                 text(request, "passingGrade"),
+                text(request, "finalGradeWeight"),
                 text(request, "attemptsLimit"),
                 text(request, "enrollmentMode"),
                 text(request, "state"),
@@ -226,6 +233,10 @@ public final class AssessmentFormData {
 
     public String getPassingGrade() {
         return passingGrade;
+    }
+
+    public String getFinalGradeWeight() {
+        return finalGradeWeight;
     }
 
     public String getAttemptsLimit() {

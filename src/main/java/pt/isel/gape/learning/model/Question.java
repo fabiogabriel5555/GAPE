@@ -11,7 +11,6 @@ public record Question(
         int orderNo,
         boolean required,
         BigDecimal score,
-        String expectedAnswer,
-        QuestionState state
+        String expectedAnswer
 ) {
 }

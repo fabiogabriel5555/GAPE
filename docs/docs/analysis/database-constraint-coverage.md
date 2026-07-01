@@ -74,7 +74,7 @@ Legenda de implementação (Relatório 7)
   Garantida por: `CHECK` e triggers `bi_absence_justification_validate`/`bu_absence_justification_validate`, cobrindo compatibilidade do registo, identidade do aluno e processamento da justificação.
 
 - `[26], [27], [28], [29], [30], [32]`
-  Garantida por: triggers `bi_associate_grade_sheet_class_group_validate`, `bi_based_on_assessment_validate`/`bu_based_on_assessment_validate`, `bi_grade_record_validate`/`bu_grade_record_validate` e `CHECK` em `based_on_assessment.weight`.
+  Garantida por: triggers `bi_associate_grade_sheet_class_group_validate`, `bi_based_on_assessment_validate`/`bu_based_on_assessment_validate`, `bi_grade_record_validate`/`bu_grade_record_validate` e `CHECK` em `based_on_assessment.weight`/`assessment.final_grade_weight`. A soma exata dos pesos a 100% e a redistribuicao no fim do periodo sao regras de lifecycle aplicacional.
 
 - `[39], [40], [41]`
   Garantida por: `CHECK`, `UNIQUE` e trigger `bi_bgsc_validate`, cobrindo emissão coerente e associação entre `Certificate`, `Grade_Sheet`, `Course` e `Subject`.
@@ -186,7 +186,7 @@ Legenda de implementação (Relatório 7)
   Onde/quando: `BN-Pre` + `BN-Tx`.
 
 - `[34]`
-  Motivo: bloqueio de alterações diretas a pautas publicadas continua a ser regra de workflow.
+  Motivo: bloqueio de alterações diretas a notas de pautas publicadas continua a ser regra de workflow; pesos das avaliações de turma continuam corrigiveis pela aplicação em qualquer estado da pauta.
   Onde/quando: `BN-Tx`.
 
 - `[42]`

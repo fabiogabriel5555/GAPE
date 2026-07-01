@@ -15,6 +15,7 @@ public final class SubjectView {
     private final String photo;
     private final String description;
     private final BigDecimal ects;
+    private final BigDecimal finalGradeMax;
     private final Integer workloadHours;
     private final SubjectState state;
     private final String organizationName;
@@ -28,6 +29,7 @@ public final class SubjectView {
         this.photo = MediaPathValidator.safeRelativePath(subject.photo()).orElse(null);
         this.description = subject.description();
         this.ects = subject.ects();
+        this.finalGradeMax = subject.finalGradeMax();
         this.workloadHours = subject.workloadHours();
         this.state = subject.state();
         this.organizationName = organizationName;
@@ -68,6 +70,18 @@ public final class SubjectView {
 
     public String getEctsLabel() {
         return ects == null ? "-" : ects.stripTrailingZeros().toPlainString() + " ECTS";
+    }
+
+    public BigDecimal getEcts() {
+        return ects;
+    }
+
+    public String getFinalGradeMaxLabel() {
+        return finalGradeMax == null ? "-" : finalGradeMax.stripTrailingZeros().toPlainString();
+    }
+
+    public BigDecimal getFinalGradeMax() {
+        return finalGradeMax;
     }
 
     public String getWorkloadHoursLabel() {

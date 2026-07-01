@@ -3,7 +3,6 @@ package pt.isel.gape.learning.service;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
-import java.time.LocalDate;
 import java.util.Objects;
 
 import pt.isel.gape.access.dao.PermissionDAO;
@@ -30,7 +29,6 @@ public final class AssessmentEnrollmentService {
     private final AssessmentEnrollmentDAO assessmentEnrollmentDAO;
     private final AssessmentAccessPolicy accessPolicy;
     private final AuditService auditService;
-    private final Clock clock;
 
     public AssessmentEnrollmentService(ConnectionProvider connectionProvider, Clock clock) {
         this(
@@ -56,7 +54,7 @@ public final class AssessmentEnrollmentService {
                 "assessmentEnrollmentDAO is required"
         );
         Objects.requireNonNull(permissionDAO, "permissionDAO is required");
-        this.clock = Objects.requireNonNull(clock, "clock is required");
+        Clock checkedClock = Objects.requireNonNull(clock, "clock is required");
         this.accessPolicy = new AssessmentAccessPolicy(
                 assessmentDAO,
                 permissionDAO,
@@ -67,7 +65,7 @@ public final class AssessmentEnrollmentService {
                         new TeachClassGroupDAO(connectionProvider)
                 )
         );
-        this.auditService = new AuditService(new ActivityLogDAO(connectionProvider), clock);
+        this.auditService = new AuditService(new ActivityLogDAO(connectionProvider), checkedClock);
     }
 
     public AssessmentEnrollment enrollStudentInAssessment(
@@ -179,8 +177,6 @@ public final class AssessmentEnrollmentService {
             AccessProfileType actorProfileType,
             long studentUserId,
             long assessmentId,
-            LocalDate startDate,
-            LocalDate endDate,
             String sourceIp
     ) {
         return transitionPending(
@@ -190,8 +186,6 @@ public final class AssessmentEnrollmentService {
                 studentUserId,
                 assessmentId,
                 EnrollmentState.ACTIVE,
-                startDate,
-                endDate,
                 sourceIp,
                 "ASSESSMENT_ENROLL_APPROVE"
         );
@@ -212,8 +206,6 @@ public final class AssessmentEnrollmentService {
                 studentUserId,
                 assessmentId,
                 EnrollmentState.REJECTED,
-                null,
-                null,
                 sourceIp,
                 "ASSESSMENT_ENROLL_REJECT"
         );
@@ -226,8 +218,6 @@ public final class AssessmentEnrollmentService {
             long studentUserId,
             long assessmentId,
             EnrollmentState targetState,
-            LocalDate startDate,
-            LocalDate endDate,
             String sourceIp,
             String auditType
     ) {
@@ -252,18 +242,12 @@ public final class AssessmentEnrollmentService {
                 if (current.state() != EnrollmentState.PENDING) {
                     throw new IllegalStateException("Only pending assessment enrollment requests can be changed here");
                 }
-                LocalDate effectiveStart = targetState == EnrollmentState.ACTIVE
-                        ? startDate != null ? startDate : current.startDate() == null ? LocalDate.now(clock) : current.startDate()
-                        : current.startDate();
-                LocalDate effectiveEnd = endDate != null ? endDate : current.endDate();
                 assessmentEnrollmentDAO.updateState(
                         connection,
                         studentUserId,
                         assessment.id(),
                         EnrollmentState.PENDING,
-                        targetState,
-                        effectiveStart,
-                        effectiveEnd
+                        targetState
                 );
                 auditService.record(connection, actorUserId, sessionId, auditType, "assessment_enrollment",
                         identifier(studentUserId, assessment.id()), "success", sourceIp);
@@ -289,8 +273,6 @@ public final class AssessmentEnrollmentService {
             long studentUserId,
             long assessmentId,
             EnrollmentState state,
-            LocalDate startDate,
-            LocalDate endDate,
             String sourceIp
     ) {
         try (Connection connection = connectionProvider.getConnection()) {
@@ -310,9 +292,7 @@ public final class AssessmentEnrollmentService {
                         connection,
                         studentUserId,
                         assessment.id(),
-                        state,
-                        startDate,
-                        endDate
+                        state
                 );
                 auditService.record(connection, actorUserId, sessionId, "ASSESSMENT_ENROLL_UPDATE",
                         "assessment_enrollment", identifier(studentUserId, assessment.id()), "success", sourceIp);
@@ -338,7 +318,6 @@ public final class AssessmentEnrollmentService {
             AccessProfileType actorProfileType,
             long studentUserId,
             long assessmentId,
-            LocalDate endDate,
             String sourceIp
     ) {
         try (Connection connection = connectionProvider.getConnection()) {
@@ -356,8 +335,7 @@ public final class AssessmentEnrollmentService {
                 assessmentEnrollmentDAO.withdraw(
                         connection,
                         studentUserId,
-                        assessment.id(),
-                        endDate == null ? LocalDate.now(clock) : endDate
+                        assessment.id()
                 );
                 auditService.record(connection, actorUserId, sessionId, "ASSESSMENT_ENROLL_WITHDRAW",
                         "assessment_enrollment", identifier(studentUserId, assessment.id()), "success", sourceIp);
@@ -436,8 +414,7 @@ public final class AssessmentEnrollmentService {
                 if (enrollmentMode == EnrollmentApprovalMode.AUTO_APPROVE) {
                     assessmentEnrollmentDAO.syncAutomaticEnrollments(
                             connection,
-                            assessment.id(),
-                            LocalDate.now(clock)
+                            assessment.id()
                     );
                 }
                 auditService.record(connection, actorUserId, sessionId, "ASSESSMENT_ENROLL_POLICY",
@@ -491,14 +468,9 @@ public final class AssessmentEnrollmentService {
         if (command.assessmentId() <= 0) {
             throw new IllegalArgumentException("assessment is required");
         }
-        if (command.startDate() != null && command.endDate() != null && command.endDate().isBefore(command.startDate())) {
-            throw new IllegalArgumentException("Assessment enrollment end date cannot be before start date");
-        }
         return new AssessmentEnrollmentCommand(
                 command.studentUserId(),
-                command.assessmentId(),
-                command.startDate() == null ? LocalDate.now(clock) : command.startDate(),
-                command.endDate()
+                command.assessmentId()
         );
     }
 

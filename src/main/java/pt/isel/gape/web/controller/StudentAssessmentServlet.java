@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Clock;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -208,7 +207,7 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
             throws ServletException, IOException {
         SessionUser actor = requireCurrentUser(request);
         try {
-            assessmentEnrollmentDAO.syncAllAutomaticEnrollments(LocalDate.now());
+            assessmentEnrollmentDAO.syncAllAutomaticEnrollments();
             List<AssessmentView> assessments = viewFactory.assessmentViews(
                     assessmentDAO.findActiveAccessibleByStudent(actor.userId())
             );
@@ -240,9 +239,7 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
                     currentSessionId(request),
                     new AssessmentEnrollmentCommand(
                             actor.userId(),
-                            assessmentId,
-                            null,
-                            null
+                            assessmentId
                     ),
                     request.getRemoteAddr()
             );
@@ -303,9 +300,7 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
             return;
         }
         AssessmentView assessment = assessmentView(attempt.assessmentId());
-        List<QuestionView> questions = viewFactory.questionViews(attempt.assessmentId()).stream()
-                .filter(QuestionView::isActive)
-                .toList();
+        List<QuestionView> questions = viewFactory.questionViews(attempt.assessmentId());
         List<ResponseView> responses = viewFactory.responseViews(attempt.id());
         request.setAttribute("assessment", assessment);
         request.setAttribute("attempt", viewFactory.attemptView(attempt));
@@ -360,9 +355,7 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
             return;
         }
         try {
-            for (QuestionView question : viewFactory.questionViews(attempt.assessmentId()).stream()
-                    .filter(QuestionView::isActive)
-                    .toList()) {
+            for (QuestionView question : viewFactory.questionViews(attempt.assessmentId())) {
                 ResponsePayload payload = responsePayload(request, question);
                 if (!payload.hasAnyValue() && !question.isRequired()) {
                     continue;

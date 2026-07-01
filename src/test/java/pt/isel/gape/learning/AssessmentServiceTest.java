@@ -29,8 +29,8 @@ import pt.isel.gape.learning.model.AssessmentMode;
 import pt.isel.gape.learning.model.AssessmentState;
 import pt.isel.gape.learning.model.AssessmentType;
 import pt.isel.gape.learning.model.AssessmentUpdateCommand;
+import pt.isel.gape.learning.model.EnrollmentApprovalMode;
 import pt.isel.gape.learning.model.QuestionCreateCommand;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
 import pt.isel.gape.learning.service.AssessmentService;
 import pt.isel.gape.learning.service.QuestionService;
@@ -194,6 +194,35 @@ class AssessmentServiceTest {
                 bd("20.00"),
                 bd("10.00"),
                 0,
+                AssessmentState.SCHEDULED,
+                start(),
+                end()
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> assessmentService.createAssessment(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                command,
+                IP
+        ));
+    }
+
+    @Test
+    void assessmentFinalGradeWeightMustStayBetweenZeroAndOneHundred() {
+        AssessmentCreateCommand command = new AssessmentCreateCommand(
+                null,
+                60L,
+                "Form Invalid Final Weight",
+                null,
+                AssessmentType.FORM,
+                AssessmentMode.ONLINE,
+                AssessmentCorrectionMode.AUTOMATIC,
+                bd("20.00"),
+                bd("10.00"),
+                bd("100.01"),
+                1,
+                EnrollmentApprovalMode.AUTO_APPROVE,
                 AssessmentState.SCHEDULED,
                 start(),
                 end()
@@ -398,8 +427,7 @@ class AssessmentServiceTest {
                         1,
                         true,
                         bd("5.00"),
-                        null,
-                        QuestionState.ACTIVE
+                        null
                 ),
                 IP
         );

@@ -52,11 +52,11 @@ INSERT INTO deletion_request (
 ) VALUES
     (9030, 4, NULL, '2026-03-03 10:00:00', '2026-03-03 12:00:00', 'Request without processor', 'under_review');
 
--- Invalid state in Question
+-- Invalid type in Question
 INSERT INTO question (
-    id_question, id_assessment, cod_question, statement, type, order_no, required_flag, score, expected_answer, state
+    id_question, id_assessment, cod_question, statement, type, order_no, required_flag, score, expected_answer
 ) VALUES
-    (9031, 90, 'QX', 'Invalid question', 'single_choice', 2, 1, 5.00, NULL, 'pending');
+    (9031, 90, 'QX', 'Invalid question', 'unsupported', 2, 1, 5.00, NULL);
 
 -- Invalid Assessment mode
 INSERT INTO assessment (
@@ -99,15 +99,15 @@ INSERT INTO grade_sheet (
 ) VALUES
     (9036, 40, 'Invalid Grade Sheet', 'partial', NULL, 'active');
 
--- weight tem de ser > 0
+-- weight tem de estar entre 0 e 100
 INSERT INTO based_on_assessment (id_grade_sheet, id_assessment, weight) VALUES
-    (170, 92, 0.00);
+    (170, 92, -1.00);
 
--- Certificate issued exige validation_code e issued_at
+-- Certificate type must be valid
 INSERT INTO certificate (
-    id_certificate, id_course, id_user_student, title, notes, type, template, validation_code, issued_at, final_grade, state
+    id_certificate, id_course, id_user_student, title, notes, type, template, validation_code, issued_at, final_grade
 ) VALUES
-    (9037, 30, 4, 'Invalid Certificate', NULL, 'completion', NULL, NULL, NULL, NULL, 'issued');
+    (9037, 30, 4, 'Invalid Certificate', NULL, 'invalid', NULL, NULL, NULL, NULL);
 
 -- Message scheduled exige scheduled_at
 INSERT INTO message (

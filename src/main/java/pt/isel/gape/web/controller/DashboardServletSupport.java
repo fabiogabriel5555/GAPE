@@ -511,6 +511,55 @@ abstract class DashboardServletSupport extends HttpServlet {
         if (message.contains("Decision notes are too long")) {
             return "Decision notes are too long.";
         }
+        if (message.contains("New grade sheets must start as draft")) {
+            return "New grade sheets must start as draft.";
+        }
+        if (message.contains("Grade sheet class groups must belong to the subject")) {
+            return "The selected class groups must belong to the grade sheet subject.";
+        }
+        if (message.contains("Grade sheet assessments must belong to the subject")) {
+            return "The selected assessments must belong to the grade sheet subject.";
+        }
+        if (message.contains("Assessment weights cannot exceed")
+                || message.contains("Assessment weights must be numeric values between 0 and 100")) {
+            return "Assessment weights must be numeric values between 0 and 100%.";
+        }
+        if (message.contains("Only draft grade sheets can be published")) {
+            return "Only draft grade sheets can be published.";
+        }
+        if (message.contains("Grade sheet requires assessment weights")) {
+            return "Add assessment weights before publishing the grade sheet.";
+        }
+        if (message.contains("Published grade sheets cannot")) {
+            return "This grade sheet cannot be changed directly.";
+        }
+        if (message.contains("Student is not enrolled in the grade sheet context")) {
+            return "The selected student is not enrolled in this grade sheet context.";
+        }
+        if (message.contains("An active grade record already exists")) {
+            return "This student already has an active grade in the selected grade sheet.";
+        }
+        if (message.contains("Grade value cannot be negative")) {
+            return "Grade value cannot be negative.";
+        }
+        if (message.contains("Grade value cannot exceed the grade sheet scale")) {
+            return "Grade value cannot exceed the grade sheet scale.";
+        }
+        if (message.contains("Student is not eligible for a certificate")) {
+            return "The student does not meet the certificate eligibility requirements.";
+        }
+        if (message.contains("Certificate grade sheets must belong to the course")) {
+            return "Certificate grade sheets must belong to the selected course.";
+        }
+        if (message.contains("Certificate grade sheets must be published")) {
+            return "Certificates can only use published grade sheets.";
+        }
+        if (message.contains("Student has no approved grade record")) {
+            return "The student needs an approved grade in each selected grade sheet.";
+        }
+        if (message.contains("validation code") && message.contains("already")) {
+            return "The certificate validation code is already in use.";
+        }
         if (message.contains("Unknown")) {
             return "The selected record does not exist.";
         }

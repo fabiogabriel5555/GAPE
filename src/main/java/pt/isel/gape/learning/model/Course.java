@@ -11,6 +11,7 @@ public record Course(
         String photo,
         String description,
         BigDecimal ects,
+        BigDecimal certificateMaxGrade,
         String duration,
         CourseType type,
         CourseState state

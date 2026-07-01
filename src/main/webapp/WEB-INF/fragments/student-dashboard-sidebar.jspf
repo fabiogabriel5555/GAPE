@@ -31,9 +31,9 @@
                     </a>
                 </li>
                 <li class="mb-8 ${activeMenu == 'calendar' ? 'activePage' : ''}" data-menu-key="calendar">
-                    <a href="${pageContext.request.contextPath}/student/calendar" aria-current="${activeMenu == 'calendar' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                    <a href="${pageContext.request.contextPath}/student/events" aria-current="${activeMenu == 'calendar' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                         <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-dots"></i></span>
-                        Calendar
+                        Events
                     </a>
                 </li>
                 <li class="mb-8 ${activeMenu == 'courses' ? 'activePage' : ''}" data-menu-key="courses">
@@ -96,16 +96,10 @@
                         Assessments
                     </a>
                 </li>
-                <li class="mb-8 ${activeMenu == 'reviews' ? 'activePage' : ''}" data-menu-key="reviews">
-                    <a href="${pageContext.request.contextPath}/student/student/review/student-reviews.jsp" aria-current="${activeMenu == 'reviews' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sparkle"></i></span>
-                        Reviews
-                    </a>
-                </li>
-                <li class="mb-8 ${activeMenu == 'attendance' ? 'activePage' : ''}" data-menu-key="attendance">
-                    <a href="${pageContext.request.contextPath}/student/attendance" aria-current="${activeMenu == 'attendance' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                <li class="mb-8 ${activeMenu == 'attendance' or activeMenu == 'grades' ? 'activePage' : ''}" data-menu-key="attendance">
+                    <a href="${pageContext.request.contextPath}/student/attendance" aria-current="${activeMenu == 'attendance' or activeMenu == 'grades' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                         <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-check"></i></span>
-                        Attendance
+                        Enrollments &amp; Certificates
                     </a>
                 </li>
             </ul>

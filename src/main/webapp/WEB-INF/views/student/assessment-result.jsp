@@ -63,8 +63,13 @@
                             <p class="text-14 text-neutral-700 mb-0"><c:out value="${response.question.statement}"/></p>
                         </div>
                     </div>
-                    <span class="${response.scored ? 'bg-success-50 text-success-600' : 'bg-warning-30 text-warning-600'} px-12 py-7 rounded-pill text-12">
-                        <c:out value="${response.scoreLabel}"/>
+                    <span class="${attempt.corrected and response.scored ? 'bg-success-50 text-success-600' : 'bg-warning-30 text-warning-600'} px-12 py-7 rounded-pill text-12">
+                        <c:choose>
+                            <c:when test="${attempt.corrected and response.scored}">
+                                <c:out value="${response.scoreLabel}"/>
+                            </c:when>
+                            <c:otherwise>Not assigned yet</c:otherwise>
+                        </c:choose>
                     </span>
                 </div>
                 <div class="bg-neutral-20 rounded-8 px-16 py-14">

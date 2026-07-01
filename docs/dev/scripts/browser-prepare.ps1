@@ -98,6 +98,12 @@ function Deploy-App {
     if (Test-Path -LiteralPath $targetApp) {
         Remove-Item -LiteralPath $targetApp -Recurse -Force
     }
+    $workDir = Join-Path $TomcatBase "work"
+    Assert-InWorkspace -Workspace $Workspace -Path $workDir -Label "Tomcat JSP work cache"
+    if (Test-Path -LiteralPath $workDir) {
+        Remove-Item -LiteralPath $workDir -Recurse -Force
+    }
+    New-Item -ItemType Directory -Path $workDir -Force | Out-Null
     Copy-Item -LiteralPath $sourceApp -Destination $targetApp -Recurse -Force
 }
 

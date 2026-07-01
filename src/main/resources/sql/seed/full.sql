@@ -61,24 +61,24 @@ INSERT INTO lesson (
 
 INSERT INTO assessment (
     id_assessment, id_subject, id_content_block, title, description, type, mode, correction_mode,
-    max_grade, passing_grade, attempts_limit, enrollment_mode, state, available_from, available_until
+    max_grade, passing_grade, final_grade_weight, attempts_limit, enrollment_mode, state, available_from, available_until
 ) VALUES
     (93, 40, 61, 'PRJ-PL2 Online Form', 'Demo online class group assessment', 'form', 'online', 'automatic',
-     20.00, 9.50, 2, 'auto_approve', 'active', '2026-02-17 00:00:00', '2026-02-20 23:59:59');
+     20.00, 9.50, 100.00, 2, 'auto_approve', 'active', '2026-02-17 00:00:00', '2026-02-20 23:59:59');
 
 INSERT INTO question (
-    id_question, id_assessment, cod_question, statement, type, order_no, required_flag, score, expected_answer, state
+    id_question, id_assessment, cod_question, statement, type, order_no, required_flag, score, expected_answer
 ) VALUES
-    (102, 93, 'Q1', 'What is the goal of sprint planning?', 'single_choice', 1, 1, 20.00, NULL, 'active');
+    (102, 93, 'Q1', 'What is the goal of sprint planning?', 'single_choice', 1, 1, 20.00, NULL);
 
 INSERT INTO question_option (
-    id_option, id_question, order_no, text, correct_flag, state
+    id_option, id_question, order_no, text, correct_flag
 ) VALUES
-    (114, 102, 1, 'Define and plan the sprint work', 1, 'active'),
-    (115, 102, 2, 'Close the current sprint', 0, 'active');
+    (114, 102, 1, 'Define and plan the sprint work', 1),
+    (115, 102, 2, 'Close the current sprint', 0);
 
-INSERT INTO enroll_assessment (id_student_user, id_assessment, state, start_date, end_date) VALUES
-    (7, 93, 'active', '2026-02-17', NULL);
+INSERT INTO enroll_assessment (id_student_user, id_assessment, state) VALUES
+    (7, 93, 'active');
 
 INSERT INTO schedule_event (
     id_schedule_event, id_lesson, id_assessment, title, description, type, starts_at, ends_at,
@@ -103,7 +103,7 @@ INSERT INTO attendance_record (
 INSERT INTO attempt (
     id_attempt, id_student_user, id_assessment, attempt_number, score, state, started_at, submitted_at
 ) VALUES
-    (121, 7, 93, 1, 8.00, 'submitted', '2026-02-18 10:00:00', '2026-02-18 10:12:00');
+    (121, 7, 93, 1, NULL, 'submitted', '2026-02-18 10:00:00', '2026-02-18 10:12:00');
 
 INSERT INTO response (
     id_response, id_attempt, id_question, cod_response, answer, attachment, score, answered_at
@@ -114,9 +114,10 @@ INSERT INTO response_option (id_response, id_option) VALUES
     (131, 114);
 
 INSERT INTO grade_record (
-    id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, recorded_at, notes, state
+    id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, state, recorded_at, notes
 ) VALUES
-    (181, 170, 7, 121, 'GR-002', 8.00, 'reproved', '2026-02-12 12:05:00', 'Needs study reinforcement', 'active');
+    (181, 170, 7, 121, 'GR-002', 8.00, 'failed', 'archived', '2026-02-12 12:05:00',
+     'Archived seed record; active final grades are calculated automatically only after every weighted assessment has a corrected score.');
 
 -- Demo messages in the channel
 INSERT INTO channel (
@@ -143,10 +144,10 @@ INSERT INTO receive_message (
 -- Additional certificate
 INSERT INTO certificate (
     id_certificate, id_course, id_user_student, title, notes, type, template,
-    validation_code, issued_at, final_grade, state
+    validation_code, issued_at, state, revoked_at, final_grade
 ) VALUES
     (193, 30, 7, 'Participation Certificate', 'Participation in the module', 'attendance', 'template-v1',
-     'VAL-2026-0002', '2026-07-01 11:00:00', 8.00, 'issued');
+     'VAL-2026-0002', '2026-07-01 11:00:00', 'issued', NULL, 8.00);
 
 INSERT INTO based_on_grade_sheet_certificate (id_certificate, id_grade_sheet) VALUES
     (193, 170);
@@ -424,18 +425,20 @@ INSERT INTO lesson (
 
 INSERT INTO assessment (
     id_assessment, id_subject, id_content_block, title, description, type, mode, correction_mode,
-    max_grade, passing_grade, attempts_limit, enrollment_mode, state, available_from, available_until
+    max_grade, passing_grade, final_grade_weight, attempts_limit, enrollment_mode, state, available_from, available_until
 ) VALUES
     (94, 42, 63, 'Databases Practical Exam', 'Practical databases assessment', 'exam', 'onsite', 'manual',
-     20.00, 9.50, 2, 'manual', 'active', '2026-03-10 09:00:00', '2026-03-10 11:00:00'),
+     20.00, 9.50, 80.00, 2, 'manual', 'active', '2026-03-10 09:00:00', '2026-03-10 11:00:00'),
     (95, 42, 64, 'SQL Draft Form', 'Form in preparation', 'form', 'online', 'automatic',
-     20.00, 10.00, 3, 'auto_approve', 'draft', '2026-04-01 00:00:00', '2026-04-15 23:59:59'),
+     20.00, 10.00, 20.00, 3, 'auto_approve', 'draft', '2026-04-01 00:00:00', '2026-04-15 23:59:59'),
     (96, 44, 65, 'Safety Form', 'Online industrial safety assessment', 'form', 'online', 'automatic',
-     20.00, 10.00, 1, 'auto_approve', 'active', '2026-04-09 00:00:00', '2026-04-12 23:59:59'),
+     20.00, 10.00, 100.00, 1, 'auto_approve', 'active', '2026-04-09 00:00:00', '2026-04-12 23:59:59'),
     (97, 43, NULL, 'Networks Exam', 'Networks exam without pedagogical block', 'exam', 'onsite', 'manual',
-     20.00, 9.50, 1, 'manual', 'completed', '2026-05-20 09:00:00', '2026-05-20 11:00:00'),
+     20.00, 9.50, 100.00, 1, 'manual', 'completed', '2026-05-20 09:00:00', '2026-05-20 11:00:00'),
     (98, 42, 63, 'Complete Databases Assessment', 'Demo assessment with all question types', 'test', 'online', 'mixed',
-     20.00, 10.00, 3, 'auto_approve', 'active', '2026-03-18 08:00:00', '2026-03-28 23:59:59');
+     20.00, 10.00, 0.00, 3, 'auto_approve', 'active', '2026-03-18 08:00:00', '2026-03-28 23:59:59'),
+    (199, 42, 63, 'Correct Attempt QA Matrix', 'Visual QA assessment covering expected-answer states in correction.', 'test', 'online', 'mixed',
+     20.00, 10.00, 0.00, 1, 'auto_approve', 'active', '2026-03-22 08:00:00', '2026-03-29 23:59:59');
 
 INSERT INTO assessment_class_group (id_assessment, id_class_group) VALUES
     (97, 54);
@@ -446,63 +449,93 @@ INSERT INTO associate_assessment_content (id_assessment, id_content_item, role) 
     (96, 77, 'statement');
 
 INSERT INTO question (
-    id_question, id_assessment, cod_question, statement, type, order_no, required_flag, score, expected_answer, state
+    id_question, id_assessment, cod_question, statement, type, order_no, required_flag, score, expected_answer
 ) VALUES
-    (103, 94, 'BD-Q1', 'Select the applicable normal forms.', 'multiple_choice', 1, 1, 8.00, NULL, 'active'),
+    (103, 94, 'BD-Q1', 'Select the applicable normal forms.', 'multiple_choice', 1, 1, 8.00, NULL),
     (104, 94, 'BD-Q2', 'Explain the difference between a primary key and a foreign key.', 'paragraph', 2, 1, 8.00,
-     'Free response assessed manually', 'active'),
-    (105, 94, 'BD-Q3', 'Attach the final SQL script.', 'file_upload', 3, 1, 4.00, NULL, 'active'),
-    (106, 95, 'SQL-Q1', 'Choose the query command.', 'single_choice', 1, 1, 20.00, NULL, 'active'),
-    (107, 96, 'SI-Q1', 'Rate the displayed risk.', 'rating', 1, 1, 20.00, '4', 'active'),
-    (109, 97, 'RC-Q1', 'How many usable hosts does a /24 mask provide?', 'short_text', 1, 1, 20.00, '254', 'inactive'),
-    (110, 98, 'FULL-Q1', 'Choose the SQL statement used to query data.', 'single_choice', 1, 1, 2.00, NULL, 'active'),
-    (111, 98, 'FULL-Q2', 'Select all properties that belong to an ACID transaction.', 'multiple_choice', 2, 1, 3.00, NULL, 'active'),
-    (112, 98, 'FULL-Q3', 'Enter the keyword used to remove rows from a table.', 'short_text', 3, 1, 2.00, 'DELETE', 'active'),
+     'Free response assessed manually'),
+    (105, 94, 'BD-Q3', 'Attach the final SQL script.', 'file_upload', 3, 1, 4.00, NULL),
+    (106, 95, 'SQL-Q1', 'Choose the query command.', 'single_choice', 1, 1, 20.00, NULL),
+    (107, 96, 'SI-Q1', 'Rate the displayed risk.', 'rating', 1, 1, 20.00, '4'),
+    (109, 97, 'RC-Q1', 'How many usable hosts does a /24 mask provide?', 'short_text', 1, 1, 20.00, '254'),
+    (110, 98, 'FULL-Q1', 'Choose the SQL statement used to query data.', 'single_choice', 1, 1, 2.00, NULL),
+    (111, 98, 'FULL-Q2', 'Select all properties that belong to an ACID transaction.', 'multiple_choice', 2, 1, 3.00, NULL),
+    (112, 98, 'FULL-Q3', 'Enter the keyword used to remove rows from a table.', 'short_text', 3, 1, 2.00, 'DELETE'),
     (113, 98, 'FULL-Q4', 'Explain when an index should be created on a column.', 'paragraph', 4, 1, 4.00,
-     'Free response automatically assessed as textual reference.', 'active'),
-    (114, 98, 'FULL-Q5', 'Attach the final entity-relationship diagram.', 'file_upload', 5, 1, 3.00, 'formats=pdf,image,archive', 'active'),
+     'Free response automatically assessed as textual reference.'),
+    (114, 98, 'FULL-Q5', 'Attach the final entity-relationship diagram.', 'file_upload', 5, 1, 3.00, 'formats=pdf,image,archive'),
     (116, 98, 'FULL-Q6', 'Rate the clarity of the prompt.', 'rating', 6, 1, 6.00,
-     'rating_style=stars;rating_step=half;rating_max=5;expected_value=4.5', 'active');
+     'rating_style=stars;rating_step=half;rating_max=5;expected_value=4.5'),
+    (301, 199, 'QA-SC-C', 'Single choice with expected answer and a correct student answer.', 'single_choice', 1, 1, 2.00, NULL),
+    (302, 199, 'QA-SC-W', 'Single choice with expected answer and a wrong student answer.', 'single_choice', 2, 1, 2.00, NULL),
+    (303, 199, 'QA-SC-N', 'Single choice without expected answer must stay neutral.', 'single_choice', 3, 0, 1.00, NULL),
+    (304, 199, 'QA-MC-MIX', 'Multiple choice with one correct and one wrong selected option.', 'multiple_choice', 4, 1, 3.00, NULL),
+    (305, 199, 'QA-MC-N', 'Multiple choice without expected answers must stay neutral.', 'multiple_choice', 5, 0, 1.00, NULL),
+    (306, 199, 'QA-RT-C', 'Rating with expected value and a matching answer.', 'rating', 6, 1, 2.00,
+     'rating_style=stars;rating_step=half;rating_max=5;expected_value=4'),
+    (307, 199, 'QA-RT-W', 'Rating with expected value and a different answer.', 'rating', 7, 1, 2.00,
+     'rating_style=stars;rating_step=half;rating_max=5;expected_value=5'),
+    (308, 199, 'QA-ST-E', 'Short text with an expected answer must show neutral comparison.', 'short_text', 8, 1, 2.00, 'DELETE'),
+    (309, 199, 'QA-PA-E', 'Paragraph with an expected answer must show it separated below.', 'paragraph', 9, 1, 3.00,
+     'Mention the indexed column is frequently used in filters, joins or ordering.'),
+    (310, 199, 'QA-UP-E', 'Upload question should show accepted formats as expected information.', 'file_upload', 10, 1, 1.00,
+     'formats=pdf,image'),
+    (311, 199, 'QA-ST-N', 'Short text without expected answer must not show green or expected area.', 'short_text', 11, 0, 1.00, NULL);
 
 INSERT INTO question_option (
-    id_option, id_question, order_no, text, correct_flag, state
+    id_option, id_question, order_no, text, correct_flag
 ) VALUES
-    (116, 103, 1, 'First normal form', 1, 'active'),
-    (117, 103, 2, 'Second normal form', 1, 'active'),
-    (118, 103, 3, 'Non-normalized form', 0, 'active'),
-    (119, 106, 1, 'SELECT', 1, 'active'),
-    (120, 106, 2, 'DROP', 0, 'active'),
-    (121, 107, 1, '1', 0, 'active'),
-    (122, 107, 2, '4', 1, 'active'),
-    (123, 107, 3, '5', 0, 'inactive'),
-    (124, 110, 1, 'SELECT', 1, 'active'),
-    (125, 110, 2, 'UPDATE', 0, 'active'),
-    (126, 110, 3, 'CREATE INDEX', 0, 'active'),
-    (127, 111, 1, 'Atomicity', 1, 'active'),
-    (128, 111, 2, 'Consistency', 1, 'active'),
-    (129, 111, 3, 'Durability', 1, 'active'),
-    (130, 111, 4, 'Rendering', 0, 'active');
+    (116, 103, 1, 'First normal form', 1),
+    (117, 103, 2, 'Second normal form', 1),
+    (118, 103, 3, 'Non-normalized form', 0),
+    (119, 106, 1, 'SELECT', 1),
+    (120, 106, 2, 'DROP', 0),
+    (121, 107, 1, '1', 0),
+    (122, 107, 2, '4', 1),
+    (123, 107, 3, '5', 0),
+    (124, 110, 1, 'SELECT', 1),
+    (125, 110, 2, 'UPDATE', 0),
+    (126, 110, 3, 'CREATE INDEX', 0),
+    (127, 111, 1, 'Atomicity', 1),
+    (128, 111, 2, 'Consistency', 1),
+    (129, 111, 3, 'Durability', 1),
+    (130, 111, 4, 'Rendering', 0),
+    (401, 301, 1, 'SELECT', 1),
+    (402, 301, 2, 'UPDATE', 0),
+    (403, 302, 1, 'Primary key', 1),
+    (404, 302, 2, 'Temporary cache', 0),
+    (405, 303, 1, 'Manual review option A', NULL),
+    (406, 303, 2, 'Manual review option B', NULL),
+    (407, 304, 1, 'Atomicity', 1),
+    (408, 304, 2, 'Consistency', 1),
+    (409, 304, 3, 'Screen rendering', 0),
+    (410, 304, 4, 'Durability', 1),
+    (411, 305, 1, 'Neutral selected option', NULL),
+    (412, 305, 2, 'Neutral unselected option', NULL),
+    (413, 305, 3, 'Second neutral selected option', NULL);
 
-INSERT INTO enroll_assessment (id_student_user, id_assessment, state, start_date, end_date) VALUES
-    (4, 94, 'pending', '2026-03-10', NULL),
-    (15, 94, 'active', '2026-03-10', NULL),
-    (15, 95, 'active', '2026-04-01', NULL),
-    (12, 96, 'active', '2026-04-09', NULL),
-    (15, 97, 'active', '2026-05-20', NULL),
-    (4, 98, 'active', '2026-03-18', NULL),
-    (15, 98, 'active', '2026-03-18', NULL);
+INSERT INTO enroll_assessment (id_student_user, id_assessment, state) VALUES
+    (4, 94, 'pending'),
+    (15, 94, 'active'),
+    (15, 95, 'active'),
+    (12, 96, 'active'),
+    (15, 97, 'active'),
+    (4, 98, 'active'),
+    (15, 98, 'active'),
+    (15, 199, 'active');
 
 INSERT INTO attempt (
     id_attempt, id_student_user, id_assessment, attempt_number, score, state, started_at, submitted_at
 ) VALUES
     (122, 15, 94, 1, 16.00, 'corrected', '2026-03-10 09:05:00', '2026-03-10 10:40:00'),
     (123, 15, 95, 1, NULL, 'in_progress', '2026-04-03 10:00:00', NULL),
-    (124, 12, 96, 1, 15.00, 'submitted', '2026-04-09 14:00:00', '2026-04-09 14:25:00'),
+    (124, 12, 96, 1, NULL, 'submitted', '2026-04-09 14:00:00', '2026-04-09 14:25:00'),
     (125, 15, 94, 2, NULL, 'expired', '2026-03-10 10:45:00', NULL),
-    (126, 15, 97, 1, 12.00, 'submitted', '2026-05-20 09:00:00', '2026-05-20 10:15:00'),
-    (127, 15, 98, 1, 14.50, 'submitted', '2026-03-18 09:00:00', '2026-03-18 09:55:00'),
+    (126, 15, 97, 1, NULL, 'submitted', '2026-05-20 09:00:00', '2026-05-20 10:15:00'),
+    (127, 15, 98, 1, NULL, 'submitted', '2026-03-18 09:00:00', '2026-03-18 09:55:00'),
     (128, 15, 98, 2, NULL, 'in_progress', '2026-03-19 10:00:00', NULL),
-    (129, 4, 98, 1, NULL, 'cancelled', '2026-03-18 11:00:00', NULL);
+    (129, 4, 98, 1, NULL, 'cancelled', '2026-03-18 11:00:00', NULL),
+    (501, 15, 199, 1, NULL, 'submitted', '2026-03-22 09:00:00', '2026-03-22 10:10:00');
 
 INSERT INTO response (
     id_response, id_attempt, id_question, cod_response, answer, attachment, score, answered_at
@@ -520,7 +553,19 @@ INSERT INTO response (
     (142, 127, 113, 'FULL-R4', 'An index should be created when the column is frequently used in filters, joins, or ordering.', NULL,
      3.00, '2026-03-18 09:30:00'),
     (143, 127, 114, 'FULL-R5', NULL, '/submissions/127/diagrama-er.pdf', 2.00, '2026-03-18 09:40:00'),
-    (145, 127, 116, 'FULL-R6', '4.5', NULL, 3.00, '2026-03-18 09:50:00');
+    (145, 127, 116, 'FULL-R6', '4.5', NULL, 3.00, '2026-03-18 09:50:00'),
+    (601, 501, 301, 'QA-R1', NULL, NULL, 2.00, '2026-03-22 09:05:00'),
+    (602, 501, 302, 'QA-R2', NULL, NULL, 0.00, '2026-03-22 09:10:00'),
+    (603, 501, 303, 'QA-R3', NULL, NULL, NULL, '2026-03-22 09:15:00'),
+    (604, 501, 304, 'QA-R4', NULL, NULL, 0.00, '2026-03-22 09:20:00'),
+    (605, 501, 305, 'QA-R5', NULL, NULL, NULL, '2026-03-22 09:25:00'),
+    (606, 501, 306, 'QA-R6', '4', NULL, 2.00, '2026-03-22 09:30:00'),
+    (607, 501, 307, 'QA-R7', '3.5', NULL, 0.00, '2026-03-22 09:35:00'),
+    (608, 501, 308, 'QA-R8', 'DROP', NULL, NULL, '2026-03-22 09:40:00'),
+    (609, 501, 309, 'QA-R9', 'Indexes help when a column is used repeatedly in filters and joins.', NULL, NULL,
+     '2026-03-22 09:50:00'),
+    (610, 501, 310, 'QA-R10', NULL, '/submissions/501/correction-matrix.png', NULL, '2026-03-22 10:00:00'),
+    (611, 501, 311, 'QA-R11', 'Neutral free text answer.', NULL, NULL, '2026-03-22 10:05:00');
 
 INSERT INTO response_option (id_response, id_option) VALUES
     (132, 116),
@@ -530,7 +575,14 @@ INSERT INTO response_option (id_response, id_option) VALUES
     (139, 124),
     (140, 127),
     (140, 128),
-    (140, 129);
+    (140, 129),
+    (601, 401),
+    (602, 404),
+    (603, 406),
+    (604, 407),
+    (604, 409),
+    (605, 411),
+    (605, 413);
 
 INSERT INTO schedule_event (
     id_schedule_event, id_lesson, id_assessment, title, description, type, starts_at, ends_at,
@@ -601,10 +653,10 @@ INSERT INTO absence_justification (
 INSERT INTO grade_sheet (
     id_grade_sheet, id_subject, title, type, released_at, state
 ) VALUES
-    (171, 42, 'Databases Final Grade Sheet', 'final', '2026-06-30 12:00:00', 'published'),
-    (172, 42, 'Databases Exam Grade Sheet', 'exam', '2026-03-15 12:00:00', 'closed'),
+    (171, 42, 'Databases Final Grade Sheet', 'final', NULL, 'draft'),
+    (172, 42, 'Databases Exam Grade Sheet', 'exam', NULL, 'draft'),
     (173, 44, 'Industrial Safety Grade Sheet', 'continuous_assessment', NULL, 'draft'),
-    (174, 43, 'Archived Networks Grade Sheet', 'other', '2026-05-30 12:00:00', 'closed');
+    (174, 43, 'Archived Networks Grade Sheet', 'other', NULL, 'draft');
 
 INSERT INTO associate_grade_sheet_class_group (id_grade_sheet, id_class_group) VALUES
     (171, 53),
@@ -620,27 +672,27 @@ INSERT INTO based_on_assessment (id_grade_sheet, id_assessment, weight) VALUES
     (174, 97, 100.00);
 
 INSERT INTO grade_record (
-    id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, recorded_at, notes, state
+    id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, recorded_at, notes
 ) VALUES
-    (182, 171, 15, 122, 'BD-FINAL-015', 16.00, 'approved', '2026-06-30 12:10:00', 'Approved with good performance', 'published'),
-    (183, 171, 4, NULL, 'BD-FINAL-004', 0.00, 'absent', '2026-06-30 12:15:00', 'No final submission', 'draft'),
-    (184, 172, 15, 125, 'BD-EXAM-015', 0.00, 'failed', '2026-03-15 12:10:00', 'Expired attempt', 'corrected'),
-    (185, 173, 12, 124, 'SI-CA-012', 15.00, 'approved', '2026-04-15 12:00:00', 'Assessment submitted', 'published'),
-    (186, 174, 15, 126, 'RC-ARCH-015', 12.00, 'approved', '2026-05-30 12:00:00', 'Historical record', 'corrected'),
-    (187, 171, 7, NULL, 'BD-FINAL-007', 9.00, 'pending', '2026-06-30 12:20:00', 'Awaiting review', 'active');
+    (182, 171, 15, 122, 'AUTO-171-15', 16.00, 'approved', '2026-06-30 12:10:00', 'Automatic final grade snapshot'),
+    (183, 171, 4, NULL, 'AUTO-171-4', 0.00, 'absent', '2026-06-30 12:15:00', 'Automatic final grade snapshot'),
+    (184, 172, 15, 125, 'AUTO-172-15', 0.00, 'failed', '2026-03-15 12:10:00', 'Automatic final grade snapshot'),
+    (185, 173, 12, 124, 'AUTO-173-12', 15.00, 'approved', '2026-04-15 12:00:00', 'Automatic final grade snapshot'),
+    (186, 174, 15, 126, 'AUTO-174-15', 12.00, 'approved', '2026-05-30 12:00:00', 'Automatic final grade snapshot'),
+    (187, 171, 7, NULL, 'AUTO-171-7', 9.00, 'pending', '2026-06-30 12:20:00', 'Automatic final grade snapshot');
 
 INSERT INTO certificate (
     id_certificate, id_course, id_user_student, title, notes, type, template,
-    validation_code, issued_at, final_grade, state
+    validation_code, issued_at, state, revoked_at, final_grade
 ) VALUES
-    (194, 30, 15, 'Active Databases Certificate', 'Certificate ready to issue', 'completion', 'template-v2',
-     NULL, NULL, 16.00, 'active'),
+    (194, 30, 15, 'Databases Certificate', 'Certificate replaced', 'completion', 'template-v2',
+     'VAL-2026-0006', '2026-07-05 09:30:00', 'revoked', '2026-07-05 09:55:00', 16.00),
     (195, 33, 12, 'Safety Qualification Certificate', 'Business qualification completed', 'qualification', 'template-company',
-     'VAL-2026-0003', '2026-05-15 10:00:00', 15.00, 'issued'),
-    (196, 30, 15, 'Revoked Databases Certificate', 'Revoked due to replacement', 'completion', 'template-v2',
-     'VAL-2026-0004', '2026-07-05 10:00:00', 16.00, 'revoked'),
+     NULL, NULL, 'draft', NULL, NULL),
+    (196, 30, 15, 'Replacement Databases Certificate', 'Replacement document', 'completion', 'template-v2',
+     NULL, NULL, 'draft', NULL, NULL),
     (197, 32, 15, 'Archived Networks Certificate', 'Archived document', 'other', 'template-archive',
-     NULL, NULL, 12.00, 'revoked');
+     'VAL-2026-0007', '2026-07-05 10:30:00', 'revoked', '2026-07-06 10:30:00', 12.00);
 
 INSERT INTO based_on_grade_sheet_certificate (id_certificate, id_grade_sheet) VALUES
     (194, 171),
@@ -813,6 +865,492 @@ INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_da
     (17, 51, 'completed', '2026-02-01', '2026-06-30'),
     (17, 54, 'inactive', '2026-03-01', NULL),
     (17, 56, 'inactive', '2025-02-01', '2025-06-30');
+
+-- Full-mode stress matrix for course, grade sheet and certificate edge cases.
+-- The 1000+ id range is reserved for broad demo scenarios and regression checks.
+
+INSERT INTO user_account (
+    id_user, name, email, state, language, photo, created_at, credential_hash, credential_salt, document_type, document_number
+) VALUES
+    (1000, 'Full Matrix Student Complete Ten Subjects', 'full.student1000@gape.local', 'active', 'pt-PT', 'users/1000/profile.webp',
+     '2026-02-01 09:00:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-FULL-1000'),
+    (1001, 'Full Matrix Student Incomplete Ten Subjects', 'full.student1001@gape.local', 'active', 'pt-PT', 'users/1001/profile.webp',
+     '2026-02-01 09:05:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-FULL-1001'),
+    (1002, 'Full Matrix Student Failed One', 'full.student1002@gape.local', 'active', 'pt-PT', 'users/1002/profile.webp',
+     '2026-02-01 09:10:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-FULL-1002'),
+    (1003, 'Full Matrix Student Failed Two', 'full.student1003@gape.local', 'active', 'pt-PT', 'users/1003/profile.webp',
+     '2026-02-01 09:15:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-FULL-1003'),
+    (1004, 'Full Matrix Student Passed One', 'full.student1004@gape.local', 'active', 'pt-PT', 'users/1004/profile.webp',
+     '2026-02-01 09:20:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-FULL-1004'),
+    (1005, 'Full Matrix Student Passed Two', 'full.student1005@gape.local', 'active', 'pt-PT', 'users/1005/profile.webp',
+     '2026-02-01 09:25:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-FULL-1005'),
+    (1006, 'Full Matrix Student Empty And Mismatch', 'full.student1006@gape.local', 'active', 'pt-PT', 'users/1006/profile.webp',
+     '2026-02-01 09:30:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-FULL-1006'),
+    (1007, 'Full Matrix Student Hundred Point Scale', 'full.student1007@gape.local', 'active', 'pt-PT', 'users/1007/profile.webp',
+     '2026-02-01 09:35:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-FULL-1007');
+
+INSERT INTO student_profile (id_user, cod_student) VALUES
+    (1000, 'STD-FULL-1000'),
+    (1001, 'STD-FULL-1001'),
+    (1002, 'STD-FULL-1002'),
+    (1003, 'STD-FULL-1003'),
+    (1004, 'STD-FULL-1004'),
+    (1005, 'STD-FULL-1005'),
+    (1006, 'STD-FULL-1006'),
+    (1007, 'STD-FULL-1007');
+
+INSERT INTO grant_student (id_student_user, cod_permission) VALUES
+    (1000, 'VIEW_REPORTS'),
+    (1001, 'VIEW_REPORTS'),
+    (1002, 'VIEW_REPORTS'),
+    (1003, 'VIEW_REPORTS'),
+    (1004, 'VIEW_REPORTS'),
+    (1005, 'VIEW_REPORTS'),
+    (1006, 'VIEW_REPORTS'),
+    (1007, 'VIEW_REPORTS');
+
+INSERT INTO course (
+    id_course, id_organization, id_organic_unit, name, acronym, photo, description, ects,
+    certificate_max_grade, duration, type, state
+) VALUES
+    (1000, 10, 20, 'Full Matrix Ten Subject Degree', 'TSD', NULL, 'Course with ten subjects and exact ECTS coverage', 60.00,
+     20.00, '2', 'degree', 'active'),
+    (1001, 10, 20, 'Full Matrix Few Subject Course', 'FSC', NULL, 'Course with only two subjects', 12.00,
+     20.00, '1 semester', 'short_course', 'active'),
+    (1002, 10, 20, 'Full Matrix Empty Course', 'EMPTY', NULL, 'Course with no subjects to test empty curriculum handling', 30.00,
+     20.00, '1', 'other', 'active'),
+    (1003, 10, 20, 'Full Matrix ECTS Mismatch Course', 'ECTSM', NULL, 'Course whose subject ECTS total does not match the course ECTS', 30.00,
+     20.00, '1', 'professional_training', 'active'),
+    (1004, 10, 20, 'Full Matrix All Failed Course', 'FAILC', NULL, 'Single-subject course where every enrolled student failed', 6.00,
+     20.00, '1 trimester', 'short_course', 'active'),
+    (1005, 10, 20, 'Full Matrix All Passed Course', 'PASSC', NULL, 'Single-subject course where every enrolled student passed', 6.00,
+     20.00, '1 trimester', 'short_course', 'active'),
+    (1006, 10, 20, 'Full Matrix Draft And Empty Grades Course', 'NOGRD', NULL, 'Course with grade sheets without complete grade data', 12.00,
+     20.00, '1', 'other', 'active'),
+    (1007, 10, 20, 'Full Matrix Hundred Point Certificate Course', 'HPC', NULL, 'Course using a 0 to 100 certificate and subject grading scale', 10.00,
+     100.00, '1', 'professional_training', 'active');
+
+INSERT INTO subject (
+    id_subject, id_organization, name, acronym, photo, description, ects, final_grade_max, workload_hours, state
+) VALUES
+    (1000, 10, 'Full Matrix Subject 01', 'TSD01', NULL, 'First subject of the ten-subject course', 6.00, 20.00, 60, 'active'),
+    (1001, 10, 'Full Matrix Subject 02', 'TSD02', NULL, 'Second subject of the ten-subject course', 6.00, 20.00, 60, 'active'),
+    (1002, 10, 'Full Matrix Subject 03', 'TSD03', NULL, 'Third subject of the ten-subject course', 6.00, 20.00, 60, 'active'),
+    (1003, 10, 'Full Matrix Subject 04', 'TSD04', NULL, 'Fourth subject of the ten-subject course', 6.00, 20.00, 60, 'active'),
+    (1004, 10, 'Full Matrix Subject 05', 'TSD05', NULL, 'Fifth subject of the ten-subject course', 6.00, 20.00, 60, 'active'),
+    (1005, 10, 'Full Matrix Subject 06', 'TSD06', NULL, 'Sixth subject of the ten-subject course', 6.00, 20.00, 60, 'active'),
+    (1006, 10, 'Full Matrix Subject 07', 'TSD07', NULL, 'Seventh subject of the ten-subject course', 6.00, 20.00, 60, 'active'),
+    (1007, 10, 'Full Matrix Subject 08', 'TSD08', NULL, 'Eighth subject of the ten-subject course', 6.00, 20.00, 60, 'active'),
+    (1008, 10, 'Full Matrix Subject 09', 'TSD09', NULL, 'Ninth subject of the ten-subject course', 6.00, 20.00, 60, 'active'),
+    (1009, 10, 'Full Matrix Subject 10', 'TSD10', NULL, 'Tenth subject of the ten-subject course', 6.00, 20.00, 60, 'active'),
+    (1010, 10, 'Full Matrix Small Foundations', 'FSF', NULL, 'First subject of a small course', 6.00, 20.00, 45, 'active'),
+    (1011, 10, 'Full Matrix Small Practice', 'FSP', NULL, 'Second subject of a small course', 6.00, 20.00, 45, 'active'),
+    (1012, 10, 'Full Matrix Mismatch Intro', 'ECTSI', NULL, 'Subject used in an ECTS mismatch course', 5.00, 20.00, 35, 'active'),
+    (1013, 10, 'Full Matrix Mismatch Project', 'ECTSP', NULL, 'Second subject used in an ECTS mismatch course', 7.00, 20.00, 50, 'active'),
+    (1014, 10, 'Full Matrix Failure Lab', 'FAIL', NULL, 'Subject where all enrolled students fail', 6.00, 20.00, 40, 'active'),
+    (1015, 10, 'Full Matrix Pass Lab', 'PASS', NULL, 'Subject where all enrolled students pass', 6.00, 20.00, 40, 'active'),
+    (1016, 10, 'Full Matrix Draft Grade Subject', 'DRAFTG', NULL, 'Subject with a draft grade sheet and no grade records', 6.00, 20.00, 40, 'active'),
+    (1017, 10, 'Full Matrix Empty Class Subject', 'EMPTYG', NULL, 'Subject with an active class group and no students', 6.00, 20.00, 40, 'active'),
+    (1018, 10, 'Full Matrix Hundred Point Subject', 'HPOINT', NULL, 'Subject graded on a 0 to 100 scale', 10.00, 100.00, 70, 'active');
+
+INSERT INTO integrate_subject (
+    id_course, id_subject, curricular_year, term, mandatory, state
+) VALUES
+    (1000, 1000, 1, 'semester_1', 1, 'active'),
+    (1000, 1001, 1, 'semester_1', 1, 'active'),
+    (1000, 1002, 1, 'semester_1', 1, 'active'),
+    (1000, 1003, 1, 'semester_1', 1, 'active'),
+    (1000, 1004, 1, 'semester_1', 1, 'active'),
+    (1000, 1005, 1, 'semester_2', 1, 'active'),
+    (1000, 1006, 1, 'semester_2', 1, 'active'),
+    (1000, 1007, 1, 'semester_2', 1, 'active'),
+    (1000, 1008, 1, 'semester_2', 1, 'active'),
+    (1000, 1009, 1, 'semester_2', 1, 'active'),
+    (1001, 1010, 1, 'semester_1', 1, 'active'),
+    (1001, 1011, 1, 'semester_2', 1, 'active'),
+    (1003, 1012, 1, 'semester_1', 1, 'active'),
+    (1003, 1013, 1, 'semester_2', 1, 'active'),
+    (1004, 1014, 1, 'trimester_1', 1, 'active'),
+    (1005, 1015, 1, 'trimester_1', 1, 'active'),
+    (1006, 1016, 1, 'semester_1', 1, 'active'),
+    (1006, 1017, 1, 'semester_2', 1, 'active'),
+    (1007, 1018, 1, 'annual', 1, 'active');
+
+INSERT INTO class_group (
+    id_class_group, id_subject, id_course, cod_class_group, modality, state,
+    min_students, max_students, starts_at, ends_at, shift
+) VALUES
+    (1000, 1000, 1000, 'TSD01-A', 'onsite', 'active', 1, 35, '2026-02-02', '2026-06-30', 'morning'),
+    (1001, 1001, 1000, 'TSD02-A', 'onsite', 'active', 1, 35, '2026-02-02', '2026-06-30', 'morning'),
+    (1002, 1002, 1000, 'TSD03-A', 'hybrid', 'active', 1, 35, '2026-02-02', '2026-06-30', 'afternoon'),
+    (1003, 1003, 1000, 'TSD04-A', 'hybrid', 'active', 1, 35, '2026-02-02', '2026-06-30', 'afternoon'),
+    (1004, 1004, 1000, 'TSD05-A', 'online', 'active', 1, 35, '2026-02-02', '2026-06-30', 'evening'),
+    (1005, 1005, 1000, 'TSD06-A', 'online', 'active', 1, 35, '2026-03-01', '2026-07-15', 'evening'),
+    (1006, 1006, 1000, 'TSD07-A', 'onsite', 'active', 1, 35, '2026-03-01', '2026-07-15', 'morning'),
+    (1007, 1007, 1000, 'TSD08-A', 'onsite', 'active', 1, 35, '2026-03-01', '2026-07-15', 'morning'),
+    (1008, 1008, 1000, 'TSD09-A', 'hybrid', 'active', 1, 35, '2026-03-01', '2026-07-15', 'afternoon'),
+    (1009, 1009, 1000, 'TSD10-A', 'hybrid', 'active', 1, 35, '2026-03-01', '2026-07-15', 'afternoon'),
+    (1010, 1010, 1001, 'FSC-FND-A', 'online', 'active', 1, 25, '2026-02-10', '2026-04-15', 'evening'),
+    (1011, 1011, 1001, 'FSC-PRC-A', 'online', 'active', 1, 25, '2026-04-16', '2026-06-30', 'evening'),
+    (1012, 1012, 1003, 'ECTSM-INTRO', 'hybrid', 'active', 1, 25, '2026-02-10', '2026-04-15', 'mixed'),
+    (1013, 1014, 1004, 'FAIL-ALL', 'onsite', 'active', 1, 20, '2026-02-10', '2026-04-15', 'morning'),
+    (1014, 1015, 1005, 'PASS-ALL', 'onsite', 'active', 1, 20, '2026-02-10', '2026-04-15', 'afternoon'),
+    (1015, 1016, 1006, 'DRAFT-NO-GRADES', 'online', 'active', 1, 20, '2026-03-01', '2026-05-30', 'evening'),
+    (1016, 1017, 1006, 'EMPTY-CLASS', 'hybrid', 'active', 0, 20, '2026-03-01', '2026-05-30', 'mixed'),
+    (1017, 1018, 1007, 'HPC-100', 'online', 'active', 1, 30, '2026-03-01', '2026-05-30', 'evening');
+
+INSERT INTO teach_class_group (id_teacher_user, id_class_group, state, start_date, end_date) VALUES
+    (3, 1000, 'active', '2026-02-02', NULL),
+    (3, 1001, 'active', '2026-02-02', NULL),
+    (3, 1002, 'active', '2026-02-02', NULL),
+    (3, 1003, 'active', '2026-02-02', NULL),
+    (3, 1004, 'active', '2026-02-02', NULL),
+    (3, 1005, 'active', '2026-03-01', NULL),
+    (3, 1006, 'active', '2026-03-01', NULL),
+    (3, 1007, 'active', '2026-03-01', NULL),
+    (3, 1008, 'active', '2026-03-01', NULL),
+    (3, 1009, 'active', '2026-03-01', NULL),
+    (6, 1010, 'active', '2026-02-10', NULL),
+    (6, 1011, 'active', '2026-04-16', NULL),
+    (12, 1012, 'active', '2026-02-10', NULL),
+    (3, 1013, 'active', '2026-02-10', NULL),
+    (3, 1014, 'active', '2026-02-10', NULL),
+    (6, 1015, 'active', '2026-03-01', NULL),
+    (6, 1016, 'active', '2026-03-01', NULL),
+    (12, 1017, 'active', '2026-03-01', NULL);
+
+INSERT INTO subject_enrollment_policy (id_course, id_subject, approval_mode) VALUES
+    (1000, 1000, 'auto_approve'),
+    (1000, 1001, 'auto_approve'),
+    (1000, 1002, 'manual'),
+    (1000, 1003, 'manual'),
+    (1001, 1010, 'auto_approve'),
+    (1001, 1011, 'auto_approve'),
+    (1003, 1012, 'manual'),
+    (1003, 1013, 'manual'),
+    (1004, 1014, 'auto_approve'),
+    (1005, 1015, 'auto_approve'),
+    (1006, 1016, 'manual'),
+    (1006, 1017, 'manual'),
+    (1007, 1018, 'auto_approve');
+
+INSERT INTO class_group_enrollment_policy (id_class_group, approval_mode) VALUES
+    (1000, 'auto_approve'),
+    (1001, 'auto_approve'),
+    (1002, 'manual'),
+    (1010, 'auto_approve'),
+    (1011, 'auto_approve'),
+    (1013, 'auto_approve'),
+    (1014, 'auto_approve'),
+    (1015, 'manual'),
+    (1016, 'manual'),
+    (1017, 'auto_approve');
+
+INSERT INTO enroll_course (id_student_user, id_course, state, start_date, end_date) VALUES
+    (1000, 1000, 'active', '2026-02-02', NULL),
+    (1000, 1002, 'active', '2026-02-02', NULL),
+    (1001, 1000, 'active', '2026-02-02', NULL),
+    (1001, 1003, 'active', '2026-02-10', NULL),
+    (1002, 1004, 'active', '2026-02-10', NULL),
+    (1002, 1006, 'active', '2026-03-01', NULL),
+    (1003, 1004, 'active', '2026-02-10', NULL),
+    (1004, 1001, 'active', '2026-02-10', NULL),
+    (1004, 1004, 'active', '2026-02-10', NULL),
+    (1004, 1005, 'active', '2026-02-10', NULL),
+    (1005, 1001, 'active', '2026-02-10', NULL),
+    (1005, 1005, 'active', '2026-02-10', NULL),
+    (1006, 1002, 'active', '2026-02-02', NULL),
+    (1006, 1003, 'active', '2026-02-10', NULL),
+    (1006, 1006, 'active', '2026-03-01', NULL),
+    (1007, 1005, 'active', '2026-02-10', NULL),
+    (1007, 1007, 'active', '2026-03-01', NULL);
+
+INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date) VALUES
+    (1000, 1000, 1000, 'active', '2026-02-02', NULL),
+    (1000, 1000, 1001, 'active', '2026-02-02', NULL),
+    (1000, 1000, 1002, 'active', '2026-02-02', NULL),
+    (1000, 1000, 1003, 'active', '2026-02-02', NULL),
+    (1000, 1000, 1004, 'active', '2026-02-02', NULL),
+    (1000, 1000, 1005, 'active', '2026-03-01', NULL),
+    (1000, 1000, 1006, 'active', '2026-03-01', NULL),
+    (1000, 1000, 1007, 'active', '2026-03-01', NULL),
+    (1000, 1000, 1008, 'active', '2026-03-01', NULL),
+    (1000, 1000, 1009, 'active', '2026-03-01', NULL),
+    (1001, 1000, 1000, 'active', '2026-02-02', NULL),
+    (1001, 1000, 1001, 'active', '2026-02-02', NULL),
+    (1001, 1000, 1002, 'active', '2026-02-02', NULL),
+    (1001, 1003, 1012, 'active', '2026-02-10', NULL),
+    (1001, 1003, 1013, 'active', '2026-04-16', NULL),
+    (1002, 1004, 1014, 'active', '2026-02-10', NULL),
+    (1002, 1006, 1016, 'active', '2026-03-01', NULL),
+    (1003, 1004, 1014, 'active', '2026-02-10', NULL),
+    (1004, 1001, 1010, 'active', '2026-02-10', NULL),
+    (1004, 1001, 1011, 'active', '2026-04-16', NULL),
+    (1004, 1004, 1014, 'active', '2026-02-10', NULL),
+    (1004, 1005, 1015, 'active', '2026-02-10', NULL),
+    (1005, 1001, 1010, 'active', '2026-02-10', NULL),
+    (1005, 1001, 1011, 'active', '2026-04-16', NULL),
+    (1005, 1005, 1015, 'active', '2026-02-10', NULL),
+    (1006, 1003, 1012, 'active', '2026-02-10', NULL),
+    (1006, 1003, 1013, 'active', '2026-04-16', NULL),
+    (1006, 1006, 1016, 'active', '2026-03-01', NULL),
+    (1007, 1005, 1015, 'active', '2026-02-10', NULL),
+    (1007, 1007, 1018, 'active', '2026-03-01', NULL);
+
+INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date) VALUES
+    (1000, 1000, 'active', '2026-02-02', NULL),
+    (1000, 1001, 'active', '2026-02-02', NULL),
+    (1000, 1002, 'active', '2026-02-02', NULL),
+    (1000, 1003, 'active', '2026-02-02', NULL),
+    (1000, 1004, 'active', '2026-02-02', NULL),
+    (1000, 1005, 'active', '2026-03-01', NULL),
+    (1000, 1006, 'active', '2026-03-01', NULL),
+    (1000, 1007, 'active', '2026-03-01', NULL),
+    (1000, 1008, 'active', '2026-03-01', NULL),
+    (1000, 1009, 'active', '2026-03-01', NULL),
+    (1001, 1000, 'active', '2026-02-02', NULL),
+    (1001, 1001, 'active', '2026-02-02', NULL),
+    (1001, 1002, 'active', '2026-02-02', NULL),
+    (1001, 1012, 'active', '2026-02-10', NULL),
+    (1002, 1013, 'active', '2026-02-10', NULL),
+    (1002, 1015, 'active', '2026-03-01', NULL),
+    (1003, 1013, 'active', '2026-02-10', NULL),
+    (1004, 1010, 'active', '2026-02-10', NULL),
+    (1004, 1011, 'active', '2026-04-16', NULL),
+    (1004, 1013, 'active', '2026-02-10', NULL),
+    (1004, 1014, 'active', '2026-02-10', NULL),
+    (1005, 1010, 'active', '2026-02-10', NULL),
+    (1005, 1011, 'active', '2026-04-16', NULL),
+    (1005, 1014, 'active', '2026-02-10', NULL),
+    (1006, 1012, 'active', '2026-02-10', NULL),
+    (1006, 1015, 'active', '2026-03-01', NULL),
+    (1007, 1014, 'active', '2026-02-10', NULL),
+    (1007, 1017, 'active', '2026-03-01', NULL);
+
+INSERT INTO content_block (
+    id_content_block, id_class_group, cod_content_block, name, description, order_no,
+    access_mode, state, available_from, available_until
+) VALUES
+    (1000, 1013, 'FAIL-EVAL', 'Failure Lab Assessments', 'Assessments for the all-failed class', 1, 'open', 'active',
+     '2026-02-10 00:00:00', '2026-04-15 23:59:59'),
+    (1001, 1014, 'PASS-EVAL', 'Pass Lab Assessments', 'Assessments for the all-passed class', 1, 'open', 'active',
+     '2026-02-10 00:00:00', '2026-04-15 23:59:59'),
+    (1002, 1015, 'DRAFT-EVAL', 'Draft Grade Assessments', 'Assessments without configured grade sheet weights', 1, 'open', 'active',
+     '2026-03-01 00:00:00', '2026-05-30 23:59:59'),
+    (1003, 1016, 'EMPTY-EVAL', 'Empty Class Assessments', 'Assessments with incomplete total weight', 1, 'open', 'active',
+     '2026-03-01 00:00:00', '2026-05-30 23:59:59'),
+    (1004, 1017, 'HPC-EVAL', 'Hundred Point Assessment', 'Assessment for 0 to 100 grade scale', 1, 'open', 'active',
+     '2026-03-01 00:00:00', '2026-05-30 23:59:59');
+
+INSERT INTO assessment (
+    id_assessment, id_subject, id_content_block, title, description, type, mode, correction_mode,
+    max_grade, passing_grade, final_grade_weight, attempts_limit, enrollment_mode, state, available_from, available_until, order_no
+) VALUES
+    (1000, 1014, 1000, 'Failure Lab Midterm', 'Midterm assessment where every student failed', 'test', 'online', 'manual',
+     20.00, 9.50, 50.00, 1, 'auto_approve', 'active', '2026-03-01 09:00:00', '2026-03-01 11:00:00', 1),
+    (1001, 1014, 1000, 'Failure Lab Final', 'Final assessment where every student failed', 'exam', 'onsite', 'manual',
+     20.00, 9.50, 50.00, 1, 'auto_approve', 'active', '2026-04-10 09:00:00', '2026-04-10 11:00:00', 2),
+    (1002, 1015, 1001, 'Pass Lab Project', 'Project assessment where every student passed', 'test', 'online', 'manual',
+     20.00, 9.50, 60.00, 1, 'auto_approve', 'active', '2026-03-01 14:00:00', '2026-03-01 16:00:00', 1),
+    (1003, 1015, 1001, 'Pass Lab Final', 'Final assessment where every student passed', 'exam', 'onsite', 'manual',
+     20.00, 9.50, 40.00, 1, 'auto_approve', 'active', '2026-04-10 14:00:00', '2026-04-10 16:00:00', 2),
+    (1004, 1016, 1002, 'Draft Grades Quiz', 'Assessment without grade sheet weights yet', 'test', 'online', 'automatic',
+     20.00, 9.50, 50.00, 1, 'manual', 'active', '2026-04-01 10:00:00', '2026-04-01 11:00:00', 1),
+    (1005, 1016, 1002, 'Draft Grades Project', 'Second assessment without grade sheet weights yet', 'test', 'online', 'manual',
+     20.00, 9.50, 50.00, 1, 'manual', 'active', '2026-04-15 10:00:00', '2026-04-15 12:00:00', 2),
+    (1006, 1017, 1003, 'Empty Class Quiz', 'Assessment with partial weight configured', 'test', 'online', 'automatic',
+     20.00, 9.50, 30.00, 1, 'auto_approve', 'active', '2026-04-01 18:00:00', '2026-04-01 19:00:00', 1),
+    (1007, 1017, 1003, 'Empty Class Final', 'Assessment missing a complementary weight', 'exam', 'onsite', 'manual',
+     20.00, 9.50, 0.00, 1, 'auto_approve', 'active', '2026-05-15 18:00:00', '2026-05-15 20:00:00', 2),
+    (1008, 1018, 1004, 'Hundred Point Capstone', 'Assessment using the 0 to 100 scale', 'test', 'online', 'manual',
+     100.00, 50.00, 100.00, 1, 'auto_approve', 'active', '2026-04-20 18:00:00', '2026-04-20 20:00:00', 1);
+
+INSERT INTO grade_sheet (
+    id_grade_sheet, id_subject, title, type, max_grade, passing_grade, weight_alert, released_at, state
+) VALUES
+    (1000, 1000, 'TSD Subject 01 Final Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-06-30 10:00:00', 'published'),
+    (1001, 1001, 'TSD Subject 02 Final Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-06-30 10:00:00', 'published'),
+    (1002, 1002, 'TSD Subject 03 Final Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-06-30 10:00:00', 'published'),
+    (1003, 1003, 'TSD Subject 04 Final Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-06-30 10:00:00', 'published'),
+    (1004, 1004, 'TSD Subject 05 Final Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-06-30 10:00:00', 'published'),
+    (1005, 1005, 'TSD Subject 06 Final Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-07-15 10:00:00', 'published'),
+    (1006, 1006, 'TSD Subject 07 Final Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-07-15 10:00:00', 'published'),
+    (1007, 1007, 'TSD Subject 08 Final Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-07-15 10:00:00', 'published'),
+    (1008, 1008, 'TSD Subject 09 Final Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-07-15 10:00:00', 'published'),
+    (1009, 1009, 'TSD Subject 10 Final Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-07-15 10:00:00', 'published'),
+    (1010, 1010, 'Few Subject Foundations Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-04-15 10:00:00', 'published'),
+    (1011, 1011, 'Few Subject Practice Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-06-30 10:00:00', 'published'),
+    (1012, 1012, 'ECTS Mismatch Intro Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-04-15 10:00:00', 'published'),
+    (1013, 1014, 'All Failed Lab Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-04-15 10:00:00', 'published'),
+    (1014, 1015, 'All Passed Lab Grade Sheet', 'final', 20.00, 9.50, NULL, '2026-04-15 10:00:00', 'published'),
+    (1015, 1016, 'Ended Grade Sheet Missing Grades Draft', 'continuous_assessment', 20.00, 9.50,
+     'Assessment weights total 100%, but assessment grades are still missing.', NULL, 'draft'),
+    (1016, 1017, 'Empty Class Partial Weight Grade Sheet', 'continuous_assessment', 20.00, 9.50,
+     'Assessment weights total 30%. If this is not regularized before the class group period ends, the system will redistribute the weights equally so the sum is 100%.', NULL, 'draft'),
+    (1017, 1018, 'Hundred Point Final Grade Sheet', 'final', 100.00, 50.00, NULL, '2026-05-30 10:00:00', 'published');
+
+INSERT INTO associate_grade_sheet_class_group (id_grade_sheet, id_class_group) VALUES
+    (1000, 1000),
+    (1001, 1001),
+    (1002, 1002),
+    (1003, 1003),
+    (1004, 1004),
+    (1005, 1005),
+    (1006, 1006),
+    (1007, 1007),
+    (1008, 1008),
+    (1009, 1009),
+    (1010, 1010),
+    (1011, 1011),
+    (1012, 1012),
+    (1013, 1013),
+    (1014, 1014),
+    (1015, 1015),
+    (1016, 1016),
+    (1017, 1017);
+
+INSERT INTO based_on_assessment (id_grade_sheet, id_assessment, weight) VALUES
+    (1013, 1000, 50.00),
+    (1013, 1001, 50.00),
+    (1014, 1002, 60.00),
+    (1014, 1003, 40.00),
+    (1015, 1004, 50.00),
+    (1015, 1005, 50.00),
+    (1016, 1006, 30.00),
+    (1017, 1008, 100.00);
+
+INSERT INTO enroll_assessment (id_student_user, id_assessment, state) VALUES
+    (1002, 1000, 'active'),
+    (1002, 1001, 'active'),
+    (1003, 1000, 'active'),
+    (1003, 1001, 'active'),
+    (1004, 1000, 'active'),
+    (1004, 1001, 'active'),
+    (1004, 1002, 'active'),
+    (1004, 1003, 'active'),
+    (1005, 1002, 'active'),
+    (1005, 1003, 'active'),
+    (1002, 1004, 'active'),
+    (1002, 1005, 'active'),
+    (1006, 1004, 'active'),
+    (1006, 1005, 'active'),
+    (1007, 1002, 'active'),
+    (1007, 1003, 'active'),
+    (1007, 1008, 'active');
+
+INSERT INTO attempt (
+    id_attempt, id_student_user, id_assessment, attempt_number, score, state, started_at, submitted_at
+) VALUES
+    (2000, 1002, 1000, 1, 2.00, 'corrected', '2026-03-01 09:00:00', '2026-03-01 10:40:00'),
+    (2001, 1002, 1001, 1, 4.00, 'corrected', '2026-04-10 09:00:00', '2026-04-10 10:40:00'),
+    (2002, 1003, 1000, 1, 6.00, 'corrected', '2026-03-01 09:00:00', '2026-03-01 10:40:00'),
+    (2003, 1003, 1001, 1, 8.00, 'corrected', '2026-04-10 09:00:00', '2026-04-10 10:40:00'),
+    (2004, 1004, 1000, 1, 8.00, 'corrected', '2026-03-01 09:00:00', '2026-03-01 10:40:00'),
+    (2005, 1004, 1001, 1, 10.00, 'corrected', '2026-04-10 09:00:00', '2026-04-10 10:40:00'),
+    (2006, 1004, 1002, 1, 12.00, 'corrected', '2026-03-01 14:00:00', '2026-03-01 15:40:00'),
+    (2007, 1004, 1003, 1, 12.00, 'corrected', '2026-04-10 14:00:00', '2026-04-10 15:40:00'),
+    (2008, 1005, 1002, 1, 15.00, 'corrected', '2026-03-01 14:00:00', '2026-03-01 15:40:00'),
+    (2009, 1005, 1003, 1, 15.00, 'corrected', '2026-04-10 14:00:00', '2026-04-10 15:40:00'),
+    (2010, 1007, 1002, 1, 18.00, 'corrected', '2026-03-01 14:00:00', '2026-03-01 15:40:00'),
+    (2011, 1007, 1003, 1, 18.00, 'corrected', '2026-04-10 14:00:00', '2026-04-10 15:40:00'),
+    (2013, 1002, 1004, 1, 14.00, 'corrected', '2026-04-01 10:00:00', '2026-04-01 10:50:00'),
+    (2014, 1002, 1005, 1, 16.00, 'corrected', '2026-04-15 10:00:00', '2026-04-15 11:50:00'),
+    (2012, 1007, 1008, 1, 87.00, 'corrected', '2026-04-20 18:00:00', '2026-04-20 19:40:00');
+
+INSERT INTO grade_record (
+    id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, recorded_at, notes
+) VALUES
+    (1000, 1000, 1000, NULL, 'AUTO-1000-1000', 14.00, 'approved', '2026-06-30 10:05:00', 'Ten-subject course complete record'),
+    (1001, 1001, 1000, NULL, 'AUTO-1001-1000', 16.00, 'approved', '2026-06-30 10:06:00', 'Ten-subject course complete record'),
+    (1002, 1002, 1000, NULL, 'AUTO-1002-1000', 12.00, 'approved', '2026-06-30 10:07:00', 'Ten-subject course complete record'),
+    (1003, 1003, 1000, NULL, 'AUTO-1003-1000', 18.00, 'approved', '2026-06-30 10:08:00', 'Ten-subject course complete record'),
+    (1004, 1004, 1000, NULL, 'AUTO-1004-1000', 15.00, 'approved', '2026-06-30 10:09:00', 'Ten-subject course complete record'),
+    (1005, 1005, 1000, NULL, 'AUTO-1005-1000', 13.00, 'approved', '2026-07-15 10:05:00', 'Ten-subject course complete record'),
+    (1006, 1006, 1000, NULL, 'AUTO-1006-1000', 17.00, 'approved', '2026-07-15 10:06:00', 'Ten-subject course complete record'),
+    (1007, 1007, 1000, NULL, 'AUTO-1007-1000', 11.00, 'approved', '2026-07-15 10:07:00', 'Ten-subject course complete record'),
+    (1008, 1008, 1000, NULL, 'AUTO-1008-1000', 19.00, 'approved', '2026-07-15 10:08:00', 'Ten-subject course complete record'),
+    (1009, 1009, 1000, NULL, 'AUTO-1009-1000', 16.00, 'approved', '2026-07-15 10:09:00', 'Ten-subject course complete record'),
+    (1010, 1000, 1001, NULL, 'AUTO-1000-1001', 11.00, 'approved', '2026-06-30 10:10:00', 'Incomplete certificate student has only partial subjects'),
+    (1011, 1001, 1001, NULL, 'AUTO-1001-1001', 10.00, 'approved', '2026-06-30 10:11:00', 'Incomplete certificate student has only partial subjects'),
+    (1012, 1002, 1001, NULL, 'AUTO-1002-1001', 8.00, 'failed', '2026-06-30 10:12:00', 'Incomplete certificate student failed one subject'),
+    (1013, 1010, 1004, NULL, 'AUTO-1010-1004', 13.00, 'approved', '2026-04-15 10:05:00', 'Few-subject course approved record'),
+    (1014, 1011, 1004, NULL, 'AUTO-1011-1004', 16.00, 'approved', '2026-06-30 10:05:00', 'Few-subject course approved record'),
+    (1015, 1010, 1005, NULL, 'AUTO-1010-1005', 10.00, 'approved', '2026-04-15 10:06:00', 'Few-subject course low-pass record'),
+    (1016, 1011, 1005, NULL, 'AUTO-1011-1005', 11.00, 'approved', '2026-06-30 10:06:00', 'Few-subject course low-pass record'),
+    (1017, 1012, 1001, NULL, 'AUTO-1012-1001', 14.00, 'approved', '2026-04-15 10:05:00', 'ECTS mismatch course should not produce final course grade'),
+    (1018, 1012, 1006, NULL, 'AUTO-1012-1006', 12.00, 'approved', '2026-04-15 10:06:00', 'ECTS mismatch course second student'),
+    (1019, 1013, 1002, NULL, 'AUTO-1013-1002', 3.00, 'failed', '2026-04-15 10:05:00', 'All-failed class'),
+    (1020, 1013, 1003, NULL, 'AUTO-1013-1003', 7.00, 'failed', '2026-04-15 10:06:00', 'All-failed class'),
+    (1021, 1013, 1004, NULL, 'AUTO-1013-1004', 9.00, 'failed', '2026-04-15 10:07:00', 'All-failed class'),
+    (1022, 1014, 1004, NULL, 'AUTO-1014-1004', 12.00, 'approved', '2026-04-15 10:05:00', 'All-passed class'),
+    (1023, 1014, 1005, NULL, 'AUTO-1014-1005', 15.00, 'approved', '2026-04-15 10:06:00', 'All-passed class'),
+    (1024, 1014, 1007, NULL, 'AUTO-1014-1007', 18.00, 'approved', '2026-04-15 10:07:00', 'All-passed class'),
+    (1026, 1015, 1002, NULL, 'AUTO-1015-1002', 15.00, 'approved', '2026-04-15 12:05:00',
+     'Draft mixed-completion class: this student has every assessment score, while another enrolled student still has missing grades.'),
+    (1025, 1017, 1007, NULL, 'AUTO-1017-1007', 87.00, 'approved', '2026-05-30 10:05:00', 'Hundred-point grading scale');
+
+INSERT INTO certificate (
+    id_certificate, id_course, id_user_student, title, notes, type, template,
+    validation_code, issued_at, state, revoked_at, final_grade
+) VALUES
+    (1000, 1000, 1000, 'Ten Subject Degree Completion Certificate', 'Complete certificate using ten equal-ECTS subjects', 'completion',
+     'template-ects-full', 'VAL-FULL-1000', '2026-07-20 09:00:00', 'issued', NULL, 15.10),
+    (1001, 1000, 1001, 'Ten Subject Degree Incomplete Certificate', 'Incomplete certificate; not all subjects have approved final grades', 'completion',
+     'template-ects-full', 'VAL-FULL-1001', NULL, 'draft', NULL, NULL),
+    (1002, 1001, 1004, 'Few Subject Course Certificate', 'Two-subject course completed with ECTS weighted final grade', 'completion',
+     'template-ects-short', 'VAL-FULL-1002', '2026-07-01 09:00:00', 'issued', NULL, 14.50),
+    (1003, 1001, 1005, 'Few Subject Low Pass Certificate', 'Two-subject course completed with low passing grades', 'completion',
+     'template-ects-short', 'VAL-FULL-1003', '2026-07-01 09:10:00', 'issued', NULL, 10.50),
+    (1004, 1004, 1002, 'All Failed Course Incomplete Certificate', 'Certificate exists but cannot be completed because the student failed', 'completion',
+     'template-ects-short', 'VAL-FULL-1004', NULL, 'draft', NULL, NULL),
+    (1005, 1005, 1004, 'All Passed Course Certificate One', 'Single-subject course completed by all students', 'completion',
+     'template-ects-short', 'VAL-FULL-1005', '2026-04-20 09:00:00', 'issued', NULL, 12.00),
+    (1006, 1005, 1005, 'All Passed Course Certificate Two', 'Single-subject course completed by all students', 'completion',
+     'template-ects-short', 'VAL-FULL-1006', '2026-04-20 09:10:00', 'issued', NULL, 15.00),
+    (1007, 1005, 1007, 'All Passed Course Certificate Three', 'Single-subject course completed by all students', 'completion',
+     'template-ects-short', 'VAL-FULL-1007', '2026-04-20 09:20:00', 'issued', NULL, 18.00),
+    (1008, 1006, 1002, 'Draft Grades Incomplete Certificate', 'Certificate exists but grade sheets are draft or incomplete', 'completion',
+     'template-ects-draft', 'VAL-FULL-1008', NULL, 'draft', NULL, NULL),
+    (1009, 1002, 1006, 'Empty Course Incomplete Certificate', 'Course has no subjects, so the certificate cannot be completed', 'completion',
+     'template-ects-empty', 'VAL-FULL-1009', NULL, 'draft', NULL, NULL),
+    (1010, 1003, 1006, 'ECTS Mismatch Incomplete Certificate', 'Course subject ECTS total is different from the course ECTS', 'completion',
+     'template-ects-mismatch', 'VAL-FULL-1010', NULL, 'draft', NULL, NULL),
+    (1011, 1007, 1007, 'Hundred Point Certificate', 'Certificate final grade uses a 0 to 100 scale', 'qualification',
+     'template-ects-100', 'VAL-FULL-1011', '2026-06-01 09:00:00', 'issued', NULL, 87.00);
+
+INSERT INTO based_on_grade_sheet_certificate (id_certificate, id_grade_sheet) VALUES
+    (1000, 1000),
+    (1000, 1001),
+    (1000, 1002),
+    (1000, 1003),
+    (1000, 1004),
+    (1000, 1005),
+    (1000, 1006),
+    (1000, 1007),
+    (1000, 1008),
+    (1000, 1009),
+    (1001, 1000),
+    (1001, 1001),
+    (1001, 1002),
+    (1001, 1003),
+    (1001, 1004),
+    (1001, 1005),
+    (1001, 1006),
+    (1001, 1007),
+    (1001, 1008),
+    (1001, 1009),
+    (1002, 1010),
+    (1002, 1011),
+    (1003, 1010),
+    (1003, 1011),
+    (1004, 1013),
+    (1005, 1014),
+    (1006, 1014),
+    (1007, 1014),
+    (1008, 1015),
+    (1008, 1016),
+    (1010, 1012),
+    (1011, 1017);
 
 INSERT INTO activity_log (
     id_activity_log, id_user, id_session, operation_type, affected_entity_type,

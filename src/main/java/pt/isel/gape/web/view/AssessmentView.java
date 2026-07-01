@@ -183,12 +183,20 @@ public final class AssessmentView {
         return assessment.passingGrade();
     }
 
+    public BigDecimal getFinalGradeWeightRaw() {
+        return assessment.finalGradeWeight();
+    }
+
     public String getMaxGrade() {
         return gradeLabel(assessment.maxGrade());
     }
 
     public String getPassingGrade() {
         return gradeLabel(assessment.passingGrade());
+    }
+
+    public String getFinalGradeWeight() {
+        return gradeLabel(assessment.finalGradeWeight());
     }
 
     public Integer getAttemptsLimit() {

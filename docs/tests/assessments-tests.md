@@ -12,6 +12,7 @@ The assessment service tests cover Phase 11 back-end rules for questionnaires, e
   - Subject-level exams persist explicit applicable class groups.
   - Subject-level exams without applicable class groups are rejected.
   - Teachers cannot create subject-level exams for unmanaged class groups.
+  - Assessment final-grade weight is required and must stay between 0 and 100.
   - Passing grade cannot exceed maximum grade.
   - Attempts limit must be greater than zero when defined.
   - Questionnaires require a content block.

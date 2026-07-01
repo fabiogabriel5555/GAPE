@@ -1,5 +1,6 @@
 package pt.isel.gape.web.view;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
@@ -64,6 +65,14 @@ public final class CourseSubjectView {
 
     public String getSubjectEctsLabel() {
         return subject.getEctsLabel();
+    }
+
+    public BigDecimal getSubjectEcts() {
+        return subject.getEcts();
+    }
+
+    public String getSubjectFinalGradeMaxLabel() {
+        return subject.getFinalGradeMaxLabel();
     }
 
     public String getSubjectWorkloadHoursLabel() {

@@ -85,7 +85,7 @@
                                                     <c:out value="${assessment.title}"/>
                                                 </a>
                                                 <span class="d-block text-12 text-neutral-500">
-                                                    <c:out value="${assessment.typeLabel}"/> | <c:out value="${assessment.modeLabel}"/> | <c:out value="${assessment.correctionModeLabel}"/>
+                                                    <c:out value="${assessment.typeLabel}"/> | <c:out value="${assessment.modeLabel}"/> | <c:out value="${assessment.correctionModeLabel}"/> | <c:out value="${assessment.finalGradeWeight}"/>%
                                                 </span>
                                             </div>
                                         </div>
@@ -110,20 +110,22 @@
                                     </td>
                                     <td class="py-20 px-20 text-end">
                                         <div class="d-flex align-items-center gap-12 justify-content-end">
-                                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}" class="text-22 text-neutral-500 hover-text-main-600" title="Detail">
+                                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}" class="text-22 text-neutral-500 hover-text-main-600" title="Detail" aria-label="Detail">
                                                 <i class="ph ph-eye"></i>
                                             </a>
-                                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}#enrollments-attempts" class="text-22 text-neutral-500 hover-text-main-600" title="Enrollments &amp; Attempts">
-                                                <i class="ph ph-list-checks"></i>
+                                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit" class="text-22 text-neutral-500 hover-text-main-600" title="Edit" aria-label="Edit">
+                                                <i class="ph ph-pencil-simple-line"></i>
                                             </a>
-                                            <c:if test="${not assessment.archived}">
-                                                <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/archive" method="post" class="m-0">
-                                                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                    <button type="submit" class="text-22 text-neutral-500 hover-text-danger-600 bg-transparent border-0 p-0" title="Complete">
-                                                        <i class="ph ph-archive-box"></i>
-                                                    </button>
-                                                </form>
-                                            </c:if>
+                                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/pdf" class="text-22 text-neutral-500 hover-text-main-600" title="Download" aria-label="Download">
+                                                <i class="ph ph-download-simple"></i>
+                                            </a>
+                                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/delete" method="post" class="m-0">
+                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                <input type="hidden" name="returnTo" value="/learning/assessments">
+                                                <button type="submit" class="text-22 text-neutral-500 hover-text-danger-600 bg-transparent border-0 p-0" title="Delete" aria-label="Delete">
+                                                    <i class="ph ph-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>
@@ -139,6 +141,7 @@
                         </table>
                     </div>
                 </div>
+
             </div>
             <%@ include file="/WEB-INF/fragments/dashboard-footer.jspf" %>
         </div>

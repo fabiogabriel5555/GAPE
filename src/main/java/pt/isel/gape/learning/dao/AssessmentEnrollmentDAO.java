@@ -1,11 +1,9 @@
 package pt.isel.gape.learning.dao;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -37,16 +35,14 @@ public final class AssessmentEnrollmentDAO {
             EnrollmentState state
     ) throws SQLException {
         String sql = """
-                INSERT INTO enroll_assessment (id_student_user, id_assessment, state, start_date, end_date)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO enroll_assessment (id_student_user, id_assessment, state)
+                VALUES (?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, command.studentUserId());
             statement.setLong(2, command.assessmentId());
             statement.setString(3, state.toDatabaseValue());
-            setDate(statement, 4, command.startDate());
-            setDate(statement, 5, command.endDate());
             statement.executeUpdate();
         }
     }
@@ -58,7 +54,7 @@ public final class AssessmentEnrollmentDAO {
     ) throws SQLException {
         String sql = """
                 UPDATE enroll_assessment
-                SET state = ?, start_date = ?, end_date = ?
+                SET state = ?
                 WHERE id_student_user = ?
                   AND id_assessment = ?
                   AND state IN ('inactive', 'rejected', 'withdrawn', 'completed')
@@ -66,10 +62,8 @@ public final class AssessmentEnrollmentDAO {
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, newState.toDatabaseValue());
-            setDate(statement, 2, command.startDate());
-            setDate(statement, 3, command.endDate());
-            statement.setLong(4, command.studentUserId());
-            statement.setLong(5, command.assessmentId());
+            statement.setLong(2, command.studentUserId());
+            statement.setLong(3, command.assessmentId());
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Reusable assessment enrollment not found");
             }
@@ -81,13 +75,11 @@ public final class AssessmentEnrollmentDAO {
             long studentUserId,
             long assessmentId,
             EnrollmentState expectedState,
-            EnrollmentState newState,
-            LocalDate startDate,
-            LocalDate endDate
+            EnrollmentState newState
     ) throws SQLException {
         String sql = """
                 UPDATE enroll_assessment
-                SET state = ?, start_date = ?, end_date = ?
+                SET state = ?
                 WHERE id_student_user = ?
                   AND id_assessment = ?
                   AND state = ?
@@ -95,11 +87,9 @@ public final class AssessmentEnrollmentDAO {
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, newState.toDatabaseValue());
-            setDate(statement, 2, startDate);
-            setDate(statement, 3, endDate);
-            statement.setLong(4, studentUserId);
-            statement.setLong(5, assessmentId);
-            statement.setString(6, expectedState.toDatabaseValue());
+            statement.setLong(2, studentUserId);
+            statement.setLong(3, assessmentId);
+            statement.setString(4, expectedState.toDatabaseValue());
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Expected assessment enrollment state not found");
             }
@@ -110,43 +100,38 @@ public final class AssessmentEnrollmentDAO {
             Connection connection,
             long studentUserId,
             long assessmentId,
-            EnrollmentState state,
-            LocalDate startDate,
-            LocalDate endDate
+            EnrollmentState state
     ) throws SQLException {
         String sql = """
                 UPDATE enroll_assessment
-                SET state = ?, start_date = ?, end_date = ?
+                SET state = ?
                 WHERE id_student_user = ?
                   AND id_assessment = ?
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, state.toDatabaseValue());
-            setDate(statement, 2, startDate);
-            setDate(statement, 3, endDate);
-            statement.setLong(4, studentUserId);
-            statement.setLong(5, assessmentId);
+            statement.setLong(2, studentUserId);
+            statement.setLong(3, assessmentId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Assessment enrollment not found");
             }
         }
     }
 
-    public void withdraw(Connection connection, long studentUserId, long assessmentId, LocalDate endDate)
+    public void withdraw(Connection connection, long studentUserId, long assessmentId)
             throws SQLException {
         String sql = """
                 UPDATE enroll_assessment
-                SET state = 'withdrawn', end_date = ?
+                SET state = 'withdrawn'
                 WHERE id_student_user = ?
                   AND id_assessment = ?
                   AND state = 'active'
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            setDate(statement, 1, endDate);
-            statement.setLong(2, studentUserId);
-            statement.setLong(3, assessmentId);
+            statement.setLong(1, studentUserId);
+            statement.setLong(2, assessmentId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Active assessment enrollment not found");
             }
@@ -176,7 +161,7 @@ public final class AssessmentEnrollmentDAO {
             long assessmentId
     ) throws SQLException {
         String sql = """
-                SELECT id_student_user, id_assessment, state, start_date, end_date
+                SELECT id_student_user, id_assessment, state
                 FROM enroll_assessment
                 WHERE id_student_user = ?
                   AND id_assessment = ?
@@ -210,7 +195,7 @@ public final class AssessmentEnrollmentDAO {
     public List<AssessmentEnrollment> findByAssessment(Connection connection, long assessmentId)
             throws SQLException {
         String sql = """
-                SELECT id_student_user, id_assessment, state, start_date, end_date
+                SELECT id_student_user, id_assessment, state
                 FROM enroll_assessment
                 WHERE id_assessment = ?
                 ORDER BY state, id_student_user
@@ -345,11 +330,11 @@ public final class AssessmentEnrollmentDAO {
         }
     }
 
-    public int syncAutomaticEnrollments(Connection connection, long assessmentId, LocalDate startDate)
+    public int syncAutomaticEnrollments(Connection connection, long assessmentId)
             throws SQLException {
         String sql = """
-                INSERT INTO enroll_assessment (id_student_user, id_assessment, state, start_date, end_date)
-                SELECT eligible.id_student_user, ?, 'active', ?, NULL
+                INSERT INTO enroll_assessment (id_student_user, id_assessment, state)
+                SELECT eligible.id_student_user, ?, 'active'
                 FROM (
                     SELECT ecg.id_student_user
                     FROM assessment a
@@ -385,14 +370,6 @@ public final class AssessmentEnrollmentDAO {
                       AND (es.end_date IS NULL OR es.end_date >= CURRENT_DATE)
                 ) eligible
                 ON DUPLICATE KEY UPDATE
-                    start_date = CASE
-                        WHEN state IN ('pending', 'inactive', 'rejected', 'withdrawn', 'completed') THEN VALUES(start_date)
-                        ELSE start_date
-                    END,
-                    end_date = CASE
-                        WHEN state IN ('pending', 'inactive', 'rejected', 'withdrawn', 'completed') THEN NULL
-                        ELSE end_date
-                    END,
                     state = CASE
                         WHEN state IN ('pending', 'inactive', 'rejected', 'withdrawn', 'completed') THEN 'active'
                         ELSE state
@@ -401,23 +378,22 @@ public final class AssessmentEnrollmentDAO {
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, assessmentId);
-            setDate(statement, 2, startDate);
+            statement.setLong(2, assessmentId);
             statement.setLong(3, assessmentId);
-            statement.setLong(4, assessmentId);
             return statement.executeUpdate();
         }
     }
 
-    public int syncAutomaticEnrollments(long assessmentId, LocalDate startDate) throws SQLException {
+    public int syncAutomaticEnrollments(long assessmentId) throws SQLException {
         try (Connection connection = connectionProvider.getConnection()) {
-            return syncAutomaticEnrollments(connection, assessmentId, startDate);
+            return syncAutomaticEnrollments(connection, assessmentId);
         }
     }
 
-    public int syncAllAutomaticEnrollments(Connection connection, LocalDate startDate) throws SQLException {
+    public int syncAllAutomaticEnrollments(Connection connection) throws SQLException {
         String sql = """
-                INSERT INTO enroll_assessment (id_student_user, id_assessment, state, start_date, end_date)
-                SELECT eligible.id_student_user, eligible.id_assessment, 'active', ?, NULL
+                INSERT INTO enroll_assessment (id_student_user, id_assessment, state)
+                SELECT eligible.id_student_user, eligible.id_assessment, 'active'
                 FROM (
                     SELECT ecg.id_student_user, a.id_assessment
                     FROM assessment a
@@ -457,14 +433,6 @@ public final class AssessmentEnrollmentDAO {
                       AND (es.end_date IS NULL OR es.end_date >= CURRENT_DATE)
                 ) eligible
                 ON DUPLICATE KEY UPDATE
-                    start_date = CASE
-                        WHEN state IN ('pending', 'inactive', 'rejected', 'withdrawn', 'completed') THEN VALUES(start_date)
-                        ELSE start_date
-                    END,
-                    end_date = CASE
-                        WHEN state IN ('pending', 'inactive', 'rejected', 'withdrawn', 'completed') THEN NULL
-                        ELSE end_date
-                    END,
                     state = CASE
                         WHEN state IN ('pending', 'inactive', 'rejected', 'withdrawn', 'completed') THEN 'active'
                         ELSE state
@@ -472,34 +440,21 @@ public final class AssessmentEnrollmentDAO {
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            setDate(statement, 1, startDate);
             return statement.executeUpdate();
         }
     }
 
-    public int syncAllAutomaticEnrollments(LocalDate startDate) throws SQLException {
+    public int syncAllAutomaticEnrollments() throws SQLException {
         try (Connection connection = connectionProvider.getConnection()) {
-            return syncAllAutomaticEnrollments(connection, startDate);
+            return syncAllAutomaticEnrollments(connection);
         }
     }
 
     private static AssessmentEnrollment mapEnrollment(ResultSet resultSet) throws SQLException {
-        Date startDate = resultSet.getDate("start_date");
-        Date endDate = resultSet.getDate("end_date");
         return new AssessmentEnrollment(
                 resultSet.getLong("id_student_user"),
                 resultSet.getLong("id_assessment"),
-                EnrollmentState.fromDatabaseValue(resultSet.getString("state")),
-                startDate == null ? null : startDate.toLocalDate(),
-                endDate == null ? null : endDate.toLocalDate()
+                EnrollmentState.fromDatabaseValue(resultSet.getString("state"))
         );
-    }
-
-    private static void setDate(PreparedStatement statement, int index, LocalDate value) throws SQLException {
-        if (value == null) {
-            statement.setNull(index, java.sql.Types.DATE);
-        } else {
-            statement.setDate(index, Date.valueOf(value));
-        }
     }
 }

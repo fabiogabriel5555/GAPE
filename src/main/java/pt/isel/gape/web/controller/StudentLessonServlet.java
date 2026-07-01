@@ -42,7 +42,8 @@ import pt.isel.gape.web.view.ScheduleEventView;
 @WebServlet(name = "studentLessonServlet", urlPatterns = {
         "/student/lessons",
         "/student/lessons/*",
-        "/student/calendar"
+        "/student/calendar",
+        "/student/events"
 })
 public final class StudentLessonServlet extends DashboardServletSupport {
 
@@ -182,6 +183,7 @@ public final class StudentLessonServlet extends DashboardServletSupport {
                         )
                         .stream()
                         .map(scheduleViewFactory::scheduleEventView)
+                        .filter(event -> event.isLessonEvent() || event.isAssessmentEvent())
                         .toList()
                 : List.of();
         Map<Long, ClassGroupView> classGroupById = classGroupMap(lessons);
@@ -198,12 +200,13 @@ public final class StudentLessonServlet extends DashboardServletSupport {
         request.setAttribute("contentBlockById", contentBlockById);
         request.setAttribute("lessonCourseGroups", lessonCourseGroups(lessons, classGroupById));
         request.setAttribute("calendarMode", calendarMode);
-        prepareDashboard(request, calendarMode ? "calendar" : "lessons", calendarMode ? "Calendar" : "Lessons");
+        prepareDashboard(request, calendarMode ? "calendar" : "lessons", calendarMode ? "Events" : "Lessons");
         forward(request, response, calendarMode ? STUDENT_CALENDAR_JSP : STUDENT_LESSON_LIST_JSP);
     }
 
     private static boolean isCalendarRequest(HttpServletRequest request) {
-        return "/student/calendar".equals(request.getServletPath());
+        return "/student/calendar".equals(request.getServletPath())
+                || "/student/events".equals(request.getServletPath());
     }
 
     private static List<StudentCalendarItemView> calendarItems(

@@ -27,7 +27,6 @@ import pt.isel.gape.learning.model.Attempt;
 import pt.isel.gape.learning.model.AttemptState;
 import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionConfiguration;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
 import pt.isel.gape.learning.model.Response;
 import pt.isel.gape.learning.model.ResponseCommand;
@@ -162,9 +161,6 @@ public final class ResponseService {
                                     "Question not found: " + command.questionId()));
                     if (question.assessmentId() != assessment.id()) {
                         throw new IllegalArgumentException("Question does not belong to the attempt assessment");
-                    }
-                    if (question.state() != QuestionState.ACTIVE) {
-                        throw new IllegalArgumentException("Responses can only target active questions");
                     }
                     Set<Long> optionIds = normalizeAndValidatePayload(connection, question, command);
                     Response existing = responseDAO.findByAttemptAndQuestion(connection, attempt.id(), question.id())

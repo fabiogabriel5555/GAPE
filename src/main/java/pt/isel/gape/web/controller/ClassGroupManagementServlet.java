@@ -1,6 +1,7 @@
 package pt.isel.gape.web.controller;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -484,6 +485,10 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         request.setAttribute("blockContentCount", blockContentCount);
         request.setAttribute("lessonCount", lessonCount);
         request.setAttribute("assessmentCount", assessmentCount);
+        request.setAttribute(
+                "classGroupAssessmentWeightWarning",
+                classGroupAssessmentWeightWarning(classGroupId)
+        );
         request.setAttribute("pdfContentCount", pdfContentCount);
         request.setAttribute("contentRepository", contentRepository);
         request.setAttribute("classGroupEnrollmentPolicy", classGroupEnrollmentPolicy(classGroupId));
@@ -525,6 +530,28 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
             );
         }
         return result;
+    }
+
+    private String classGroupAssessmentWeightWarning(long classGroupId) {
+        try {
+            AssessmentDAO.ClassGroupAssessmentWeightSummary summary =
+                    assessmentDAO.summarizeAssessmentWeightsForClassGroup(classGroupId);
+            if (summary == null || !summary.hasAssessments() || summary.totalIsOneHundred()) {
+                return null;
+            }
+            return "Assessment weights total " + percentageLabel(summary.totalWeight())
+                    + "%. If this is not regularized, when the class group period ends the system will redistribute "
+                    + "the weights equally so the sum is 100%.";
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load class group assessment weight summary", exception);
+        }
+    }
+
+    private static String percentageLabel(BigDecimal value) {
+        if (value == null) {
+            return "0";
+        }
+        return value.stripTrailingZeros().toPlainString();
     }
 
     private Map<Long, List<LessonView>> classGroupLessonsByClassGroup(

@@ -5,6 +5,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,7 +26,6 @@ import pt.isel.gape.learning.model.ManualCorrectionCommand;
 import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionConfiguration;
 import pt.isel.gape.learning.model.QuestionOption;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
 import pt.isel.gape.learning.model.Response;
 import pt.isel.gape.security.authorization.PermissionChecker;
@@ -44,6 +44,7 @@ public final class CorrectionService {
     private final QuestionOptionDAO optionDAO;
     private final ResponseDAO responseDAO;
     private final AssessmentAccessPolicy accessPolicy;
+    private final GradeLifecycleService gradeLifecycleService;
     private final AuditService auditService;
 
     public CorrectionService(ConnectionProvider connectionProvider, Clock clock) {
@@ -77,6 +78,7 @@ public final class CorrectionService {
         this.responseDAO = Objects.requireNonNull(responseDAO, "responseDAO is required");
         Objects.requireNonNull(permissionDAO, "permissionDAO is required");
         Objects.requireNonNull(clock, "clock is required");
+        this.gradeLifecycleService = new GradeLifecycleService(connectionProvider, clock);
         this.accessPolicy = new AssessmentAccessPolicy(
                 assessmentDAO,
                 permissionDAO,
@@ -97,6 +99,44 @@ public final class CorrectionService {
             long attemptId,
             String sourceIp
     ) {
+        return autoCorrectAttempt(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                attemptId,
+                sourceIp,
+                true,
+                "ATTEMPT_AUTO_CORRECT"
+        );
+    }
+
+    public CorrectionResult autoCorrectEligibleResponses(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long attemptId,
+            String sourceIp
+    ) {
+        return autoCorrectAttempt(
+                actorUserId,
+                sessionId,
+                actorProfileType,
+                attemptId,
+                sourceIp,
+                false,
+                "ATTEMPT_AUTO_CORRECT_ELIGIBLE"
+        );
+    }
+
+    private CorrectionResult autoCorrectAttempt(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long attemptId,
+            String sourceIp,
+            boolean requireAssessmentAutomaticMode,
+            String operationType
+    ) {
         try {
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
@@ -116,43 +156,41 @@ public final class CorrectionService {
                             assessment,
                             sourceIp
                     );
-                    if (!assessment.correctionMode().allowsAutomaticCorrection()) {
+                    if (requireAssessmentAutomaticMode && !assessment.correctionMode().allowsAutomaticCorrection()) {
                         throw new IllegalStateException("Assessment does not allow automatic correction");
                     }
 
                     int autoCorrected = 0;
-                    int pendingManual = 0;
                     List<Response> responses = responseDAO.findByAttempt(connection, attempt.id());
                     for (Response response : responses) {
                         Question question = questionDAO.findById(connection, response.questionId())
                                 .orElseThrow(() -> new IllegalStateException(
                                         "Response question not found: " + response.questionId()));
-                        if (question.state() != QuestionState.ACTIVE) {
-                            continue;
-                        }
-                        if (question.type().isAutomaticallyScoredObjective()) {
+                        if (hasExpectedAnswerForAutomaticCorrection(connection, question)) {
                             BigDecimal score = objectiveScore(connection, question, response);
                             responseDAO.updateScore(connection, response.id(), score);
                             autoCorrected++;
+                        } else if (question.type().isAutomaticallyScoredObjective()) {
+                            continue;
                         } else {
-                            if (assessment.correctionMode().requiresObjectiveOnly()) {
+                            if (requireAssessmentAutomaticMode && assessment.correctionMode().requiresObjectiveOnly()) {
                                 throw new IllegalStateException(
                                         "Automatic assessments cannot contain manual responses");
-                            }
-                            if (response.score() == null) {
-                                pendingManual++;
                             }
                         }
                     }
 
                     BigDecimal total = responseDAO.sumScoresByActiveQuestionsByAttempt(connection, attempt.id());
                     requireWithinAssessmentMaximum(total, assessment);
+                    int pendingManual = countUnscoredResponses(connection, attempt.id());
                     AttemptState state = pendingManual == 0 ? AttemptState.CORRECTED : AttemptState.SUBMITTED;
-                    attemptDAO.updateScoreAndState(connection, attempt.id(), total, state);
-                    auditService.record(connection, actorUserId, sessionId, "ATTEMPT_AUTO_CORRECT",
+                    BigDecimal visibleTotal = scoreWhenCorrectionComplete(total, pendingManual);
+                    attemptDAO.updateScoreAndState(connection, attempt.id(), visibleTotal, state);
+                    synchronizeGradesWhenCorrected(connection, assessment, attempt, state);
+                    auditService.record(connection, actorUserId, sessionId, operationType,
                             "attempt", Long.toString(attempt.id()), "success", sourceIp);
                     connection.commit();
-                    return new CorrectionResult(attempt.id(), total, state, autoCorrected, pendingManual);
+                    return new CorrectionResult(attempt.id(), visibleTotal, state, autoCorrected, pendingManual);
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();
                     throw exception;
@@ -161,8 +199,71 @@ public final class CorrectionService {
                 }
             }
         } catch (RuntimeException | SQLException exception) {
-            auditFailure(actorUserId, sessionId, "ATTEMPT_AUTO_CORRECT", Long.toString(attemptId), sourceIp);
+            auditFailure(actorUserId, sessionId, operationType, Long.toString(attemptId), sourceIp);
             throw wrap(exception, "Failed to auto-correct attempt");
+        }
+    }
+
+    public CorrectionResult autoCorrectResponse(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long responseId,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Response response = responseDAO.findById(connection, responseId)
+                            .orElseThrow(() -> new IllegalArgumentException("Response not found: " + responseId));
+                    Attempt attempt = attemptDAO.lockById(connection, response.attemptId())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Attempt not found: " + response.attemptId()));
+                    requireSubmittedAttempt(attempt);
+                    Assessment assessment = assessmentDAO.lockById(connection, attempt.assessmentId())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Assessment not found: " + attempt.assessmentId()));
+                    accessPolicy.requireAssessmentManager(
+                            connection,
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            assessment,
+                            sourceIp
+                    );
+                    Question question = questionDAO.findById(connection, response.questionId())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Question not found: " + response.questionId()));
+                    if (!question.type().isAutomaticallyScoredObjective()
+                            || !hasExpectedAnswerForAutomaticCorrection(connection, question)) {
+                        throw new IllegalStateException("Question is not eligible for automatic correction");
+                    }
+
+                    BigDecimal score = objectiveScore(connection, question, response);
+                    responseDAO.updateScore(connection, response.id(), score);
+                    BigDecimal total = responseDAO.sumScoresByActiveQuestionsByAttempt(connection, attempt.id());
+                    requireWithinAssessmentMaximum(total, assessment);
+                    int pendingManual = countUnscoredResponses(connection, attempt.id());
+                    AttemptState state = pendingManual == 0 ? AttemptState.CORRECTED : AttemptState.SUBMITTED;
+                    BigDecimal visibleTotal = scoreWhenCorrectionComplete(total, pendingManual);
+                    attemptDAO.updateScoreAndState(connection, attempt.id(), visibleTotal, state);
+                    synchronizeGradesWhenCorrected(connection, assessment, attempt, state);
+                    auditService.record(connection, actorUserId, sessionId, "RESPONSE_AUTO_CORRECT",
+                            "response", Long.toString(response.id()), "success", sourceIp);
+                    connection.commit();
+                    return new CorrectionResult(attempt.id(), visibleTotal, state, 1, pendingManual);
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "RESPONSE_AUTO_CORRECT", Long.toString(responseId), sourceIp);
+            throw wrap(exception, "Failed to auto-correct response");
         }
     }
 
@@ -197,28 +298,24 @@ public final class CorrectionService {
                             assessment,
                             sourceIp
                     );
-                    if (!assessment.correctionMode().allowsManualCorrection()) {
-                        throw new IllegalStateException("Assessment does not allow manual correction");
-                    }
                     Question question = questionDAO.findById(connection, response.questionId())
                             .orElseThrow(() -> new IllegalArgumentException(
                                     "Question not found: " + response.questionId()));
-                    if (question.state() != QuestionState.ACTIVE) {
-                        throw new IllegalArgumentException("Only active question responses can be corrected");
-                    }
                     if (command.score().compareTo(question.score()) > 0) {
                         throw new IllegalArgumentException("Response score cannot exceed question score");
                     }
                     responseDAO.updateScore(connection, response.id(), command.score());
                     BigDecimal total = responseDAO.sumScoresByActiveQuestionsByAttempt(connection, attempt.id());
                     requireWithinAssessmentMaximum(total, assessment);
-                    boolean hasUnscoredResponses = hasUnscoredActiveResponses(connection, attempt.id());
-                    AttemptState state = hasUnscoredResponses ? AttemptState.SUBMITTED : AttemptState.CORRECTED;
-                    attemptDAO.updateScoreAndState(connection, attempt.id(), total, state);
+                    int pendingManual = countUnscoredResponses(connection, attempt.id());
+                    AttemptState state = pendingManual == 0 ? AttemptState.CORRECTED : AttemptState.SUBMITTED;
+                    BigDecimal visibleTotal = scoreWhenCorrectionComplete(total, pendingManual);
+                    attemptDAO.updateScoreAndState(connection, attempt.id(), visibleTotal, state);
+                    synchronizeGradesWhenCorrected(connection, assessment, attempt, state);
                     auditService.record(connection, actorUserId, sessionId, "RESPONSE_MANUAL_CORRECT",
                             "response", Long.toString(response.id()), "success", sourceIp);
                     connection.commit();
-                    return new CorrectionResult(attempt.id(), total, state, 0, hasUnscoredResponses ? 1 : 0);
+                    return new CorrectionResult(attempt.id(), visibleTotal, state, 0, pendingManual);
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();
                     throw exception;
@@ -230,6 +327,100 @@ public final class CorrectionService {
             String affected = command == null ? "unknown" : Long.toString(command.responseId());
             auditFailure(actorUserId, sessionId, "RESPONSE_MANUAL_CORRECT", affected, sourceIp);
             throw wrap(exception, "Failed to correct response manually");
+        }
+    }
+
+    public CorrectionResult correctAttemptManually(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long attemptId,
+            Map<Long, BigDecimal> responseScores,
+            String sourceIp
+    ) {
+        try {
+            validateManualCorrectionBatch(responseScores);
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Attempt attempt = attemptDAO.lockById(connection, attemptId)
+                            .orElseThrow(() -> new IllegalArgumentException("Attempt not found: " + attemptId));
+                    requireSubmittedAttempt(attempt);
+                    Assessment assessment = assessmentDAO.lockById(connection, attempt.assessmentId())
+                            .orElseThrow(() -> new IllegalArgumentException(
+                                    "Assessment not found: " + attempt.assessmentId()));
+                    accessPolicy.requireAssessmentManager(
+                            connection,
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            assessment,
+                            sourceIp
+                    );
+
+                    List<Response> responses = responseDAO.findByAttempt(connection, attempt.id());
+                    Set<Long> attemptResponseIds = responses.stream()
+                            .map(Response::id)
+                            .collect(Collectors.toUnmodifiableSet());
+                    for (Long responseId : responseScores.keySet()) {
+                        if (!attemptResponseIds.contains(responseId)) {
+                            throw new IllegalArgumentException("Response does not belong to this attempt: "
+                                    + responseId);
+                        }
+                    }
+
+                    for (Response response : responses) {
+                        BigDecimal score = responseScores.get(response.id());
+                        if (score == null) {
+                            continue;
+                        }
+                        Question question = questionDAO.findById(connection, response.questionId())
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                        "Question not found: " + response.questionId()));
+                        validateManualScore(score);
+                        if (score.compareTo(question.score()) > 0) {
+                            throw new IllegalArgumentException("Response score cannot exceed question score");
+                        }
+                        responseDAO.updateScore(connection, response.id(), score);
+                    }
+
+                    BigDecimal total = responseDAO.sumScoresByActiveQuestionsByAttempt(connection, attempt.id());
+                    requireWithinAssessmentMaximum(total, assessment);
+                    int pendingManual = countUnscoredResponses(connection, attempt.id());
+                    AttemptState state = pendingManual == 0 ? AttemptState.CORRECTED : AttemptState.SUBMITTED;
+                    BigDecimal visibleTotal = scoreWhenCorrectionComplete(total, pendingManual);
+                    attemptDAO.updateScoreAndState(connection, attempt.id(), visibleTotal, state);
+                    synchronizeGradesWhenCorrected(connection, assessment, attempt, state);
+                    auditService.record(connection, actorUserId, sessionId, "ATTEMPT_MANUAL_CORRECT",
+                            "attempt", Long.toString(attempt.id()), "success", sourceIp);
+                    connection.commit();
+                    return new CorrectionResult(attempt.id(), visibleTotal, state, 0, pendingManual);
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "ATTEMPT_MANUAL_CORRECT", Long.toString(attemptId), sourceIp);
+            throw wrap(exception, "Failed to correct attempt manually");
+        }
+    }
+
+    private void synchronizeGradesWhenCorrected(
+            Connection connection,
+            Assessment assessment,
+            Attempt attempt,
+            AttemptState state
+    ) throws SQLException {
+        if (state == AttemptState.CORRECTED) {
+            gradeLifecycleService.synchronizeAfterAssessmentCorrection(
+                    connection,
+                    assessment.id(),
+                    attempt.studentUserId()
+            );
         }
     }
 
@@ -258,16 +449,31 @@ public final class CorrectionService {
         return BigDecimal.ZERO;
     }
 
-    private boolean hasUnscoredActiveResponses(Connection connection, long attemptId) throws SQLException {
+    private boolean hasExpectedAnswerForAutomaticCorrection(Connection connection, Question question)
+            throws SQLException {
+        if (question.type() == QuestionType.RATING) {
+            return question.expectedAnswer() != null && !question.expectedAnswer().isBlank();
+        }
+        if (!question.type().allowsOptions()) {
+            return false;
+        }
+        return optionDAO.findActiveByQuestion(connection, question.id())
+                .stream()
+                .anyMatch(option -> Boolean.TRUE.equals(option.correct()));
+    }
+
+    private int countUnscoredResponses(Connection connection, long attemptId) throws SQLException {
+        int count = 0;
         for (Response response : responseDAO.findByAttempt(connection, attemptId)) {
-            Question question = questionDAO.findById(connection, response.questionId())
-                    .orElseThrow(() -> new IllegalStateException(
-                            "Response question not found: " + response.questionId()));
-            if (question.state() == QuestionState.ACTIVE && response.score() == null) {
-                return true;
+            if (response.score() == null) {
+                count++;
             }
         }
-        return false;
+        return count;
+    }
+
+    private static BigDecimal scoreWhenCorrectionComplete(BigDecimal total, int pendingManualResponses) {
+        return pendingManualResponses == 0 ? total : null;
     }
 
     private static void requireSubmittedAttempt(Attempt attempt) {
@@ -279,7 +485,25 @@ public final class CorrectionService {
     private static void validateManualCorrection(ManualCorrectionCommand command) {
         Objects.requireNonNull(command, "command is required");
         Objects.requireNonNull(command.score(), "manual correction score is required");
-        if (command.score().compareTo(BigDecimal.ZERO) < 0) {
+        validateManualScore(command.score());
+    }
+
+    private static void validateManualCorrectionBatch(Map<Long, BigDecimal> responseScores) {
+        Objects.requireNonNull(responseScores, "response scores are required");
+        if (responseScores.isEmpty()) {
+            throw new IllegalArgumentException("At least one response score is required");
+        }
+        for (Map.Entry<Long, BigDecimal> entry : responseScores.entrySet()) {
+            if (entry.getKey() == null || entry.getKey() <= 0) {
+                throw new IllegalArgumentException("response id is required");
+            }
+            validateManualScore(entry.getValue());
+        }
+    }
+
+    private static void validateManualScore(BigDecimal score) {
+        Objects.requireNonNull(score, "manual correction score is required");
+        if (score.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Manual correction score cannot be negative");
         }
     }

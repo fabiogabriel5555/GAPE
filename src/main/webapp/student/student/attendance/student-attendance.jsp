@@ -2,9 +2,9 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
     request.setAttribute("activeMenu", "attendance");
-    request.setAttribute("pageTitle", "Attendance");
-    request.setAttribute("studentPageTitle", "Attendance");
-    request.setAttribute("studentPageDescription", "Attendance records, absence notifications and submitted justifications.");
+    request.setAttribute("pageTitle", "Enrollments & Certificates");
+    request.setAttribute("studentPageTitle", "Enrollments & Certificates");
+    request.setAttribute("studentPageDescription", "Attendance records, absence notifications, grades and certificates.");
 %>
 <%@ include file="/WEB-INF/fragments/student-dashboard-start.jspf" %>
 
@@ -127,5 +127,7 @@
         </table>
     </div>
 </section>
+
+<%@ include file="/WEB-INF/fragments/student-grades-certificates-content.jspf" %>
 
 <%@ include file="/WEB-INF/fragments/student-dashboard-end.jspf" %>

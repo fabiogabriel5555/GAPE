@@ -380,6 +380,8 @@ public final class CourseManagementServlet extends DashboardServletSupport {
                 actor,
                 viewFactory.courseSubjects(courseId, false, null)
         );
+        BigDecimal subjectEctsTotal = subjectEctsTotal(courseSubjects);
+        boolean courseEctsConsistent = course.ects() != null && subjectEctsTotal.compareTo(course.ects()) == 0;
         Set<Long> subjectIds = subjectIdsFrom(courseSubjects);
         List<pt.isel.gape.web.view.ClassGroupView> classGroups = viewFactory.classGroupViews(classGroupsByCourse(courseId))
                 .stream()
@@ -392,6 +394,9 @@ public final class CourseManagementServlet extends DashboardServletSupport {
         prepareCourseBasePaths(request);
         request.setAttribute("course", courseView);
         request.setAttribute("courseSubjects", courseSubjects);
+        request.setAttribute("courseSubjectEctsTotalLabel", formatDecimal(subjectEctsTotal) + " ECTS");
+        request.setAttribute("courseEctsTargetLabel", courseView.getEctsLabel());
+        request.setAttribute("courseEctsConsistent", courseEctsConsistent);
         request.setAttribute("classGroups", classGroups);
         request.setAttribute("classGroupsBySubject", classGroupsBySubject);
         request.setAttribute("studentOptions", studentOptions);
@@ -1044,6 +1049,20 @@ public final class CourseManagementServlet extends DashboardServletSupport {
                 .count();
     }
 
+    private static BigDecimal subjectEctsTotal(List<CourseSubjectView> courseSubjects) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (CourseSubjectView courseSubject : courseSubjects) {
+            if (courseSubject.getSubjectEcts() != null) {
+                total = total.add(courseSubject.getSubjectEcts());
+            }
+        }
+        return total;
+    }
+
+    private static String formatDecimal(BigDecimal value) {
+        return value == null ? "-" : value.stripTrailingZeros().toPlainString();
+    }
+
     private void exposeCourseEnrollmentManagement(
             HttpServletRequest request,
             List<EnrollmentManagementView> enrollments
@@ -1319,7 +1338,8 @@ public final class CourseManagementServlet extends DashboardServletSupport {
                 text(request, "acronym"),
                 text(request, "photo"),
                 text(request, "description"),
-                optionalBigDecimal(request, "ects"),
+                requiredBigDecimal(request, "ects"),
+                requiredBigDecimal(request, "certificateMaxGrade"),
                 text(request, "duration"),
                 courseType(text(request, "type")),
                 courseState(text(request, "state"))
@@ -1334,7 +1354,8 @@ public final class CourseManagementServlet extends DashboardServletSupport {
                 text(request, "acronym"),
                 photo,
                 text(request, "description"),
-                optionalBigDecimal(request, "ects"),
+                requiredBigDecimal(request, "ects"),
+                requiredBigDecimal(request, "certificateMaxGrade"),
                 text(request, "duration"),
                 courseType(text(request, "type")),
                 courseState(text(request, "state"))
@@ -1446,6 +1467,14 @@ public final class CourseManagementServlet extends DashboardServletSupport {
     private static BigDecimal optionalBigDecimal(HttpServletRequest request, String name) {
         String value = text(request, name);
         return value == null ? null : new BigDecimal(value);
+    }
+
+    private static BigDecimal requiredBigDecimal(HttpServletRequest request, String name) {
+        BigDecimal value = optionalBigDecimal(request, name);
+        if (value == null) {
+            throw new IllegalArgumentException(name + " is required");
+        }
+        return value;
     }
 
     private static Part courseImagePart(HttpServletRequest request) throws IOException, ServletException {

@@ -10,6 +10,7 @@ import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.dao.ClassGroupEnrollmentDAO;
+import pt.isel.gape.learning.dao.CertificateDAO;
 import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.dao.EnrollmentApprovalPolicyDAO;
@@ -46,6 +47,8 @@ public final class EnrollmentService {
     private final CourseSubjectDAO courseSubjectDAO;
     private final EnrollmentDAO enrollmentDAO;
     private final ClassGroupEnrollmentDAO classGroupEnrollmentDAO;
+    private final CertificateDAO certificateDAO;
+    private final GradeLifecycleService gradeLifecycleService;
     private final EnrollmentApprovalPolicyDAO enrollmentApprovalPolicyDAO;
     private final PermissionChecker permissionChecker;
     private final AuditService auditService;
@@ -72,6 +75,8 @@ public final class EnrollmentService {
                 classGroupEnrollmentDAO,
                 "classGroupEnrollmentDAO is required"
         );
+        this.certificateDAO = new CertificateDAO(connectionProvider);
+        this.gradeLifecycleService = new GradeLifecycleService(connectionProvider, clock);
         this.enrollmentApprovalPolicyDAO = Objects.requireNonNull(
                 enrollmentApprovalPolicyDAO,
                 "enrollmentApprovalPolicyDAO is required"
@@ -136,6 +141,13 @@ public final class EnrollmentService {
                         throw new IllegalStateException("Active course enrollment overlaps the requested period");
                     }
                     enrollmentDAO.enrollCourse(connection, normalized);
+                    certificateDAO.createDraftIfAbsent(
+                            connection,
+                            normalized.courseId(),
+                            normalized.studentUserId(),
+                            "Certificate - " + course.name()
+                    );
+                    gradeLifecycleService.ensureCourseGradeSheets(connection, normalized.courseId());
                     auditService.record(connection, actorUserId, sessionId, "COURSE_ENROLL",
                             "course_enrollment", courseEnrollmentIdentifier(normalized.studentUserId(), normalized.courseId()),
                             "success", sourceIp);
@@ -247,6 +259,15 @@ public final class EnrollmentService {
                         enrollmentDAO.withdrawActiveSubjectsInCourse(connection, studentUserId, courseId, effectiveEndDate);
                     }
                     enrollmentDAO.updateCourseEnrollment(connection, studentUserId, courseId, state, effectiveEndDate);
+                    if (state == EnrollmentState.ACTIVE) {
+                        certificateDAO.createDraftIfAbsent(
+                                connection,
+                                courseId,
+                                studentUserId,
+                                "Certificate - " + course.name()
+                        );
+                        gradeLifecycleService.ensureCourseGradeSheets(connection, courseId);
+                    }
                     auditService.record(connection, actorUserId, sessionId, "COURSE_ENROLL_UPDATE",
                             "course_enrollment", courseEnrollmentIdentifier(studentUserId, courseId),
                             "success", sourceIp);
@@ -355,6 +376,7 @@ public final class EnrollmentService {
                         throw new IllegalStateException("Student must be actively enrolled in the course for the full subject period");
                     }
                     enrollmentDAO.enrollSubject(connection, normalized);
+                    gradeLifecycleService.ensureSubjectGradeSheetDraft(connection, subject);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_ENROLL",
                             "subject_enrollment", subjectEnrollmentIdentifier(
                                     normalized.studentUserId(), normalized.courseId(), normalized.subjectId()),
@@ -434,6 +456,9 @@ public final class EnrollmentService {
                         }
                     } else {
                         enrollmentDAO.reactivateSubjectRequest(connection, normalized, targetState);
+                    }
+                    if (targetState == EnrollmentState.ACTIVE) {
+                        gradeLifecycleService.ensureSubjectGradeSheetDraft(connection, subject);
                     }
 
                     auditService.record(connection, actorUserId, sessionId,
@@ -523,6 +548,7 @@ public final class EnrollmentService {
                             approvedStart,
                             approvedEnd
                     );
+                    gradeLifecycleService.ensureSubjectGradeSheetDraft(connection, subject);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_ENROLL_APPROVE",
                             "subject_enrollment", subjectEnrollmentIdentifier(studentUserId, courseId, subjectId),
                             "success", sourceIp);
@@ -675,6 +701,9 @@ public final class EnrollmentService {
                             effectiveStartDate,
                             effectiveEndDate
                     );
+                    if (state == EnrollmentState.ACTIVE) {
+                        gradeLifecycleService.ensureSubjectGradeSheetDraft(connection, subject);
+                    }
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_ENROLL_UPDATE",
                             "subject_enrollment", subjectEnrollmentIdentifier(studentUserId, courseId, subjectId),
                             "success", sourceIp);

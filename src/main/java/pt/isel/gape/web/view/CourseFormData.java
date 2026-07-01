@@ -15,6 +15,7 @@ public final class CourseFormData {
     private final String photo;
     private final String description;
     private final String ects;
+    private final String certificateMaxGrade;
     private final String duration;
     private final String type;
     private final String state;
@@ -28,6 +29,7 @@ public final class CourseFormData {
             String photo,
             String description,
             String ects,
+            String certificateMaxGrade,
             String duration,
             String type,
             String state
@@ -40,6 +42,7 @@ public final class CourseFormData {
         this.photo = photo;
         this.description = description;
         this.ects = ects;
+        this.certificateMaxGrade = certificateMaxGrade;
         this.duration = duration;
         this.type = type;
         this.state = state;
@@ -55,6 +58,7 @@ public final class CourseFormData {
                 "",
                 "",
                 "",
+                "20",
                 "",
                 CourseType.DEGREE.name(),
                 CourseState.ACTIVE.name()
@@ -71,6 +75,7 @@ public final class CourseFormData {
                 course.photo() == null ? "" : course.photo(),
                 course.description() == null ? "" : course.description(),
                 course.ects() == null ? "" : course.ects().stripTrailingZeros().toPlainString(),
+                course.certificateMaxGrade() == null ? "" : course.certificateMaxGrade().stripTrailingZeros().toPlainString(),
                 course.duration() == null ? "" : course.duration(),
                 course.type().name(),
                 course.state().name()
@@ -87,6 +92,7 @@ public final class CourseFormData {
                 value(request, "photo"),
                 value(request, "description"),
                 value(request, "ects"),
+                value(request, "certificateMaxGrade"),
                 value(request, "duration"),
                 value(request, "type"),
                 value(request, "state")
@@ -123,6 +129,10 @@ public final class CourseFormData {
 
     public String getEcts() {
         return ects;
+    }
+
+    public String getCertificateMaxGrade() {
+        return certificateMaxGrade;
     }
 
     public String getDuration() {

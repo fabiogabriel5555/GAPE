@@ -171,9 +171,13 @@
                         </div>
                         <div class="col-lg-3">
                             <label for="ects" class="fw-medium text-base text-neutral-800 mb-12">ECTS</label>
-                            <input id="ects" name="ects" type="number" min="0" step="0.01" value="<c:out value='${form.ects}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                            <input id="ects" name="ects" type="number" min="0.01" step="0.01" required value="<c:out value='${form.ects}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
-                        <div class="col-lg-4">
+                        <div class="col-lg-3">
+                            <label for="finalGradeMax" class="fw-medium text-base text-neutral-800 mb-12">Max final grade</label>
+                            <input id="finalGradeMax" name="finalGradeMax" type="number" min="0.01" step="0.01" required value="<c:out value='${form.finalGradeMax}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                        </div>
+                        <div class="col-lg-3">
                             <label for="workloadHours" class="fw-medium text-base text-neutral-800 mb-12">Workload Hours</label>
                             <input id="workloadHours" name="workloadHours" type="number" min="0" value="<c:out value='${form.workloadHours}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>

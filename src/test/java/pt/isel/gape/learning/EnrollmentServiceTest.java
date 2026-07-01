@@ -75,6 +75,8 @@ class EnrollmentServiceTest {
 
         assertEquals(EnrollmentState.ACTIVE, enrollment.state());
         assertEquals(31L, enrollment.courseId());
+        assertEquals("draft", certificateState(4L, 31L));
+        assertEquals("draft", subjectGradeSheetState(41L));
     }
 
     @Test
@@ -125,6 +127,7 @@ class EnrollmentServiceTest {
         assertEquals(EnrollmentState.ACTIVE, enrollment.state());
         assertEquals(30L, enrollment.courseId());
         assertEquals(41L, enrollment.subjectId());
+        assertEquals("draft", subjectGradeSheetState(41L));
     }
 
     @Test
@@ -578,6 +581,48 @@ class EnrollmentServiceTest {
                 resultSet.next();
                 return resultSet.getLong(1) == 0L;
             }
+        }
+    }
+
+    private static String certificateState(long studentUserId, long courseId) {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT state
+                     FROM certificate
+                     WHERE id_user_student = ?
+                       AND id_course = ?
+                       AND state <> 'revoked'
+                     """)) {
+            statement.setLong(1, studentUserId);
+            statement.setLong(2, courseId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getString("state") : null;
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load certificate state", exception);
+        }
+    }
+
+    private static String subjectGradeSheetState(long subjectId) {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT gs.state
+                     FROM grade_sheet gs
+                     WHERE gs.id_subject = ?
+                       AND NOT EXISTS (
+                             SELECT 1
+                             FROM associate_grade_sheet_class_group agscg
+                             WHERE agscg.id_grade_sheet = gs.id_grade_sheet
+                       )
+                     ORDER BY gs.id_grade_sheet DESC
+                     LIMIT 1
+                     """)) {
+            statement.setLong(1, subjectId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getString("state") : null;
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load subject grade sheet state", exception);
         }
     }
 }

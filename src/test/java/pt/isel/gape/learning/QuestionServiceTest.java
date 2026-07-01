@@ -30,7 +30,6 @@ import pt.isel.gape.learning.model.AssessmentType;
 import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionConfiguration;
 import pt.isel.gape.learning.model.QuestionCreateCommand;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
 import pt.isel.gape.learning.model.QuestionUpdateCommand;
 import pt.isel.gape.learning.service.AssessmentService;
@@ -155,8 +154,7 @@ class QuestionServiceTest {
                         1,
                         true,
                         bd("5.00"),
-                        QuestionConfiguration.ratingExpectedAnswer("stars_half", "5", "3.5"),
-                        QuestionState.ACTIVE
+                        QuestionConfiguration.ratingExpectedAnswer("stars_half", "5", "3.5")
                 ),
                 IP
         );
@@ -237,7 +235,7 @@ class QuestionServiceTest {
     }
 
     @Test
-    void rebalanceActiveQuestionScoresDistributesAssessmentMaximum() {
+    void rebalanceQuestionScoresDistributesAssessmentMaximum() {
         Assessment assessment = createAssessment("Form Rebalance", AssessmentCorrectionMode.MIXED);
         questionService.createQuestion(
                 3L,
@@ -263,7 +261,6 @@ class QuestionServiceTest {
         );
 
         BigDecimal total = questionService.listByAssessment(assessment.id()).stream()
-                .filter(question -> question.state() == QuestionState.ACTIVE)
                 .map(Question::score)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         assertEquals(0, total.compareTo(bd("20.00")));
@@ -278,8 +275,7 @@ class QuestionServiceTest {
                 1,
                 true,
                 bd("10.00"),
-                null,
-                QuestionState.ACTIVE
+                null
         );
 
         assertThrows(IllegalStateException.class, () -> questionService.updateQuestion(
@@ -335,8 +331,7 @@ class QuestionServiceTest {
                 order,
                 true,
                 bd(score),
-                null,
-                QuestionState.ACTIVE
+                null
         );
     }
 

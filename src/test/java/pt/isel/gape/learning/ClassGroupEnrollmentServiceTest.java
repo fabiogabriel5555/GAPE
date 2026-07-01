@@ -103,6 +103,7 @@ class ClassGroupEnrollmentServiceTest {
 
         assertEquals(EnrollmentState.ACTIVE, enrollment.state());
         assertEquals(52L, enrollment.classGroupId());
+        assertEquals("draft", classGroupGradeSheetState(52L));
     }
 
     @Test
@@ -315,6 +316,24 @@ class ClassGroupEnrollmentServiceTest {
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 return resultSet.getString("state");
+            }
+        }
+    }
+
+    private static String classGroupGradeSheetState(long classGroupId) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT gs.state
+                     FROM grade_sheet gs
+                     JOIN associate_grade_sheet_class_group agscg
+                       ON agscg.id_grade_sheet = gs.id_grade_sheet
+                     WHERE agscg.id_class_group = ?
+                     ORDER BY gs.id_grade_sheet DESC
+                     LIMIT 1
+                     """)) {
+            statement.setLong(1, classGroupId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getString("state") : null;
             }
         }
     }

@@ -277,7 +277,7 @@
                 <div class="gape-student-empty text-center px-24 py-40">
                     <span class="gape-student-icon gape-student-soft-blue text-28 mb-16"><i class="ph ph-seal-question"></i></span>
                     <h4 class="text-18 fw-semibold text-neutral-800 mb-8">No questions available</h4>
-                    <p class="text-14 text-neutral-500 mb-0">This assessment has no active questions.</p>
+                    <p class="text-14 text-neutral-500 mb-0">This assessment has no questions.</p>
                 </div>
             </c:if>
         </div>

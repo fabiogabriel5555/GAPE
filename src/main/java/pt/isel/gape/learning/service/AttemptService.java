@@ -261,7 +261,7 @@ public final class AttemptService {
 
     private void requireQuestionsAvailable(Connection connection, long assessmentId) throws SQLException {
         if (questionDAO.countActiveByAssessment(connection, assessmentId) == 0) {
-            throw new IllegalStateException("Assessment has no active questions");
+            throw new IllegalStateException("Assessment has no questions");
         }
     }
 
@@ -269,8 +269,7 @@ public final class AttemptService {
         if (assessment.enrollmentMode() == EnrollmentApprovalMode.AUTO_APPROVE) {
             assessmentEnrollmentDAO.syncAutomaticEnrollments(
                     connection,
-                    assessment.id(),
-                    java.time.LocalDate.now(clock)
+                    assessment.id()
             );
         }
     }

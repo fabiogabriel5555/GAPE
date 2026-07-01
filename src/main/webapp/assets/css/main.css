@@ -13001,6 +13001,28 @@ body::after {
   color: #fff;
 }
 
+.dashboard-sidebar .gape-sidebar-long-link {
+  align-items: flex-start !important;
+  box-sizing: border-box;
+  white-space: normal !important;
+  width: 248px;
+}
+
+.dashboard-sidebar .gape-sidebar-long-link .gape-sidebar-link-label {
+  flex: 1 1 0;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal !important;
+}
+
+@media (max-width: 991px) {
+  .dashboard-sidebar .gape-sidebar-long-link {
+    max-width: 100%;
+    width: 308px;
+  }
+}
+
 .student-dashboard-sidebar {
   height: 100vh;
   position: sticky !important;
@@ -13342,6 +13364,11 @@ table.dataTable.display > tbody > tr > * {
   white-space: nowrap !important;
 }
 
+.dashbord .dashboard-sidebar .gape-sidebar-long-link,
+.dashbord .dashboard-sidebar .gape-sidebar-long-link .gape-sidebar-link-label {
+  white-space: normal !important;
+}
+
 .dashbord .table th:nth-child(5),
 .dashbord .table td:nth-child(5) {
   min-width: 112px;
@@ -13358,6 +13385,190 @@ table.dataTable.display > tbody > tr > * {
 
 .min-w-86-px {
   min-width: 86px !important;
+}
+
+.gape-management-card {
+  border: 1px solid #e5e7eb;
+}
+
+.gape-management-card__header {
+  gap: 16px;
+}
+
+.gape-management-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gape-management-summary span {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  color: #475569;
+  display: inline-flex;
+  font-size: 13px;
+  line-height: 1.2;
+  min-height: 30px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.gape-section-scroll {
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  max-height: 560px;
+  overflow: auto;
+}
+
+.gape-section-scroll table {
+  margin-bottom: 0;
+}
+
+.gape-section-scroll thead th {
+  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.gape-mobile-list {
+  display: none;
+}
+
+.gape-mobile-row {
+  min-width: 0;
+}
+
+@media (max-width: 991.98px) {
+  .gape-management-card {
+    padding: 20px !important;
+  }
+
+  .gape-management-card__header {
+    align-items: flex-start !important;
+  }
+
+  .gape-management-card__icon {
+    display: none !important;
+  }
+
+  .gape-management-card .form-control,
+  .gape-management-card .form-select {
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  .gape-management-card .d-flex.gap-8,
+  .gape-management-card .d-flex.gap-10 {
+    min-width: 0;
+  }
+
+  .gape-management-summary {
+    margin-top: 8px;
+  }
+
+  .gape-management-summary span {
+    white-space: normal;
+  }
+
+  .gape-desktop-table {
+    display: none !important;
+  }
+
+  .gape-mobile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 640px;
+    overflow-y: auto;
+    padding-right: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .gape-mobile-row {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 14px;
+  }
+
+  .gape-mobile-row__header {
+    align-items: flex-start;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    min-width: 0;
+  }
+
+  .gape-mobile-title {
+    color: #0f172a;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .gape-mobile-subtitle,
+  .gape-mobile-meta,
+  .gape-mobile-kv,
+  .gape-mobile-empty,
+  .gape-mobile-processed {
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .gape-mobile-badge {
+    flex-shrink: 0;
+    line-height: 1.2;
+    min-width: 74px;
+    text-align: center;
+    white-space: normal !important;
+  }
+
+  .gape-mobile-kv {
+    display: grid;
+    gap: 7px 10px;
+    grid-template-columns: minmax(72px, 0.36fr) minmax(0, 1fr);
+    margin-top: 12px;
+  }
+
+  .gape-mobile-kv strong {
+    color: #334155;
+    font-weight: 600;
+  }
+
+  .gape-mobile-actions {
+    border-top: 1px solid #eef2f7;
+    display: grid;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+
+  .gape-mobile-actions form {
+    min-width: 0;
+  }
+
+  .gape-mobile-empty {
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 18px;
+    text-align: center;
+  }
+
+  .gape-mobile-processed {
+    border-top: 1px solid #eef2f7;
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+
+  #attendance form[method="get"] {
+    width: 100%;
+  }
 }
 
 /*# sourceMappingURL=main.css.map */

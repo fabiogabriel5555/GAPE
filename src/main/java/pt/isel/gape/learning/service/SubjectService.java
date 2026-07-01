@@ -1,5 +1,6 @@
 package pt.isel.gape.learning.service;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -761,6 +762,8 @@ public final class SubjectService {
         AcademicTextValidator.requireAcronym(command.acronym(), "Subject acronym is required");
         requireNoInitialPhoto(command.photo(), "Subject photo");
         Objects.requireNonNull(command.state(), "subject state is required");
+        requirePositiveDecimal(command.ects(), "Subject ECTS is required");
+        requirePositiveDecimal(command.finalGradeMax(), "Subject max final grade is required");
         List<SubjectInitialCourseAssignment> assignments = initialCourseAssignments(command);
         if (assignments.isEmpty()) {
             throw new IllegalArgumentException("At least one initial course is required");
@@ -785,6 +788,14 @@ public final class SubjectService {
         AcademicTextValidator.requireAcronym(command.acronym(), "Subject acronym is required");
         MediaPathValidator.optionalSafeRelativePath(command.photo(), "Subject photo");
         Objects.requireNonNull(command.state(), "subject state is required");
+        requirePositiveDecimal(command.ects(), "Subject ECTS is required");
+        requirePositiveDecimal(command.finalGradeMax(), "Subject max final grade is required");
+    }
+
+    private static void requirePositiveDecimal(BigDecimal value, String message) {
+        if (value == null || value.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException(message);
+        }
     }
 
     private static Set<Long> safeCoordinators(Set<Long> coordinatorUserIds) {

@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -36,8 +37,6 @@ import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionConfiguration;
 import pt.isel.gape.learning.model.QuestionCreateCommand;
 import pt.isel.gape.learning.model.QuestionOptionCreateCommand;
-import pt.isel.gape.learning.model.QuestionOptionState;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
 import pt.isel.gape.learning.model.Response;
 import pt.isel.gape.learning.model.ResponseCommand;
@@ -109,14 +108,14 @@ class CorrectionServiceTest {
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                new QuestionOptionCreateCommand(objective.id(), 1, "Certa", true, QuestionOptionState.ACTIVE),
+                new QuestionOptionCreateCommand(objective.id(), 1, "Certa", true),
                 IP
         ).id();
         optionService.createOption(
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                new QuestionOptionCreateCommand(objective.id(), 2, "Errada", false, QuestionOptionState.ACTIVE),
+                new QuestionOptionCreateCommand(objective.id(), 2, "Errada", false),
                 IP
         );
         Attempt attempt = attemptService.startAttempt(4L, null, AccessProfileType.STUDENT, assessment.id(), IP);
@@ -147,6 +146,7 @@ class CorrectionServiceTest {
         );
 
         assertEquals(AttemptState.SUBMITTED, result.state());
+        assertNull(result.score());
         assertEquals(1, result.pendingManualResponses());
         assertNull(responseService.getResponse(textResponse.id()).score());
     }
@@ -188,6 +188,151 @@ class CorrectionServiceTest {
     }
 
     @Test
+    void autoCorrectResponseScoresEligibleQuestion() {
+        Assessment assessment = createAssessment("Form Response Auto", AssessmentCorrectionMode.MANUAL);
+        Question objective = createQuestion(assessment.id(), "Q-RESP-AUTO", QuestionType.SINGLE_CHOICE, 1, "5.00");
+        long correctOptionId = optionService.createOption(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                new QuestionOptionCreateCommand(objective.id(), 1, "Certa", true),
+                IP
+        ).id();
+        optionService.createOption(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                new QuestionOptionCreateCommand(objective.id(), 2, "Errada", false),
+                IP
+        );
+        Attempt attempt = attemptService.startAttempt(4L, null, AccessProfileType.STUDENT, assessment.id(), IP);
+        Response response = responseService.saveResponse(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                attempt.id(),
+                new ResponseCommand(objective.id(), null, null, List.of(correctOptionId)),
+                IP
+        );
+        attemptService.submitAttempt(4L, null, AccessProfileType.STUDENT, attempt.id(), IP);
+
+        CorrectionResult result = correctionService.autoCorrectResponse(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                response.id(),
+                IP
+        );
+
+        assertEquals(AttemptState.CORRECTED, result.state());
+        assertEquals(0, result.score().compareTo(bd("5.00")));
+        assertEquals(1, result.automaticallyCorrectedResponses());
+        assertEquals(0, result.pendingManualResponses());
+        assertEquals(0, responseService.getResponse(response.id()).score().compareTo(bd("5.00")));
+    }
+
+    @Test
+    void autoCorrectEligibleResponsesLeavesManualQuestionsPending() {
+        Assessment assessment = createAssessment("Form Eligible Auto", AssessmentCorrectionMode.MANUAL);
+        Question objective = createQuestion(assessment.id(), "Q-ELIGIBLE-AUTO", QuestionType.SINGLE_CHOICE, 1, "5.00");
+        Question text = createQuestion(assessment.id(), "Q-ELIGIBLE-MANUAL", QuestionType.PARAGRAPH, 2, "5.00");
+        long correctOptionId = optionService.createOption(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                new QuestionOptionCreateCommand(objective.id(), 1, "Correct option", true),
+                IP
+        ).id();
+        optionService.createOption(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                new QuestionOptionCreateCommand(objective.id(), 2, "Wrong option", false),
+                IP
+        );
+        Attempt attempt = attemptService.startAttempt(4L, null, AccessProfileType.STUDENT, assessment.id(), IP);
+        Response objectiveResponse = responseService.saveResponse(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                attempt.id(),
+                new ResponseCommand(objective.id(), null, null, List.of(correctOptionId)),
+                IP
+        );
+        Response textResponse = responseService.saveResponse(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                attempt.id(),
+                new ResponseCommand(text.id(), "Manual answer", null, List.of()),
+                IP
+        );
+        attemptService.submitAttempt(4L, null, AccessProfileType.STUDENT, attempt.id(), IP);
+
+        CorrectionResult result = correctionService.autoCorrectEligibleResponses(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                attempt.id(),
+                IP
+        );
+
+        assertEquals(AttemptState.SUBMITTED, result.state());
+        assertNull(result.score());
+        assertEquals(1, result.automaticallyCorrectedResponses());
+        assertEquals(1, result.pendingManualResponses());
+        Attempt updatedAttempt = attemptService.getAttempt(attempt.id());
+        assertEquals(AttemptState.SUBMITTED, updatedAttempt.state());
+        assertNull(updatedAttempt.score());
+        assertEquals(0, responseService.getResponse(objectiveResponse.id()).score().compareTo(bd("5.00")));
+        assertNull(responseService.getResponse(textResponse.id()).score());
+    }
+
+    @Test
+    void autoCorrectEligibleResponsesSkipsObjectiveWithoutExpectedAnswer() {
+        Assessment assessment = createAssessment("Form Objective Without Expected", AssessmentCorrectionMode.MANUAL);
+        Question objective = createQuestion(assessment.id(), "Q-NO-EXPECTED", QuestionType.SINGLE_CHOICE, 1, "5.00");
+        long selectedOptionId = optionService.createOption(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                new QuestionOptionCreateCommand(objective.id(), 1, "Neutral option", null),
+                IP
+        ).id();
+        optionService.createOption(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                new QuestionOptionCreateCommand(objective.id(), 2, "Other neutral option", null),
+                IP
+        );
+        Attempt attempt = attemptService.startAttempt(4L, null, AccessProfileType.STUDENT, assessment.id(), IP);
+        Response response = responseService.saveResponse(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                attempt.id(),
+                new ResponseCommand(objective.id(), null, null, List.of(selectedOptionId)),
+                IP
+        );
+        attemptService.submitAttempt(4L, null, AccessProfileType.STUDENT, attempt.id(), IP);
+
+        CorrectionResult result = correctionService.autoCorrectEligibleResponses(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                attempt.id(),
+                IP
+        );
+
+        assertEquals(AttemptState.SUBMITTED, result.state());
+        assertNull(result.score());
+        assertEquals(0, result.automaticallyCorrectedResponses());
+        assertEquals(1, result.pendingManualResponses());
+        assertNull(responseService.getResponse(response.id()).score());
+    }
+
+    @Test
     void manualCorrectionAppliesScoreAndCorrectsAttempt() {
         Assessment assessment = createAssessment("Form Manual", AssessmentCorrectionMode.MANUAL);
         Question text = createQuestion(assessment.id(), "Q-MAN", QuestionType.PARAGRAPH, 1, "10.00");
@@ -212,6 +357,44 @@ class CorrectionServiceTest {
 
         assertEquals(AttemptState.CORRECTED, result.state());
         assertEquals(0, result.score().compareTo(bd("7.50")));
+    }
+
+    @Test
+    void manualBatchCorrectionAppliesScoresAndCorrectsAttempt() {
+        Assessment assessment = createAssessment("Form Manual Batch", AssessmentCorrectionMode.MANUAL);
+        Question first = createQuestion(assessment.id(), "Q-BATCH-1", QuestionType.PARAGRAPH, 1, "10.00");
+        Question second = createQuestion(assessment.id(), "Q-BATCH-2", QuestionType.SHORT_TEXT, 2, "5.00");
+        Attempt attempt = attemptService.startAttempt(4L, null, AccessProfileType.STUDENT, assessment.id(), IP);
+        Response firstResponse = responseService.saveResponse(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                attempt.id(),
+                new ResponseCommand(first.id(), "Resposta longa", null, List.of()),
+                IP
+        );
+        Response secondResponse = responseService.saveResponse(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                attempt.id(),
+                new ResponseCommand(second.id(), "Resposta curta", null, List.of()),
+                IP
+        );
+        attemptService.submitAttempt(4L, null, AccessProfileType.STUDENT, attempt.id(), IP);
+
+        CorrectionResult result = correctionService.correctAttemptManually(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                attempt.id(),
+                Map.of(firstResponse.id(), bd("8.00"), secondResponse.id(), bd("4.50")),
+                IP
+        );
+
+        assertEquals(AttemptState.CORRECTED, result.state());
+        assertEquals(0, result.score().compareTo(bd("12.50")));
+        assertEquals(0, result.pendingManualResponses());
     }
 
     @Test
@@ -263,21 +446,21 @@ class CorrectionServiceTest {
     }
 
     @Test
-    void manualCorrectionRejectsAutomaticAssessmentMode() {
-        Assessment assessment = createAssessment("Form Automatic Manual Reject", AssessmentCorrectionMode.AUTOMATIC);
+    void manualCorrectionCanOverrideAutomaticAssessmentMode() {
+        Assessment assessment = createAssessment("Form Automatic Manual Override", AssessmentCorrectionMode.AUTOMATIC);
         Question objective = createQuestion(assessment.id(), "Q-AUTO-MAN", QuestionType.SINGLE_CHOICE, 1, "5.00");
         long correctOptionId = optionService.createOption(
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                new QuestionOptionCreateCommand(objective.id(), 1, "Certa", true, QuestionOptionState.ACTIVE),
+                new QuestionOptionCreateCommand(objective.id(), 1, "Certa", true),
                 IP
         ).id();
         optionService.createOption(
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                new QuestionOptionCreateCommand(objective.id(), 2, "Errada", false, QuestionOptionState.ACTIVE),
+                new QuestionOptionCreateCommand(objective.id(), 2, "Errada", false),
                 IP
         );
         Attempt attempt = attemptService.startAttempt(4L, null, AccessProfileType.STUDENT, assessment.id(), IP);
@@ -291,13 +474,16 @@ class CorrectionServiceTest {
         );
         attemptService.submitAttempt(4L, null, AccessProfileType.STUDENT, attempt.id(), IP);
 
-        assertThrows(IllegalStateException.class, () -> correctionService.correctResponseManually(
+        CorrectionResult result = correctionService.correctResponseManually(
                 3L,
                 null,
                 AccessProfileType.TEACHER,
                 new ManualCorrectionCommand(response.id(), bd("5.00")),
                 IP
-        ));
+        );
+
+        assertEquals(AttemptState.CORRECTED, result.state());
+        assertEquals(0, result.score().compareTo(bd("5.00")));
     }
 
     @Test
@@ -308,14 +494,14 @@ class CorrectionServiceTest {
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                new QuestionOptionCreateCommand(objective.id(), 1, "Certa", true, QuestionOptionState.ACTIVE),
+                new QuestionOptionCreateCommand(objective.id(), 1, "Certa", true),
                 IP
         );
         optionService.createOption(
                 3L,
                 null,
                 AccessProfileType.TEACHER,
-                new QuestionOptionCreateCommand(objective.id(), 2, "Errada", false, QuestionOptionState.ACTIVE),
+                new QuestionOptionCreateCommand(objective.id(), 2, "Errada", false),
                 IP
         );
         Attempt attempt = attemptService.startAttempt(4L, null, AccessProfileType.STUDENT, assessment.id(), IP);
@@ -418,8 +604,7 @@ class CorrectionServiceTest {
                         order,
                         true,
                         bd(score),
-                        expectedAnswer,
-                        QuestionState.ACTIVE
+                        expectedAnswer
                 ),
                 IP
         );

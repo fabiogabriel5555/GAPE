@@ -26,7 +26,6 @@ import pt.isel.gape.learning.model.AssessmentType;
 import pt.isel.gape.learning.model.Attempt;
 import pt.isel.gape.learning.model.AttemptState;
 import pt.isel.gape.learning.model.QuestionCreateCommand;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
 import pt.isel.gape.learning.service.AssessmentService;
 import pt.isel.gape.learning.service.AttemptService;
@@ -181,7 +180,7 @@ class AttemptServiceTest {
     }
 
     @Test
-    void assessmentWithoutActiveQuestionsCannotBeStarted() {
+    void assessmentWithoutQuestionsCannotBeStarted() {
         long assessmentId = assessmentService.createAssessment(
                 3L,
                 null,
@@ -291,8 +290,7 @@ class AttemptServiceTest {
                         1,
                         true,
                         java.math.BigDecimal.TEN,
-                        null,
-                        QuestionState.ACTIVE
+                        null
                 ),
                 IP
         );

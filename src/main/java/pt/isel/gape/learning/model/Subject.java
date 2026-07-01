@@ -10,6 +10,7 @@ public record Subject(
         String photo,
         String description,
         BigDecimal ects,
+        BigDecimal finalGradeMax,
         Integer workloadHours,
         SubjectState state
 ) {

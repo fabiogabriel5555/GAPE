@@ -93,6 +93,9 @@ class SchemaIntegrityTest {
             assertTrue(DatabaseTestSupport.isUniqueIndex(connection, "user_session", "uq_user_session_token"));
             assertTrue(DatabaseTestSupport.isUniqueIndex(connection, "question", "uq_question_assessment_code"));
             assertTrue(DatabaseTestSupport.isUniqueIndex(connection, "content_block", "uq_content_block_active_order"));
+            assertTrue(DatabaseTestSupport.isUniqueIndex(connection, "grade_record", "uq_grade_record_sheet_active_student"));
+            assertTrue(DatabaseTestSupport.isUniqueIndex(connection, "certificate", "uq_certificate_validation_code"));
+            assertTrue(DatabaseTestSupport.isUniqueIndex(connection, "certificate", "uq_certificate_course_active_student"));
 
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "user_account", "ck_user_account_state", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "user_account", "ck_user_account_document_pair", "CHECK"));
@@ -103,7 +106,12 @@ class SchemaIntegrityTest {
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "content_block", "ck_content_block_scheduled_access", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "assessment", "ck_assessment_mode", "CHECK"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "message", "ck_message_attachment_type", "CHECK"));
-            assertTrue(DatabaseTestSupport.existsConstraint(connection, "certificate", "ck_certificate_issued_context", "CHECK"));
+            assertTrue(DatabaseTestSupport.existsConstraint(connection, "grade_sheet", "ck_grade_sheet_scale", "CHECK"));
+            assertTrue(DatabaseTestSupport.existsConstraint(connection, "grade_record", "ck_grade_record_result", "CHECK"));
+            assertTrue(DatabaseTestSupport.existsConstraint(connection, "grade_record", "ck_grade_record_state", "CHECK"));
+            assertTrue(DatabaseTestSupport.existsConstraint(connection, "certificate", "ck_certificate_type", "CHECK"));
+            assertTrue(DatabaseTestSupport.existsConstraint(connection, "certificate", "ck_certificate_state", "CHECK"));
+            assertTrue(DatabaseTestSupport.existsConstraint(connection, "certificate", "ck_certificate_issued_fields", "CHECK"));
         }
     }
 
@@ -123,6 +131,16 @@ class SchemaIntegrityTest {
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_response_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_response_option_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_schedule_event_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_associate_grade_sheet_class_group_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bu_associate_grade_sheet_class_group_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_based_on_assessment_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bu_based_on_assessment_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_grade_record_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bu_grade_record_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_certificate_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bu_certificate_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_bgsc_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bu_bgsc_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_message_validate"));
         }
     }

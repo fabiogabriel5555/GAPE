@@ -14,6 +14,7 @@ public record Assessment(
         AssessmentCorrectionMode correctionMode,
         BigDecimal maxGrade,
         BigDecimal passingGrade,
+        BigDecimal finalGradeWeight,
         Integer attemptsLimit,
         EnrollmentApprovalMode enrollmentMode,
         AssessmentState state,

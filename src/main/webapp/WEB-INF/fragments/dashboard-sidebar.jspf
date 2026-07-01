@@ -15,24 +15,20 @@
 <c:set var="siteHomeHref" value="/index.jsp" />
 <c:set var="profileHref" value="${isAdminDashboard ? '/admin/admin-my-profile.jsp' : (isStudentOnlyDashboard ? '/student/student/profile/student-profile.jsp' : '/profile')}" />
 <c:set var="messageHref" value="/admin/admin-message.jsp" />
-<c:set var="calendarHref" value="/learning/calendar" />
+<c:set var="calendarHref" value="/learning/events" />
 <c:set var="attendanceHref" value="/learning/attendance" />
-<c:set var="reviewsHref" value="/admin/admin-reviews.jsp" />
 <c:set var="quizAttemptsHref" value="/learning/assessments" />
 <c:if test="${isStudentOnlyDashboard}">
     <c:set var="messageHref" value="/student/student/message/student-message.jsp" />
-    <c:set var="calendarHref" value="/student/calendar" />
+    <c:set var="calendarHref" value="/student/events" />
     <c:set var="attendanceHref" value="/student/attendance" />
-    <c:set var="reviewsHref" value="/student/student/review/student-reviews.jsp" />
 </c:if>
 <c:if test="${not sessionScope['gape.auth.hasAdministratorProfile'] and isCoordinatorDashboard}">
     <c:set var="messageHref" value="/coordinator/coordinator-message.jsp" />
-    <c:set var="reviewsHref" value="/coordinator/coordinator-reviews.jsp" />
     <c:set var="quizAttemptsHref" value="/learning/assessments" />
 </c:if>
 <c:if test="${not sessionScope['gape.auth.hasAdministratorProfile'] and not isCoordinatorDashboard and isTeacherDashboard}">
     <c:set var="messageHref" value="/instructor/instructor-message.jsp" />
-    <c:set var="reviewsHref" value="/instructor/instructor-reviews.jsp" />
     <c:set var="quizAttemptsHref" value="/learning/assessments" />
 </c:if>
 <c:set var="coursesHref" value="/courses" />
@@ -78,22 +74,33 @@
         or fn:contains(includedServletPath, '/class-group/')}" />
 <c:set var="isLessonsActive" value="${activeMenu == 'lessons'
         or fn:contains(currentRequestUri, '/learning/lessons')
+        or fn:contains(currentRequestUri, '/learning/assessments')
         or fn:contains(currentRequestUri, '/student/lessons')
         or fn:startsWith(currentServletPath, '/learning/lessons')
+        or fn:startsWith(currentServletPath, '/learning/assessments')
         or fn:startsWith(currentServletPath, '/student/lessons')}" />
 <c:set var="isRoomsActive" value="${activeMenu == 'rooms'
         or fn:contains(currentRequestUri, '/learning/rooms')
         or fn:startsWith(currentServletPath, '/learning/rooms')}" />
 <c:set var="isCalendarActive" value="${activeMenu == 'calendar'
         or fn:contains(currentRequestUri, '/learning/calendar')
+        or fn:contains(currentRequestUri, '/learning/events')
         or fn:contains(currentRequestUri, '/student/calendar')
+        or fn:contains(currentRequestUri, '/student/events')
         or fn:startsWith(currentServletPath, '/learning/calendar')
-        or fn:startsWith(currentServletPath, '/student/calendar')}" />
+        or fn:startsWith(currentServletPath, '/learning/events')
+        or fn:startsWith(currentServletPath, '/student/calendar')
+        or fn:startsWith(currentServletPath, '/student/events')}" />
 <c:set var="isAttendanceActive" value="${activeMenu == 'attendance'
+        or activeMenu == 'grades'
         or fn:contains(currentRequestUri, '/learning/attendance')
         or fn:contains(currentRequestUri, '/student/attendance')
+        or fn:contains(currentRequestUri, '/learning/grades')
+        or fn:contains(currentRequestUri, '/student/grades')
         or fn:startsWith(currentServletPath, '/learning/attendance')
-        or fn:startsWith(currentServletPath, '/student/attendance')}" />
+        or fn:startsWith(currentServletPath, '/student/attendance')
+        or fn:startsWith(currentServletPath, '/learning/grades')
+        or fn:startsWith(currentServletPath, '/student/grades')}" />
 <c:set var="isQuizAttemptsActive" value="${activeMenu == 'assessments'
         or activeMenu == 'quiz-attempts'
         or activeMenu == 'quiz'
@@ -150,7 +157,7 @@
                     <li class="mb-8 ${isCalendarActive ? 'activePage' : ''}">
                         <a href="${pageContext.request.contextPath}${calendarHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                             <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-dots"></i></span>
-                            Calendar
+                            Events
                         </a>
                     </li>
                 </c:if>
@@ -199,16 +206,10 @@
                         </a>
                         <%@ include file="/WEB-INF/fragments/dashboard-learning-assessment-context.jspf" %>
                     </li>
-                    <li class="mb-8 ${activeMenu == 'reviews' ? 'activePage' : ''}">
-                        <a href="${pageContext.request.contextPath}${reviewsHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sparkle"></i></span>
-                            Reviews
-                        </a>
-                    </li>
                     <li class="mb-8 ${isAttendanceActive ? 'activePage' : ''}">
-                        <a href="${pageContext.request.contextPath}${attendanceHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <a href="${pageContext.request.contextPath}${attendanceHref}" class="gape-sidebar-long-link fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                             <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-check"></i></span>
-                            Attendance
+                            <span class="gape-sidebar-link-label">Enrollments &amp; Certificates</span>
                         </a>
                     </li>
                 </c:if>
@@ -284,9 +285,10 @@
                         <li class="mb-8 ${isLessonsActive ? 'activePage' : ''}">
                             <a href="${pageContext.request.contextPath}/learning/lessons" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                                 <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-check"></i></span>
-                                Lessons
+                                Lessons &amp; Assessments
                             </a>
                             <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
+                            <%@ include file="/WEB-INF/fragments/dashboard-learning-assessment-context.jspf" %>
                         </li>
                     </c:if>
                 </c:if>
@@ -338,9 +340,10 @@
                         <li class="mb-8 ${isLessonsActive ? 'activePage' : ''}">
                             <a href="${pageContext.request.contextPath}/learning/lessons" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                                 <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-check"></i></span>
-                                Lessons
+                                Lessons &amp; Assessments
                             </a>
                             <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
+                            <%@ include file="/WEB-INF/fragments/dashboard-learning-assessment-context.jspf" %>
                         </li>
                     </c:if>
                 </c:if>
@@ -512,13 +515,14 @@
                         <li class="mb-8 ${isLessonsActive ? 'activePage' : ''}">
                             <a href="${pageContext.request.contextPath}/learning/lessons" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                                 <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-check"></i></span>
-                                Lessons
+                                Lessons &amp; Assessments
                             </a>
                             <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
+                            <%@ include file="/WEB-INF/fragments/dashboard-learning-assessment-context.jspf" %>
                         </li>
                     </c:if>
                 </c:if>
-                <c:if test="${not isStudentOnlyDashboard}">
+                <c:if test="${not isStudentOnlyDashboard and not canOpenLessons}">
                     <li class="mb-8 ${isQuizAttemptsActive ? 'activePage' : ''}">
                         <a href="${pageContext.request.contextPath}${quizAttemptsHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                             <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-seal-question"></i></span>
@@ -526,20 +530,14 @@
                         </a>
                         <%@ include file="/WEB-INF/fragments/dashboard-learning-assessment-context.jspf" %>
                     </li>
-                    <li class="mb-8 ${activeMenu == 'reviews' ? 'activePage' : ''}">
-                        <a href="${pageContext.request.contextPath}${reviewsHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-sparkle"></i></span>
-                            Reviews
+                </c:if>
+                <c:if test="${not isStudentOnlyDashboard and canOpenAttendance}">
+                    <li class="mb-8 ${isAttendanceActive ? 'activePage' : ''}">
+                        <a href="${pageContext.request.contextPath}${attendanceHref}" class="gape-sidebar-long-link fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-check"></i></span>
+                            <span class="gape-sidebar-link-label">Enrollments &amp; Certificates</span>
                         </a>
                     </li>
-                    <c:if test="${canOpenAttendance}">
-                        <li class="mb-8 ${isAttendanceActive ? 'activePage' : ''}">
-                            <a href="${pageContext.request.contextPath}${attendanceHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                                <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-check"></i></span>
-                                Attendance
-                            </a>
-                        </li>
-                    </c:if>
                 </c:if>
             </ul>
         </div>

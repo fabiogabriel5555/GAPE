@@ -67,7 +67,7 @@
                     <h3 class="text-20 fw-semibold text-neutral-800 mb-4">In progress</h3>
                     <span class="text-14 text-neutral-500">Start from the academic area that matches your current learning activity.</span>
                 </div>
-                <a href="${pageContext.request.contextPath}/student/calendar" class="gape-student-card-icon-button" aria-label="Open calendar" title="Open calendar">
+                <a href="${pageContext.request.contextPath}/student/events" class="gape-student-card-icon-button" aria-label="Open events" title="Open events">
                     <i class="ph ph-calendar-dots"></i>
                 </a>
             </div>

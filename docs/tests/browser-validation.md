@@ -8,6 +8,8 @@ Last confirmed locally: 2026-06-26.
 
 Never leave a Tomcat, Maven/Surefire fork, Brave, Chrome, Edge or Playwright process open when it was started only for validation.
 
+Efficiency rule: start Browser Tomcat at most once per validation pass and stop it once, at the end. Repeated `browser-prepare.ps1` / `browser-stop.ps1` cycles are a failure of process unless the server crashed or Java/backend code was changed and a redeploy is genuinely required.
+
 Before finishing a validation run:
 
 ```powershell
@@ -17,6 +19,136 @@ Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'mvn|surefi
 ```
 
 The port check should return no listener unless the server was already owned by the user before the validation started.
+
+## Fast visual QA loop for frontend changes
+
+For small JSP/CSS/JS layout fixes, use this order. It is intentionally optimized to avoid the slow pattern of package, start Tomcat, capture, stop, edit, repeat.
+
+1. Inspect the changed JSP/CSS first with `rg` and focused file reads.
+2. Run only the relevant structural/unit tests. Do not run the full Maven suite for a narrow visual fix unless the user asks for full validation.
+3. Build once with `mvn -q -DskipTests package`.
+4. Start Browser Tomcat once with `browser-prepare.ps1 -SkipPackage`.
+5. Run fast DOM checks first with `browser-check-flow.ps1 -NoScreenshot` for the critical desktop/mobile routes.
+6. Fix issues while the server is still running:
+   - for JSP/CSS/JS under `src/main/webapp`, sync only the edited files into `target/browser-tomcat10/webapps/GAPE` and refresh/check again;
+   - for Java, resources, servlet mappings or compiled classes, rebuild and redeploy once after the changes are stable;
+   - do not rebuild/reset the database unless schema, seed/demo data, migrations or the test scenario itself changed.
+7. Take final screenshots only after the fast DOM checks pass.
+8. Stop Browser Tomcat once in `finally`.
+
+Do not use `-Prepare` on every `browser-check-flow.ps1` call. `-Prepare` runs `browser-prepare.ps1`, and `browser-prepare.ps1` intentionally stops any existing Browser Tomcat before redeploying. For multiple routes in the same QA pass, prepare once and then call `browser-check-flow.ps1` without `-Prepare`.
+
+Recommended single-session command shape:
+
+```powershell
+$ErrorActionPreference = "Stop"
+$hadBrowserTomcat = @(Get-NetTCPConnection -LocalPort 18080 -State Listen -ErrorAction SilentlyContinue).Count -gt 0
+if ($hadBrowserTomcat) {
+    throw "Port 18080 is already in use. Do not take over a server that may belong to the user."
+}
+
+try {
+    mvn -q "-Dtest=TemplateStructureTest,TemplateAssetReferenceTest" test
+    mvn -q -DskipTests package
+    .\docs\dev\scripts\browser-prepare.ps1 -SkipPackage
+
+    # Fast checks first: no screenshots, no process restart.
+    .\docs\dev\scripts\browser-check-flow.ps1 `
+      -Route "/learning/assessments/98" `
+      -ExpectText @("Complete Databases Assessment", "Builder", "Enrollments", "Attempts") `
+      -Width 1920 `
+      -Height 1200 `
+      -NoScreenshot
+
+    .\docs\dev\scripts\browser-check-flow.ps1 `
+      -Route "/learning/assessments/98" `
+      -ExpectText @("Complete Databases Assessment", "Builder", "Enrollments", "Attempts") `
+      -Width 390 `
+      -Height 900 `
+      -NoScreenshot
+
+    # Final evidence only after the checks above pass.
+    .\docs\dev\scripts\browser-check-flow.ps1 `
+      -Route "/learning/assessments/98" `
+      -ExpectText @("Complete Databases Assessment", "Builder", "Enrollments", "Attempts") `
+      -Width 1920 `
+      -Height 1200 `
+      -Out "target\browser-screenshots\assessment-detail-desktop.png"
+
+    .\docs\dev\scripts\browser-check-flow.ps1 `
+      -Route "/learning/assessments/98" `
+      -ExpectText @("Complete Databases Assessment", "Builder", "Enrollments", "Attempts") `
+      -Width 390 `
+      -Height 1100 `
+      -Out "target\browser-screenshots\assessment-detail-mobile.png"
+} finally {
+    .\docs\dev\scripts\browser-stop.ps1
+    $listeners = @(Get-NetTCPConnection -LocalPort 18080 -State Listen -ErrorAction SilentlyContinue)
+    Write-Output "Port 18080 listeners after stop: $($listeners.Count)"
+}
+```
+
+### Hot sync for frontend-only edits
+
+When Browser Tomcat is already running and the change is only in `src/main/webapp`, do not rebuild/restart just to test a JSP, CSS or JS tweak. Copy the edited file into the exploded Browser Tomcat app, preserving the path below `src/main/webapp`.
+
+Use this helper inside the same PowerShell session:
+
+```powershell
+function Sync-WebappFile {
+    param([Parameter(Mandatory = $true)][string] $Path)
+
+    $webappRoot = (Resolve-Path -LiteralPath "src\main\webapp").Path
+    $source = (Resolve-Path -LiteralPath $Path).Path
+    if (-not $source.StartsWith($webappRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Only files under src\main\webapp can be hot-synced: $source"
+    }
+
+    $relative = $source.Substring($webappRoot.Length).TrimStart("\")
+    $target = Join-Path "target\browser-tomcat10\webapps\GAPE" $relative
+    New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
+    Copy-Item -LiteralPath $source -Destination $target -Force
+    Write-Output "Synced $relative"
+}
+
+Sync-WebappFile "src\main\webapp\WEB-INF\views\learning\assessment-builder.jsp"
+Sync-WebappFile "src\main\webapp\assets\css\main.css"
+```
+
+After syncing, rerun the same `browser-check-flow.ps1` command. Do not call `browser-prepare.ps1` unless compiled/backend artifacts changed.
+
+### Java redeploy without database reset
+
+Java changes need compiled classes to be rebuilt and the webapp redeployed, but that does not mean the database must be rebuilt.
+
+Use the smallest valid action:
+
+| Change made | Fast action | Do not do |
+| --- | --- | --- |
+| JSP, JSPF, CSS, JS, static assets | `Sync-WebappFile`, then rerun `browser-check-flow.ps1` | Do not run Maven, redeploy, reset DB or restart Tomcat |
+| Java method body, Servlet logic, Service/DAO logic, auth policy | focused test if relevant, then `mvn -q -DskipTests package` and one `browser-prepare.ps1 -SkipPackage` redeploy | Do not reset/reseed DB unless the change depends on new persisted data |
+| New/renamed Java class, servlet mapping, filter, listener, dependency, resource on classpath | `mvn -q -DskipTests package` and one redeploy | Do not reset/reseed DB by default |
+| `schema.sql`, `drop.sql`, trigger/constraint, seed data, demo data, data bootstrap code | run the relevant DB/bootstrap tests and rebuild/reseed only the affected validation database | Do not use the browser QA database reset as a reflex for unrelated Java/layout changes |
+| Test fixture/data-only change | run the relevant focused tests; reload data only if that test requires it | Do not redeploy Tomcat unless browser runtime changed |
+
+`browser-prepare.ps1 -SkipPackage` does not recreate schema or seed data. It stops only the Browser Tomcat on the target port, initializes the Tomcat base, copies `target\gape` to `target\browser-tomcat10\webapps\GAPE`, starts Tomcat and creates an authenticated session. Treat database rebuild/reseed as a separate, explicit action.
+
+Only rebuild/reseed a database when at least one of these is true:
+
+- `src/main/resources/sql/drop.sql`, `schema.sql` or `sql/seed/*.sql` changed;
+- a DB bootstrap/migration path changed;
+- the failing test proves persisted data is missing or stale;
+- the user explicitly asks for a clean database/demo-data validation;
+- the scenario requires newly created seed/demo entities that cannot be created through the UI/API during the test.
+
+### Fast failure triage
+
+When a visual check fails, prefer cheap signals before taking more screenshots:
+
+- read `browser-check-flow.ps1` JSON first: `pageOverflowX`, `browserErrors`, `missingText`, `rejectedTextFound`;
+- if `pageOverflowX=true`, inspect the latest screenshot once, then fix the most likely wide container/table/flex item;
+- if the screenshot does not show the relevant area, rerun with a taller viewport once instead of many small repeated captures;
+- do not repeatedly open and close Tomcat while debugging CSS/JSP.
 
 ## Maven full test defaults
 
@@ -114,17 +246,26 @@ If `browser-prepare.ps1` cannot start Tomcat because of local path quoting/encod
 
 ## Fast browser checks
 
-For a generic authenticated page check:
+For a generic authenticated page check after Tomcat is already prepared:
+
+```powershell
+.\docs\dev\scripts\browser-check-flow.ps1 `
+  -Route "/learning/assessments/new" `
+  -ExpectText "Assessment" `
+  -Out "target\browser-screenshots\assessment-new.png"
+```
+
+For a one-off check where Tomcat is not running, `-Prepare` is acceptable. Do not use it in a multi-route or iterative visual QA loop:
 
 ```powershell
 .\docs\dev\scripts\browser-check-flow.ps1 `
   -Prepare `
   -Route "/learning/assessments/new" `
   -ExpectText "Assessment" `
-  -Out "target\browser-screenshots\assessment-new.png"
+  -NoScreenshot
 ```
 
-Use `-Prepare` only when Tomcat is not already running. When iterating quickly, keep the prepared server only for the duration of the active validation run, then stop it.
+When iterating quickly, keep the prepared server only for the duration of the active validation run, then stop it once.
 
 For mobile layout checks:
 

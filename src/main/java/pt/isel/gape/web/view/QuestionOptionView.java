@@ -1,7 +1,6 @@
 package pt.isel.gape.web.view;
 
 import pt.isel.gape.learning.model.QuestionOption;
-import pt.isel.gape.learning.model.QuestionOptionState;
 
 public final class QuestionOptionView {
 
@@ -17,6 +16,10 @@ public final class QuestionOptionView {
 
     public long getId() {
         return option.id();
+    }
+
+    public String getIdToken() {
+        return "|" + option.id() + "|";
     }
 
     public long getQuestionId() {
@@ -46,29 +49,4 @@ public final class QuestionOptionView {
         return option.correct() ? "Correct" : "Incorrect";
     }
 
-    public String getState() {
-        return option.state().name();
-    }
-
-    public String getStateValue() {
-        return option.state().toDatabaseValue();
-    }
-
-    public String getStateLabel() {
-        return switch (option.state()) {
-            case ACTIVE -> "Active";
-            case INACTIVE -> "Inactive";
-        };
-    }
-
-    public String getStateBadgeClass() {
-        return switch (option.state()) {
-            case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
-        };
-    }
-
-    public boolean isActive() {
-        return option.state() == QuestionOptionState.ACTIVE;
-    }
 }

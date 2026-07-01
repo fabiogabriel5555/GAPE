@@ -9,7 +9,6 @@ public record QuestionUpdateCommand(
         int orderNo,
         boolean required,
         BigDecimal score,
-        String expectedAnswer,
-        QuestionState state
+        String expectedAnswer
 ) {
 }

@@ -1,7 +1,5 @@
 package pt.isel.gape.web.view;
 
-import java.time.LocalDate;
-
 import pt.isel.gape.learning.model.AssessmentEnrollment;
 import pt.isel.gape.learning.model.EnrollmentState;
 
@@ -10,8 +8,6 @@ public final class AssessmentEnrollmentView {
     private final long studentUserId;
     private final long assessmentId;
     private final EnrollmentState state;
-    private final LocalDate startDate;
-    private final LocalDate endDate;
     private final String studentName;
     private final String studentEmail;
 
@@ -23,8 +19,6 @@ public final class AssessmentEnrollmentView {
         this.studentUserId = enrollment.studentUserId();
         this.assessmentId = enrollment.assessmentId();
         this.state = enrollment.state();
-        this.startDate = enrollment.startDate();
-        this.endDate = enrollment.endDate();
         this.studentName = studentName;
         this.studentEmail = studentEmail;
     }
@@ -83,20 +77,8 @@ public final class AssessmentEnrollmentView {
         return state == EnrollmentState.PENDING;
     }
 
-    public String getStartDate() {
-        return startDate == null ? "-" : startDate.toString();
-    }
-
-    public String getStartDateValue() {
-        return startDate == null ? "" : startDate.toString();
-    }
-
-    public String getEndDate() {
-        return endDate == null ? "-" : endDate.toString();
-    }
-
-    public String getEndDateValue() {
-        return endDate == null ? "" : endDate.toString();
+    public boolean isReactivateAvailable() {
+        return state != EnrollmentState.ACTIVE && state != EnrollmentState.PENDING;
     }
 
     public String getStudentName() {

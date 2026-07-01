@@ -1,5 +1,7 @@
 package pt.isel.gape.learning.service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -14,6 +16,7 @@ import pt.isel.gape.common.validation.AcademicTextValidator;
 import pt.isel.gape.learning.dao.ClassGroupDAO;
 import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
+import pt.isel.gape.learning.dao.GradeSheetDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupCreateCommand;
@@ -24,6 +27,10 @@ import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseState;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.CourseSubjectState;
+import pt.isel.gape.learning.model.GradeAssessmentWeight;
+import pt.isel.gape.learning.model.GradeSheetCreateCommand;
+import pt.isel.gape.learning.model.GradeSheetState;
+import pt.isel.gape.learning.model.GradeSheetType;
 import pt.isel.gape.learning.model.Subject;
 import pt.isel.gape.learning.model.SubjectState;
 import pt.isel.gape.security.authorization.AccessContext;
@@ -39,11 +46,14 @@ import pt.isel.gape.transversal.service.AuditService;
 
 public final class ClassGroupService {
 
+    private static final BigDecimal ONE_HUNDRED = new BigDecimal("100.00");
+
     private final ConnectionProvider connectionProvider;
     private final ClassGroupDAO classGroupDAO;
     private final CourseDAO courseDAO;
     private final SubjectDAO subjectDAO;
     private final CourseSubjectDAO courseSubjectDAO;
+    private final GradeSheetDAO gradeSheetDAO;
     private final TeachClassGroupDAO teachClassGroupDAO;
     private final PermissionChecker permissionChecker;
     private final AuditService auditService;
@@ -64,6 +74,7 @@ public final class ClassGroupService {
         this.courseDAO = Objects.requireNonNull(courseDAO, "courseDAO is required");
         this.subjectDAO = Objects.requireNonNull(subjectDAO, "subjectDAO is required");
         this.courseSubjectDAO = Objects.requireNonNull(courseSubjectDAO, "courseSubjectDAO is required");
+        this.gradeSheetDAO = new GradeSheetDAO(connectionProvider);
         this.teachClassGroupDAO = Objects.requireNonNull(teachClassGroupDAO, "teachClassGroupDAO is required");
         this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
@@ -105,6 +116,7 @@ public final class ClassGroupService {
         this.courseDAO = Objects.requireNonNull(courseDAO, "courseDAO is required");
         this.subjectDAO = Objects.requireNonNull(subjectDAO, "subjectDAO is required");
         this.courseSubjectDAO = Objects.requireNonNull(courseSubjectDAO, "courseSubjectDAO is required");
+        this.gradeSheetDAO = new GradeSheetDAO(connectionProvider);
         this.teachClassGroupDAO = Objects.requireNonNull(teachClassGroupDAO, "teachClassGroupDAO is required");
         this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
@@ -144,6 +156,7 @@ public final class ClassGroupService {
                     );
                     validateActiveContext(course, subject, association);
                     long classGroupId = classGroupDAO.create(connection, effectiveCommand);
+                    ensureAutomaticGradeSheet(connection, classGroupId, subject);
                     synchronizeTemporalStates(connection);
                     auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_CREATE",
                             "class_group", Long.toString(classGroupId), "success", sourceIp);
@@ -513,6 +526,55 @@ public final class ClassGroupService {
     private Subject requireSubject(Connection connection, long subjectId) throws SQLException {
         return subjectDAO.findById(connection, subjectId)
                 .orElseThrow(() -> new IllegalArgumentException("Subject not found: " + subjectId));
+    }
+
+    private void ensureAutomaticGradeSheet(Connection connection, long classGroupId, Subject subject)
+            throws SQLException {
+        if (gradeSheetDAO.findByClassGroupId(connection, classGroupId).isPresent()) {
+            return;
+        }
+        BigDecimal maxGrade = subject.finalGradeMax();
+        BigDecimal passingGrade = maxGrade.multiply(new BigDecimal("0.475")).setScale(2, RoundingMode.HALF_UP);
+        GradeSheetCreateCommand command = new GradeSheetCreateCommand(
+                subject.id(),
+                subject.acronym() + " - " + classGroupId + " grade sheet",
+                GradeSheetType.FINAL,
+                maxGrade,
+                passingGrade,
+                GradeSheetState.DRAFT,
+                List.of(classGroupId),
+                List.of()
+        );
+        long gradeSheetId = gradeSheetDAO.create(connection, command);
+        gradeSheetDAO.replaceClassGroups(connection, gradeSheetId, List.of(classGroupId));
+        List<GradeAssessmentWeight> weights = gradeSheetDAO.findDefaultAssessmentWeightsForSheetContext(
+                connection,
+                subject.id(),
+                List.of(classGroupId)
+        );
+        if (weights.isEmpty()) {
+            gradeSheetDAO.updateWeightAlert(
+                    connection,
+                    gradeSheetId,
+                    "No assessments are configured for this class group yet. The grade sheet is incomplete."
+            );
+            return;
+        }
+        gradeSheetDAO.replaceAssessmentWeights(connection, gradeSheetId, weights);
+        gradeSheetDAO.updateWeightAlert(connection, gradeSheetId, alertForTotal(weights));
+    }
+
+    private static String alertForTotal(List<GradeAssessmentWeight> weights) {
+        BigDecimal total = weights.stream()
+                .map(GradeAssessmentWeight::weight)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (total.compareTo(ONE_HUNDRED) == 0) {
+            return null;
+        }
+        return "Assessment weights total " + total.stripTrailingZeros().toPlainString()
+                + "%. If this is not regularized before the class group period ends, the system will redistribute "
+                + "the weights equally so the sum is 100%.";
     }
 
     private CourseSubjectAssociation requireAssociation(

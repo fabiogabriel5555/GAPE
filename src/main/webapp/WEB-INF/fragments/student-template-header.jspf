@@ -16,7 +16,7 @@
                         <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/student/profile/student-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a></li>
                         <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/courses" class="nav-submenu__link hover-bg-neutral-30">Courses</a></li>
                         <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/lessons" class="nav-submenu__link hover-bg-neutral-30">Lessons</a></li>
-                        <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/calendar" class="nav-submenu__link hover-bg-neutral-30">Calendar</a></li>
+                        <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/events" class="nav-submenu__link hover-bg-neutral-30">Events</a></li>
                     </ul>
                 </li>
                 <li class="nav-menu__item"><a href="${pageContext.request.contextPath}/contact.jsp" class="nav-menu__link">Contact</a></li>
@@ -43,7 +43,7 @@
                             <option value="student" selected>Student</option>
                             <option value="courses">Courses</option>
                             <option value="lessons">Lessons</option>
-                            <option value="calendar">Calendar</option>
+                            <option value="calendar">Events</option>
                         </select>
                     </div>
                 </div>
@@ -61,8 +61,9 @@
                                 <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/subjects" class="nav-submenu__link hover-bg-neutral-30">Subjects</a></li>
                                 <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/class-groups" class="nav-submenu__link hover-bg-neutral-30">Class Groups</a></li>
                                 <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/lessons" class="nav-submenu__link hover-bg-neutral-30">Lessons</a></li>
-                                <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/calendar" class="nav-submenu__link hover-bg-neutral-30">Calendar</a></li>
-                                <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/student/review/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a></li>
+                                <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/events" class="nav-submenu__link hover-bg-neutral-30">Events</a></li>
+                                <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a></li>
+                                <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/attendance" class="nav-submenu__link hover-bg-neutral-30">Enrollments &amp; Certificates</a></li>
                             </ul>
                         </li>
                         <li class="nav-menu__item"><a href="${pageContext.request.contextPath}/contact.jsp" class="nav-menu__link text-white">Contact</a></li>
@@ -70,8 +71,8 @@
                 </div>
             </div>
             <div class="header-right flex-align">
-                <a href="${pageContext.request.contextPath}/student/calendar" class="d-xl-flex d-none px-20 py-10 rounded-pill border border-neutral-600 text-white hover-bg-main-600 hover-border-main-600 transition-03 text-14 fw-medium">
-                    Calendar
+                <a href="${pageContext.request.contextPath}/student/events" class="d-xl-flex d-none px-20 py-10 rounded-pill border border-neutral-600 text-white hover-bg-main-600 hover-border-main-600 transition-03 text-14 fw-medium">
+                    Events
                 </a>
                 <div class="dropdown">
                     <button class="dropdown-toggle p-0 border-0 bg-transparent d-flex align-items-center gap-10" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="${studentEmail}">

@@ -20,7 +20,6 @@ import pt.isel.gape.learning.model.Assessment;
 import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionConfiguration;
 import pt.isel.gape.learning.model.QuestionCreateCommand;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
 import pt.isel.gape.learning.model.QuestionUpdateCommand;
 import pt.isel.gape.security.authorization.PermissionChecker;
@@ -102,8 +101,8 @@ public final class QuestionService {
                             sourceIp
                     );
                     requireMutableStructure(connection, assessment.id());
-                    requireCorrectionModeSupportsQuestion(assessment, command.type(), command.state());
-                    requireScoreWithinAssessmentMaximum(connection, assessment, null, command.score(), command.state());
+                    requireCorrectionModeSupportsQuestion(assessment, command.type());
+                    requireScoreWithinAssessmentMaximum(connection, assessment, null, command.score());
                     long questionId = questionDAO.create(connection, command);
                     auditService.record(connection, actorUserId, sessionId, "QUESTION_CREATE",
                             "question", Long.toString(questionId), "success", sourceIp);
@@ -171,8 +170,8 @@ public final class QuestionService {
                             sourceIp
                     );
                     requireMutableStructure(connection, assessment.id());
-                    requireCorrectionModeSupportsQuestion(assessment, command.type(), command.state());
-                    requireScoreWithinAssessmentMaximum(connection, assessment, questionId, command.score(), command.state());
+                    requireCorrectionModeSupportsQuestion(assessment, command.type());
+                    requireScoreWithinAssessmentMaximum(connection, assessment, questionId, command.score());
                     questionDAO.update(connection, questionId, command);
                     auditService.record(connection, actorUserId, sessionId, "QUESTION_UPDATE",
                             "question", Long.toString(questionId), "success", sourceIp);
@@ -305,8 +304,7 @@ public final class QuestionService {
                                         orderNo++,
                                         question.required(),
                                         question.score(),
-                                        question.expectedAnswer(),
-                                        question.state()
+                                        question.expectedAnswer()
                                 )
                         );
                     }
@@ -352,19 +350,17 @@ public final class QuestionService {
                             sourceIp
                     );
                     requireMutableStructure(connection, assessment.id());
-                    List<Question> activeQuestions = questionDAO.lockByAssessment(connection, assessment.id()).stream()
-                            .filter(question -> question.state() == QuestionState.ACTIVE)
-                            .toList();
-                    if (activeQuestions.isEmpty()) {
+                    List<Question> questions = questionDAO.lockByAssessment(connection, assessment.id());
+                    if (questions.isEmpty()) {
                         connection.commit();
                         return;
                     }
-                    BigDecimal minimumTotal = MINIMUM_SCORE.multiply(BigDecimal.valueOf(activeQuestions.size()));
+                    BigDecimal minimumTotal = MINIMUM_SCORE.multiply(BigDecimal.valueOf(questions.size()));
                     if (assessment.maxGrade().compareTo(minimumTotal) < 0) {
-                        throw new IllegalArgumentException("Maximum Grade is too low for the number of active questions");
+                        throw new IllegalArgumentException("Maximum Grade is too low for the number of questions");
                     }
 
-                    BigDecimal total = activeQuestions.stream()
+                    BigDecimal total = questions.stream()
                             .map(Question::score)
                             .reduce(BigDecimal.ZERO, BigDecimal::add);
                     BigDecimal difference = assessment.maxGrade().subtract(total);
@@ -373,7 +369,7 @@ public final class QuestionService {
                         return;
                     }
 
-                    List<QuestionScoreAdjustment> adjustments = adjustedScores(activeQuestions, difference);
+                    List<QuestionScoreAdjustment> adjustments = adjustedScores(questions, difference);
                     for (QuestionScoreAdjustment adjustment : adjustments) {
                         Question question = adjustment.question();
                         questionDAO.update(
@@ -386,8 +382,7 @@ public final class QuestionService {
                                         question.orderNo(),
                                         question.required(),
                                         adjustment.score(),
-                                        question.expectedAnswer(),
-                                        question.state()
+                                        question.expectedAnswer()
                                 )
                         );
                     }
@@ -407,17 +402,17 @@ public final class QuestionService {
         }
     }
 
-    private static List<QuestionScoreAdjustment> adjustedScores(List<Question> activeQuestions, BigDecimal difference) {
+    private static List<QuestionScoreAdjustment> adjustedScores(List<Question> questions, BigDecimal difference) {
         List<QuestionScoreAdjustment> adjustments = new ArrayList<>();
         if (difference.compareTo(BigDecimal.ZERO) > 0) {
-            Question last = activeQuestions.get(activeQuestions.size() - 1);
+            Question last = questions.get(questions.size() - 1);
             adjustments.add(new QuestionScoreAdjustment(last, last.score().add(difference)));
             return adjustments;
         }
 
         BigDecimal remainingExcess = difference.abs();
-        for (int index = activeQuestions.size() - 1; index >= 0 && remainingExcess.compareTo(BigDecimal.ZERO) > 0; index--) {
-            Question question = activeQuestions.get(index);
+        for (int index = questions.size() - 1; index >= 0 && remainingExcess.compareTo(BigDecimal.ZERO) > 0; index--) {
+            Question question = questions.get(index);
             BigDecimal reducibleScore = question.score().subtract(MINIMUM_SCORE).max(BigDecimal.ZERO);
             BigDecimal reduction = reducibleScore.min(remainingExcess);
             if (reduction.compareTo(BigDecimal.ZERO) <= 0) {
@@ -427,7 +422,7 @@ public final class QuestionService {
             remainingExcess = remainingExcess.subtract(reduction);
         }
         if (remainingExcess.compareTo(BigDecimal.ZERO) > 0) {
-            throw new IllegalArgumentException("Maximum Grade is too low for the number of active questions");
+            throw new IllegalArgumentException("Maximum Grade is too low for the number of questions");
         }
         return adjustments;
     }
@@ -442,27 +437,21 @@ public final class QuestionService {
             Connection connection,
             Assessment assessment,
             Long excludedQuestionId,
-            BigDecimal score,
-            QuestionState state
+            BigDecimal score
     ) throws SQLException {
-        if (state != QuestionState.ACTIVE) {
-            return;
-        }
         BigDecimal total = questionDAO.sumActiveScores(connection, assessment.id(), excludedQuestionId).add(score);
         if (total.compareTo(assessment.maxGrade()) > 0) {
-            throw new IllegalArgumentException("Active question scores cannot exceed assessment maximum grade");
+            throw new IllegalArgumentException("Question scores cannot exceed assessment maximum grade");
         }
     }
 
     private static void requireCorrectionModeSupportsQuestion(
             Assessment assessment,
-            QuestionType type,
-            QuestionState state
+            QuestionType type
     ) {
-        if (state == QuestionState.ACTIVE
-                && assessment.correctionMode().requiresObjectiveOnly()
+        if (assessment.correctionMode().requiresObjectiveOnly()
                 && type.requiresManualScoring()) {
-            throw new IllegalArgumentException("Automatic assessments can only contain objective active questions");
+            throw new IllegalArgumentException("Automatic assessments can only contain objective questions");
         }
     }
 
@@ -482,8 +471,7 @@ public final class QuestionService {
                 command.type(),
                 command.orderNo(),
                 command.score(),
-                command.expectedAnswer(),
-                command.state()
+                command.expectedAnswer()
         );
     }
 
@@ -495,8 +483,7 @@ public final class QuestionService {
                 command.type(),
                 command.orderNo(),
                 command.score(),
-                command.expectedAnswer(),
-                command.state()
+                command.expectedAnswer()
         );
     }
 
@@ -506,15 +493,13 @@ public final class QuestionService {
             Object type,
             int orderNo,
             BigDecimal score,
-            String expectedAnswer,
-            Object state
+            String expectedAnswer
     ) {
         AcademicTextValidator.requireAcronym(code, "Question code is required");
         requireMaxLength(code.trim(), CODE_MAX_LENGTH, "Question code is too long");
         AcademicTextValidator.requireName(statement, "Question statement is required");
         requireMaxLength(statement.trim(), STATEMENT_MAX_LENGTH, "Question statement is too long");
         Objects.requireNonNull(type, "question type is required");
-        Objects.requireNonNull(state, "question state is required");
         if (orderNo <= 0) {
             throw new IllegalArgumentException("Question order must be greater than zero");
         }

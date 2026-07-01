@@ -19,6 +19,7 @@ import pt.isel.gape.learning.dao.ClassGroupDAO;
 import pt.isel.gape.learning.dao.ContentAssociationDAO;
 import pt.isel.gape.learning.dao.ContentBlockDAO;
 import pt.isel.gape.learning.dao.ContentItemDAO;
+import pt.isel.gape.learning.dao.GradeSheetDAO;
 import pt.isel.gape.learning.dao.QuestionDAO;
 import pt.isel.gape.learning.dao.QuestionOptionDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
@@ -44,7 +45,6 @@ import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionCreateCommand;
 import pt.isel.gape.learning.model.QuestionOption;
 import pt.isel.gape.learning.model.QuestionOptionCreateCommand;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.Subject;
 import pt.isel.gape.learning.model.SubjectState;
 import pt.isel.gape.security.authorization.PermissionChecker;
@@ -69,6 +69,8 @@ public final class AssessmentService {
     private final ContentAssociationDAO contentAssociationDAO;
     private final QuestionDAO questionDAO;
     private final QuestionOptionDAO optionDAO;
+    private final GradeSheetDAO gradeSheetDAO;
+    private final GradeLifecycleService gradeLifecycleService;
     private final AssessmentAccessPolicy accessPolicy;
     private final AuditService auditService;
     private final Clock clock;
@@ -117,6 +119,8 @@ public final class AssessmentService {
         this.contentAssociationDAO = Objects.requireNonNull(contentAssociationDAO, "contentAssociationDAO is required");
         this.questionDAO = Objects.requireNonNull(questionDAO, "questionDAO is required");
         this.optionDAO = Objects.requireNonNull(optionDAO, "optionDAO is required");
+        this.gradeSheetDAO = new GradeSheetDAO(connectionProvider);
+        this.gradeLifecycleService = new GradeLifecycleService(connectionProvider, clock);
         Objects.requireNonNull(permissionDAO, "permissionDAO is required");
         this.clock = Objects.requireNonNull(clock, "clock is required");
         this.accessPolicy = new AssessmentAccessPolicy(
@@ -164,9 +168,15 @@ public final class AssessmentService {
                             assessmentId,
                             context.context().persistedClassGroupIds()
                     );
+                    assessmentDAO.upsertWeightForMatchingGradeSheets(
+                            connection,
+                            assessmentId,
+                            context.command().finalGradeWeight()
+                    );
                     Assessment assessment = requireAssessment(connection, assessmentId);
                     synchronizeAssessmentRepositoryReference(connection, actorUserId, assessment);
                     synchronizeAutomaticEnrollments(connection, assessment);
+                    synchronizeGradeSheetsForAssessment(connection, assessmentId);
                     synchronizeTemporalStates(connection);
                     auditService.record(connection, actorUserId, sessionId, "ASSESSMENT_CREATE",
                             "assessment", Long.toString(assessmentId), "success", sourceIp);
@@ -311,9 +321,15 @@ public final class AssessmentService {
                             assessmentId,
                             context.context().persistedClassGroupIds()
                     );
+                    assessmentDAO.upsertWeightForMatchingGradeSheets(
+                            connection,
+                            assessmentId,
+                            context.command().finalGradeWeight()
+                    );
                     Assessment updated = requireAssessment(connection, assessmentId);
                     synchronizeAssessmentRepositoryReference(connection, actorUserId, updated);
                     synchronizeAutomaticEnrollments(connection, updated);
+                    synchronizeGradeSheetsForAssessment(connection, assessmentId);
                     synchronizeTemporalStates(connection);
                     auditService.record(connection, actorUserId, sessionId, "ASSESSMENT_UPDATE",
                             "assessment", Long.toString(assessmentId), "success", sourceIp);
@@ -424,16 +440,14 @@ public final class AssessmentService {
                                 question.orderNo(),
                                 question.required(),
                                 question.score(),
-                                question.expectedAnswer(),
-                                question.state()
+                                question.expectedAnswer()
                         ));
                         for (QuestionOption option : optionDAO.findByQuestion(connection, question.id())) {
                             optionDAO.create(connection, new QuestionOptionCreateCommand(
                                     cloneQuestionId,
                                     option.orderNo(),
                                     option.text(),
-                                    option.correct(),
-                                    option.state()
+                                    option.correct()
                             ));
                         }
                     }
@@ -542,6 +556,7 @@ public final class AssessmentService {
                 command.correctionMode(),
                 command.maxGrade(),
                 command.passingGrade(),
+                command.finalGradeWeight(),
                 command.attemptsLimit(),
                 command.enrollmentMode(),
                 command.state(),
@@ -574,6 +589,7 @@ public final class AssessmentService {
                 source.correctionMode(),
                 source.maxGrade(),
                 source.passingGrade(),
+                source.finalGradeWeight(),
                 source.attemptsLimit(),
                 source.enrollmentMode(),
                 source.state(),
@@ -612,6 +628,7 @@ public final class AssessmentService {
                 command.correctionMode(),
                 command.maxGrade(),
                 command.passingGrade(),
+                command.finalGradeWeight(),
                 command.attemptsLimit(),
                 command.enrollmentMode(),
                 command.state(),
@@ -713,9 +730,9 @@ public final class AssessmentService {
             long assessmentId,
             BigDecimal maxGrade
     ) throws SQLException {
-        BigDecimal activeQuestionTotal = questionDAO.sumActiveScores(connection, assessmentId, null);
-        if (activeQuestionTotal.compareTo(maxGrade) > 0) {
-            throw new IllegalArgumentException("Active question scores cannot exceed assessment maximum grade");
+        BigDecimal questionTotal = questionDAO.sumActiveScores(connection, assessmentId, null);
+        if (questionTotal.compareTo(maxGrade) > 0) {
+            throw new IllegalArgumentException("Question scores cannot exceed assessment maximum grade");
         }
     }
 
@@ -728,10 +745,9 @@ public final class AssessmentService {
             return;
         }
         boolean hasManualQuestions = questionDAO.findByAssessment(connection, assessmentId).stream()
-                .anyMatch(question -> question.state() == QuestionState.ACTIVE
-                        && question.type().requiresManualScoring());
+                .anyMatch(question -> question.type().requiresManualScoring());
         if (hasManualQuestions) {
-            throw new IllegalArgumentException("Automatic assessments can only contain objective active questions");
+            throw new IllegalArgumentException("Automatic assessments can only contain objective questions");
         }
     }
 
@@ -796,9 +812,14 @@ public final class AssessmentService {
         if (assessment.enrollmentMode() == EnrollmentApprovalMode.AUTO_APPROVE) {
             assessmentEnrollmentDAO.syncAutomaticEnrollments(
                     connection,
-                    assessment.id(),
-                    java.time.LocalDate.now(clock)
+                    assessment.id()
             );
+        }
+    }
+
+    private void synchronizeGradeSheetsForAssessment(Connection connection, long assessmentId) throws SQLException {
+        for (Long gradeSheetId : gradeSheetDAO.findGradeSheetIdsForAssessmentContext(connection, assessmentId)) {
+            gradeLifecycleService.synchronizeGradeSheetAndCertificates(connection, gradeSheetId);
         }
     }
 
@@ -816,6 +837,7 @@ public final class AssessmentService {
                 command.correctionMode(),
                 command.maxGrade(),
                 command.passingGrade(),
+                command.finalGradeWeight(),
                 command.attemptsLimit(),
                 command.enrollmentMode(),
                 command.state(),
@@ -836,6 +858,7 @@ public final class AssessmentService {
                 command.correctionMode(),
                 command.maxGrade(),
                 command.passingGrade(),
+                command.finalGradeWeight(),
                 command.attemptsLimit(),
                 command.enrollmentMode(),
                 command.state(),
@@ -861,6 +884,7 @@ public final class AssessmentService {
                 command.correctionMode(),
                 command.maxGrade(),
                 command.passingGrade(),
+                command.finalGradeWeight(),
                 command.attemptsLimit(),
                 command.enrollmentMode(),
                 deriveTemporalState(command.availableFrom(), command.availableUntil(), now),
@@ -885,6 +909,7 @@ public final class AssessmentService {
                 command.correctionMode(),
                 command.maxGrade(),
                 command.passingGrade(),
+                command.finalGradeWeight(),
                 command.attemptsLimit(),
                 command.enrollmentMode(),
                 deriveTemporalState(command.availableFrom(), command.availableUntil(), now),
@@ -919,6 +944,7 @@ public final class AssessmentService {
             Object correctionMode,
             BigDecimal maxGrade,
             BigDecimal passingGrade,
+            BigDecimal finalGradeWeight,
             Integer attemptsLimit,
             EnrollmentApprovalMode enrollmentMode,
             AssessmentState state,
@@ -940,6 +966,7 @@ public final class AssessmentService {
         }
         requirePositive(maxGrade, "Assessment maximum grade must be positive");
         requireNonNegative(passingGrade, "Assessment passing grade cannot be negative");
+        requirePercentage(finalGradeWeight, "Assessment final grade weight must be between 0 and 100");
         if (passingGrade.compareTo(maxGrade) > 0) {
             throw new IllegalArgumentException("Assessment passing grade cannot exceed maximum grade");
         }
@@ -1029,6 +1056,13 @@ public final class AssessmentService {
     private static void requireNonNegative(BigDecimal value, String message) {
         Objects.requireNonNull(value, message);
         if (value.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    private static void requirePercentage(BigDecimal value, String message) {
+        Objects.requireNonNull(value, message);
+        if (value.compareTo(BigDecimal.ZERO) < 0 || value.compareTo(new BigDecimal("100.00")) > 0) {
             throw new IllegalArgumentException(message);
         }
     }

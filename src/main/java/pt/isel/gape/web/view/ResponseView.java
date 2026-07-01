@@ -5,7 +5,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
+import pt.isel.gape.learning.model.QuestionConfiguration;
 import pt.isel.gape.learning.model.Response;
 
 public final class ResponseView {
@@ -70,7 +73,7 @@ public final class ResponseView {
     }
 
     public String getScoreLabel() {
-        return response.score() == null ? "Pending" : getScore() + " / " + question.getScore();
+        return response.score() == null ? "Not assigned yet" : getScore() + " / " + question.getScore();
     }
 
     public String getAnsweredAt() {
@@ -83,6 +86,31 @@ public final class ResponseView {
 
     public List<QuestionOptionView> getSelectedOptions() {
         return selectedOptions;
+    }
+
+    public String getSelectedOptionTokens() {
+        if (selectedOptions.isEmpty()) {
+            return "";
+        }
+        return selectedOptions.stream()
+                .map(option -> Long.toString(option.getId()))
+                .collect(Collectors.joining("|", "|", "|"));
+    }
+
+    public List<QuestionOptionView> getCorrectOptions() {
+        return question.getActiveOptions().stream()
+                .filter(QuestionOptionView::isCorrect)
+                .toList();
+    }
+
+    public String getExpectedOptionTokens() {
+        List<QuestionOptionView> correctOptions = getCorrectOptions();
+        if (correctOptions.isEmpty()) {
+            return "";
+        }
+        return correctOptions.stream()
+                .map(option -> Long.toString(option.getId()))
+                .collect(Collectors.joining("|", "|", "|"));
     }
 
     public boolean isHasAnswer() {
@@ -108,5 +136,112 @@ public final class ResponseView {
             return getAttachmentFileName();
         }
         return isHasAnswer() ? getAnswer() : "No answer.";
+    }
+
+    public boolean isObjectiveQuestion() {
+        return question.isAutomaticallyScoredObjective();
+    }
+
+    public boolean isHasExpectedAnswer() {
+        if (question.isAllowsOptions()) {
+            return !getCorrectOptions().isEmpty();
+        }
+        if (question.getTypeValue().equals("rating")) {
+            return !question.getExpectedAnswer().isBlank();
+        }
+        return !getExpectedDisplayAnswer().isBlank();
+    }
+
+    public boolean isObjectiveWithExpectedAnswer() {
+        return isObjectiveQuestion() && isHasExpectedAnswer();
+    }
+
+    public boolean isAnswerMatchesExpected() {
+        if (!isObjectiveWithExpectedAnswer()) {
+            return false;
+        }
+        if (question.isAllowsOptions()) {
+            Set<Long> selectedIds = selectedOptions.stream()
+                    .map(QuestionOptionView::getId)
+                    .collect(Collectors.toUnmodifiableSet());
+            Set<Long> correctIds = getCorrectOptions().stream()
+                    .map(QuestionOptionView::getId)
+                    .collect(Collectors.toUnmodifiableSet());
+            return !correctIds.isEmpty() && selectedIds.equals(correctIds);
+        }
+        if (question.getTypeValue().equals("rating")) {
+            try {
+                BigDecimal expected = QuestionConfiguration.ratingExpectedValue(question.getExpectedAnswer());
+                BigDecimal submitted = QuestionConfiguration.ratingAnswerValue(getAnswer(), question.getExpectedAnswer());
+                return submitted.compareTo(expected) == 0;
+            } catch (IllegalArgumentException exception) {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    public String getObjectiveAnswerToneClass() {
+        if (!isObjectiveWithExpectedAnswer()) {
+            return "is-neutral";
+        }
+        return isAnswerMatchesExpected() ? "is-correct" : "is-incorrect";
+    }
+
+    public String getExpectedDisplayAnswer() {
+        if (question.isAllowsOptions()) {
+            return getCorrectOptions().stream()
+                    .map(QuestionOptionView::getText)
+                    .reduce((left, right) -> left + ", " + right)
+                    .orElse("");
+        }
+        if (question.getTypeValue().equals("rating")) {
+            if (question.getExpectedAnswer().isBlank()) {
+                return "";
+            }
+            return question.getRatingExpectedValue() + " / " + question.getRatingMax();
+        }
+        if (question.isFileUpload()) {
+            return question.getExpectedAnswer().isBlank()
+                    ? ""
+                    : "Accepted formats: " + question.getAcceptedFileFormatsLabel();
+        }
+        return question.getExpectedAnswer();
+    }
+
+    public int getRatingFilledUnits() {
+        if (!isHasAnswer()) {
+            return 0;
+        }
+        try {
+            BigDecimal value = QuestionConfiguration.ratingAnswerValue(getAnswer(), question.getExpectedAnswer());
+            return Math.max(0, Math.min(question.getRatingDisplayMax(), value.intValue()));
+        } catch (IllegalArgumentException exception) {
+            return 0;
+        }
+    }
+
+    public int getExpectedRatingFilledUnits() {
+        if (!question.getTypeValue().equals("rating") || question.getExpectedAnswer().isBlank()) {
+            return 0;
+        }
+        try {
+            BigDecimal value = QuestionConfiguration.ratingExpectedValue(question.getExpectedAnswer());
+            return Math.max(0, Math.min(question.getRatingDisplayMax(), value.intValue()));
+        } catch (IllegalArgumentException exception) {
+            return 0;
+        }
+    }
+
+    public String getQuestionTypeCssClass() {
+        return switch (question.getTypeValue()) {
+            case "single_choice" -> "is-single-choice";
+            case "multiple_choice" -> "is-multiple-choice";
+            case "short_text" -> "is-short-text";
+            case "paragraph" -> "is-paragraph";
+            case "file_upload" -> "is-file-upload";
+            case "rating" -> "is-rating";
+            default -> "";
+        };
     }
 }

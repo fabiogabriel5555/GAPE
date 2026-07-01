@@ -6,13 +6,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Clock;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -29,6 +30,8 @@ import pt.isel.gape.learning.dao.AttemptDAO;
 import pt.isel.gape.learning.dao.ClassGroupDAO;
 import pt.isel.gape.learning.dao.ContentBlockDAO;
 import pt.isel.gape.learning.dao.ContentItemDAO;
+import pt.isel.gape.learning.dao.CourseDAO;
+import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.dao.QuestionDAO;
 import pt.isel.gape.learning.dao.QuestionOptionDAO;
 import pt.isel.gape.learning.dao.ResponseDAO;
@@ -42,7 +45,11 @@ import pt.isel.gape.learning.model.AssessmentMode;
 import pt.isel.gape.learning.model.AssessmentState;
 import pt.isel.gape.learning.model.AssessmentType;
 import pt.isel.gape.learning.model.Attempt;
+import pt.isel.gape.learning.model.AttemptState;
 import pt.isel.gape.learning.model.ContentBlock;
+import pt.isel.gape.learning.model.CorrectionResult;
+import pt.isel.gape.learning.model.Course;
+import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.EnrollmentApprovalMode;
 import pt.isel.gape.learning.model.EnrollmentState;
 import pt.isel.gape.learning.model.ManualCorrectionCommand;
@@ -51,9 +58,7 @@ import pt.isel.gape.learning.model.QuestionConfiguration;
 import pt.isel.gape.learning.model.QuestionCreateCommand;
 import pt.isel.gape.learning.model.QuestionOption;
 import pt.isel.gape.learning.model.QuestionOptionCreateCommand;
-import pt.isel.gape.learning.model.QuestionOptionState;
 import pt.isel.gape.learning.model.QuestionOptionUpdateCommand;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
 import pt.isel.gape.learning.model.QuestionUpdateCommand;
 import pt.isel.gape.learning.model.Response;
@@ -66,9 +71,15 @@ import pt.isel.gape.learning.service.PdfUploadService;
 import pt.isel.gape.learning.service.QuestionOptionService;
 import pt.isel.gape.learning.service.QuestionService;
 import pt.isel.gape.security.session.SessionUser;
+import pt.isel.gape.structure.dao.OrganicUnitDAO;
+import pt.isel.gape.structure.dao.OrganizationDAO;
+import pt.isel.gape.structure.model.OrganicUnit;
+import pt.isel.gape.structure.model.Organization;
 import pt.isel.gape.web.view.AssessmentEnrollmentView;
 import pt.isel.gape.web.view.AssessmentFormData;
 import pt.isel.gape.web.view.AssessmentView;
+import pt.isel.gape.web.view.AttemptView;
+import pt.isel.gape.web.view.ResponseView;
 import pt.isel.gape.web.view.SelectOptionView;
 import pt.isel.gape.web.view.UserOptionView;
 
@@ -81,7 +92,6 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
     private static final String ASSESSMENT_LIST_JSP = "/WEB-INF/views/learning/assessment-list.jsp";
     private static final String ASSESSMENT_FORM_JSP = "/WEB-INF/views/learning/assessment-form.jsp";
     private static final String ASSESSMENT_DETAIL_JSP = "/WEB-INF/views/learning/assessment-builder.jsp";
-    private static final String ASSESSMENT_CORRECTION_JSP = "/WEB-INF/views/learning/assessment-correction.jsp";
 
     private final AssessmentService assessmentService;
     private final AssessmentEnrollmentService assessmentEnrollmentService;
@@ -99,6 +109,10 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
     private final ContentBlockDAO contentBlockDAO;
     private final ContentItemDAO contentItemDAO;
     private final ClassGroupDAO classGroupDAO;
+    private final CourseDAO courseDAO;
+    private final CourseSubjectDAO courseSubjectDAO;
+    private final OrganizationDAO organizationDAO;
+    private final OrganicUnitDAO organicUnitDAO;
     private final UserDAO userDAO;
     private final PdfUploadService pdfUploadService;
     private final AssessmentViewFactory viewFactory;
@@ -125,6 +139,10 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                 new ContentBlockDAO(connectionProvider),
                 new ContentItemDAO(connectionProvider),
                 new ClassGroupDAO(connectionProvider),
+                new CourseDAO(connectionProvider),
+                new CourseSubjectDAO(connectionProvider),
+                new OrganizationDAO(connectionProvider),
+                new OrganicUnitDAO(connectionProvider),
                 new UserDAO(connectionProvider),
                 new PdfUploadService(),
                 new AssessmentViewFactory(
@@ -158,6 +176,10 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
             ContentBlockDAO contentBlockDAO,
             ContentItemDAO contentItemDAO,
             ClassGroupDAO classGroupDAO,
+            CourseDAO courseDAO,
+            CourseSubjectDAO courseSubjectDAO,
+            OrganizationDAO organizationDAO,
+            OrganicUnitDAO organicUnitDAO,
             UserDAO userDAO,
             PdfUploadService pdfUploadService,
             AssessmentViewFactory viewFactory
@@ -178,6 +200,10 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         this.contentBlockDAO = contentBlockDAO;
         this.contentItemDAO = contentItemDAO;
         this.classGroupDAO = classGroupDAO;
+        this.courseDAO = courseDAO;
+        this.courseSubjectDAO = courseSubjectDAO;
+        this.organizationDAO = organizationDAO;
+        this.organicUnitDAO = organicUnitDAO;
         this.userDAO = userDAO;
         this.pdfUploadService = pdfUploadService;
         this.viewFactory = viewFactory;
@@ -189,7 +215,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         String[] segments = pathSegments(request.getPathInfo());
         try {
             if (segments.length == 0) {
-                showList(request, response);
+                redirect(request, response, "/learning/lessons#assessments");
                 return;
             }
             if (segments.length == 1 && "new".equals(segments[0])) {
@@ -214,12 +240,21 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                 downloadAssessmentPdf(request, response, Long.parseLong(segments[0]));
                 return;
             }
+            if (segments.length == 4 && "attempts".equals(segments[1]) && "pdf".equals(segments[3])) {
+                downloadAttemptPdf(
+                        request,
+                        response,
+                        Long.parseLong(segments[0]),
+                        Long.parseLong(segments[2])
+                );
+                return;
+            }
             if (segments.length == 2 && "attempts".equals(segments[1])) {
-                redirect(request, response, "/learning/assessments/" + Long.parseLong(segments[0]) + "#enrollments-attempts");
+                redirect(request, response, "/learning/assessments/" + Long.parseLong(segments[0]) + "#attempts");
                 return;
             }
             if (segments.length == 3 && "attempts".equals(segments[1])) {
-                showCorrection(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
+                redirect(request, response, "/learning/assessments/" + Long.parseLong(segments[0]) + "#attempts");
                 return;
             }
             if (segments.length == 6
@@ -248,6 +283,10 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         try {
             if (segments.length == 0) {
                 createAssessment(request, response);
+                return;
+            }
+            if (segments.length == 1 && "repository-copy".equals(segments[0])) {
+                copyRepositoryAssessment(request, response);
                 return;
             }
             if (segments.length == 1) {
@@ -306,6 +345,31 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                     && "attempts".equals(segments[1])
                     && "auto-correct".equals(segments[3])) {
                 autoCorrectAttempt(request, response, assessmentId, Long.parseLong(segments[2]));
+                return;
+            }
+            if (segments.length == 4
+                    && "attempts".equals(segments[1])
+                    && "auto-correct-eligible".equals(segments[3])) {
+                autoCorrectEligibleResponses(request, response, assessmentId, Long.parseLong(segments[2]));
+                return;
+            }
+            if (segments.length == 4
+                    && "attempts".equals(segments[1])
+                    && "manual-correct".equals(segments[3])) {
+                manualCorrectAttempt(request, response, assessmentId, Long.parseLong(segments[2]));
+                return;
+            }
+            if (segments.length == 6
+                    && "attempts".equals(segments[1])
+                    && "responses".equals(segments[3])
+                    && "auto-correct".equals(segments[5])) {
+                autoCorrectResponse(
+                        request,
+                        response,
+                        assessmentId,
+                        Long.parseLong(segments[2]),
+                        Long.parseLong(segments[4])
+                );
                 return;
             }
             if (segments.length == 5
@@ -404,10 +468,10 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         request.setAttribute("assessment", assessmentView);
         request.setAttribute("questions", viewFactory.questionViews(assessmentId));
         request.setAttribute("questionTypes", QuestionType.values());
-        request.setAttribute("questionStates", QuestionState.values());
-        request.setAttribute("optionStates", QuestionOptionState.values());
         request.setAttribute("nextQuestionOrder", nextQuestionOrder(assessmentId));
-        request.setAttribute("attempts", viewFactory.attemptViewsByAssessment(assessmentId));
+        List<AttemptView> attempts = viewFactory.attemptViewsByAssessment(assessmentId);
+        request.setAttribute("attempts", attempts);
+        request.setAttribute("responsesByAttemptId", responseViewsByAttempt(attempts));
         prepareAssessmentEnrollmentAttributes(request, assessmentView);
         request.setAttribute("canEditAssessmentStructure", canEditStructure);
         request.setAttribute("hasSubmittedAttempts", hasStartedAttempts);
@@ -420,35 +484,6 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         prepareAssessmentContext(request, assessmentView, "detail");
         prepareDashboard(request, "assessments", assessmentView.getTitle());
         forward(request, response, ASSESSMENT_DETAIL_JSP);
-    }
-
-    private void showCorrection(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            long assessmentId,
-            long attemptId
-    ) throws ServletException, IOException {
-        if (!canManage(request, assessmentId)) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
-            return;
-        }
-        Attempt attempt;
-        try {
-            attempt = attemptDAO.findById(attemptId).orElse(null);
-        } catch (SQLException exception) {
-            throw new ServletException("Failed to load attempt", exception);
-        }
-        if (attempt == null || attempt.assessmentId() != assessmentId) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
-            return;
-        }
-        AssessmentView assessment = viewFactory.assessmentView(assessmentService.getAssessment(assessmentId));
-        request.setAttribute("assessment", assessment);
-        request.setAttribute("attempt", viewFactory.attemptView(attempt));
-        request.setAttribute("responses", viewFactory.responseViews(attemptId));
-        prepareAssessmentContext(request, assessment, "correction");
-        prepareDashboard(request, "assessments", "Correct Attempt");
-        forward(request, response, ASSESSMENT_CORRECTION_JSP);
     }
 
     private void createAssessment(HttpServletRequest request, HttpServletResponse response)
@@ -473,6 +508,24 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                 writePlainError(response, HttpServletResponse.SC_BAD_REQUEST, messageFor(exception));
                 return;
             }
+            showForm(request, response, AssessmentFormData.from(request, null), true, messageFor(exception));
+        }
+    }
+
+    private void copyRepositoryAssessment(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        try {
+            Assessment assessment = assessmentService.cloneAssessmentToBlock(
+                    actorUserId(request),
+                    currentSessionId(request),
+                    primaryProfile(requireCurrentUser(request)),
+                    longParameter(request, "sourceAssessmentId"),
+                    longParameter(request, "targetContentBlockId"),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Assessment copied from repository.");
+            redirect(request, response, "/learning/assessments/" + assessment.id());
+        } catch (RuntimeException exception) {
             showForm(request, response, AssessmentFormData.from(request, null), true, messageFor(exception));
         }
     }
@@ -510,6 +563,38 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                 "Content-Disposition",
                 (inline ? "inline" : "attachment")
                         + "; filename=\"" + pdfFilename(assessment.title(), assessmentId) + "\""
+        );
+        response.setContentLength(pdf.length);
+        response.getOutputStream().write(pdf);
+    }
+
+    private void downloadAttemptPdf(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long assessmentId,
+            long attemptId
+    ) throws IOException {
+        if (!canManage(request, assessmentId)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+        Attempt attempt;
+        try {
+            attempt = attemptDAO.findById(attemptId).orElse(null);
+        } catch (SQLException exception) {
+            throw new IOException("Failed to load attempt PDF context", exception);
+        }
+        if (attempt == null || attempt.assessmentId() != assessmentId) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        Assessment assessment = assessmentService.getAssessment(assessmentId);
+        byte[] pdf = assessmentPdfService.renderAttemptResponsesPdf(assessmentId, attemptId);
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("application/pdf");
+        response.setHeader(
+                "Content-Disposition",
+                "attachment; filename=\"" + headerSafeFilename(attemptPdfFilename(assessment.title(), attempt)) + "\""
         );
         response.setContentLength(pdf.length);
         response.getOutputStream().write(pdf);
@@ -595,7 +680,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments-attempts");
+        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments");
     }
 
     private void enrollStudent(HttpServletRequest request, HttpServletResponse response, long assessmentId)
@@ -607,9 +692,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                     primaryProfile(requireCurrentUser(request)),
                     new AssessmentEnrollmentCommand(
                             longParameter(request, "studentUserId"),
-                            assessmentId,
-                            optionalDate(request, "startDate"),
-                            optionalDate(request, "endDate")
+                            assessmentId
                     ),
                     request.getRemoteAddr()
             );
@@ -617,7 +700,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments-attempts");
+        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments");
     }
 
     private void approveEnrollment(
@@ -633,15 +716,13 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                     primaryProfile(requireCurrentUser(request)),
                     studentUserId,
                     assessmentId,
-                    optionalDate(request, "startDate"),
-                    optionalDate(request, "endDate"),
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Assessment enrollment approved.");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments-attempts");
+        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments");
     }
 
     private void rejectEnrollment(
@@ -663,7 +744,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments-attempts");
+        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments");
     }
 
     private void withdrawEnrollment(
@@ -679,14 +760,13 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                     primaryProfile(requireCurrentUser(request)),
                     studentUserId,
                     assessmentId,
-                    optionalDate(request, "endDate"),
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Assessment enrollment withdrawn.");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments-attempts");
+        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments");
     }
 
     private void updateEnrollment(
@@ -703,15 +783,13 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                     studentUserId,
                     assessmentId,
                     enrollmentState(text(request, "state")),
-                    optionalDate(request, "startDate"),
-                    optionalDate(request, "endDate"),
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Assessment enrollment updated.");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments-attempts");
+        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments");
     }
 
     private void deleteEnrollment(
@@ -733,7 +811,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments-attempts");
+        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#enrollments");
     }
 
     private static boolean isModalCreate(HttpServletRequest request) {
@@ -1004,30 +1082,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
             long assessmentId,
             long questionId
     ) throws ServletException, IOException {
-        try {
-            Question question = questionService.getQuestion(questionId);
-            questionService.updateQuestion(
-                    actorUserId(request),
-                    currentSessionId(request),
-                    primaryProfile(requireCurrentUser(request)),
-                    questionId,
-                    new QuestionUpdateCommand(
-                            question.code(),
-                            question.statement(),
-                            question.type(),
-                            question.orderNo(),
-                            question.required(),
-                            question.score(),
-                            question.expectedAnswer(),
-                            QuestionState.INACTIVE
-                    ),
-                    request.getRemoteAddr()
-            );
-            flashSuccess(request, "Question deactivated.");
-            redirect(request, response, "/learning/assessments/" + assessmentId);
-        } catch (RuntimeException exception) {
-            showDetail(request, response, assessmentId, messageFor(exception));
-        }
+        deleteQuestion(request, response, assessmentId, questionId);
     }
 
     private void deleteQuestion(
@@ -1180,7 +1235,63 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirect(request, response, "/learning/assessments/" + assessmentId + "/attempts/" + attemptId);
+        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#attempts");
+    }
+
+    private void autoCorrectEligibleResponses(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long assessmentId,
+            long attemptId
+    ) throws IOException, ServletException {
+        if (!attemptBelongsToAssessment(attemptId, assessmentId)) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        boolean async = isAsyncRequest(request);
+        try {
+            CorrectionResult result = correctionService.autoCorrectEligibleResponses(
+                    actorUserId(request),
+                    currentSessionId(request),
+                    primaryProfile(requireCurrentUser(request)),
+                    attemptId,
+                    request.getRemoteAddr()
+            );
+            if (async) {
+                writeCorrectionResult(response, assessmentId, attemptId, result);
+                return;
+            }
+            flashSuccess(request, "Eligible responses automatically corrected.");
+        } catch (RuntimeException exception) {
+            if (async) {
+                writePlainError(response, HttpServletResponse.SC_BAD_REQUEST, messageFor(exception));
+                return;
+            }
+            flashError(request, messageFor(exception));
+        }
+        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#attempts");
+    }
+
+    private void manualCorrectAttempt(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long assessmentId,
+            long attemptId
+    ) throws IOException {
+        try {
+            correctionService.correctAttemptManually(
+                    actorUserId(request),
+                    currentSessionId(request),
+                    primaryProfile(requireCurrentUser(request)),
+                    attemptId,
+                    responseScoreParameters(request),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Attempt correction submitted.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#attempts");
     }
 
     private void correctResponse(
@@ -1202,7 +1313,135 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirect(request, response, "/learning/assessments/" + assessmentId + "/attempts/" + attemptId);
+        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#attempts");
+    }
+
+    private void autoCorrectResponse(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long assessmentId,
+            long attemptId,
+            long responseId
+    ) throws IOException, ServletException {
+        boolean async = isAsyncRequest(request);
+        Attempt attempt;
+        Response storedResponse;
+        try {
+            attempt = attemptDAO.findById(attemptId).orElse(null);
+            storedResponse = responseDAO.findById(responseId).orElse(null);
+        } catch (SQLException exception) {
+            throw new ServletException("Failed to load response for correction", exception);
+        }
+        if (attempt == null
+                || attempt.assessmentId() != assessmentId
+                || storedResponse == null
+                || storedResponse.attemptId() != attemptId) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        try {
+            CorrectionResult result = correctionService.autoCorrectResponse(
+                    actorUserId(request),
+                    currentSessionId(request),
+                    primaryProfile(requireCurrentUser(request)),
+                    responseId,
+                    request.getRemoteAddr()
+            );
+            if (async) {
+                writeCorrectionResult(response, assessmentId, attemptId, result);
+                return;
+            }
+            flashSuccess(request, "Response automatically corrected.");
+        } catch (RuntimeException exception) {
+            if (async) {
+                writePlainError(response, HttpServletResponse.SC_BAD_REQUEST, messageFor(exception));
+                return;
+            }
+            flashError(request, messageFor(exception));
+        }
+        redirectToReturnPath(request, response, "/learning/assessments/" + assessmentId + "#attempts");
+    }
+
+    private boolean attemptBelongsToAssessment(long attemptId, long assessmentId) throws ServletException {
+        try {
+            Attempt attempt = attemptDAO.findById(attemptId).orElse(null);
+            return attempt != null && attempt.assessmentId() == assessmentId;
+        } catch (SQLException exception) {
+            throw new ServletException("Failed to load attempt", exception);
+        }
+    }
+
+    private void writeCorrectionResult(
+            HttpServletResponse response,
+            long assessmentId,
+            long attemptId,
+            CorrectionResult result
+    ) throws IOException, ServletException {
+        try {
+            Assessment assessment = assessmentService.getAssessment(assessmentId);
+            Attempt updatedAttempt = attemptDAO.findById(attemptId)
+                    .orElseThrow(() -> new IllegalArgumentException("Attempt not found: " + attemptId));
+            List<ResponseView> responses = viewFactory.responseViews(attemptId);
+            response.setStatus(HttpServletResponse.SC_OK);
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            StringBuilder payload = new StringBuilder();
+            payload.append('{');
+            payload.append("\"attemptId\":").append(result.attemptId()).append(',');
+            BigDecimal visibleScore = visibleAttemptScore(updatedAttempt);
+            payload.append("\"score\":\"")
+                    .append(jsonEscape(visibleScore == null ? "" : grade(visibleScore)))
+                    .append("\",");
+            payload.append("\"scoreOverMax\":\"")
+                    .append(jsonEscape(attemptScoreOverMaxLabel(updatedAttempt, assessment)))
+                    .append("\",");
+            payload.append("\"state\":\"").append(jsonEscape(attemptStateLabel(updatedAttempt))).append("\",");
+            payload.append("\"stateBadgeClass\":\"").append(jsonEscape(attemptStateBadgeClass(updatedAttempt))).append("\",");
+            payload.append("\"automaticallyCorrectedResponses\":")
+                    .append(result.automaticallyCorrectedResponses())
+                    .append(',');
+            payload.append("\"pendingManualResponses\":")
+                    .append(result.pendingManualResponses())
+                    .append(',');
+            payload.append("\"responses\":[");
+            for (int index = 0; index < responses.size(); index += 1) {
+                ResponseView item = responses.get(index);
+                if (index > 0) {
+                    payload.append(',');
+                }
+                payload.append('{');
+                payload.append("\"id\":").append(item.getId()).append(',');
+                payload.append("\"score\":\"").append(jsonEscape(item.getScore())).append("\",");
+                payload.append("\"scoreLabel\":\"").append(jsonEscape(item.getScoreLabel())).append("\"");
+                payload.append('}');
+            }
+            payload.append(']');
+            payload.append('}');
+            response.getWriter().write(payload.toString());
+        } catch (RuntimeException | SQLException exception) {
+            writePlainError(response, HttpServletResponse.SC_BAD_REQUEST, messageForRuntime(exception));
+        }
+    }
+
+    private Map<Long, BigDecimal> responseScoreParameters(HttpServletRequest request) {
+        Map<Long, BigDecimal> scores = new LinkedHashMap<>();
+        for (String name : request.getParameterMap().keySet()) {
+            if (name != null && name.startsWith("score_") && name.length() > "score_".length()) {
+                long responseId = Long.parseLong(name.substring("score_".length()));
+                scores.put(responseId, decimalParameter(request, name));
+            }
+        }
+        return scores;
+    }
+
+    private Map<Long, List<ResponseView>> responseViewsByAttempt(List<AttemptView> attempts) {
+        Map<Long, List<ResponseView>> responses = new LinkedHashMap<>();
+        for (AttemptView attempt : attempts) {
+            if (attempt.isCorrectionOpen()) {
+                responses.put(attempt.getId(), viewFactory.responseViews(attempt.getId()));
+            }
+        }
+        return responses;
     }
 
     private void prepareForm(
@@ -1212,6 +1451,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
             String error
     ) throws ServletException {
         prepareAssessmentFormAttributes(request, form, creating, error);
+        request.setAttribute("learningAssessmentActiveChild", creating ? "new" : "edit");
         prepareDashboard(request, "assessments", creating ? "Create Assessment" : "Edit Assessment");
     }
 
@@ -1223,9 +1463,15 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
     ) throws ServletException {
         request.setAttribute("form", form);
         request.setAttribute("creating", creating);
-        request.setAttribute("subjectOptions", subjectOptions(request, form.getSubjectId(), creating));
-        request.setAttribute("contentBlockOptions", contentBlockOptions(request, form.getContentBlockId()));
-        request.setAttribute("classGroupOptions", classGroupOptions(request, form.getClassGroupIds(), creating));
+        List<ContextSelectOptionView> subjectOptions = subjectOptions(request, form.getSubjectId(), creating);
+        List<ContextSelectOptionView> contentBlockOptions = contentBlockOptions(request, form.getContentBlockId());
+        List<ContextSelectOptionView> classGroupOptions = classGroupOptions(request, form.getClassGroupIds(), creating);
+        request.setAttribute("subjectOptions", subjectOptions);
+        request.setAttribute("contentBlockOptions", contentBlockOptions);
+        request.setAttribute("classGroupOptions", classGroupOptions);
+        request.setAttribute("organizationOptions", organizationOptions(subjectOptions, contentBlockOptions, classGroupOptions));
+        request.setAttribute("organicUnitOptions", organicUnitOptions(subjectOptions, contentBlockOptions, classGroupOptions));
+        request.setAttribute("repositoryAssessments", repositoryAssessmentOptions(request));
         request.setAttribute("assessmentTypes", AssessmentType.values());
         request.setAttribute("assessmentModes", AssessmentMode.values());
         request.setAttribute("assessmentCorrectionModes", AssessmentCorrectionMode.values());
@@ -1239,7 +1485,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
             throws ServletException {
         try {
             if (assessment.isAutomaticEnrollment()) {
-                assessmentEnrollmentDAO.syncAutomaticEnrollments(assessment.getId(), LocalDate.now());
+                assessmentEnrollmentDAO.syncAutomaticEnrollments(assessment.getId());
             }
             List<AssessmentEnrollmentView> enrollments = assessmentEnrollmentDAO.findByAssessment(assessment.getId())
                     .stream()
@@ -1254,19 +1500,28 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
             List<AssessmentEnrollmentView> auditEnrollments = enrollments.stream()
                     .filter(enrollment -> !enrollment.isPending() && !enrollment.isActive())
                     .toList();
-            Map<Long, Boolean> activeEnrollmentByStudent = new LinkedHashMap<>();
+            List<AssessmentEnrollmentView> managedEnrollments = enrollments.stream()
+                    .filter(enrollment -> !enrollment.isPending())
+                    .toList();
+            Map<Long, Boolean> existingEnrollmentByStudent = new LinkedHashMap<>();
             for (AssessmentEnrollmentView enrollment : enrollments) {
-                if (enrollment.isActive() || enrollment.isPending()) {
-                    activeEnrollmentByStudent.put(enrollment.getStudentUserId(), true);
-                }
+                existingEnrollmentByStudent.put(enrollment.getStudentUserId(), true);
             }
             List<UserOptionView> eligibleStudents = eligibleAssessmentStudentOptions(assessment.getId());
+            List<UserOptionView> availableStudents = eligibleStudents.stream()
+                    .filter(student -> !existingEnrollmentByStudent.containsKey(student.getId()))
+                    .toList();
             request.setAttribute("assessmentEnrollments", enrollments);
             request.setAttribute("pendingAssessmentEnrollments", pendingEnrollments);
             request.setAttribute("activeAssessmentEnrollments", activeEnrollments);
             request.setAttribute("auditAssessmentEnrollments", auditEnrollments);
-            request.setAttribute("assessmentStudentOptions", eligibleStudents);
-            request.setAttribute("assessmentActiveEnrollmentByStudent", activeEnrollmentByStudent);
+            request.setAttribute("managedAssessmentEnrollments", managedEnrollments);
+            request.setAttribute("showAssessmentEnrollmentRequests",
+                    !assessment.isAutomaticEnrollment() && !pendingEnrollments.isEmpty());
+            request.setAttribute("assessmentStudentOptions", availableStudents);
+            request.setAttribute("assessmentActiveEnrollmentByStudent", existingEnrollmentByStudent);
+            request.setAttribute("showAssessmentEnrollmentCreate",
+                    !assessment.isAutomaticEnrollment() && !availableStudents.isEmpty());
             request.setAttribute("canManageAssessmentEnrollments", true);
         } catch (SQLException exception) {
             throw new ServletException("Failed to load assessment enrollments", exception);
@@ -1297,57 +1552,64 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         }
     }
 
-    private List<SelectOptionView> subjectOptions(
+    private List<ContextSelectOptionView> subjectOptions(
             HttpServletRequest request,
             String selectedSubjectId,
             boolean creating
     )
             throws ServletException {
         try {
-            return subjectDAO.findAll().stream()
-                    .filter(subject -> subject.state() == pt.isel.gape.learning.model.SubjectState.ACTIVE
-                            || (!creating && Long.toString(subject.id()).equals(selectedSubjectId)))
-                    .filter(subject -> (!creating && Long.toString(subject.id()).equals(selectedSubjectId))
-                            || canManageContext(request, subject.id(), null))
-                    .map(subject -> new SelectOptionView(
-                            Long.toString(subject.id()),
-                            subjectLabel(subject),
-                            subject.name(),
-                            Long.toString(subject.id()).equals(selectedSubjectId)
-                    ))
-                    .toList();
+            List<ContextSelectOptionView> options = new ArrayList<>();
+            for (Subject subject : subjectDAO.findAll().stream()
+                    .filter(item -> item.state() == pt.isel.gape.learning.model.SubjectState.ACTIVE
+                            || (!creating && Long.toString(item.id()).equals(selectedSubjectId)))
+                    .filter(item -> (!creating && Long.toString(item.id()).equals(selectedSubjectId))
+                            || canManageContext(request, item.id(), null))
+                    .toList()) {
+                options.add(new ContextSelectOptionView(
+                        Long.toString(subject.id()),
+                        subjectLabel(subject),
+                        subject.name(),
+                        Long.toString(subject.id()).equals(selectedSubjectId),
+                        subject.organizationId(),
+                        subjectOrganicUnitIds(subject.id())
+                ));
+            }
+            return options;
         } catch (SQLException exception) {
             throw new ServletException("Failed to load subject options", exception);
         }
     }
 
-    private List<SelectOptionView> contentBlockOptions(HttpServletRequest request, String selectedContentBlockId)
+    private List<ContextSelectOptionView> contentBlockOptions(HttpServletRequest request, String selectedContentBlockId)
             throws ServletException {
         try {
-            return classGroupDAO.findAll().stream()
-                    .filter(classGroup -> canManageContext(request, classGroup.subjectId(), classGroup.id()))
+            List<ContextSelectOptionView> options = new ArrayList<>();
+            for (pt.isel.gape.learning.model.ClassGroup classGroup : classGroupDAO.findAll().stream()
+                    .filter(item -> canManageContext(request, item.subjectId(), item.id()))
                     .sorted(Comparator.comparing(pt.isel.gape.learning.model.ClassGroup::code))
-                    .flatMap(classGroup -> {
-                        try {
-                            return contentBlockDAO.findByClassGroup(classGroup.id()).stream()
-                                    .filter(block -> block.state() != pt.isel.gape.learning.model.ContentBlockState.INACTIVE)
-                                    .map(block -> new SelectOptionView(
-                                            Long.toString(block.id()),
-                                            classGroup.code() + " | " + block.name(),
-                                            block.name(),
-                                            Long.toString(block.id()).equals(selectedContentBlockId)
-                                    ));
-                        } catch (SQLException exception) {
-                            throw new IllegalStateException(exception);
-                        }
-                    })
-                    .toList();
+                    .toList()) {
+                Course course = courseDAO.findById(classGroup.courseId()).orElse(null);
+                for (ContentBlock block : contentBlockDAO.findByClassGroup(classGroup.id()).stream()
+                        .filter(item -> item.state() != pt.isel.gape.learning.model.ContentBlockState.INACTIVE)
+                        .toList()) {
+                    options.add(new ContextSelectOptionView(
+                            Long.toString(block.id()),
+                            classGroup.code() + " | " + block.name(),
+                            block.name(),
+                            Long.toString(block.id()).equals(selectedContentBlockId),
+                            contextOrganizationId(course, classGroup.subjectId()),
+                            contextOrganicUnitIds(course)
+                    ));
+                }
+            }
+            return options;
         } catch (RuntimeException | SQLException exception) {
             throw new ServletException("Failed to load content block options", exception);
         }
     }
 
-    private List<SelectOptionView> classGroupOptions(
+    private List<ContextSelectOptionView> classGroupOptions(
             HttpServletRequest request,
             List<String> selectedClassGroupIds,
             boolean creating
@@ -1355,7 +1617,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
             throws ServletException {
         List<String> selected = selectedClassGroupIds == null ? List.of() : selectedClassGroupIds;
         try {
-            List<SelectOptionView> options = new ArrayList<>();
+            List<ContextSelectOptionView> options = new ArrayList<>();
             for (pt.isel.gape.learning.model.ClassGroup classGroup : classGroupDAO.findAll().stream()
                     .filter(item -> item.state() == pt.isel.gape.learning.model.ClassGroupState.ACTIVE
                             || (!creating && selected.contains(Long.toString(item.id()))))
@@ -1364,19 +1626,168 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                     .sorted(Comparator.comparing(pt.isel.gape.learning.model.ClassGroup::code))
                     .toList()) {
                 Subject subject = subjectDAO.findById(classGroup.subjectId()).orElse(null);
+                Course course = courseDAO.findById(classGroup.courseId()).orElse(null);
                 String subjectLabel = subject == null ? "Subject " + classGroup.subjectId() : subjectLabel(subject);
                 String value = Long.toString(classGroup.id());
-                options.add(new SelectOptionView(
+                options.add(new ContextSelectOptionView(
                         value,
                         classGroup.code() + " | " + subjectLabel,
                         classGroup.code() + " | " + subjectLabel,
-                        selected.contains(value)
+                        selected.contains(value),
+                        contextOrganizationId(course, classGroup.subjectId()),
+                        contextOrganicUnitIds(course)
                 ));
             }
             return options;
         } catch (SQLException exception) {
             throw new ServletException("Failed to load class group options", exception);
         }
+    }
+
+    private List<SelectOptionView> organizationOptions(
+            List<ContextSelectOptionView> subjectOptions,
+            List<ContextSelectOptionView> contentBlockOptions,
+            List<ContextSelectOptionView> classGroupOptions
+    )
+            throws ServletException {
+        Map<String, Boolean> selectedById = new LinkedHashMap<>();
+        collectOrganizationSelections(selectedById, subjectOptions);
+        collectOrganizationSelections(selectedById, contentBlockOptions);
+        collectOrganizationSelections(selectedById, classGroupOptions);
+        List<SelectOptionView> options = new ArrayList<>();
+        for (Map.Entry<String, Boolean> entry : selectedById.entrySet()) {
+            options.add(new SelectOptionView(entry.getKey(), organizationLabel(entry.getKey()), entry.getValue()));
+        }
+        return options;
+    }
+
+    private List<ContextSelectOptionView> organicUnitOptions(
+            List<ContextSelectOptionView> subjectOptions,
+            List<ContextSelectOptionView> contentBlockOptions,
+            List<ContextSelectOptionView> classGroupOptions
+    )
+            throws ServletException {
+        Map<String, Boolean> selectedById = new LinkedHashMap<>();
+        collectOrganicUnitSelections(selectedById, subjectOptions);
+        collectOrganicUnitSelections(selectedById, contentBlockOptions);
+        collectOrganicUnitSelections(selectedById, classGroupOptions);
+        List<ContextSelectOptionView> options = new ArrayList<>();
+        for (Map.Entry<String, Boolean> entry : selectedById.entrySet()) {
+            OrganicUnit unit = organicUnit(entry.getKey());
+            options.add(new ContextSelectOptionView(
+                    entry.getKey(),
+                    unit == null ? "Organic unit " + entry.getKey() : organicUnitLabel(unit),
+                    unit == null ? "Organic unit " + entry.getKey() : unit.name(),
+                    entry.getValue(),
+                    unit == null ? "" : Long.toString(unit.organizationId()),
+                    entry.getKey()
+            ));
+        }
+        return options;
+    }
+
+    private List<AssessmentView> repositoryAssessmentOptions(HttpServletRequest request) throws ServletException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            List<Assessment> reusable = assessmentDAO.findAll().stream()
+                    .filter(assessment -> {
+                        try {
+                            return contentItemDAO.hasActiveAssessmentRepositoryReference(assessment.id())
+                                    && assessmentService.canManageAssessment(
+                                    actor.userId(),
+                                    currentSessionId(request),
+                                    primaryProfile(actor),
+                                    assessment.id(),
+                                    request.getRemoteAddr()
+                            );
+                        } catch (SQLException exception) {
+                            throw new IllegalStateException(exception);
+                        }
+                    })
+                    .sorted(Comparator.comparing(Assessment::title))
+                    .toList();
+            return viewFactory.assessmentViews(reusable);
+        } catch (RuntimeException | SQLException exception) {
+            throw new ServletException("Failed to load repository assessments", exception);
+        }
+    }
+
+    private Long contextOrganizationId(Course course, long fallbackSubjectId) throws SQLException {
+        if (course != null) {
+            return course.organizationId();
+        }
+        return subjectDAO.findById(fallbackSubjectId)
+                .map(Subject::organizationId)
+                .orElse(null);
+    }
+
+    private List<Long> contextOrganicUnitIds(Course course) {
+        return course == null || course.organicUnitId() == null ? List.of() : List.of(course.organicUnitId());
+    }
+
+    private List<Long> subjectOrganicUnitIds(long subjectId) throws SQLException {
+        Set<Long> ids = new LinkedHashSet<>();
+        for (CourseSubjectAssociation association : courseSubjectDAO.findBySubject(subjectId)) {
+            Course course = courseDAO.findById(association.courseId()).orElse(null);
+            if (course != null && course.organicUnitId() != null) {
+                ids.add(course.organicUnitId());
+            }
+        }
+        return List.copyOf(ids);
+    }
+
+    private void collectOrganizationSelections(Map<String, Boolean> selectedById, List<ContextSelectOptionView> options) {
+        for (ContextSelectOptionView option : options) {
+            if (!option.getOrganizationId().isBlank()) {
+                selectedById.merge(option.getOrganizationId(), option.isSelected(), Boolean::logicalOr);
+            }
+        }
+    }
+
+    private void collectOrganicUnitSelections(Map<String, Boolean> selectedById, List<ContextSelectOptionView> options) {
+        for (ContextSelectOptionView option : options) {
+            for (String id : splitContextIds(option.getOrganicUnitIds())) {
+                selectedById.merge(id, option.isSelected(), Boolean::logicalOr);
+            }
+        }
+    }
+
+    private String organizationLabel(String organizationId) throws ServletException {
+        try {
+            Organization organization = organizationDAO.findById(Long.parseLong(organizationId)).orElse(null);
+            if (organization == null) {
+                return "Organization " + organizationId;
+            }
+            return organization.acronym() == null || organization.acronym().isBlank()
+                    ? organization.name()
+                    : organization.acronym() + " | " + organization.name();
+        } catch (NumberFormatException | SQLException exception) {
+            throw new ServletException("Failed to load organization label", exception);
+        }
+    }
+
+    private OrganicUnit organicUnit(String organicUnitId) throws ServletException {
+        try {
+            return organicUnitDAO.findById(Long.parseLong(organicUnitId)).orElse(null);
+        } catch (NumberFormatException | SQLException exception) {
+            throw new ServletException("Failed to load organic unit label", exception);
+        }
+    }
+
+    private static String organicUnitLabel(OrganicUnit unit) {
+        return unit.acronym() == null || unit.acronym().isBlank()
+                ? unit.name()
+                : unit.acronym() + " | " + unit.name();
+    }
+
+    private static List<String> splitContextIds(String ids) {
+        if (ids == null || ids.isBlank()) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(ids.split("\\|"))
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .toList();
     }
 
     private boolean canManageContext(HttpServletRequest request, Long subjectId, Long classGroupId) {
@@ -1426,6 +1837,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                 correctionMode,
                 decimalParameter(request, "maxGrade"),
                 decimalParameter(request, "passingGrade"),
+                decimalParameter(request, "finalGradeWeight"),
                 optionalInteger(request, "attemptsLimit"),
                 enrollmentApprovalMode(text(request, "enrollmentMode")),
                 assessmentState(text(request, "state")),
@@ -1448,6 +1860,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                 correctionMode,
                 decimalParameter(request, "maxGrade"),
                 decimalParameter(request, "passingGrade"),
+                decimalParameter(request, "finalGradeWeight"),
                 optionalInteger(request, "attemptsLimit"),
                 enrollmentApprovalMode(text(request, "enrollmentMode")),
                 assessmentState(text(request, "state")),
@@ -1471,8 +1884,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                 orderNo,
                 checkbox(request, "required", true),
                 optionalDecimal(request, "score", BigDecimal.ONE),
-                expectedAnswerForRequest(request, type),
-                QuestionState.ACTIVE
+                expectedAnswerForRequest(request, type)
         );
     }
 
@@ -1484,8 +1896,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                 current.orderNo(),
                 checkbox(request, "required", false),
                 decimalParameter(request, "score"),
-                expectedAnswerForRequest(request, current.type()),
-                current.state()
+                expectedAnswerForRequest(request, current.type())
         );
     }
 
@@ -1528,8 +1939,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                 questionId,
                 nextOptionOrder(questionId),
                 text(request, "text"),
-                "new".equals(selectedSingleOption) || (selectedSingleOption == null && checkbox(request, "correct", false)),
-                QuestionOptionState.ACTIVE
+                "new".equals(selectedSingleOption) || (selectedSingleOption == null && checkbox(request, "correct", false))
         );
     }
 
@@ -1551,8 +1961,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                         question.id(),
                         1,
                         "Option 1",
-                        true,
-                        QuestionOptionState.ACTIVE
+                        true
                 ),
                 sourceIp
         );
@@ -1576,8 +1985,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         return new QuestionOptionUpdateCommand(
                 current.orderNo(),
                 text(request, "text"),
-                checkbox(request, "correct", false),
-                current.state()
+                checkbox(request, "correct", false)
         );
     }
 
@@ -1625,8 +2033,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                     new QuestionOptionUpdateCommand(
                             orderNo,
                             submittedText,
-                            correct,
-                            option.state()
+                            correct
                     )
             );
         }
@@ -1720,14 +2127,6 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         return value == null ? QuestionType.SINGLE_CHOICE : QuestionType.parse(value);
     }
 
-    private static QuestionState questionState(String value) {
-        return value == null ? QuestionState.ACTIVE : QuestionState.parse(value);
-    }
-
-    private static QuestionOptionState optionState(String value) {
-        return value == null ? QuestionOptionState.ACTIVE : QuestionOptionState.parse(value);
-    }
-
     private static String subjectLabel(Subject subject) {
         String acronym = subject.acronym() == null || subject.acronym().isBlank() ? "" : subject.acronym() + " | ";
         return acronym + subject.name();
@@ -1760,6 +2159,11 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         return normalized + ".pdf";
     }
 
+    private static String attemptPdfFilename(String title, Attempt attempt) {
+        String base = pdfFilename(title, attempt.assessmentId()).replaceFirst("\\.pdf$", "");
+        return base + "-attempt-" + attempt.attemptNumber() + "-student-" + attempt.studentUserId() + ".pdf";
+    }
+
     private static String attachmentFileName(String attachment) {
         String normalized = attachment.replace('\\', '/');
         int slashIndex = normalized.lastIndexOf('/');
@@ -1768,6 +2172,41 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
 
     private static String headerSafeFilename(String filename) {
         return filename.replace("\"", "").replace("\r", "").replace("\n", "");
+    }
+
+    private static String grade(BigDecimal value) {
+        return value == null ? "-" : value.stripTrailingZeros().toPlainString();
+    }
+
+    private static String attemptScoreOverMaxLabel(Attempt attempt, Assessment assessment) {
+        BigDecimal score = visibleAttemptScore(attempt);
+        return score == null
+                ? "Not assigned yet"
+                : grade(score) + " / " + grade(assessment.maxGrade());
+    }
+
+    private static BigDecimal visibleAttemptScore(Attempt attempt) {
+        return attempt.state() == AttemptState.CORRECTED ? attempt.score() : null;
+    }
+
+    private static String attemptStateLabel(Attempt attempt) {
+        return switch (attempt.state()) {
+            case IN_PROGRESS -> "In progress";
+            case SUBMITTED -> "Submitted";
+            case CORRECTED -> "Corrected";
+            case EXPIRED -> "Expired";
+            case CANCELLED -> "Cancelled";
+        };
+    }
+
+    private static String attemptStateBadgeClass(Attempt attempt) {
+        return switch (attempt.state()) {
+            case IN_PROGRESS -> "bg-main-50 text-main-600";
+            case SUBMITTED -> "bg-warning-30 text-warning-600";
+            case CORRECTED -> "bg-success-50 text-success-600";
+            case EXPIRED -> "bg-neutral-30 text-neutral-600";
+            case CANCELLED -> "bg-danger-50 text-danger-600";
+        };
     }
 
     private static boolean isAsyncRequest(HttpServletRequest request) {
@@ -1780,12 +2219,20 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         if (value == null) {
             throw new IllegalArgumentException(name + " is required");
         }
-        return new BigDecimal(value);
+        return parseDecimal(value, name);
     }
 
     private static BigDecimal optionalDecimal(HttpServletRequest request, String name, BigDecimal defaultValue) {
         String value = text(request, name);
-        return value == null ? defaultValue : new BigDecimal(value);
+        return value == null ? defaultValue : parseDecimal(value, name);
+    }
+
+    private static BigDecimal parseDecimal(String value, String name) {
+        String normalized = value == null ? "" : value.trim().replace(',', '.');
+        if (normalized.isBlank() || !normalized.matches("\\d+(?:\\.\\d+)?")) {
+            throw new IllegalArgumentException(name + " must be a non-negative number");
+        }
+        return new BigDecimal(normalized);
     }
 
     private static Integer optionalInteger(HttpServletRequest request, String name) {
@@ -1816,11 +2263,6 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         return value == null ? null : LocalDateTime.parse(value);
     }
 
-    private static LocalDate optionalDate(HttpServletRequest request, String name) {
-        String value = text(request, name);
-        return value == null ? null : LocalDate.parse(value);
-    }
-
     private static boolean checkbox(HttpServletRequest request, String name, boolean defaultValue) {
         String value = request.getParameter(name);
         if (value == null) {
@@ -1833,5 +2275,83 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         return exception instanceof RuntimeException runtimeException
                 ? messageFor(runtimeException)
                 : "The operation could not be completed.";
+    }
+
+    public static final class ContextSelectOptionView {
+        private final String value;
+        private final String label;
+        private final String title;
+        private final boolean selected;
+        private final String organizationId;
+        private final String organicUnitIds;
+
+        ContextSelectOptionView(
+                String value,
+                String label,
+                String title,
+                boolean selected,
+                Long organizationId,
+                List<Long> organicUnitIds
+        ) {
+            this(
+                    value,
+                    label,
+                    title,
+                    selected,
+                    organizationId == null ? "" : Long.toString(organizationId),
+                    joinContextIds(organicUnitIds)
+            );
+        }
+
+        ContextSelectOptionView(
+                String value,
+                String label,
+                String title,
+                boolean selected,
+                String organizationId,
+                String organicUnitIds
+        ) {
+            this.value = value;
+            this.label = label;
+            this.title = title;
+            this.selected = selected;
+            this.organizationId = organizationId == null ? "" : organizationId;
+            this.organicUnitIds = organicUnitIds == null ? "" : organicUnitIds;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public boolean isSelected() {
+            return selected;
+        }
+
+        public String getOrganizationId() {
+            return organizationId;
+        }
+
+        public String getOrganicUnitIds() {
+            return organicUnitIds;
+        }
+
+        private static String joinContextIds(List<Long> ids) {
+            if (ids == null || ids.isEmpty()) {
+                return "";
+            }
+            return ids.stream()
+                    .filter(id -> id != null && id > 0)
+                    .distinct()
+                    .map(id -> Long.toString(id))
+                    .collect(java.util.stream.Collectors.joining("|", "|", "|"));
+        }
     }
 }

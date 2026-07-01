@@ -1,0 +1,120 @@
+<section id="grades-certificates" class="gape-student-panel bg-white rounded-10 px-24 py-24 border border-neutral-30">
+    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-24">
+        <div>
+            <h6 class="text-20 fw-semibold text-neutral-800 mb-4">Grades</h6>
+            <span class="text-14 text-neutral-500">Published grades, final results and published certificates.</span>
+        </div>
+        <a href="${pageContext.request.contextPath}/certificates/validate" class="gape-student-card-icon-button" aria-label="Validate certificate" title="Validate certificate">
+            <i class="ph ph-certificate"></i>
+        </a>
+    </div>
+
+    <div class="row gy-4 mb-24">
+        <div class="col-md-4">
+            <div class="gape-student-card px-18 py-18 h-100">
+                <span class="text-13 text-neutral-500 d-block mb-4">Published grades</span>
+                <strong class="text-28 fw-semibold text-neutral-800">${gradeRecordCount}</strong>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="gape-student-card px-18 py-18 h-100">
+                <span class="text-13 text-neutral-500 d-block mb-4">Approved</span>
+                <strong class="text-28 fw-semibold text-success-600">${approvedGradeRecordCount}</strong>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="gape-student-card px-18 py-18 h-100">
+                <span class="text-13 text-neutral-500 d-block mb-4">Certificates</span>
+                <strong class="text-28 fw-semibold text-main-600">${certificateCount}</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-28">
+        <h6 class="text-17 fw-semibold text-neutral-800 mb-14">Grades</h6>
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                <tr>
+                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Grade sheet</th>
+                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Subject</th>
+                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Grade</th>
+                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Result</th>
+                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Recorded</th>
+                </tr>
+                </thead>
+                <tbody>
+                <c:forEach var="record" items="${gradeRecords}">
+                    <tr class="hover-bg-neutral-20 border-bottom transition-03">
+                        <td class="py-18 px-16 text-14 text-neutral-700 fw-medium"><c:out value="${record.gradeSheetTitle}"/></td>
+                        <td class="py-18 px-16 text-14 text-neutral-500"><c:out value="${record.subjectLabel}"/></td>
+                        <td class="py-18 px-16 text-14 text-neutral-700 fw-semibold"><c:out value="${record.value}"/></td>
+                        <td class="py-18 px-16">
+                            <span class="${record.resultBadgeClass} px-12 py-7 rounded-pill text-12">
+                                <c:out value="${record.resultLabel}"/>
+                            </span>
+                        </td>
+                        <td class="py-18 px-16 text-14 text-neutral-500"><c:out value="${record.recordedAt}"/></td>
+                    </tr>
+                </c:forEach>
+                <c:if test="${empty gradeRecords}">
+                    <tr>
+                        <td colspan="5" class="py-32 px-16 text-center text-14 text-neutral-500">No published grades available.</td>
+                    </tr>
+                </c:if>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div>
+        <h6 class="text-17 fw-semibold text-neutral-800 mb-14">Certificates</h6>
+        <div class="row gy-4">
+            <c:forEach var="certificate" items="${certificates}">
+                <c:url var="certificateValidationHref" value="/certificates/validate">
+                    <c:param name="code" value="${certificate.validationCode}"/>
+                </c:url>
+                <div class="col-xl-6">
+                    <article class="gape-student-card px-18 py-18 h-100">
+                        <div class="d-flex align-items-start justify-content-between gap-12 mb-14">
+                            <div class="d-flex align-items-start gap-12 min-w-0">
+                                <span class="gape-student-class-group-card__icon text-24">
+                                    <i class="ph ph-certificate"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <h6 class="text-17 fw-semibold text-neutral-800 mb-6 text-line-2"><c:out value="${certificate.title}"/></h6>
+                                    <span class="text-13 text-neutral-500 d-block text-line-1"><c:out value="${certificate.courseLabel}"/></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gape-student-class-group-card__meta gape-student-class-group-card__meta--wide mb-16">
+                            <span><c:out value="${certificate.typeLabel}"/></span>
+                            <span>Grade: <c:out value="${certificate.finalGrade}"/></span>
+                            <span>Published: <c:out value="${certificate.issuedAt}"/></span>
+                            <span>Code: <c:out value="${certificate.validationCode}"/></span>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-end gap-10">
+                            <a href="${certificateValidationHref}" class="gape-student-card-icon-button" aria-label="Validate certificate" title="Validate certificate">
+                                <i class="ph ph-arrow-square-out"></i>
+                            </a>
+                            <div class="dropdown">
+                                <button type="button" class="gape-student-card-icon-button" aria-label="Download certificate" title="Download certificate" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="ph ph-download-simple"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="${pageContext.request.contextPath}/student/grades/certificates/${certificate.id}/download?format=pdf">PDF</a></li>
+                                    <li><a class="dropdown-item" href="${pageContext.request.contextPath}/student/grades/certificates/${certificate.id}/download?format=excel">Excel</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </c:forEach>
+            <c:if test="${empty certificates}">
+                <div class="col-12">
+                    <div class="gape-student-empty py-32 px-20 text-center text-14 text-neutral-500">No published certificates available.</div>
+                </div>
+            </c:if>
+        </div>
+    </div>
+</section>

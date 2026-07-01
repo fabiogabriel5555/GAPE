@@ -3,21 +3,25 @@
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
     request.setAttribute("activeMenu", "calendar");
-    request.setAttribute("pageTitle", "Learning Schedule");
-    request.setAttribute("studentPageTitle", "Study Schedule");
-    request.setAttribute("studentPageDescription", "A student timeline with schedule events and lessons from your active class group enrollments.");
+    request.setAttribute("pageTitle", "Events");
+    request.setAttribute("studentPageTitle", "Events");
+    request.setAttribute("studentPageDescription", "Lessons and assessment events from your active class group enrollments.");
 %>
 <%@ include file="/WEB-INF/fragments/student-dashboard-start.jspf" %>
 
 <section class="gape-student-panel bg-white rounded-10 px-24 py-24 border border-neutral-30">
     <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-24">
         <div>
-            <h6 class="text-20 fw-semibold text-neutral-800 mb-4">Learning schedule</h6>
-            <span class="text-14 text-neutral-500">A student timeline for events and lessons in your active class groups.</span>
+            <h6 class="text-20 fw-semibold text-neutral-800 mb-4">Events</h6>
+            <span class="text-14 text-neutral-500">Lessons and assessment events in your active class groups.</span>
         </div>
         <a href="${pageContext.request.contextPath}/student/lessons" class="gape-student-card-icon-button" aria-label="Open lessons" title="Open lessons">
             <i class="ph ph-list-bullets"></i>
         </a>
+    </div>
+    <div class="bg-warning-50 text-warning-700 rounded-10 px-18 py-14 mb-18 d-flex align-items-start gap-10 border border-warning-100">
+        <i class="ph ph-warning-circle text-20 mt-2"></i>
+        <span class="text-14">Future reminder: this page should show lessons, assessments, grade sheets, certificates, forums and comments according to context and permissions.</span>
     </div>
     <div class="d-flex flex-column gap-14">
         <c:forEach var="item" items="${calendarItems}">
@@ -94,8 +98,8 @@
         <c:if test="${empty calendarItems}">
             <div class="gape-student-empty text-center px-24 py-40">
                 <span class="gape-student-icon gape-student-soft-amber text-28 mb-16"><i class="ph ph-calendar-dots"></i></span>
-                <h4 class="text-18 fw-semibold text-neutral-800 mb-8">No calendar items yet</h4>
-                <p class="text-14 text-neutral-500 mb-0">Your student calendar is filled automatically by events and enrolled class group lessons.</p>
+                <h4 class="text-18 fw-semibold text-neutral-800 mb-8">No events yet</h4>
+                <p class="text-14 text-neutral-500 mb-0">Your events page is filled automatically by assessment events and enrolled class group lessons.</p>
             </div>
         </c:if>
     </div>

@@ -28,8 +28,9 @@ public final class CourseDAO {
     public long create(Connection connection, CourseCreateCommand command) throws SQLException {
         String sql = """
                 INSERT INTO course (
-                    id_organization, id_organic_unit, name, acronym, photo, description, ects, duration, type, state
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    id_organization, id_organic_unit, name, acronym, photo, description,
+                    ects, certificate_max_grade, duration, type, state
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -39,10 +40,11 @@ public final class CourseDAO {
             setNullableString(statement, 4, command.acronym());
             setNullableString(statement, 5, command.photo());
             setNullableString(statement, 6, command.description());
-            setNullableBigDecimal(statement, 7, command.ects());
-            setNullableString(statement, 8, command.duration());
-            statement.setString(9, command.type().toDatabaseValue());
-            statement.setString(10, command.state().toDatabaseValue());
+            statement.setBigDecimal(7, command.ects());
+            statement.setBigDecimal(8, command.certificateMaxGrade());
+            setNullableString(statement, 9, command.duration());
+            statement.setString(10, command.type().toDatabaseValue());
+            statement.setString(11, command.state().toDatabaseValue());
             statement.executeUpdate();
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (!generatedKeys.next()) {
@@ -62,7 +64,7 @@ public final class CourseDAO {
     public Optional<Course> findById(Connection connection, long courseId) throws SQLException {
         String sql = """
                 SELECT id_course, id_organization, id_organic_unit, name, acronym, photo, description,
-                       ects, duration, type, state
+                       ects, certificate_max_grade, duration, type, state
                 FROM course
                 WHERE id_course = ?
                 """;
@@ -81,7 +83,7 @@ public final class CourseDAO {
     public List<Course> findByOrganization(long organizationId) throws SQLException {
         String sql = """
                 SELECT id_course, id_organization, id_organic_unit, name, acronym, photo, description,
-                       ects, duration, type, state
+                       ects, certificate_max_grade, duration, type, state
                 FROM course
                 WHERE id_organization = ?
                 ORDER BY id_course
@@ -106,7 +108,7 @@ public final class CourseDAO {
                 : "%" + query.trim().toLowerCase(java.util.Locale.ROOT) + "%";
         String sql = """
                 SELECT id_course, id_organization, id_organic_unit, name, acronym, photo, description,
-                       ects, duration, type, state
+                       ects, certificate_max_grade, duration, type, state
                 FROM course
                 WHERE state = 'active'
                   AND (? IS NULL OR id_organization = ?)
@@ -143,7 +145,7 @@ public final class CourseDAO {
     public Optional<Course> findActiveById(long courseId) throws SQLException {
         String sql = """
                 SELECT id_course, id_organization, id_organic_unit, name, acronym, photo, description,
-                       ects, duration, type, state
+                       ects, certificate_max_grade, duration, type, state
                 FROM course
                 WHERE id_course = ?
                   AND state = 'active'
@@ -165,7 +167,7 @@ public final class CourseDAO {
         String sql = """
                 UPDATE course
                 SET id_organization = ?, id_organic_unit = ?, name = ?, acronym = ?, photo = ?, description = ?,
-                    ects = ?, duration = ?, type = ?, state = ?
+                    ects = ?, certificate_max_grade = ?, duration = ?, type = ?, state = ?
                 WHERE id_course = ?
                 """;
 
@@ -176,11 +178,12 @@ public final class CourseDAO {
             setNullableString(statement, 4, command.acronym());
             setNullableString(statement, 5, command.photo());
             setNullableString(statement, 6, command.description());
-            setNullableBigDecimal(statement, 7, command.ects());
-            setNullableString(statement, 8, command.duration());
-            statement.setString(9, command.type().toDatabaseValue());
-            statement.setString(10, command.state().toDatabaseValue());
-            statement.setLong(11, courseId);
+            statement.setBigDecimal(7, command.ects());
+            statement.setBigDecimal(8, command.certificateMaxGrade());
+            setNullableString(statement, 9, command.duration());
+            statement.setString(10, command.type().toDatabaseValue());
+            statement.setString(11, command.state().toDatabaseValue());
+            statement.setLong(12, courseId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Course not found: " + courseId);
             }
@@ -255,6 +258,7 @@ public final class CourseDAO {
                 resultSet.getString("photo"),
                 resultSet.getString("description"),
                 resultSet.getBigDecimal("ects"),
+                resultSet.getBigDecimal("certificate_max_grade"),
                 resultSet.getString("duration"),
                 CourseType.fromDatabaseValue(resultSet.getString("type")),
                 CourseState.fromDatabaseValue(resultSet.getString("state"))

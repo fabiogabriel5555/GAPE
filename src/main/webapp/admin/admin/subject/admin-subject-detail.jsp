@@ -103,7 +103,7 @@
                         </div>
                     </div>
                     <div class="row gy-4">
-                        <div class="col-lg-4">
+                        <div class="col-lg-3">
                             <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
                                 <span class="text-14 text-neutral-500">State</span>
                                 <div class="mt-8">
@@ -113,13 +113,19 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-4">
+                        <div class="col-lg-3">
                             <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
                                 <span class="text-14 text-neutral-500">ECTS</span>
                                 <p class="text-15 text-neutral-700 mb-0 mt-8"><c:out value="${subject.ectsLabel}"/></p>
                             </div>
                         </div>
-                        <div class="col-lg-4">
+                        <div class="col-lg-3">
+                            <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
+                                <span class="text-14 text-neutral-500">Max final grade</span>
+                                <p class="text-15 text-neutral-700 mb-0 mt-8"><c:out value="${subject.finalGradeMaxLabel}"/></p>
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
                             <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
                                 <span class="text-14 text-neutral-500">Workload</span>
                                 <p class="text-15 text-neutral-700 mb-0 mt-8"><c:out value="${subject.workloadHoursLabel}"/></p>

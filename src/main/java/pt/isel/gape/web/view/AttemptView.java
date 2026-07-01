@@ -51,15 +51,16 @@ public final class AttemptView {
     }
 
     public String getScore() {
-        return gradeLabel(attempt.score());
+        return gradeLabel(visibleScore());
     }
 
     public BigDecimal getScoreRaw() {
-        return attempt.score();
+        return visibleScore();
     }
 
     public String getScoreOverMaxLabel() {
-        return attempt.score() == null ? "Pending" : gradeLabel(attempt.score()) + " / " + assessment.getMaxGrade();
+        BigDecimal score = visibleScore();
+        return score == null ? "Not assigned yet" : gradeLabel(score) + " / " + assessment.getMaxGrade();
     }
 
     public String getState() {
@@ -127,10 +128,15 @@ public final class AttemptView {
     }
 
     public String getResultLabel() {
-        if (attempt.score() == null) {
+        BigDecimal score = visibleScore();
+        if (score == null) {
             return "Pending correction";
         }
-        return attempt.score().compareTo(assessment.getPassingGradeRaw()) >= 0 ? "Passed" : "Failed";
+        return score.compareTo(assessment.getPassingGradeRaw()) >= 0 ? "Passed" : "Failed";
+    }
+
+    private BigDecimal visibleScore() {
+        return attempt.state() == AttemptState.CORRECTED ? attempt.score() : null;
     }
 
     private static String displayDateTime(LocalDateTime value) {

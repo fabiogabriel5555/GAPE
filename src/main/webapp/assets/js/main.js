@@ -239,18 +239,18 @@
       { key: "subjects", paths: ["/student/subjects"] },
       { key: "class-groups", paths: ["/student/class-groups"] },
       { key: "lessons", paths: ["/student/lessons"] },
-      { key: "calendar", paths: ["/student/calendar"] },
-      { key: "assessments", paths: ["/student/assessments"] },
+      { key: "calendar", paths: ["/student/calendar", "/student/events"] },
+      { key: "assessments", paths: ["/student/assessments", "/student/student/review"] },
+      { key: "attendance", paths: ["/student/attendance", "/student/grades"] },
       { key: "profile", paths: ["/student/student/profile"] },
       { key: "message", paths: ["/student/student/message"] },
-      { key: "reviews", paths: ["/student/student/review"] },
       { key: "dashboard", paths: ["/student/student/dashboard"] }
     ];
     var fileAliases = {
       "student-enrolled-courses.jsp": "courses",
       "student-my-profile.jsp": "profile",
       "student-message.jsp": "message",
-      "student-reviews.jsp": "reviews",
+      "student-reviews.jsp": "assessments",
       "student-home.jsp": "dashboard",
       "student-assignment.jsp": "dashboard",
       "student-my-quiz-attempts.jsp": "assessments",
@@ -1452,6 +1452,76 @@ if ($('.nav-menu').length) {
       $(this).toggleClass('active')
     });
     // ========================= Add To Cart Js End ===================
+
+    function formatAssessmentWeightTotal(total) {
+      if (!Number.isFinite(total)) {
+        return '0%';
+      }
+      var fixed = total.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+      return fixed + '%';
+    }
+
+    function validateAssessmentWeightForm($form) {
+      var $inputs = $form.find('[data-aac-weight-input]');
+      var $submit = $form.find('[data-aac-weight-submit]');
+      var $total = $form.find('[data-aac-weight-total]');
+      var $error = $form.find('[data-aac-weight-error]');
+      var total = 0;
+      var valid = $inputs.length > 0;
+
+      $inputs.each(function () {
+        var $input = $(this);
+        var raw = String($input.val() || '').trim().replace(',', '.');
+        var inputValid = /^\d+(\.\d{1,2})?$/.test(raw);
+        var value = inputValid ? Number(raw) : NaN;
+
+        if (!Number.isFinite(value) || value < 0 || value > 100) {
+          inputValid = false;
+        }
+
+        if (inputValid) {
+          total += value;
+        } else {
+          valid = false;
+        }
+
+        $input.attr('aria-invalid', inputValid ? 'false' : 'true');
+      });
+
+      var totalValid = Math.abs(total - 100) < 0.001;
+
+      $total.text(formatAssessmentWeightTotal(total));
+      $total.toggleClass('text-success-600', valid && totalValid);
+      $total.toggleClass('text-warning-600', valid && !totalValid);
+      $total.toggleClass('text-danger-600', !valid);
+      $error.toggleClass('d-none', !valid || totalValid);
+      $submit.prop('disabled', !valid);
+
+      return valid;
+    }
+
+    $('[data-aac-weight-form]').each(function () {
+      validateAssessmentWeightForm($(this));
+    });
+
+    $(document).on('keydown', '[data-aac-weight-input]', function (event) {
+      if (['e', 'E', '+', '-'].indexOf(event.key) !== -1) {
+        event.preventDefault();
+      }
+    });
+
+    $(document).on('input', '[data-aac-weight-input]', function () {
+      if (this.value.indexOf(',') !== -1) {
+        this.value = this.value.replace(/,/g, '.');
+      }
+      validateAssessmentWeightForm($(this).closest('[data-aac-weight-form]'));
+    });
+
+    $(document).on('submit', '[data-aac-weight-form]', function (event) {
+      if (!validateAssessmentWeightForm($(this))) {
+        event.preventDefault();
+      }
+    });
 
 
   });

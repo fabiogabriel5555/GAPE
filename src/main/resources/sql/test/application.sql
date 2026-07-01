@@ -214,29 +214,41 @@ INSERT INTO absence_justification (
 INSERT INTO associate_grade_sheet_class_group (id_grade_sheet, id_class_group) VALUES
     (170, 52);
 
+-- Grade_Sheet and Class_Group subject validation also applies on update
+UPDATE associate_grade_sheet_class_group
+SET id_class_group = 52
+WHERE id_grade_sheet = 170
+  AND id_class_group = 50;
+
 -- Based_On_Assessment requires context consistent with Grade_Sheet
 INSERT INTO based_on_assessment (id_grade_sheet, id_assessment, weight) VALUES
     (170, 91, 10.00);
 
--- Sum of weights cannot exceed 100
+-- Based_On_Assessment weight must stay in the allowed 0..100 interval
 INSERT INTO based_on_assessment (id_grade_sheet, id_assessment, weight) VALUES
-    (170, 92, 10.00);
+    (170, 92, 100.01);
 
 -- Grade_Record with another student attempt
 INSERT INTO grade_record (
-    id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, recorded_at, notes, state
+    id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, recorded_at, notes
 ) VALUES
-    (9118, 170, 5, 120, 'GR-ERR-STUDENT', 10.00, 'approved', '2026-02-12 13:00:00', NULL, 'active');
+    (9118, 170, 5, 120, 'GR-ERR-STUDENT', 10.00, 'approved', '2026-02-12 13:00:00', NULL);
 
--- Grade_Record does not allow two active records for the same grade sheet and student
+-- Grade_Record does not allow two records for the same grade sheet and student
 INSERT INTO grade_record (
-    id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, recorded_at, notes, state
+    id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, recorded_at, notes
 ) VALUES
-    (9119, 170, 4, NULL, 'GR-ERR-DUP', 9.00, 'approved', '2026-02-12 13:05:00', NULL, 'active');
+    (9119, 170, 4, NULL, 'GR-ERR-DUP', 9.00, 'approved', '2026-02-12 13:05:00', NULL);
 
 -- Certificate Course tem de integrar a Subject da Grade_Sheet
 INSERT INTO based_on_grade_sheet_certificate (id_certificate, id_grade_sheet) VALUES
     (192, 170);
+
+-- Certificate Grade_Sheet subject validation also applies on update
+UPDATE based_on_grade_sheet_certificate
+SET id_certificate = 192
+WHERE id_certificate = 191
+  AND id_grade_sheet = 170;
 
 -- Message sender tem de participar no Channel
 INSERT INTO message (

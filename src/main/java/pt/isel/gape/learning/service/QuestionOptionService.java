@@ -20,7 +20,6 @@ import pt.isel.gape.learning.model.Assessment;
 import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionOption;
 import pt.isel.gape.learning.model.QuestionOptionCreateCommand;
-import pt.isel.gape.learning.model.QuestionOptionState;
 import pt.isel.gape.learning.model.QuestionOptionUpdateCommand;
 import pt.isel.gape.security.authorization.PermissionChecker;
 import pt.isel.gape.structure.dao.CoordinateSubjectDAO;
@@ -107,8 +106,8 @@ public final class QuestionOptionService {
                     );
                     requireMutableStructure(connection, assessment.id());
                     requireOptionAllowed(question);
-                    demoteCurrentCorrectOptionsForSingleChoice(connection, question, command.correct(), command.state());
-                    requireCorrectnessRules(connection, assessment, question, command.correct(), command.state(), null);
+                    demoteCurrentCorrectOptionsForSingleChoice(connection, question, command.correct());
+                    requireCorrectnessRules(connection, assessment, question, command.correct(), null);
                     long optionId = optionDAO.create(connection, command);
                     auditService.record(connection, actorUserId, sessionId, "QUESTION_OPTION_CREATE",
                             "question_option", Long.toString(optionId), "success", sourceIp);
@@ -170,8 +169,8 @@ public final class QuestionOptionService {
                     );
                     requireMutableStructure(connection, assessment.id());
                     requireOptionAllowed(question);
-                    demoteCurrentCorrectOptionsForSingleChoice(connection, question, command.correct(), command.state(), optionId);
-                    requireCorrectnessRules(connection, assessment, question, command.correct(), command.state(), optionId);
+                    demoteCurrentCorrectOptionsForSingleChoice(connection, question, command.correct(), optionId);
+                    requireCorrectnessRules(connection, assessment, question, command.correct(), optionId);
                     optionDAO.update(connection, optionId, command);
                     auditService.record(connection, actorUserId, sessionId, "QUESTION_OPTION_UPDATE",
                             "question_option", Long.toString(optionId), "success", sourceIp);
@@ -221,35 +220,25 @@ public final class QuestionOptionService {
                     );
                     requireMutableStructure(connection, assessment.id());
                     requireOptionAllowed(question);
-                    if (current.state() != QuestionOptionState.ACTIVE) {
-                        throw new IllegalArgumentException("Question option is not active");
-                    }
                     List<QuestionOption> currentOptions = optionDAO.lockByQuestion(connection, question.id());
-                    List<QuestionOption> remainingActiveOptions = currentOptions.stream()
-                            .filter(option -> option.state() == QuestionOptionState.ACTIVE)
+                    List<QuestionOption> remainingOptions = currentOptions.stream()
                             .filter(option -> option.id() != optionId)
                             .toList();
-                    if (remainingActiveOptions.isEmpty()) {
+                    if (remainingOptions.isEmpty()) {
                         throw new IllegalArgumentException("Questions with options require at least one option");
                     }
 
-                    optionDAO.update(connection, optionId, new QuestionOptionUpdateCommand(
-                            current.orderNo(),
-                            current.text(),
-                            current.correct(),
-                            QuestionOptionState.INACTIVE
-                    ));
+                    optionDAO.delete(connection, optionId);
 
                     boolean needsCorrectOption = assessment.correctionMode().allowsAutomaticCorrection()
-                            && remainingActiveOptions.stream()
+                            && remainingOptions.stream()
                                     .noneMatch(option -> Boolean.TRUE.equals(option.correct()));
                     if (needsCorrectOption) {
-                        QuestionOption promoted = remainingActiveOptions.get(0);
+                        QuestionOption promoted = remainingOptions.get(0);
                         optionDAO.update(connection, promoted.id(), new QuestionOptionUpdateCommand(
                                 promoted.orderNo(),
                                 promoted.text(),
-                                true,
-                                promoted.state()
+                                true
                         ));
                     }
 
@@ -317,7 +306,7 @@ public final class QuestionOptionService {
                     );
                     finalCommands = normalizeOrders(finalCommands);
                     if (assessment.correctionMode().allowsAutomaticCorrection()) {
-                        finalCommands = ensureActiveCorrectOption(finalCommands);
+                        finalCommands = ensureCorrectOption(finalCommands);
                     }
                     requireCorrectnessRules(assessment, question, finalCommands);
                     int orderOffset = currentOptions.stream()
@@ -347,33 +336,28 @@ public final class QuestionOptionService {
     private void demoteCurrentCorrectOptionsForSingleChoice(
             Connection connection,
             Question question,
-            Boolean correct,
-            QuestionOptionState state
+            Boolean correct
     ) throws SQLException {
-        demoteCurrentCorrectOptionsForSingleChoice(connection, question, correct, state, null);
+        demoteCurrentCorrectOptionsForSingleChoice(connection, question, correct, null);
     }
 
     private void demoteCurrentCorrectOptionsForSingleChoice(
             Connection connection,
             Question question,
             Boolean correct,
-            QuestionOptionState state,
             Long excludedOptionId
     ) throws SQLException {
         if (!question.type().allowsSingleSelectedOption()
-                || state != QuestionOptionState.ACTIVE
                 || !Boolean.TRUE.equals(correct)) {
             return;
         }
         for (QuestionOption option : optionDAO.lockByQuestion(connection, question.id())) {
-            if (option.state() == QuestionOptionState.ACTIVE
-                    && Boolean.TRUE.equals(option.correct())
+            if (Boolean.TRUE.equals(option.correct())
                     && (excludedOptionId == null || option.id() != excludedOptionId)) {
                 optionDAO.update(connection, option.id(), new QuestionOptionUpdateCommand(
                         option.orderNo(),
                         option.text(),
-                        false,
-                        option.state()
+                        false
                 ));
             }
         }
@@ -390,8 +374,7 @@ public final class QuestionOptionService {
                     ? new QuestionOptionUpdateCommand(
                             option.orderNo(),
                             option.text(),
-                            option.correct(),
-                            option.state()
+                            option.correct()
                     )
                     : submitted);
         }
@@ -413,32 +396,29 @@ public final class QuestionOptionService {
             normalized.put(entry.getKey(), new QuestionOptionUpdateCommand(
                     order++,
                     command.text(),
-                    command.correct(),
-                    command.state()
+                    command.correct()
             ));
         }
         return normalized;
     }
 
-    private static Map<Long, QuestionOptionUpdateCommand> ensureActiveCorrectOption(
+    private static Map<Long, QuestionOptionUpdateCommand> ensureCorrectOption(
             Map<Long, QuestionOptionUpdateCommand> commands
     ) {
-        boolean hasActiveCorrectOption = commands.values().stream()
-                .anyMatch(command -> command.state() == QuestionOptionState.ACTIVE
-                        && Boolean.TRUE.equals(command.correct()));
-        if (hasActiveCorrectOption) {
+        boolean hasCorrectOption = commands.values().stream()
+                .anyMatch(command -> Boolean.TRUE.equals(command.correct()));
+        if (hasCorrectOption) {
             return commands;
         }
         Map<Long, QuestionOptionUpdateCommand> updated = new LinkedHashMap<>();
         boolean promoted = false;
         for (Map.Entry<Long, QuestionOptionUpdateCommand> entry : commands.entrySet()) {
             QuestionOptionUpdateCommand command = entry.getValue();
-            if (!promoted && command.state() == QuestionOptionState.ACTIVE) {
+            if (!promoted) {
                 updated.put(entry.getKey(), new QuestionOptionUpdateCommand(
                         command.orderNo(),
                         command.text(),
-                        true,
-                        command.state()
+                        true
                 ));
                 promoted = true;
             } else {
@@ -453,20 +433,16 @@ public final class QuestionOptionService {
             Question question,
             Map<Long, QuestionOptionUpdateCommand> finalCommands
     ) {
-        long activeCount = finalCommands.values().stream()
-                .filter(command -> command.state() == QuestionOptionState.ACTIVE)
-                .count();
-        if (activeCount == 0) {
+        if (finalCommands.isEmpty()) {
             throw new IllegalArgumentException("Questions with options require at least one option");
         }
-        long activeCorrectCount = finalCommands.values().stream()
-                .filter(command -> command.state() == QuestionOptionState.ACTIVE)
+        long correctCount = finalCommands.values().stream()
                 .filter(command -> Boolean.TRUE.equals(command.correct()))
                 .count();
-        if (question.type().allowsSingleSelectedOption() && activeCorrectCount > 1) {
+        if (question.type().allowsSingleSelectedOption() && correctCount > 1) {
             throw new IllegalArgumentException("Single-choice questions allow at most one correct option");
         }
-        if (assessment.correctionMode().allowsAutomaticCorrection() && activeCorrectCount == 0) {
+        if (assessment.correctionMode().allowsAutomaticCorrection() && correctCount == 0) {
             throw new IllegalArgumentException("Questions with options require at least one correct option");
         }
     }
@@ -476,23 +452,20 @@ public final class QuestionOptionService {
             Assessment assessment,
             Question question,
             Boolean correct,
-            QuestionOptionState state,
             Long excludedOptionId
     ) throws SQLException {
         long currentActiveCount = optionDAO.countActiveOptions(connection, question.id(), excludedOptionId);
-        boolean newActive = state == QuestionOptionState.ACTIVE;
-        long effectiveActiveCount = currentActiveCount + (newActive ? 1 : 0);
+        long effectiveActiveCount = currentActiveCount + 1;
         if (effectiveActiveCount == 0) {
             throw new IllegalArgumentException("Questions with options require at least one option");
         }
         long currentCorrectCount = optionDAO.countActiveCorrectOptions(connection, question.id(), excludedOptionId);
-        boolean newActiveCorrect = state == QuestionOptionState.ACTIVE && Boolean.TRUE.equals(correct);
+        boolean newActiveCorrect = Boolean.TRUE.equals(correct);
         long effectiveCorrectCount = currentCorrectCount + (newActiveCorrect ? 1 : 0);
         if (question.type().allowsSingleSelectedOption() && effectiveCorrectCount > 1) {
             throw new IllegalArgumentException("Single-choice questions allow at most one correct option");
         }
         if (assessment.correctionMode().allowsAutomaticCorrection()
-                && state == QuestionOptionState.ACTIVE
                 && effectiveCorrectCount == 0) {
             throw new IllegalArgumentException("Questions with options require at least one correct option");
         }
@@ -520,21 +493,20 @@ public final class QuestionOptionService {
         if (command.questionId() <= 0) {
             throw new IllegalArgumentException("Question option question is required");
         }
-        validateCommonCommand(command.orderNo(), command.text(), command.state());
+        validateCommonCommand(command.orderNo(), command.text());
     }
 
     private static void validateUpdateCommand(QuestionOptionUpdateCommand command) {
         Objects.requireNonNull(command, "command is required");
-        validateCommonCommand(command.orderNo(), command.text(), command.state());
+        validateCommonCommand(command.orderNo(), command.text());
     }
 
-    private static void validateCommonCommand(int orderNo, String text, Object state) {
+    private static void validateCommonCommand(int orderNo, String text) {
         if (orderNo <= 0) {
             throw new IllegalArgumentException("Question option order must be greater than zero");
         }
         AcademicTextValidator.requireName(text, "Question option text is required");
         requireMaxLength(text.trim(), OPTION_TEXT_MAX_LENGTH, "Question option text is too long");
-        Objects.requireNonNull(state, "question option state is required");
     }
 
     private static void requireMaxLength(String value, int maxLength, String message) {

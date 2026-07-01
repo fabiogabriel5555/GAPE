@@ -433,7 +433,7 @@ class ClassGroupServiceTest {
     }
 
     @Test
-    void administratorCanDeleteClassGroupWithoutDependencies() throws Exception {
+    void administratorCannotDeleteClassGroupWithAutomaticGradeSheetDependency() {
         ClassGroup classGroup = classGroupService.createClassGroup(
                 1L,
                 null,
@@ -454,15 +454,16 @@ class ClassGroupServiceTest {
                 "127.0.0.1"
         );
 
-        classGroupService.deleteClassGroup(
-                1L,
-                null,
-                AccessProfileType.ADMINISTRATOR,
-                classGroup.id(),
-                "127.0.0.1"
+        assertThrows(
+                IllegalStateException.class,
+                () -> classGroupService.deleteClassGroup(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        classGroup.id(),
+                        "127.0.0.1"
+                )
         );
-
-        assertFalse(classGroupExists(classGroup.id()));
     }
 
     @Test

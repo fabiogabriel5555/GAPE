@@ -5,7 +5,6 @@ public record QuestionOption(
         long questionId,
         int orderNo,
         String text,
-        Boolean correct,
-        QuestionOptionState state
+        Boolean correct
 ) {
 }

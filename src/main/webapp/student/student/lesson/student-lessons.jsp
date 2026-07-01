@@ -15,7 +15,7 @@
             <h6 class="text-20 fw-semibold text-neutral-800 mb-4">Lesson access</h6>
             <span class="text-14 text-neutral-500">All lessons visible from your active class group enrollments.</span>
         </div>
-        <a href="${pageContext.request.contextPath}/student/calendar" class="gape-student-card-icon-button" aria-label="Open calendar" title="Open calendar">
+        <a href="${pageContext.request.contextPath}/student/events" class="gape-student-card-icon-button" aria-label="Open events" title="Open events">
             <i class="ph ph-calendar-dots"></i>
         </a>
     </div>

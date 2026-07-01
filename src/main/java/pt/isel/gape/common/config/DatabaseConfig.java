@@ -18,14 +18,15 @@ public final class DatabaseConfig {
 
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(
-                PROPERTIES.getProperty("db.url"),
-                PROPERTIES.getProperty("db.user"),
-                PROPERTIES.getProperty("db.password")
+                requireResolvedProperty("db.url"),
+                requireResolvedProperty("db.user"),
+                requireResolvedProperty("db.password")
         );
     }
 
     public static String getProperty(String key, String defaultValue) {
-        return PROPERTIES.getProperty(key, defaultValue);
+        String value = resolvedProperty(key);
+        return value == null || value.isBlank() ? defaultValue : value;
     }
 
     private static Properties loadProperties() {
@@ -40,8 +41,6 @@ public final class DatabaseConfig {
 
             String driver = requireProperty(properties, "db.driver");
             requireProperty(properties, "db.url");
-            requireProperty(properties, "db.user");
-            requireProperty(properties, "db.password");
 
             Class.forName(driver);
             return properties;
@@ -53,10 +52,54 @@ public final class DatabaseConfig {
     }
 
     private static String requireProperty(Properties properties, String key) {
-        String value = properties.getProperty(key);
+        String value = resolveValue(key, properties.getProperty(key));
         if (Objects.isNull(value) || value.isBlank()) {
             throw new IllegalStateException("Missing required property: " + key);
         }
         return value;
+    }
+
+    private static String requireResolvedProperty(String key) {
+        String value = resolvedProperty(key);
+        if (Objects.isNull(value) || value.isBlank()) {
+            throw new IllegalStateException("Missing required property: " + key);
+        }
+        return value;
+    }
+
+    private static String resolvedProperty(String key) {
+        return resolveValue(key, PROPERTIES.getProperty(key));
+    }
+
+    private static String resolveValue(String key, String configuredValue) {
+        String systemValue = System.getProperty(key);
+        if (systemValue != null && !systemValue.isBlank()) {
+            return systemValue;
+        }
+        String envValue = System.getenv(propertyEnvName(key));
+        if (envValue != null && !envValue.isBlank()) {
+            return envValue;
+        }
+        if (configuredValue == null) {
+            return null;
+        }
+        String trimmed = configuredValue.trim();
+        if (trimmed.startsWith("${") && trimmed.endsWith("}")) {
+            String envName = trimmed.substring(2, trimmed.length() - 1);
+            String placeholderValue = System.getenv(envName);
+            if (placeholderValue != null && !placeholderValue.isBlank()) {
+                return placeholderValue;
+            }
+            String placeholderSystemValue = System.getProperty(envName);
+            if (placeholderSystemValue != null && !placeholderSystemValue.isBlank()) {
+                return placeholderSystemValue;
+            }
+            return "";
+        }
+        return configuredValue;
+    }
+
+    private static String propertyEnvName(String key) {
+        return "GAPE_" + key.toUpperCase().replace('.', '_');
     }
 }

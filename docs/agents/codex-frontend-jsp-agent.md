@@ -59,6 +59,10 @@ Deve analisar o template EduAll completo e decidir autonomamente todas as pagina
 - Mostrar mensagens de erro e sucesso vindas do backend.
 - Registar o que foi alterado e por que motivo, para facilitar manutencao.
 - Para validacao visual ou funcional no browser, consultar primeiro `docs/tests/browser-validation.md` e usar os defaults locais de Brave/Playwright, Tomcat e limpeza de processos.
+- Para alteracoes visuais pequenas, seguir o fast visual QA loop de `docs/tests/browser-validation.md`: testes estruturais focados, um unico `mvn -q -DskipTests package`, um unico arranque de Browser Tomcat, checks `-NoScreenshot` primeiro, screenshots finais so depois dos checks passarem, e um unico `browser-stop.ps1` no `finally`.
+- Nao alternar repetidamente entre arrancar e parar Tomcat durante a mesma correcao visual. Se o Tomcat ja estiver aberto para QA e a alteracao for apenas JSP/CSS/JS em `src/main/webapp`, sincronizar o ficheiro alterado para `target/browser-tomcat10/webapps/GAPE` conforme `Sync-WebappFile` na documentacao de browser, e repetir o check sem redeploy completo.
+- Nao executar a suite Maven completa para uma correcao estreita de alinhamento/layout, salvo pedido explicito ou risco claro de regressao backend.
+- Alteracoes Java podem exigir recompilar e redeployar a webapp, mas nao implicam reset/reseed da base de dados. Recriar schema/dados so quando SQL, seed/demo data, bootstrap/migracao ou o cenario de teste realmente depender disso.
 
 ## Saidas Esperadas
 

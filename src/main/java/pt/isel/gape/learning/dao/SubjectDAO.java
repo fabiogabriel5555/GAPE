@@ -27,8 +27,10 @@ public final class SubjectDAO {
 
     public long create(Connection connection, SubjectCreateCommand command) throws SQLException {
         String sql = """
-                INSERT INTO subject (id_organization, name, acronym, photo, description, ects, workload_hours, state)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO subject (
+                    id_organization, name, acronym, photo, description, ects, final_grade_max, workload_hours, state
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -37,9 +39,10 @@ public final class SubjectDAO {
             setNullableString(statement, 3, command.acronym());
             setNullableString(statement, 4, command.photo());
             setNullableString(statement, 5, command.description());
-            setNullableBigDecimal(statement, 6, command.ects());
-            setNullableInteger(statement, 7, command.workloadHours());
-            statement.setString(8, command.state().toDatabaseValue());
+            statement.setBigDecimal(6, command.ects());
+            statement.setBigDecimal(7, command.finalGradeMax());
+            setNullableInteger(statement, 8, command.workloadHours());
+            statement.setString(9, command.state().toDatabaseValue());
             statement.executeUpdate();
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (!generatedKeys.next()) {
@@ -58,7 +61,8 @@ public final class SubjectDAO {
 
     public Optional<Subject> findById(Connection connection, long subjectId) throws SQLException {
         String sql = """
-                SELECT id_subject, id_organization, name, acronym, photo, description, ects, workload_hours, state
+                SELECT id_subject, id_organization, name, acronym, photo, description,
+                       ects, final_grade_max, workload_hours, state
                 FROM subject
                 WHERE id_subject = ?
                 """;
@@ -76,7 +80,8 @@ public final class SubjectDAO {
 
     public List<Subject> findAll() throws SQLException {
         String sql = """
-                SELECT id_subject, id_organization, name, acronym, photo, description, ects, workload_hours, state
+                SELECT id_subject, id_organization, name, acronym, photo, description,
+                       ects, final_grade_max, workload_hours, state
                 FROM subject
                 ORDER BY name, id_subject
                 """;
@@ -94,7 +99,8 @@ public final class SubjectDAO {
 
     public List<Subject> findByOrganization(long organizationId) throws SQLException {
         String sql = """
-                SELECT id_subject, id_organization, name, acronym, photo, description, ects, workload_hours, state
+                SELECT id_subject, id_organization, name, acronym, photo, description,
+                       ects, final_grade_max, workload_hours, state
                 FROM subject
                 WHERE id_organization = ?
                 ORDER BY id_subject
@@ -115,7 +121,8 @@ public final class SubjectDAO {
 
     public List<Subject> findActiveByOrganization(long organizationId) throws SQLException {
         String sql = """
-                SELECT id_subject, id_organization, name, acronym, photo, description, ects, workload_hours, state
+                SELECT id_subject, id_organization, name, acronym, photo, description,
+                       ects, final_grade_max, workload_hours, state
                 FROM subject
                 WHERE id_organization = ?
                   AND state = 'active'
@@ -138,7 +145,7 @@ public final class SubjectDAO {
     public List<Subject> findByCoordinator(long coordinatorUserId) throws SQLException {
         String sql = """
                 SELECT s.id_subject, s.id_organization, s.name, s.acronym, s.photo, s.description,
-                       s.ects, s.workload_hours, s.state
+                       s.ects, s.final_grade_max, s.workload_hours, s.state
                 FROM subject s
                 JOIN coordinate_subject cs ON cs.id_subject = s.id_subject
                 JOIN user_account u ON u.id_user = cs.id_coordinator_user
@@ -167,7 +174,7 @@ public final class SubjectDAO {
     public List<Subject> findByTeacher(long teacherUserId) throws SQLException {
         String sql = """
                 SELECT DISTINCT s.id_subject, s.id_organization, s.name, s.acronym, s.photo, s.description,
-                       s.ects, s.workload_hours, s.state
+                       s.ects, s.final_grade_max, s.workload_hours, s.state
                 FROM subject s
                 JOIN class_group cg ON cg.id_subject = s.id_subject
                 JOIN course c ON c.id_course = cg.id_course
@@ -245,7 +252,8 @@ public final class SubjectDAO {
     public void update(Connection connection, long subjectId, SubjectUpdateCommand command) throws SQLException {
         String sql = """
                 UPDATE subject
-                SET name = ?, acronym = ?, photo = ?, description = ?, ects = ?, workload_hours = ?, state = ?
+                SET name = ?, acronym = ?, photo = ?, description = ?,
+                    ects = ?, final_grade_max = ?, workload_hours = ?, state = ?
                 WHERE id_subject = ?
                 """;
 
@@ -254,10 +262,11 @@ public final class SubjectDAO {
             setNullableString(statement, 2, command.acronym());
             setNullableString(statement, 3, command.photo());
             setNullableString(statement, 4, command.description());
-            setNullableBigDecimal(statement, 5, command.ects());
-            setNullableInteger(statement, 6, command.workloadHours());
-            statement.setString(7, command.state().toDatabaseValue());
-            statement.setLong(8, subjectId);
+            statement.setBigDecimal(5, command.ects());
+            statement.setBigDecimal(6, command.finalGradeMax());
+            setNullableInteger(statement, 7, command.workloadHours());
+            statement.setString(8, command.state().toDatabaseValue());
+            statement.setLong(9, subjectId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Subject not found: " + subjectId);
             }
@@ -335,6 +344,7 @@ public final class SubjectDAO {
                 resultSet.getString("photo"),
                 resultSet.getString("description"),
                 resultSet.getBigDecimal("ects"),
+                resultSet.getBigDecimal("final_grade_max"),
                 workloadWasNull ? null : workloadHours,
                 SubjectState.fromDatabaseValue(resultSet.getString("state"))
         );

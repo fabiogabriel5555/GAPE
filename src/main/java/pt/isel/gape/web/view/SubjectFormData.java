@@ -16,6 +16,7 @@ public final class SubjectFormData {
     private final String photo;
     private final String description;
     private final String ects;
+    private final String finalGradeMax;
     private final String workloadHours;
     private final String state;
     private final String coordinatorUserId;
@@ -33,6 +34,7 @@ public final class SubjectFormData {
             String photo,
             String description,
             String ects,
+            String finalGradeMax,
             String workloadHours,
             String state,
             String coordinatorUserId,
@@ -49,6 +51,7 @@ public final class SubjectFormData {
         this.photo = photo;
         this.description = description;
         this.ects = ects;
+        this.finalGradeMax = finalGradeMax;
         this.workloadHours = workloadHours;
         this.state = state;
         this.coordinatorUserId = coordinatorUserId;
@@ -73,6 +76,7 @@ public final class SubjectFormData {
                 "",
                 "",
                 "",
+                "20",
                 "",
                 SubjectState.ACTIVE.name(),
                 "",
@@ -93,6 +97,7 @@ public final class SubjectFormData {
                 subject.photo() == null ? "" : subject.photo(),
                 subject.description() == null ? "" : subject.description(),
                 subject.ects() == null ? "" : subject.ects().stripTrailingZeros().toPlainString(),
+                subject.finalGradeMax() == null ? "" : subject.finalGradeMax().stripTrailingZeros().toPlainString(),
                 subject.workloadHours() == null ? "" : Integer.toString(subject.workloadHours()),
                 subject.state().name(),
                 "",
@@ -113,6 +118,7 @@ public final class SubjectFormData {
                 value(request, "photo"),
                 value(request, "description"),
                 value(request, "ects"),
+                value(request, "finalGradeMax"),
                 value(request, "workloadHours"),
                 value(request, "state"),
                 value(request, "coordinatorUserId"),
@@ -150,6 +156,10 @@ public final class SubjectFormData {
 
     public String getEcts() {
         return ects;
+    }
+
+    public String getFinalGradeMax() {
+        return finalGradeMax;
     }
 
     public String getWorkloadHours() {

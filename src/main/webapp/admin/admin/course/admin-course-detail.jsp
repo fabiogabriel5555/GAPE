@@ -143,8 +143,6 @@
             <div class="px-24 py-24 flex-grow-1">
                 <%@ include file="/WEB-INF/fragments/flash-messages.jspf" %>
 
-                <%@ include file="/WEB-INF/fragments/course-enrollment-management.jspf" %>
-
                 <div class="bg-white rounded-10 px-24 py-24 mb-24">
                     <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap border-bottom-dashed pb-24 mb-24">
                         <div class="d-flex align-items-center gap-16">
@@ -182,14 +180,19 @@
                             </c:if>
                         </div>
                     </div>
+                    <c:if test="${not courseEctsConsistent}">
+                        <div class="alert alert-warning rounded-12 border-0 mb-24" role="alert">
+                            The sum of the subject ECTS in this course is <strong><c:out value="${courseSubjectEctsTotalLabel}"/></strong>, but the course requires <strong><c:out value="${courseEctsTargetLabel}"/></strong>. Certificates for this course cannot be completed or receive a final grade until these values match.
+                        </div>
+                    </c:if>
                     <div class="row gy-4">
-                        <div class="col-lg-3">
+                        <div class="col-lg-2">
                             <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
                                 <span class="text-14 text-neutral-500">Type</span>
                                 <p class="text-15 text-neutral-700 mb-0 mt-8"><c:out value="${course.typeLabel}"/></p>
                             </div>
                         </div>
-                        <div class="col-lg-3">
+                        <div class="col-lg-2">
                             <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
                                 <span class="text-14 text-neutral-500">State</span>
                                 <div class="mt-8">
@@ -199,10 +202,16 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-lg-3">
+                        <div class="col-lg-2">
                             <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
                                 <span class="text-14 text-neutral-500">ECTS</span>
                                 <p class="text-15 text-neutral-700 mb-0 mt-8"><c:out value="${course.ectsLabel}"/></p>
+                            </div>
+                        </div>
+                        <div class="col-lg-3">
+                            <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
+                                <span class="text-14 text-neutral-500">Certificate max grade</span>
+                                <p class="text-15 text-neutral-700 mb-0 mt-8"><c:out value="${course.certificateMaxGradeLabel}"/></p>
                             </div>
                         </div>
                         <div class="col-lg-3">
@@ -214,6 +223,8 @@
                     </div>
                     <p class="text-14 text-neutral-600 mt-20 mb-0"><c:out value="${course.description}"/></p>
                 </div>
+
+                <%@ include file="/WEB-INF/fragments/course-enrollment-management.jspf" %>
 
                 <div class="bg-white rounded-10 px-24 py-24 mb-24">
                     <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
@@ -234,6 +245,7 @@
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Subject</th>
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Context</th>
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600">ECTS</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Max grade</th>
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
                             </tr>
@@ -290,6 +302,7 @@
                                         </div>
                                     </td>
                                     <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${association.subjectEctsLabel}"/></td>
+                                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${association.subjectFinalGradeMaxLabel}"/></td>
                                     <td class="py-20 px-20">
                                         <span class="${association.stateBadgeClass} px-16 py-8 border-neutral-30 border rounded-pill text-14">
                                             <c:out value="${association.stateLabel}"/>
@@ -353,7 +366,7 @@
                                     </td>
                                 </tr>
                                 <tr id="courseDetailSubjectGroups${association.subjectId}" class="d-none">
-                                    <td colspan="5" class="py-0 px-20 bg-neutral-20">
+                                    <td colspan="6" class="py-0 px-20 bg-neutral-20">
                                         <div class="gape-subject-node border border-neutral-30 rounded-8 px-16 py-14 bg-white my-14">
                                             <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap">
                                                 <div class="d-flex align-items-start gap-10">
@@ -465,7 +478,7 @@
                             </c:forEach>
                             <c:if test="${empty courseSubjects}">
                                 <tr>
-                                    <td colspan="5" class="py-32 px-20 text-center text-14 text-neutral-500">No subjects associated with this course.</td>
+                                    <td colspan="6" class="py-32 px-20 text-center text-14 text-neutral-500">No subjects associated with this course.</td>
                                 </tr>
                             </c:if>
                             </tbody>

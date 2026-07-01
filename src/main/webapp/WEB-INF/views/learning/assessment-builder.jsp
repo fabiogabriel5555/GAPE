@@ -14,12 +14,21 @@
             --ad-border: #e6edf0;
             --ad-muted: #64748b;
             --ad-ink: #172033;
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        .dashbord-body {
+            max-width: 100%;
+            min-width: 0;
         }
 
         .ad-surface {
             background: #fff;
             border: 1px solid var(--ad-border);
             border-radius: 8px;
+            max-width: 100%;
+            min-width: 0;
             box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
         }
 
@@ -27,10 +36,49 @@
             background: linear-gradient(135deg, rgba(37, 99, 235, 0.13), rgba(14, 165, 233, 0.07)), #fff;
         }
 
+        .ad-hero h2,
+        .ad-hero p,
+        .ad-hero-meta {
+            max-width: 100%;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            white-space: normal;
+        }
+
+        .ad-hero h2 {
+            flex: 1 1 240px;
+        }
+
+        .ad-hero .flex-wrap {
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        .ad-hero-meta > span {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            white-space: normal;
+        }
+
+        .ad-hero > .d-flex > .d-flex:first-child {
+            flex: 1 1 360px;
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        .ad-hero > .d-flex > .d-flex:first-child > .min-w-0 {
+            flex: 1 1 0;
+            max-width: 100%;
+            min-width: 0;
+        }
+
         .ad-mode-grid {
             display: grid;
-            gap: 16px;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            align-items: stretch;
+            gap: 14px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            max-width: 100%;
+            min-width: 0;
         }
 
         .ad-mode-card {
@@ -39,11 +87,52 @@
             border-radius: 8px;
             color: var(--ad-ink);
             cursor: pointer;
-            min-height: 132px;
-            padding: 20px;
+            height: 100%;
+            min-height: 126px;
+            min-width: 0;
+            padding: 16px;
             text-align: left;
             transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+            white-space: normal !important;
             width: 100%;
+        }
+
+        .ad-mode-card > .d-flex {
+            align-items: stretch !important;
+            height: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        .ad-mode-content {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+
+        .ad-mode-description {
+            min-height: 40px;
+        }
+
+        .ad-mode-metric {
+            margin-top: auto;
+        }
+
+        .ad-mode-card .min-w-0 {
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        .ad-mode-card .text-13,
+        .ad-mode-card .text-14 {
+            line-height: 1.4;
+            white-space: normal !important;
+        }
+
+        .ad-mode-card .flex-wrap > span {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            white-space: normal !important;
         }
 
         .ad-mode-card.is-active {
@@ -70,6 +159,635 @@
 
         .ad-tab-panel[hidden] {
             display: none !important;
+        }
+
+        .ad-subtab-list {
+            align-items: center;
+            background: #f8fafc;
+            border: 1px solid var(--ad-border);
+            border-radius: 8px;
+            display: inline-flex;
+            gap: 4px;
+            padding: 4px;
+        }
+
+        .ad-subtab-button {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-radius: 6px;
+            color: var(--ad-muted);
+            cursor: pointer;
+            display: inline-flex;
+            font-size: 14px;
+            font-weight: 600;
+            gap: 6px;
+            min-height: 38px;
+            padding: 8px 12px;
+        }
+
+        .ad-subtab-button.is-active {
+            background: #fff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+            color: var(--ad-primary-dark);
+        }
+
+        .ad-enrollment-subpanel[hidden] {
+            display: none !important;
+        }
+
+        .ad-tab-panel,
+        .ad-enrollment-policy-form,
+        .ad-enrollment-create-form,
+        .ad-enrollment-create-form .row,
+        .ad-enrollment-create-form [class*="col-"] {
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        .ad-enrollment-create-form .form-control,
+        .ad-enrollment-create-form .form-select,
+        .ad-enrollment-create-form .select2-container {
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        .ad-enrollment-create-grid {
+            align-items: start;
+            display: grid;
+            gap: 12px;
+            grid-template-columns: minmax(0, 1fr) 48px;
+        }
+
+        .ad-enrollment-icon-button {
+            align-items: center;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            flex: 0 0 auto;
+            font-size: 20px;
+            height: 42px;
+            justify-content: center;
+            line-height: 1;
+            padding: 0;
+            transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+            width: 42px;
+        }
+
+        .ad-enrollment-icon-button:hover {
+            transform: translateY(-1px);
+        }
+
+        .ad-enrollment-icon-button--primary {
+            background: var(--ad-primary);
+            border-color: var(--ad-primary);
+            color: #fff;
+        }
+
+        .ad-enrollment-icon-button--primary:hover {
+            background: var(--ad-primary-dark);
+            border-color: var(--ad-primary-dark);
+            color: #fff;
+        }
+
+        .ad-enrollment-icon-button--success {
+            background: #ecfdf3;
+            border-color: #bbf7d0;
+            color: #16a34a;
+        }
+
+        .ad-enrollment-icon-button--success:hover {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .ad-enrollment-icon-button--danger {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+
+        .ad-enrollment-icon-button--danger:hover {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .ad-enrollment-icon-button--delete {
+            background: #fff1f2;
+            border-color: #fecdd3;
+            color: #be123c;
+        }
+
+        .ad-enrollment-icon-button--delete:hover {
+            background: #ffe4e6;
+            color: #9f1239;
+        }
+
+        .ad-enrollment-icon-button--warning {
+            background: #fff7ed;
+            border-color: #fed7aa;
+            color: #ea580c;
+        }
+
+        .ad-enrollment-icon-button--warning:hover {
+            background: #ffedd5;
+            color: #c2410c;
+        }
+
+        .ad-enrollment-icon-button--neutral {
+            background: #fff;
+            border-color: var(--ad-border);
+            color: var(--ad-ink);
+        }
+
+        .ad-enrollment-icon-button--neutral:hover {
+            border-color: rgba(37, 99, 235, 0.45);
+            color: var(--ad-primary-dark);
+        }
+
+        .ad-enrollment-create-submit {
+            align-self: start;
+            height: 52px;
+            margin-top: 31px;
+            width: 52px;
+        }
+
+        .ad-correction-dialog {
+            max-width: min(1120px, calc(100vw - 32px));
+        }
+
+        .ad-correction-modal {
+            --ad-primary: #2563eb;
+            --ad-primary-dark: #1d4ed8;
+            --ad-border: #e6edf0;
+            --ad-muted: #64748b;
+            --ad-ink: #172033;
+        }
+
+        .ad-correction-modal .modal-content {
+            background: #fff;
+            border: 0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .ad-correction-modal .modal-header {
+            align-items: flex-start;
+            background: #fff;
+            border-bottom: 1px solid var(--ad-border);
+            padding: 20px 24px;
+        }
+
+        .ad-correction-modal .modal-body {
+            background: #fff;
+            padding: 22px 24px;
+        }
+
+        .ad-correction-modal .modal-footer {
+            background: #fff;
+            border-top: 1px solid var(--ad-border);
+            padding: 16px 24px;
+        }
+
+        .ad-correction-footer-actions {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+            width: 100%;
+        }
+
+        .ad-correction-footer-actions .ad-outline-button,
+        .ad-correction-footer-actions .ad-primary-button {
+            min-height: 42px;
+        }
+
+        .ad-correction-summary-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            margin-bottom: 18px;
+        }
+
+        .ad-correction-summary-card {
+            background: #fff;
+            border: 1px solid var(--ad-border);
+            border-radius: 8px;
+            min-width: 0;
+            padding: 14px;
+        }
+
+        .ad-correction-summary-card span,
+        .ad-correction-summary-card strong {
+            display: block;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .ad-correction-question-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .ad-correction-question-card {
+            background: #fff;
+            border: 1px solid #d5e0e7;
+            border-radius: 8px;
+            box-shadow: none;
+            padding: 20px;
+        }
+
+        .ad-correction-question-header {
+            align-items: center;
+            display: flex;
+            gap: 16px;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .ad-correction-question-heading {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 18px;
+            min-width: 0;
+        }
+
+        .ad-correction-question-label {
+            color: #009688;
+            display: inline-flex;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .ad-correction-question-meta {
+            color: #64748b;
+            font-size: 15px;
+            line-height: 1.2;
+        }
+
+        .ad-correction-required-pill {
+            align-items: center;
+            border: 1px solid #009688;
+            border-radius: 999px;
+            color: #00796f;
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1;
+            min-height: 24px;
+            padding: 5px 13px;
+        }
+
+        .ad-correction-required-pill.is-optional {
+            border-color: #cbd5e1;
+            color: #64748b;
+        }
+
+        .ad-correction-score-pill {
+            align-self: flex-start;
+        }
+
+        .ad-correction-statement {
+            color: var(--ad-ink);
+            font-size: 17px;
+            font-weight: 700;
+            line-height: 1.45;
+            margin-bottom: 22px;
+        }
+
+        .ad-correction-answer {
+            background: #fff;
+            border: 0;
+            padding: 0;
+        }
+
+        .ad-correction-answer-block {
+            min-width: 0;
+        }
+
+        .ad-correction-answer-label {
+            color: var(--ad-muted);
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .ad-correction-expected-toggle {
+            margin-top: 16px;
+        }
+
+        .ad-correction-expected-answer {
+            background: #fff;
+            border-left: 3px solid #94a3b8;
+            border-radius: 0;
+            margin-top: 14px;
+            padding: 2px 0 0 16px;
+        }
+
+        .ad-correction-expected-answer[hidden] {
+            display: none !important;
+        }
+
+        .ad-correction-expected-answer .ad-correction-answer-label {
+            color: #334155;
+            margin-bottom: 10px;
+        }
+
+        .ad-correction-choice-list {
+            display: grid;
+            gap: 12px;
+            max-width: none;
+            width: 100%;
+        }
+
+        .ad-correction-choice {
+            align-items: center;
+            display: grid;
+            gap: 14px;
+            grid-template-columns: 26px minmax(0, 1fr);
+            min-width: 0;
+        }
+
+        .ad-correction-choice-control {
+            background: #fff;
+            border: 2px solid #536273;
+            display: inline-flex;
+            flex-shrink: 0;
+            height: 22px;
+            position: relative;
+            width: 22px;
+        }
+
+        .ad-correction-choice-control--radio {
+            border-radius: 50%;
+        }
+
+        .ad-correction-choice-control--checkbox {
+            border-radius: 4px;
+        }
+
+        .ad-correction-choice.is-selected .ad-correction-choice-control {
+            background: #475569;
+            border-color: #334155;
+        }
+
+        .ad-correction-choice.is-correct .ad-correction-choice-control {
+            background: #22c55e;
+            border-color: #15803d;
+        }
+
+        .ad-correction-choice.is-incorrect .ad-correction-choice-control {
+            background: #ef4444;
+            border-color: #b91c1c;
+        }
+
+        .ad-correction-choice.is-missed .ad-correction-choice-control {
+            background: #fff;
+            border-color: #dc2626;
+        }
+
+        .ad-correction-choice.is-expected .ad-correction-choice-control {
+            background: #64748b;
+            border-color: #475569;
+        }
+
+        .ad-correction-choice.is-selected .ad-correction-choice-control--checkbox::after,
+        .ad-correction-choice.is-correct .ad-correction-choice-control--checkbox::after,
+        .ad-correction-choice.is-incorrect .ad-correction-choice-control--checkbox::after,
+        .ad-correction-choice.is-expected .ad-correction-choice-control--checkbox::after {
+            border-bottom: 2px solid #fff;
+            border-right: 2px solid #fff;
+            content: "";
+            height: 11px;
+            left: 6px;
+            position: absolute;
+            top: 2px;
+            transform: rotate(45deg);
+            width: 6px;
+        }
+
+        .ad-correction-choice-text {
+            align-items: center;
+            background: #fff;
+            border: 2px solid #536273;
+            border-radius: 10px;
+            color: #465568;
+            display: flex;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.25;
+            min-height: 46px;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            padding: 11px 22px;
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .ad-correction-choice.is-selected .ad-correction-choice-text {
+            background: #f8fafc;
+            border-color: #334155;
+            color: #172033;
+        }
+
+        .ad-correction-choice.is-correct .ad-correction-choice-text {
+            background: #ecfdf5;
+            border-color: #16a34a;
+            color: #166534;
+        }
+
+        .ad-correction-choice.is-incorrect .ad-correction-choice-text {
+            background: #fef2f2;
+            border-color: #dc2626;
+            color: #991b1b;
+        }
+
+        .ad-correction-choice.is-missed .ad-correction-choice-text {
+            background: #fff;
+            border-color: #dc2626;
+            color: #991b1b;
+        }
+
+        .ad-correction-choice.is-expected .ad-correction-choice-text {
+            background: #fff;
+            border-color: #94a3b8;
+            color: #334155;
+        }
+
+        .ad-correction-text-answer {
+            border: 2px solid #536273;
+            border-radius: 10px;
+            color: #465568;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.45;
+            max-width: none;
+            min-height: 54px;
+            overflow-wrap: anywhere;
+            padding: 15px 22px;
+            white-space: pre-wrap;
+            width: 100%;
+        }
+
+        .ad-correction-text-answer--expected {
+            background: #fff;
+            border-color: #cbd5e1;
+            color: #172033;
+        }
+
+        .ad-correction-text-answer--long {
+            min-height: 120px;
+        }
+
+        .ad-correction-upload-row {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .ad-correction-upload-answer {
+            align-items: center;
+            background: #45c7bd;
+            border: 2px solid #278d84;
+            border-radius: 10px;
+            color: #fff;
+            display: inline-flex;
+            font-size: 15px;
+            font-weight: 700;
+            gap: 8px;
+            min-height: 46px;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            padding: 11px 22px;
+            text-decoration: none;
+        }
+
+        .ad-correction-upload-answer:hover {
+            background: #38b7ad;
+            color: #fff;
+        }
+
+        .ad-correction-upload-file {
+            color: #465568;
+            font-size: 15px;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        .ad-correction-rating {
+            align-items: center;
+            color: #334155;
+            display: inline-flex;
+            flex-wrap: wrap;
+            font-size: 26px;
+            gap: 4px;
+            line-height: 1;
+        }
+
+        .ad-correction-rating.is-correct {
+            color: #16a34a;
+        }
+
+        .ad-correction-rating.is-incorrect {
+            color: #dc2626;
+        }
+
+        .ad-correction-rating.is-expected {
+            color: #475569;
+        }
+
+        .ad-correction-rating.is-neutral {
+            color: #334155;
+        }
+
+        .ad-correction-controls {
+            align-items: flex-end;
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+            margin-top: 16px;
+        }
+
+        .ad-correction-score-field {
+            max-width: 170px;
+            min-width: 150px;
+        }
+
+        .ad-correction-score-input.is-invalid {
+            border-color: #dc2626 !important;
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+        }
+
+        .ad-correction-score-error {
+            color: #dc2626;
+            display: block;
+            font-size: 12px;
+            line-height: 1.3;
+            margin-top: 4px;
+            min-height: 16px;
+        }
+
+        .ad-correction-score-error:empty {
+            margin-top: 0;
+            min-height: 0;
+        }
+
+        .ad-correction-auto-button {
+            background: #eff6ff;
+            border-color: #bfdbfe;
+            color: var(--ad-primary-dark);
+            min-height: 42px;
+            white-space: nowrap;
+        }
+
+        .ad-correction-auto-button:hover {
+            background: #dbeafe;
+            color: var(--ad-primary-dark);
+        }
+
+        .ad-correction-auto-button[disabled],
+        .ad-correction-submit-button[disabled] {
+            cursor: not-allowed;
+            opacity: .65 !important;
+        }
+
+        .ad-correction-feedback {
+            color: var(--ad-muted);
+            font-size: 13px;
+            margin-right: auto;
+            min-height: 20px;
+        }
+
+        .ad-correction-feedback.is-error {
+            color: #dc2626;
+        }
+
+        .ad-correction-feedback.is-success {
+            color: #15803d;
+        }
+
+        .ad-correction-submit-button {
+            background: var(--ad-primary) !important;
+            border-color: var(--ad-primary) !important;
+            color: #fff !important;
+            display: inline-flex !important;
+            min-width: 160px;
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+
+        .ad-correction-submit-button:hover {
+            background: var(--ad-primary-dark) !important;
+            border-color: var(--ad-primary-dark) !important;
+            color: #fff !important;
         }
 
         .ad-outline-button,
@@ -131,7 +849,10 @@
         }
 
         .ad-table-wrap {
+            max-width: 100%;
+            min-width: 0;
             overflow-x: auto;
+            width: 100%;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -850,6 +1571,60 @@
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
+            .ad-correction-summary-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            #enrollments .ad-data-table {
+                min-width: 0;
+                width: 100%;
+            }
+
+            #enrollments .ad-table-wrap {
+                overflow-x: hidden;
+                width: 100%;
+            }
+
+            #enrollments .ad-data-table thead {
+                display: none;
+            }
+
+            #enrollments .ad-data-table,
+            #enrollments .ad-data-table tbody,
+            #enrollments .ad-data-table tr,
+            #enrollments .ad-data-table td {
+                display: block;
+                width: 100%;
+            }
+
+            #enrollments .ad-data-table tr {
+                border: 1px solid var(--ad-border);
+                border-radius: 8px;
+                margin-bottom: 12px;
+                padding: 12px;
+            }
+
+            #enrollments .ad-data-table td {
+                border-bottom: 0 !important;
+                padding: 6px 0 !important;
+                text-align: left !important;
+            }
+
+            #enrollments .ad-data-table td[data-label]::before {
+                color: var(--neutral-500);
+                content: attr(data-label);
+                display: block;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+
+            #enrollments .ad-data-table td form,
+            #enrollments .ad-data-table td .d-inline-flex {
+                justify-content: flex-start !important;
+                width: auto;
+            }
+
             .gape-add-question-dialog {
                 width: calc(100vw - 24px);
             }
@@ -866,9 +1641,254 @@
         }
 
         @media (max-width: 575px) {
+            html,
+            body,
+            .dashbord,
+            .dashbord > .d-flex,
+            .dashbord-body {
+                max-width: 100%;
+                overflow-x: hidden;
+            }
+
+            .ad-shell {
+                padding-left: 14px !important;
+                padding-right: 14px !important;
+            }
+
+            .ad-hero {
+                padding: 18px 16px !important;
+            }
+
+            .ad-hero > .d-flex,
+            .ad-hero > .d-flex > .d-flex:first-child {
+                width: 100%;
+            }
+
+            .ad-hero > .d-flex > .d-flex:first-child {
+                flex-wrap: wrap;
+            }
+
+            .ad-hero > .d-flex > .d-flex:first-child > .min-w-0 {
+                flex-basis: 100%;
+                width: 100%;
+            }
+
+            .ad-hero h2 {
+                flex-basis: 100%;
+                font-size: 20px;
+                line-height: 1.25;
+            }
+
+            .ad-hero p {
+                line-height: 1.45;
+            }
+
+            .ad-hero-meta,
+            .ad-mode-card .flex-wrap {
+                align-items: flex-start !important;
+                flex-direction: column;
+                gap: 4px;
+                max-width: 100%;
+            }
+
+            .ad-hero-meta > span:nth-child(even),
+            .ad-mode-card .flex-wrap > span:nth-child(even) {
+                display: none;
+            }
+
             .ad-mode-grid,
             .ad-info-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .ad-mode-card {
+                min-height: 0;
+                padding: 16px;
+            }
+
+            .ad-mode-card > .d-flex {
+                flex-wrap: wrap;
+            }
+
+            .ad-mode-card > .d-flex > .min-w-0,
+            .ad-mode-card .flex-wrap {
+                width: 100%;
+            }
+
+            .ad-mode-card,
+            .ad-mode-card span {
+                white-space: normal !important;
+            }
+
+            .ad-tab-panel .ad-surface {
+                overflow-x: hidden;
+                padding-left: 16px !important;
+                padding-right: 16px !important;
+                width: 100%;
+            }
+
+            #enrollments,
+            #enrollments * {
+                box-sizing: border-box;
+            }
+
+            #enrollments .ad-outline-button,
+            #enrollments .ad-primary-button {
+                max-width: 100%;
+            }
+
+            #enrollments .ad-enrollment-icon-button {
+                max-width: none;
+            }
+
+            .ad-enrollment-policy-form {
+                align-items: flex-start !important;
+                flex-direction: column;
+                overflow-x: hidden;
+                width: 100%;
+            }
+
+            .ad-enrollment-policy-form .form-select,
+            .ad-enrollment-policy-form .ad-outline-button {
+                max-width: 100% !important;
+                width: 100%;
+            }
+
+            .ad-enrollment-policy-form .ad-enrollment-icon-button {
+                width: 42px !important;
+            }
+
+            .ad-enrollment-create-form {
+                overflow: hidden;
+                padding: 16px !important;
+                width: 100%;
+            }
+
+            .ad-enrollment-create-form .row {
+                margin-left: 0;
+                margin-right: 0;
+            }
+
+            .ad-enrollment-create-form .row > [class*="col"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+                padding-left: 0;
+                padding-right: 0;
+                width: 100%;
+            }
+
+            .ad-enrollment-create-grid {
+                grid-template-columns: minmax(0, 1fr) 52px;
+            }
+
+            .ad-enrollment-create-form .form-control,
+            .ad-enrollment-create-form .form-select,
+            .ad-enrollment-create-form .select2-container {
+                width: 100% !important;
+            }
+
+            .ad-correction-dialog {
+                max-width: calc(100vw - 20px);
+            }
+
+            .ad-correction-modal .modal-header,
+            .ad-correction-modal .modal-body,
+            .ad-correction-modal .modal-footer {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+
+            .ad-correction-summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ad-correction-question-header,
+            .ad-correction-controls {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .ad-correction-score-field {
+                max-width: none;
+                min-width: 0;
+                width: 100%;
+            }
+
+            .ad-correction-auto-button {
+                width: 100%;
+            }
+
+            .ad-correction-footer-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .ad-correction-footer-actions form,
+            .ad-correction-footer-actions .ad-outline-button,
+            .ad-correction-footer-actions .ad-primary-button {
+                width: 100%;
+            }
+
+            .ad-correction-feedback {
+                margin-right: 0;
+                order: 10;
+                text-align: center;
+                width: 100%;
+            }
+
+            .ad-data-table {
+                min-width: 0;
+                width: 100%;
+            }
+
+            .ad-table-wrap {
+                overflow-x: hidden;
+                width: 100%;
+            }
+
+            .ad-data-table thead {
+                display: none;
+            }
+
+            .ad-data-table,
+            .ad-data-table tbody,
+            .ad-data-table tr,
+            .ad-data-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .ad-data-table tr {
+                border: 1px solid var(--ad-border);
+                border-radius: 8px;
+                margin-bottom: 12px;
+                padding: 12px;
+            }
+
+            .ad-data-table td {
+                border-bottom: 0 !important;
+                padding: 6px 0 !important;
+                text-align: left !important;
+            }
+
+            .ad-data-table td[data-label]::before {
+                color: var(--neutral-500);
+                content: attr(data-label);
+                display: block;
+                font-size: 12px;
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+
+            .ad-data-table td form,
+            .ad-data-table td .d-inline-flex {
+                justify-content: flex-start !important;
+                width: 100%;
+            }
+
+            .ad-data-table td input[type="date"] {
+                min-width: 0 !important;
+                width: 100%;
             }
 
             .gape-option-row {
@@ -927,9 +1947,19 @@
                                         <c:out value="${assessment.stateLabel}"/>
                                     </span>
                                 </div>
-                                <p class="text-14 text-neutral-500 mb-0">
-                                    <c:out value="${assessment.typeLabel}"/> | <c:out value="${assessment.modeLabel}"/> | <c:out value="${assessment.correctionModeLabel}"/> | <c:out value="${assessment.enrollmentModeLabel}"/> | <c:out value="${assessment.contextLabel}"/>
-                                </p>
+                                <div class="ad-hero-meta d-flex align-items-center gap-8 flex-wrap text-14 text-neutral-500 mb-0">
+                                    <span><c:out value="${assessment.typeLabel}"/></span>
+                                    <span>|</span>
+                                    <span><c:out value="${assessment.modeLabel}"/></span>
+                                    <span>|</span>
+                                    <span><c:out value="${assessment.correctionModeLabel}"/></span>
+                                    <span>|</span>
+                                    <span><c:out value="${assessment.enrollmentModeLabel}"/></span>
+                                    <span>|</span>
+                                    <span><c:out value="${assessment.finalGradeWeight}"/>%</span>
+                                    <span>|</span>
+                                    <span><c:out value="${assessment.contextLabel}"/></span>
+                                </div>
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-10 flex-wrap">
@@ -939,6 +1969,9 @@
                             <a href="${assessmentPdfUrl}" class="ad-outline-button">
                                 <i class="ph ph-download-simple me-8"></i>Download
                             </a>
+                            <button type="button" class="ad-outline-button" data-bs-toggle="modal" data-bs-target="#assessmentSetupModal">
+                                <i class="ph ph-sliders-horizontal me-8"></i>Setup
+                            </button>
                             <a href="${assessmentEditUrl}" class="ad-primary-button">
                                 <i class="ph ph-pencil-simple me-8"></i>Edit
                             </a>
@@ -950,36 +1983,32 @@
                     <button type="button" class="ad-mode-card is-active" data-ad-tab="builder" role="tab" aria-selected="true">
                         <span class="d-flex align-items-start gap-14">
                             <span class="ad-mode-icon bg-info-50 text-info-600 text-22"><i class="ph ph-pencil-ruler"></i></span>
-                            <span class="min-w-0">
+                            <span class="min-w-0 ad-mode-content">
                                 <span class="d-block text-17 fw-semibold text-neutral-800 mb-5">Builder</span>
-                                <span class="d-block text-14 text-neutral-500 mb-10">Questions, options, scores and expected answers.</span>
-                                <span class="d-flex align-items-center gap-8 flex-wrap text-13 text-neutral-600">
-                                    <span><c:out value="${assessment.questionCountLabel}"/></span>
-                                    <span>|</span>
-                                    <span>Maximum Grade: <c:out value="${assessment.maxGrade}"/></span>
-                                    <span>|</span>
-                                    <span><c:out value="${assessment.correctionModeLabel}"/> correction</span>
-                                    <span>|</span>
-                                    <span><c:out value="${assessment.availabilityLabel}"/></span>
+                                <span class="d-block text-14 text-neutral-500 mb-10 ad-mode-description">Questions, options and scoring.</span>
+                                <span class="d-block text-13 text-main-600 fw-semibold ad-mode-metric"><c:out value="${assessment.questionCountLabel}"/></span>
+                            </span>
+                        </span>
+                    </button>
+                    <button type="button" class="ad-mode-card" data-ad-tab="enrollments" role="tab" aria-selected="false">
+                        <span class="d-flex align-items-start gap-14">
+                            <span class="ad-mode-icon bg-info-50 text-info-600 text-22"><i class="ph ph-users-three"></i></span>
+                            <span class="min-w-0 ad-mode-content">
+                                <span class="d-block text-17 fw-semibold text-neutral-800 mb-5">Enrollments</span>
+                                <span class="d-block text-14 text-neutral-500 mb-10 ad-mode-description">Requests, policy and student access.</span>
+                                <span class="d-block text-13 text-main-600 fw-semibold ad-mode-metric">
+                                    ${fn:length(activeAssessmentEnrollments)} active<c:if test="${not empty pendingAssessmentEnrollments}"> | ${fn:length(pendingAssessmentEnrollments)} pending</c:if>
                                 </span>
                             </span>
                         </span>
                     </button>
-                    <button type="button" class="ad-mode-card" data-ad-tab="enrollments-attempts" role="tab" aria-selected="false">
+                    <button type="button" class="ad-mode-card" data-ad-tab="attempts" role="tab" aria-selected="false">
                         <span class="d-flex align-items-start gap-14">
-                            <span class="ad-mode-icon bg-info-50 text-info-600 text-22"><i class="ph ph-users-three"></i></span>
-                            <span class="min-w-0">
-                                <span class="d-block text-17 fw-semibold text-neutral-800 mb-5">Enrollments &amp; Attempts</span>
-                                <span class="d-block text-14 text-neutral-500 mb-10">Setup, submissions, correction queue and results.</span>
-                                <span class="d-flex align-items-center gap-8 flex-wrap text-13 text-neutral-600">
-                                    <span><c:out value="${assessment.enrollmentModeLabel}"/></span>
-                                    <span>|</span>
-                                    <span>${fn:length(activeAssessmentEnrollments)} active</span>
-                                    <span>|</span>
-                                    <span>${fn:length(pendingAssessmentEnrollments)} pending</span>
-                                    <span>|</span>
-                                    <span><c:out value="${assessment.attemptCountLabel}"/></span>
-                                </span>
+                            <span class="ad-mode-icon bg-info-50 text-info-600 text-22"><i class="ph ph-checks"></i></span>
+                            <span class="min-w-0 ad-mode-content">
+                                <span class="d-block text-17 fw-semibold text-neutral-800 mb-5">Attempts</span>
+                                <span class="d-block text-14 text-neutral-500 mb-10 ad-mode-description">Submissions, answers and correction results.</span>
+                                <span class="d-block text-13 text-main-600 fw-semibold ad-mode-metric"><c:out value="${assessment.attemptCountLabel}"/></span>
                             </span>
                         </span>
                     </button>
@@ -1038,7 +2067,6 @@
                                         <div class="min-w-0">
                                             <div class="d-flex align-items-center gap-8 flex-wrap mb-5">
                                                 <h3 class="text-17 fw-semibold text-neutral-800 mb-0"><span data-question-number>Question ${questionLoop.count}</span></h3>
-                                                <span class="${question.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${question.stateLabel}"/></span>
                                             </div>
                                             <span class="text-13 text-neutral-500">
                                                 <c:out value="${question.typeLabel}"/><c:if test="${question.allowsOptions}"> | <span data-option-count-summary data-question-id="${question.id}">${question.optionCount} ${question.optionCount == 1 ? 'option' : 'options'}</span></c:if>
@@ -1097,7 +2125,7 @@
                                             <input form="questionForm${question.id}" type="checkbox" name="required" value="true" ${question.required ? 'checked' : ''} ${canEditAssessmentStructure ? '' : 'disabled'}>
                                             Required
                                         </label>
-                                        <c:if test="${canEditAssessmentStructure and question.stateValue != 'inactive'}">
+                                        <c:if test="${canEditAssessmentStructure}">
                                             <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/questions/${question.id}/delete" method="post" class="m-0">
                                                 <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                                 <button type="submit" class="border border-danger-200 bg-danger-50 text-danger-600 w-40 h-40 rounded-8 hover-bg-danger-100 transition-03 text-18 d-inline-flex align-items-center justify-content-center" title="Delete question" aria-label="Delete question" data-delete-question-button>
@@ -1276,97 +2304,7 @@
                     </div>
                 </section>
 
-                <section class="ad-tab-panel" id="enrollments-attempts" data-ad-panel="enrollments-attempts" role="tabpanel" hidden>
-                    <div class="ad-surface px-24 py-24 mb-20">
-                        <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
-                            <div>
-                                <h3 class="text-18 fw-medium text-neutral-700 mb-4">Setup</h3>
-                                <span class="text-14 text-neutral-500">Current assessment configuration.</span>
-                            </div>
-                            <span class="${assessment.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13">
-                                <c:out value="${assessment.stateLabel}"/>
-                            </span>
-                        </div>
-
-                        <div class="ad-info-grid">
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Type</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800"><c:out value="${assessment.typeLabel}"/></span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Mode</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800"><c:out value="${assessment.modeLabel}"/></span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Correction</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800"><c:out value="${assessment.correctionModeLabel}"/></span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Attempts Limit</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800"><c:out value="${assessment.attemptsLimitLabel}"/></span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Maximum Grade</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800"><c:out value="${assessment.maxGrade}"/></span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Passing Grade</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800"><c:out value="${assessment.passingGrade}"/></span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Questions</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800"><c:out value="${assessment.questionCountLabel}"/></span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Attempts</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800"><c:out value="${assessment.attemptCountLabel}"/></span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Enrollment</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800"><c:out value="${assessment.enrollmentModeLabel}"/></span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Active Enrollments</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800">${fn:length(activeAssessmentEnrollments)} students</span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Subject</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800"><c:out value="${assessment.subjectName}"/></span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Pedagogical Block</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800">
-                                    <c:choose>
-                                        <c:when test="${assessment.blockAssessment}"><c:out value="${assessment.contentBlockName}"/></c:when>
-                                        <c:otherwise>Not assigned</c:otherwise>
-                                    </c:choose>
-                                </span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Available From</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800">
-                                    <c:choose>
-                                        <c:when test="${not empty assessment.availableFrom}"><c:out value="${assessment.availableFrom}"/></c:when>
-                                        <c:otherwise>Always</c:otherwise>
-                                    </c:choose>
-                                </span>
-                            </div>
-                            <div class="ad-info-cell">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Available Until</span>
-                                <span class="d-block text-15 fw-semibold text-neutral-800">
-                                    <c:choose>
-                                        <c:when test="${not empty assessment.availableUntil}"><c:out value="${assessment.availableUntil}"/></c:when>
-                                        <c:otherwise>No deadline</c:otherwise>
-                                    </c:choose>
-                                </span>
-                            </div>
-                            <div class="ad-info-cell ad-info-cell--wide">
-                                <span class="d-block text-12 fw-semibold text-neutral-500 mb-8">Description</span>
-                                <span class="d-block text-15 text-neutral-700"><c:out value="${assessment.description}"/></span>
-                            </div>
-                        </div>
-                    </div>
-
+                <section class="ad-tab-panel" id="enrollments" data-ad-panel="enrollments" role="tabpanel" hidden>
                     <div class="ad-surface px-24 py-24 mb-20">
                         <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-20">
                             <div>
@@ -1383,116 +2321,184 @@
                             </div>
                         </div>
 
-                        <c:if test="${not empty pendingAssessmentEnrollments}">
-                            <div class="alert alert-warning mb-20" role="alert">
-                                <i class="ph ph-warning-circle me-8"></i>There are pending enrollment requests waiting for approval.
-                            </div>
-                        </c:if>
-
                         <c:if test="${canManageAssessmentEnrollments}">
-                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollment-policy" method="post" class="d-flex align-items-center gap-10 flex-wrap mb-20">
+                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollment-policy" method="post" class="ad-enrollment-policy-form d-flex align-items-center gap-10 flex-wrap mb-20">
                                 <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments-attempts">
+                                <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments">
                                 <span class="text-14 text-neutral-600 fw-medium">Enrollment policy</span>
                                 <select name="approvalMode" class="form-select px-14 py-8 text-13 bg-neutral-20 border-neutral-30 border rounded-8" style="max-width: 210px;">
                                     <option value="auto_approve" <c:if test="${assessment.enrollmentModeValue eq 'auto_approve'}">selected</c:if>>Automatic enrollment</option>
                                     <option value="manual" <c:if test="${assessment.enrollmentModeValue eq 'manual'}">selected</c:if>>Manual enrollment</option>
                                 </select>
-                                <button type="submit" class="ad-outline-button px-12 py-8 text-13">Save policy</button>
-                            </form>
-                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments" method="post" class="border border-neutral-30 rounded-8 px-18 py-18 mb-20">
-                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments-attempts">
-                                <div class="row gy-3 align-items-start">
-                                    <div class="col-lg-6 gape-select-field">
-                                        <label for="assessmentStudentUserId" class="fw-medium text-base text-neutral-800 mb-12">Student</label>
-                                        <select id="assessmentStudentUserId" name="studentUserId" required class="form-select px-20 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
-                                            <option value="">Select student</option>
-                                            <c:forEach var="student" items="${assessmentStudentOptions}">
-                                                <c:if test="${not assessmentActiveEnrollmentByStudent[student.id]}">
-                                                    <option value="${student.id}"><c:out value="${student.name}"/> - <c:out value="${student.email}"/></option>
-                                                </c:if>
-                                            </c:forEach>
-                                        </select>
-                                    </div>
-                                    <div class="col-lg-3">
-                                        <label for="assessmentEnrollmentStartDate" class="fw-medium text-base text-neutral-800 mb-12">Start</label>
-                                        <input id="assessmentEnrollmentStartDate" name="startDate" type="date" class="form-control px-20 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
-                                    </div>
-                                    <div class="col-lg-3">
-                                        <label for="assessmentEnrollmentEndDate" class="fw-medium text-base text-neutral-800 mb-12">End</label>
-                                        <input id="assessmentEnrollmentEndDate" name="endDate" type="date" class="form-control px-20 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
-                                    </div>
-                                    <div class="col-12">
-                                        <button type="submit" class="ad-primary-button border-0">Enroll Student</button>
-                                    </div>
-                                </div>
+                                <button type="submit" class="ad-enrollment-icon-button ad-enrollment-icon-button--neutral" title="Save policy" aria-label="Save enrollment policy">
+                                    <i class="ph ph-floppy-disk"></i>
+                                </button>
                             </form>
                         </c:if>
 
-                        <div class="ad-table-wrap">
-                            <table class="table mb-0 ad-data-table">
-                                <thead>
-                                <tr>
-                                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Student</th>
-                                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Period</th>
-                                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600">State</th>
-                                    <th class="py-14 px-16 text-14 fw-medium text-neutral-600 text-end">Management</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <c:forEach var="enrollment" items="${assessmentEnrollments}">
-                                    <tr class="hover-bg-neutral-20 border-bottom transition-03">
-                                        <td class="py-16 px-16">
-                                            <span class="fw-medium text-14 text-neutral-700"><c:out value="${enrollment.studentName}"/></span>
-                                            <span class="d-block text-12 text-neutral-500"><c:out value="${enrollment.studentEmail}"/></span>
-                                        </td>
-                                        <td class="py-16 px-16 text-14 text-neutral-500"><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></td>
-                                        <td class="py-16 px-16">
-                                            <span class="${enrollment.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
-                                                <c:out value="${enrollment.stateLabel}"/>
-                                            </span>
-                                        </td>
-                                        <td class="py-16 px-16 text-end">
-                                            <c:if test="${canManageAssessmentEnrollments and enrollment.pending}">
-                                                <div class="d-inline-flex align-items-center gap-8 flex-wrap justify-content-end">
-                                                    <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments/${enrollment.studentUserId}/approve" method="post" class="m-0">
-                                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                        <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments-attempts">
-                                                        <button type="submit" class="ad-primary-button px-12 py-8 text-13 border-0">Approve</button>
-                                                    </form>
-                                                    <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments/${enrollment.studentUserId}/reject" method="post" class="m-0">
-                                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                        <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments-attempts">
-                                                        <button type="submit" class="ad-outline-button px-12 py-8 text-13">Reject</button>
-                                                    </form>
-                                                </div>
-                                            </c:if>
-                                            <c:if test="${canManageAssessmentEnrollments and enrollment.active}">
-                                                <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments/${enrollment.studentUserId}/withdraw" method="post" class="m-0 d-inline-flex align-items-center gap-8 flex-wrap justify-content-end">
-                                                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                    <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments-attempts">
-                                                    <input name="endDate" type="date" class="form-control px-12 py-8 fw-normal text-13 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8" style="min-width: 150px;">
-                                                    <button type="submit" class="ad-outline-button px-12 py-8 text-13">Remove</button>
-                                                </form>
-                                            </c:if>
-                                        </td>
-                                    </tr>
-                                </c:forEach>
-                                <c:if test="${empty assessmentEnrollments}">
+                        <c:if test="${showAssessmentEnrollmentRequests}">
+                            <div class="ad-subtab-list mb-18" role="tablist" aria-label="Enrollment sections">
+                                <button type="button" class="ad-subtab-button is-active" data-ad-enrollment-tab="requests" role="tab" aria-selected="true">
+                                    <i class="ph ph-bell-ringing"></i>Requests
+                                </button>
+                                <button type="button" class="ad-subtab-button" data-ad-enrollment-tab="enrollments" role="tab" aria-selected="false">
+                                    <i class="ph ph-users-three"></i>Enrollments
+                                </button>
+                            </div>
+
+                            <div class="ad-enrollment-subpanel" data-ad-enrollment-panel="requests" role="tabpanel">
+                                <div class="alert alert-warning mb-20" role="alert">
+                                    <i class="ph ph-warning-circle me-8"></i>There are pending enrollment requests waiting for approval.
+                                </div>
+                                <div class="ad-table-wrap">
+                                    <table class="table mb-0 ad-data-table">
+                                        <thead>
+                                        <tr>
+                                            <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Student</th>
+                                            <th class="py-14 px-16 text-14 fw-medium text-neutral-600">State</th>
+                                            <th class="py-14 px-16 text-14 fw-medium text-neutral-600 text-end">Management</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <c:forEach var="enrollment" items="${pendingAssessmentEnrollments}">
+                                            <tr class="hover-bg-neutral-20 border-bottom transition-03">
+                                                <td class="py-16 px-16" data-label="Student">
+                                                    <span class="fw-medium text-14 text-neutral-700"><c:out value="${enrollment.studentName}"/></span>
+                                                    <span class="d-block text-12 text-neutral-500"><c:out value="${enrollment.studentEmail}"/></span>
+                                                </td>
+                                                <td class="py-16 px-16" data-label="State">
+                                                    <span class="${enrollment.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
+                                                        <c:out value="${enrollment.stateLabel}"/>
+                                                    </span>
+                                                </td>
+                                                <td class="py-16 px-16 text-end" data-label="Management">
+                                                    <c:if test="${canManageAssessmentEnrollments}">
+                                                        <div class="d-inline-flex align-items-center gap-8 flex-wrap justify-content-end">
+                                                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments/${enrollment.studentUserId}/approve" method="post" class="m-0">
+                                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                                <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments">
+                                                                <button type="submit" class="ad-enrollment-icon-button ad-enrollment-icon-button--success" title="Approve enrollment" aria-label="Approve enrollment">
+                                                                    <i class="ph ph-check"></i>
+                                                                </button>
+                                                            </form>
+                                                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments/${enrollment.studentUserId}/reject" method="post" class="m-0">
+                                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                                <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments">
+                                                                <button type="submit" class="ad-enrollment-icon-button ad-enrollment-icon-button--danger" title="Reject enrollment" aria-label="Reject enrollment">
+                                                                    <i class="ph ph-x"></i>
+                                                                </button>
+                                                            </form>
+                                                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments/${enrollment.studentUserId}/delete" method="post" class="m-0">
+                                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                                <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments">
+                                                                <button type="submit" class="ad-enrollment-icon-button ad-enrollment-icon-button--delete" title="Delete enrollment" aria-label="Delete enrollment">
+                                                                    <i class="ph ph-trash"></i>
+                                                                </button>
+                                                            </form>
+                                                        </div>
+                                                    </c:if>
+                                                </td>
+                                            </tr>
+                                        </c:forEach>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </c:if>
+
+                        <div class="ad-enrollment-subpanel" data-ad-enrollment-panel="enrollments" role="tabpanel" <c:if test="${showAssessmentEnrollmentRequests}">hidden</c:if>>
+                            <c:if test="${canManageAssessmentEnrollments and showAssessmentEnrollmentCreate}">
+                                <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments" method="post" class="ad-enrollment-create-form border border-neutral-30 rounded-8 px-18 py-18 mb-20">
+                                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                    <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments">
+                                    <div class="ad-enrollment-create-grid">
+                                        <div class="gape-select-field">
+                                            <label for="assessmentStudentUserId" class="fw-medium text-base text-neutral-800 mb-12">Student</label>
+                                            <select id="assessmentStudentUserId" name="studentUserId" required class="form-select px-20 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                                                <option value="">Select student</option>
+                                                <c:forEach var="student" items="${assessmentStudentOptions}">
+                                                    <option value="${student.id}"><c:out value="${student.name}"/> - <c:out value="${student.email}"/></option>
+                                                </c:forEach>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="ad-enrollment-icon-button ad-enrollment-icon-button--primary ad-enrollment-create-submit" title="Enroll student" aria-label="Enroll student">
+                                            <i class="ph ph-user-plus"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                            </c:if>
+                            <div class="ad-table-wrap">
+                                <table class="table mb-0 ad-data-table">
+                                    <thead>
                                     <tr>
-                                        <td colspan="4" class="py-32 px-16 text-center text-14 text-neutral-500">No students enrolled in this assessment yet.</td>
+                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Student</th>
+                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600">State</th>
+                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600 text-end">Management</th>
                                     </tr>
-                                </c:if>
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                    <c:forEach var="enrollment" items="${managedAssessmentEnrollments}">
+                                        <tr class="hover-bg-neutral-20 border-bottom transition-03">
+                                            <td class="py-16 px-16" data-label="Student">
+                                                <span class="fw-medium text-14 text-neutral-700"><c:out value="${enrollment.studentName}"/></span>
+                                                <span class="d-block text-12 text-neutral-500"><c:out value="${enrollment.studentEmail}"/></span>
+                                            </td>
+                                            <td class="py-16 px-16" data-label="State">
+                                                <span class="${enrollment.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
+                                                    <c:out value="${enrollment.stateLabel}"/>
+                                                </span>
+                                            </td>
+                                            <td class="py-16 px-16 text-end" data-label="Management">
+                                                <c:if test="${canManageAssessmentEnrollments}">
+                                                    <div class="d-inline-flex align-items-center gap-8 flex-wrap justify-content-end">
+                                                        <c:if test="${enrollment.active}">
+                                                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments/${enrollment.studentUserId}/withdraw" method="post" class="m-0">
+                                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                                <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments">
+                                                                <button type="submit" class="ad-enrollment-icon-button ad-enrollment-icon-button--warning" title="Deactivate enrollment" aria-label="Deactivate enrollment">
+                                                                    <i class="ph ph-user-minus"></i>
+                                                                </button>
+                                                            </form>
+                                                        </c:if>
+                                                        <c:if test="${enrollment.reactivateAvailable}">
+                                                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments/${enrollment.studentUserId}/update" method="post" class="m-0">
+                                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                                <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments">
+                                                                <input type="hidden" name="state" value="active">
+                                                                <button type="submit" class="ad-enrollment-icon-button ad-enrollment-icon-button--success" title="Reactivate enrollment" aria-label="Reactivate enrollment">
+                                                                    <i class="ph ph-user-plus"></i>
+                                                                </button>
+                                                            </form>
+                                                        </c:if>
+                                                        <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments/${enrollment.studentUserId}/delete" method="post" class="m-0">
+                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                            <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments">
+                                                            <button type="submit" class="ad-enrollment-icon-button ad-enrollment-icon-button--delete" title="Delete enrollment" aria-label="Delete enrollment">
+                                                                <i class="ph ph-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </c:if>
+                                            </td>
+                                        </tr>
+                                    </c:forEach>
+                                    <c:if test="${empty managedAssessmentEnrollments}">
+                                        <tr>
+                                            <td colspan="3" class="py-32 px-16 text-center text-14 text-neutral-500">No students enrolled in this assessment yet.</td>
+                                        </tr>
+                                    </c:if>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
+                </section>
 
+                <section class="ad-tab-panel" id="attempts" data-ad-panel="attempts" role="tabpanel" hidden>
                     <div class="ad-surface px-24 py-24">
                         <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
                             <div>
-                                <h3 class="text-18 fw-medium text-neutral-700 mb-4">Attempt Queue</h3>
+                                <h3 class="text-18 fw-medium text-neutral-700 mb-4">Attempts</h3>
                                 <span class="text-14 text-neutral-500"><c:out value="${assessment.attemptCountLabel}"/> for this assessment.</span>
                             </div>
                         </div>
@@ -1512,26 +2518,27 @@
                                 <tbody>
                                 <c:forEach var="attempt" items="${attempts}">
                                     <tr class="hover-bg-neutral-20 border-bottom transition-03">
-                                        <td class="py-20 px-20">
+                                        <td class="py-20 px-20" data-label="Student">
                                             <span class="d-block text-14 fw-semibold text-neutral-700"><c:out value="${attempt.studentName}"/></span>
                                             <span class="d-block text-12 text-neutral-500"><c:out value="${attempt.studentEmail}"/></span>
                                         </td>
-                                        <td class="py-20 px-20 text-14 text-neutral-500">#${attempt.attemptNumber}</td>
-                                        <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${attempt.startedAt}"/></td>
-                                        <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${attempt.submittedAt}"/></td>
-                                        <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${attempt.scoreOverMaxLabel}"/></td>
-                                        <td class="py-20 px-20">
-                                            <span class="${attempt.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13">
+                                        <td class="py-20 px-20 text-14 text-neutral-500" data-label="Attempt">#${attempt.attemptNumber}</td>
+                                        <td class="py-20 px-20 text-14 text-neutral-500" data-label="Started"><c:out value="${attempt.startedAt}"/></td>
+                                        <td class="py-20 px-20 text-14 text-neutral-500" data-label="Submitted"><c:out value="${attempt.submittedAt}"/></td>
+                                        <td class="py-20 px-20 text-14 text-neutral-500" data-label="Score" data-ad-attempt-score="${attempt.id}"><c:out value="${attempt.scoreOverMaxLabel}"/></td>
+                                        <td class="py-20 px-20" data-label="State">
+                                            <span class="${attempt.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13" data-ad-attempt-state="${attempt.id}">
                                                 <c:out value="${attempt.stateLabel}"/>
                                             </span>
                                         </td>
-                                        <td class="py-20 px-20 text-end">
+                                        <td class="py-20 px-20 text-end" data-label="Actions">
                                             <c:choose>
                                                 <c:when test="${attempt.correctionOpen}">
-                                                    <c:url var="attemptCorrectionUrl" value="/learning/assessments/${assessment.id}/attempts/${attempt.id}"/>
-                                                    <a href="${attemptCorrectionUrl}" class="text-22 text-neutral-500 hover-text-main-600" title="Correct attempt">
-                                                        <i class="ph ph-checks"></i>
-                                                    </a>
+                                                    <div class="d-inline-flex align-items-center gap-8 justify-content-end">
+                                                        <button type="button" class="ad-enrollment-icon-button ad-enrollment-icon-button--neutral" title="Review answers" aria-label="Review answers" data-bs-toggle="modal" data-bs-target="#correctAttemptModal${attempt.id}">
+                                                            <i class="ph ph-eye"></i>
+                                                        </button>
+                                                    </div>
                                                 </c:when>
                                                 <c:otherwise>
                                                     <span class="text-13 text-neutral-400">Waiting submission</span>
@@ -1555,6 +2562,253 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="assessmentSetupModal" tabindex="-1" aria-labelledby="assessmentSetupTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-8 border-0">
+            <div class="modal-header border-neutral-30">
+                <div>
+                    <h5 class="modal-title text-18 fw-semibold mb-4" id="assessmentSetupTitle">Setup</h5>
+                    <span class="text-13 text-neutral-500">Type, correction, enrolment, grading and availability settings.</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center gap-10 flex-wrap mb-18">
+                    <span class="${assessment.stateBadgeClass} px-14 py-7 border-neutral-30 border rounded-pill text-13">
+                        <c:out value="${assessment.stateLabel}"/>
+                    </span>
+                    <span class="bg-main-50 text-main-600 px-14 py-7 rounded-pill text-13">
+                        <i class="ph ph-clock me-6"></i><c:out value="${assessment.availabilityLabel}"/>
+                    </span>
+                </div>
+                <div class="ad-info-grid">
+                    <div class="ad-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Type</span><strong class="text-14 text-neutral-800"><c:out value="${assessment.typeLabel}"/></strong></div>
+                    <div class="ad-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Mode</span><strong class="text-14 text-neutral-800"><c:out value="${assessment.modeLabel}"/></strong></div>
+                    <div class="ad-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Correction</span><strong class="text-14 text-neutral-800"><c:out value="${assessment.correctionModeLabel}"/></strong></div>
+                    <div class="ad-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Enrollment</span><strong class="text-14 text-neutral-800"><c:out value="${assessment.enrollmentModeLabel}"/></strong></div>
+                    <div class="ad-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Max grade</span><strong class="text-14 text-neutral-800"><c:out value="${assessment.maxGrade}"/></strong></div>
+                    <div class="ad-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Passing grade</span><strong class="text-14 text-neutral-800"><c:out value="${assessment.passingGrade}"/></strong></div>
+                    <div class="ad-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Final weight</span><strong class="text-14 text-neutral-800"><c:out value="${assessment.finalGradeWeight}"/>%</strong></div>
+                    <div class="ad-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Attempts</span><strong class="text-14 text-neutral-800"><c:out value="${assessment.attemptsLimitLabel}"/></strong></div>
+                    <div class="ad-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Questions</span><strong class="text-14 text-neutral-800"><c:out value="${assessment.questionCountLabel}"/></strong></div>
+                    <div class="ad-info-cell ad-info-cell--wide"><span class="text-12 text-neutral-500 d-block mb-6">Context</span><strong class="text-14 text-neutral-800"><c:out value="${assessment.contextLabel}"/></strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<c:forEach var="attempt" items="${attempts}">
+    <c:if test="${attempt.correctionOpen}">
+        <c:set var="attemptResponses" value="${responsesByAttemptId[attempt.id]}"/>
+        <div class="modal fade ad-correction-modal" id="correctAttemptModal${attempt.id}" tabindex="-1" aria-labelledby="correctAttemptTitle${attempt.id}" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable ad-correction-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="min-w-0">
+                            <h5 class="modal-title text-20 fw-semibold text-neutral-800 mb-4" id="correctAttemptTitle${attempt.id}">Correct Attempt</h5>
+                            <span class="text-13 text-neutral-500">
+                                Attempt #${attempt.attemptNumber} by <c:out value="${attempt.studentName}"/>
+                            </span>
+                        </div>
+                        <button type="button" class="btn-close flex-shrink-0" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="ad-correction-summary-grid">
+                            <div class="ad-correction-summary-card">
+                                <span class="text-12 text-neutral-500 mb-4">Student</span>
+                                <strong class="text-14 text-neutral-800"><c:out value="${attempt.studentName}"/></strong>
+                            </div>
+                            <div class="ad-correction-summary-card">
+                                <span class="text-12 text-neutral-500 mb-4">State</span>
+                                <span class="${attempt.stateBadgeClass} px-10 py-6 rounded-pill text-12 d-inline-block mt-2" data-ad-attempt-state="${attempt.id}"><c:out value="${attempt.stateLabel}"/></span>
+                            </div>
+                            <div class="ad-correction-summary-card">
+                                <span class="text-12 text-neutral-500 mb-4">Score</span>
+                                <strong class="text-14 text-neutral-800" data-ad-attempt-score="${attempt.id}"><c:out value="${attempt.scoreOverMaxLabel}"/></strong>
+                            </div>
+                            <div class="ad-correction-summary-card">
+                                <span class="text-12 text-neutral-500 mb-4">Correction</span>
+                                <strong class="text-14 text-neutral-800"><c:out value="${assessment.correctionModeLabel}"/></strong>
+                            </div>
+                        </div>
+
+                        <form id="manualCorrectionForm${attempt.id}" action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/attempts/${attempt.id}/manual-correct" method="post" class="m-0">
+                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                            <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#attempts">
+                        </form>
+
+                        <c:choose>
+                            <c:when test="${empty attemptResponses}">
+                                <div class="bg-white rounded-8 px-24 py-40 border border-neutral-30 text-center text-14 text-neutral-500">
+                                    No responses were saved for this attempt.
+                                </div>
+                            </c:when>
+                            <c:otherwise>
+                                <div class="ad-correction-question-list">
+                                    <c:forEach var="response" items="${attemptResponses}" varStatus="responseStatus">
+                                        <article class="ad-correction-question-card">
+                                            <div class="ad-correction-question-header">
+                                                <div class="ad-correction-question-heading">
+                                                    <span class="ad-correction-question-label">Question ${responseStatus.count}</span>
+                                                    <span class="ad-correction-question-meta"><c:out value="${response.question.typeLabel}"/> | <c:out value="${response.question.score}"/> pts</span>
+                                                    <span class="ad-correction-required-pill ${response.question.required ? '' : 'is-optional'}"><c:out value="${response.question.requiredLabel}"/></span>
+                                                </div>
+                                                <span class="ad-correction-score-pill ${response.scored ? 'bg-success-50 text-success-600' : 'bg-warning-30 text-warning-600'} px-12 py-7 rounded-pill text-12 flex-shrink-0">
+                                                    <c:out value="${response.scoreLabel}"/>
+                                                </span>
+                                            </div>
+
+                                            <p class="ad-correction-statement"><c:out value="${response.question.statement}"/></p>
+
+                                            <div class="ad-correction-answer">
+                                                <div class="ad-correction-answer-block">
+                                                    <span class="ad-correction-answer-label">Student answer</span>
+                                                    <c:choose>
+                                                        <c:when test="${response.question.allowsOptions}">
+                                                            <div class="ad-correction-choice-list">
+                                                                <c:forEach var="option" items="${response.question.activeOptions}">
+                                                                    <c:set var="optionSelected" value="${fn:contains(response.selectedOptionTokens, option.idToken)}"/>
+                                                                    <c:set var="optionExpected" value="${fn:contains(response.expectedOptionTokens, option.idToken)}"/>
+                                                                    <c:choose>
+                                                                        <c:when test="${response.objectiveWithExpectedAnswer and optionSelected and optionExpected}">
+                                                                            <c:set var="choiceTone" value="is-correct"/>
+                                                                        </c:when>
+                                                                        <c:when test="${response.objectiveWithExpectedAnswer and optionSelected}">
+                                                                            <c:set var="choiceTone" value="is-incorrect"/>
+                                                                        </c:when>
+                                                                        <c:when test="${response.objectiveWithExpectedAnswer and optionExpected}">
+                                                                            <c:set var="choiceTone" value="is-missed"/>
+                                                                        </c:when>
+                                                                        <c:when test="${optionSelected}">
+                                                                            <c:set var="choiceTone" value="is-selected"/>
+                                                                        </c:when>
+                                                                        <c:otherwise>
+                                                                            <c:set var="choiceTone" value=""/>
+                                                                        </c:otherwise>
+                                                                    </c:choose>
+                                                                    <div class="ad-correction-choice ${choiceTone}">
+                                                                        <span class="ad-correction-choice-control ${response.question.singleSelectedOption ? 'ad-correction-choice-control--radio' : 'ad-correction-choice-control--checkbox'}" aria-hidden="true"></span>
+                                                                        <span class="ad-correction-choice-text"><c:out value="${option.text}"/></span>
+                                                                    </div>
+                                                                </c:forEach>
+                                                            </div>
+                                                        </c:when>
+                                                        <c:when test="${response.question.textAnswer}">
+                                                            <div class="ad-correction-text-answer ${response.question.paragraph ? 'ad-correction-text-answer--long' : ''}"><c:out value="${response.displayAnswer}"/></div>
+                                                        </c:when>
+                                                        <c:when test="${response.question.fileUpload and response.hasAttachment}">
+                                                            <div class="ad-correction-upload-row">
+                                                                <a class="ad-correction-upload-answer" href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/attempts/${attempt.id}/responses/${response.id}/attachment">
+                                                                    <i class="ph ph-upload-simple"></i>Upload
+                                                                </a>
+                                                                <span class="ad-correction-upload-file"><c:out value="${response.attachmentFileName}"/></span>
+                                                            </div>
+                                                        </c:when>
+                                                        <c:when test="${response.question.fileUpload}">
+                                                            <div class="ad-correction-text-answer">No file uploaded.</div>
+                                                        </c:when>
+                                                        <c:when test="${response.question.typeValue == 'rating'}">
+                                                            <div class="ad-correction-rating ${response.objectiveAnswerToneClass}" aria-label="${fn:escapeXml(response.displayAnswer)}">
+                                                                <c:forEach var="ratingUnit" begin="1" end="${response.question.ratingDisplayMax}">
+                                                                    <i class="${ratingUnit <= response.ratingFilledUnits ? 'ph-fill ph-star' : 'ph ph-star'}"></i>
+                                                                </c:forEach>
+                                                            </div>
+                                                            <span class="text-13 text-neutral-500 d-block mt-8"><c:out value="${response.displayAnswer}"/> / ${response.question.ratingMax}</span>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <div class="ad-correction-text-answer"><c:out value="${response.displayAnswer}"/></div>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                    <c:if test="${not empty response.answeredAt}">
+                                                        <span class="text-12 text-neutral-500 d-block mt-8">Answered at <c:out value="${response.answeredAt}"/></span>
+                                                    </c:if>
+                                                </div>
+                                                <c:if test="${response.hasExpectedAnswer}">
+                                                    <button type="button" class="ad-outline-button ad-correction-expected-toggle" data-ad-expected-toggle aria-expanded="false" aria-controls="expectedAnswer${response.id}">
+                                                        <i class="ph ph-eye me-8" data-ad-expected-toggle-icon></i><span data-ad-expected-toggle-label>Show expected answer</span>
+                                                    </button>
+                                                    <div class="ad-correction-expected-answer" id="expectedAnswer${response.id}" data-ad-expected-panel hidden>
+                                                        <span class="ad-correction-answer-label">Expected answer</span>
+                                                        <c:choose>
+                                                            <c:when test="${response.question.allowsOptions}">
+                                                                <div class="ad-correction-choice-list">
+                                                                    <c:forEach var="option" items="${response.question.activeOptions}">
+                                                                        <c:if test="${fn:contains(response.expectedOptionTokens, option.idToken)}">
+                                                                            <div class="ad-correction-choice is-expected">
+                                                                                <span class="ad-correction-choice-control ${response.question.singleSelectedOption ? 'ad-correction-choice-control--radio' : 'ad-correction-choice-control--checkbox'}" aria-hidden="true"></span>
+                                                                                <span class="ad-correction-choice-text"><c:out value="${option.text}"/></span>
+                                                                            </div>
+                                                                        </c:if>
+                                                                    </c:forEach>
+                                                                </div>
+                                                            </c:when>
+                                                            <c:when test="${response.question.typeValue == 'rating'}">
+                                                                <div class="ad-correction-rating is-expected" aria-label="${fn:escapeXml(response.expectedDisplayAnswer)}">
+                                                                    <c:forEach var="ratingUnit" begin="1" end="${response.question.ratingDisplayMax}">
+                                                                        <i class="${ratingUnit <= response.expectedRatingFilledUnits ? 'ph-fill ph-star' : 'ph ph-star'}"></i>
+                                                                    </c:forEach>
+                                                                </div>
+                                                                <span class="text-13 text-neutral-600 d-block mt-8"><c:out value="${response.expectedDisplayAnswer}"/></span>
+                                                            </c:when>
+                                                            <c:when test="${response.question.paragraph}">
+                                                                <div class="ad-correction-text-answer ad-correction-text-answer--expected ad-correction-text-answer--long"><c:out value="${response.expectedDisplayAnswer}"/></div>
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <div class="ad-correction-text-answer ad-correction-text-answer--expected"><c:out value="${response.expectedDisplayAnswer}"/></div>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                    </div>
+                                                </c:if>
+                                            </div>
+
+                                            <div class="ad-correction-controls">
+                                                <div class="d-flex align-items-center gap-10 flex-wrap">
+                                                    <c:if test="${response.objectiveWithExpectedAnswer}">
+                                                        <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/attempts/${attempt.id}/responses/${response.id}/auto-correct" method="post" class="m-0" data-ad-auto-correct-form data-ad-auto-correct-scope="response" data-ad-attempt-id="${attempt.id}">
+                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                            <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#attempts">
+                                                            <button type="submit" class="ad-outline-button ad-correction-auto-button" aria-label="Auto correct response" data-ad-auto-correct-button>
+                                                                <i class="ph ph-magic-wand me-8"></i>Auto Correct
+                                                            </button>
+                                                        </form>
+                                                    </c:if>
+                                                </div>
+                                                <div class="ad-correction-score-field">
+                                                    <label for="responseScore${response.id}" class="text-13 fw-medium text-neutral-700 mb-8">Manual score</label>
+                                                    <input id="responseScore${response.id}" name="score_${response.id}" form="manualCorrectionForm${attempt.id}" type="text" inputmode="decimal" autocomplete="off" required value="<c:out value='${response.score}'/>" class="form-control px-14 py-10 text-14 bg-white border-neutral-30 border rounded-8 ad-correction-score-input" data-ad-response-score-input="${response.id}" data-ad-score-max="${response.question.score}" aria-describedby="responseScoreStatus${response.id} responseScoreError${response.id}">
+                                                    <span id="responseScoreStatus${response.id}" class="${response.scored ? 'text-success-600' : 'text-warning-600'} text-12 d-block mt-6" data-ad-response-score-label="${response.id}"><c:out value="${response.scoreLabel}"/></span>
+                                                    <span id="responseScoreError${response.id}" class="ad-correction-score-error" data-ad-response-score-error="${response.id}" aria-live="polite"></span>
+                                                </div>
+                                            </div>
+                                        </article>
+                                    </c:forEach>
+                                </div>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="ad-correction-footer-actions">
+                            <span class="ad-correction-feedback" data-ad-correction-feedback="${attempt.id}" aria-live="polite"></span>
+                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/attempts/${attempt.id}/pdf" class="ad-outline-button ad-correction-download-button" title="Download" aria-label="Download attempt PDF">
+                                <i class="ph ph-download-simple me-8"></i>Download
+                            </a>
+                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/attempts/${attempt.id}/auto-correct-eligible" method="post" class="m-0" data-ad-auto-correct-form data-ad-auto-correct-scope="attempt" data-ad-attempt-id="${attempt.id}">
+                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#attempts">
+                                <button type="submit" class="ad-outline-button ad-correction-auto-button" <c:if test="${empty attemptResponses}">disabled</c:if> data-ad-auto-correct-button>
+                                    <i class="ph ph-magic-wand me-8"></i>Auto all legible
+                                </button>
+                            </form>
+                            <button type="submit" form="manualCorrectionForm${attempt.id}" class="ad-primary-button ad-correction-submit-button" <c:if test="${empty attemptResponses}">disabled</c:if> data-ad-correction-submit-button>Submit Correction</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </c:if>
+</c:forEach>
 
 <c:if test="${canEditAssessmentStructure}">
 <div class="modal fade" id="addQuestionModal" tabindex="-1" aria-hidden="true">
@@ -1671,12 +2925,11 @@
 
             function panelFromHash(hash) {
                 var value = (hash || '').replace(/^#/, '');
-                if (value === 'enrollments-attempts'
-                        || value === 'assessment-attempts'
-                        || value === 'assessment-settings'
-                        || value === 'settings-attempts'
-                        || value === 'attempts') {
-                    return 'enrollments-attempts';
+                if (value === 'enrollments' || value === 'enrollments-attempts' || value === 'assessment-settings') {
+                    return 'enrollments';
+                }
+                if (value === 'attempts' || value === 'assessment-attempts' || value === 'settings-attempts') {
+                    return 'attempts';
                 }
                 return value === 'builder' ? 'builder' : 'builder';
             }
@@ -1705,6 +2958,315 @@
             });
             var initialPanel = window.location.hash ? panelFromHash(window.location.hash) : 'builder';
             activatePanel(initialPanel, false);
+        });
+
+        ready(function () {
+            var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-ad-enrollment-tab]'));
+            var panels = Array.prototype.slice.call(document.querySelectorAll('[data-ad-enrollment-panel]'));
+            if (!tabs.length || !panels.length) {
+                return;
+            }
+
+            function activateEnrollmentPanel(name) {
+                tabs.forEach(function (tab) {
+                    var active = tab.dataset.adEnrollmentTab === name;
+                    tab.classList.toggle('is-active', active);
+                    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+                });
+                panels.forEach(function (panel) {
+                    panel.hidden = panel.dataset.adEnrollmentPanel !== name;
+                });
+            }
+
+            tabs.forEach(function (tab) {
+                tab.addEventListener('click', function () {
+                    activateEnrollmentPanel(tab.dataset.adEnrollmentTab || 'enrollments');
+                });
+            });
+            activateEnrollmentPanel(tabs[0].dataset.adEnrollmentTab || 'enrollments');
+        });
+
+        ready(function () {
+            Array.prototype.slice.call(document.querySelectorAll('[data-ad-expected-toggle]')).forEach(function (button) {
+                var panel = document.getElementById(button.getAttribute('aria-controls') || '');
+                var label = button.querySelector('[data-ad-expected-toggle-label]');
+                var icon = button.querySelector('[data-ad-expected-toggle-icon]');
+                if (!panel || !label) {
+                    return;
+                }
+
+                function setExpectedAnswerVisible(visible) {
+                    panel.hidden = !visible;
+                    button.setAttribute('aria-expanded', visible ? 'true' : 'false');
+                    label.textContent = visible ? 'Hide expected answer' : 'Show expected answer';
+                    if (icon) {
+                        icon.className = visible ? 'ph ph-eye-slash me-8' : 'ph ph-eye me-8';
+                    }
+                }
+
+                setExpectedAnswerVisible(false);
+                button.addEventListener('click', function () {
+                    setExpectedAnswerVisible(button.getAttribute('aria-expanded') !== 'true');
+                });
+            });
+        });
+
+        ready(function () {
+            var inputs = Array.prototype.slice.call(document.querySelectorAll('[data-ad-response-score-input]'));
+            var submitButtons = Array.prototype.slice.call(document.querySelectorAll('[data-ad-correction-submit-button]'));
+            if (!inputs.length) {
+                return;
+            }
+
+            submitButtons.forEach(function (button) {
+                if (button.disabled) {
+                    button.dataset.adInitialDisabled = 'true';
+                }
+            });
+
+            function parseScore(value) {
+                var raw = (value || '').trim();
+                if (!raw) {
+                    return { valid: false, message: 'Manual score is required.' };
+                }
+                if (raw.indexOf('-') !== -1) {
+                    return { valid: false, message: 'Manual score cannot be negative.' };
+                }
+                if (!/^\d+(?:[\.,]\d+)?$/.test(raw)) {
+                    return { valid: false, message: 'Use a non-negative number, for example 5, 3,545 or 1.76.' };
+                }
+                var normalized = raw.replace(',', '.');
+                var number = Number(normalized);
+                if (!Number.isFinite(number)) {
+                    return { valid: false, message: 'Use a valid number.' };
+                }
+                return { valid: true, normalized: normalized, number: number };
+            }
+
+            function maxScore(input) {
+                var parsed = parseScore(input.dataset.adScoreMax || '');
+                return parsed.valid ? parsed.number : Number.POSITIVE_INFINITY;
+            }
+
+            function setScoreError(input, message) {
+                var error = document.querySelector('[data-ad-response-score-error="' + input.dataset.adResponseScoreInput + '"]');
+                var showMessage = input.dataset.adTouched === 'true';
+                if (error) {
+                    error.textContent = showMessage ? (message || '') : '';
+                }
+                input.setCustomValidity(message || '');
+                input.classList.toggle('is-invalid', Boolean(message) && showMessage);
+            }
+
+            function validateInput(input) {
+                var parsed = parseScore(input.value);
+                var message = parsed.valid ? '' : parsed.message;
+                if (!message && parsed.number > maxScore(input)) {
+                    message = 'Manual score cannot exceed ' + (input.dataset.adScoreMax || 'the question score') + '.';
+                }
+                setScoreError(input, message);
+                return !message;
+            }
+
+            function formInputs(formId) {
+                return inputs.filter(function (input) {
+                    return input.getAttribute('form') === formId;
+                });
+            }
+
+            function markPendingScore(input) {
+                input.dataset.adTouched = 'true';
+                validateInput(input);
+            }
+
+            function focusPendingScore(input) {
+                var card = input.closest('.ad-correction-question-card') || input;
+                var modalBody = input.closest('.modal-content');
+                if (card && typeof card.scrollIntoView === 'function') {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                if (modalBody && typeof modalBody.scrollIntoView === 'function') {
+                    window.setTimeout(function () {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 60);
+                }
+                window.setTimeout(function () {
+                    input.focus({ preventScroll: true });
+                    if (typeof input.select === 'function') {
+                        input.select();
+                    }
+                }, 220);
+            }
+
+            function firstPendingScore(form) {
+                var firstInvalid = null;
+                formInputs(form.id).forEach(function (input) {
+                    markPendingScore(input);
+                    if (!input.checkValidity() && !firstInvalid) {
+                        firstInvalid = input;
+                    }
+                });
+                updateSubmitButtons();
+                return firstInvalid;
+            }
+
+            function updateSubmitButtons() {
+                submitButtons.forEach(function (button) {
+                    if (button.dataset.adInitialDisabled === 'true') {
+                        return;
+                    }
+                    button.disabled = false;
+                });
+            }
+
+            inputs.forEach(function (input) {
+                input.addEventListener('input', function () {
+                    input.dataset.adTouched = 'true';
+                    validateInput(input);
+                    updateSubmitButtons();
+                });
+                input.addEventListener('blur', function () {
+                    input.dataset.adTouched = 'true';
+                    validateInput(input);
+                    updateSubmitButtons();
+                });
+                validateInput(input);
+            });
+
+            submitButtons.forEach(function (button) {
+                var form = document.getElementById(button.getAttribute('form') || '');
+                if (!form) {
+                    return;
+                }
+                button.addEventListener('click', function (event) {
+                    var firstInvalid = firstPendingScore(form);
+                    if (firstInvalid) {
+                        event.preventDefault();
+                        focusPendingScore(firstInvalid);
+                    }
+                });
+                form.addEventListener('submit', function (event) {
+                    var firstInvalid = firstPendingScore(form);
+                    if (firstInvalid) {
+                        event.preventDefault();
+                        focusPendingScore(firstInvalid);
+                    }
+                });
+            });
+
+            updateSubmitButtons();
+        });
+
+        ready(function () {
+            var forms = Array.prototype.slice.call(document.querySelectorAll('[data-ad-auto-correct-form]'));
+            if (!forms.length || !window.fetch) {
+                return;
+            }
+
+            function setFeedback(attemptId, message, state) {
+                var feedback = document.querySelector('[data-ad-correction-feedback="' + attemptId + '"]');
+                if (!feedback) {
+                    return;
+                }
+                feedback.textContent = message || '';
+                feedback.classList.toggle('is-success', state === 'success');
+                feedback.classList.toggle('is-error', state === 'error');
+            }
+
+            function setBusy(form, busy) {
+                var button = form.querySelector('[data-ad-auto-correct-button]');
+                if (!button) {
+                    return;
+                }
+                button.disabled = busy;
+                if (busy) {
+                    button.dataset.originalText = button.innerHTML;
+                    button.innerHTML = '<i class="ph ph-circle-notch me-8"></i>Working';
+                } else if (button.dataset.originalText) {
+                    button.innerHTML = button.dataset.originalText;
+                    delete button.dataset.originalText;
+                }
+            }
+
+            function updateAttempt(payload) {
+                Array.prototype.slice.call(document.querySelectorAll('[data-ad-attempt-score="' + payload.attemptId + '"]')).forEach(function (target) {
+                    target.textContent = payload.scoreOverMax || 'Not assigned yet';
+                });
+                Array.prototype.slice.call(document.querySelectorAll('[data-ad-attempt-state="' + payload.attemptId + '"]')).forEach(function (target) {
+                    target.textContent = payload.state || target.textContent;
+                });
+            }
+
+            function updateResponses(payload) {
+                (payload.responses || []).forEach(function (item) {
+                    var input = document.querySelector('[data-ad-response-score-input="' + item.id + '"]');
+                    if (input) {
+                        input.value = item.score || '';
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    var label = document.querySelector('[data-ad-response-score-label="' + item.id + '"]');
+                    if (label) {
+                        label.textContent = item.scoreLabel || 'Not assigned yet';
+                        label.classList.toggle('text-success-600', Boolean(item.score));
+                        label.classList.toggle('text-warning-600', !item.score);
+                    }
+                });
+            }
+
+            function actionUrl(form) {
+                var sessionMatch = window.location.pathname.match(/;jsessionid=([^/]+)/i);
+                if (!sessionMatch) {
+                    return form.action;
+                }
+                var url = new URL(form.action, window.location.href);
+                if (url.pathname.indexOf(';jsessionid=') !== -1) {
+                    return url.toString();
+                }
+                var contextPath = '${pageContext.request.contextPath}';
+                if (contextPath && url.pathname.indexOf(contextPath + '/') === 0) {
+                    url.pathname = contextPath + ';jsessionid=' + sessionMatch[1] + url.pathname.substring(contextPath.length);
+                } else {
+                    url.pathname = url.pathname.replace(/^\/([^\/]+)/, '/$1;jsessionid=' + sessionMatch[1]);
+                }
+                return url.toString();
+            }
+
+            forms.forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    var attemptId = form.dataset.adAttemptId || '';
+                    var formData = new URLSearchParams(new FormData(form));
+                    formData.set('autosave', 'true');
+                    setFeedback(attemptId, 'Applying automatic scores...', '');
+                    setBusy(form, true);
+                    fetch(actionUrl(form), {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    }).then(function (response) {
+                        if (!response.ok) {
+                            return response.text().then(function (message) {
+                                throw new Error(message || 'Automatic correction failed.');
+                            });
+                        }
+                        return response.json();
+                    }).then(function (payload) {
+                        updateAttempt(payload);
+                        updateResponses(payload);
+                        var corrected = payload.automaticallyCorrectedResponses || 0;
+                        setFeedback(attemptId, corrected + ' eligible response' + (corrected === 1 ? '' : 's') + ' corrected.', 'success');
+                    }).catch(function (error) {
+                        setFeedback(attemptId, error.message || 'Automatic correction failed.', 'error');
+                    }).finally(function () {
+                        setBusy(form, false);
+                    });
+                });
+            });
         });
 
         ready(function () {

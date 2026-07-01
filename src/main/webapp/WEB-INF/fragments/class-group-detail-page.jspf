@@ -682,6 +682,9 @@
                             <a href="${classGroupBackHref}" class="cg-outline-button">
                                 <i class="ph ph-arrow-left me-8"></i>Back
                             </a>
+                            <button type="button" class="cg-outline-button" data-bs-toggle="modal" data-bs-target="#classGroupSetupModal">
+                                <i class="ph ph-sliders-horizontal me-8"></i>Setup
+                            </button>
                             <c:if test="${canManageClassGroup}">
                                 <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/edit?returnTo=${currentReturnToParam}" class="cg-outline-button">
                                     <i class="ph ph-pencil-simple-line me-8"></i>Edit
@@ -690,6 +693,13 @@
                         </div>
                     </div>
                 </section>
+
+                <c:if test="${not empty classGroupAssessmentWeightWarning}">
+                    <div class="bg-warning-50 text-warning-600 border border-warning-100 rounded-8 px-18 py-14 mb-20 text-14 d-flex align-items-start gap-10">
+                        <i class="ph ph-warning-circle text-20 flex-shrink-0"></i>
+                        <span><c:out value="${classGroupAssessmentWeightWarning}"/></span>
+                    </div>
+                </c:if>
 
                 <div class="cg-mode-grid mb-20" role="tablist" aria-label="Class group detail views">
                     <button type="button" class="cg-mode-card is-active" data-cg-tab="structure" aria-selected="true">
@@ -700,9 +710,15 @@
                     </button>
                     <button type="button" class="cg-mode-card" data-cg-tab="info" aria-selected="false">
                         <span class="cg-mode-icon bg-success-50 text-success-600 text-24 mb-14"><i class="ph ph-users-three"></i></span>
-                        <span class="text-20 fw-semibold text-neutral-800 d-block mb-8">Class Details &amp; Enrollments</span>
-                        <span class="text-14 text-neutral-500 d-block mb-12">Setup, teachers and enrollments.</span>
-                        <span class="text-13 text-success-600 fw-semibold"><c:out value="${classGroup.activeEnrollmentCountLabel}"/> | ${fn:length(pendingClassGroupEnrollments)} pending | <c:out value="${classGroup.teacherCountLabel}"/></span>
+                        <span class="text-20 fw-semibold text-neutral-800 d-block mb-8">Enrollments</span>
+                        <span class="text-14 text-neutral-500 d-block mb-12">Student access and enrollment state.</span>
+                        <span class="text-13 text-success-600 fw-semibold"><c:out value="${classGroup.activeEnrollmentCountLabel}"/> | ${fn:length(pendingClassGroupEnrollments)} pending</span>
+                    </button>
+                    <button type="button" class="cg-mode-card" data-cg-tab="teachers" aria-selected="false">
+                        <span class="cg-mode-icon bg-info-50 text-info-600 text-24 mb-14"><i class="ph ph-chalkboard-teacher"></i></span>
+                        <span class="text-20 fw-semibold text-neutral-800 d-block mb-8">Teachers</span>
+                        <span class="text-14 text-neutral-500 d-block mb-12">Teaching assignments for this class group.</span>
+                        <span class="text-13 text-main-600 fw-semibold"><c:out value="${classGroup.teacherCountLabel}"/></span>
                     </button>
                 </div>
 
@@ -873,7 +889,7 @@
                                                                                 <a href="${pageContext.request.contextPath}/learning/assessments/${content.assessmentReferenceId}" class="cg-outline-button text-13 px-12 py-8" title="Detail">
                                                                                     <i class="ph ph-eye"></i>
                                                                                 </a>
-                                                                                <a href="${pageContext.request.contextPath}/learning/assessments/${content.assessmentReferenceId}" class="cg-icon-button" title="Edit">
+                                                                                <a href="${pageContext.request.contextPath}/learning/assessments/${content.assessmentReferenceId}/edit" class="cg-icon-button" title="Edit">
                                                                                     <i class="ph ph-pencil-simple-line text-20"></i>
                                                                                 </a>
                                                                                 <a href="${pageContext.request.contextPath}/learning/assessments/${content.assessmentReferenceId}/pdf" class="cg-primary-button text-13 px-12 py-8" title="Download">
@@ -979,7 +995,7 @@
                                                                         <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}" class="cg-outline-button text-13 px-12 py-8" title="Detail">
                                                                             <i class="ph ph-eye"></i>
                                                                         </a>
-                                                                        <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}" class="cg-icon-button" title="Edit">
+                                                                        <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}/edit" class="cg-icon-button" title="Edit">
                                                                             <i class="ph ph-pencil-simple-line text-20"></i>
                                                                         </a>
                                                                         <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}/pdf" class="cg-primary-button text-13 px-12 py-8" title="Download">
@@ -1304,6 +1320,10 @@
                                                                                 <input id="assessmentPassingGrade${block.id}" type="number" step="0.01" min="0" required value="10.00" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="passingGrade" disabled>
                                                                             </div>
                                                                             <div class="col-lg-4">
+                                                                                <label for="assessmentFinalGradeWeight${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Final Weight (%)</label>
+                                                                                <input id="assessmentFinalGradeWeight${block.id}" type="number" step="0.01" min="0" max="100" required value="100.00" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="finalGradeWeight" disabled>
+                                                                            </div>
+                                                                            <div class="col-lg-4">
                                                                                 <label for="assessmentAttemptsLimit${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Attempts Limit</label>
                                                                                 <input id="assessmentAttemptsLimit${block.id}" type="number" min="1" placeholder="Unlimited" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="attemptsLimit" disabled>
                                                                             </div>
@@ -1514,7 +1534,7 @@
                     </div>
 
                     <div class="cg-tab-panel" data-cg-panel="info" hidden>
-                        <section id="class-setup" class="cg-surface px-22 py-22 mb-20">
+                        <section id="class-setup" class="d-none">
                             <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-18">
                                 <div>
                                     <h3 class="text-18 fw-semibold text-neutral-800 mb-6">Setup</h3>
@@ -1637,7 +1657,9 @@
                                 </table>
                             </div>
                         </section>
+                    </div>
 
+                    <div class="cg-tab-panel" data-cg-panel="teachers" hidden>
                         <section id="teachers" class="cg-surface px-22 py-22 mb-20">
                             <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-18">
                                 <div>
@@ -1718,7 +1740,9 @@
                                 </table>
                             </div>
                         </section>
+                    </div>
 
+                    <div class="cg-tab-panel" data-cg-panel="info" hidden>
                         <c:if test="${canManageClassGroupStructure}">
                             <section class="cg-surface px-22 py-22">
                                 <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap">
@@ -1737,6 +1761,40 @@
                 </main>
             </div>
             <%@ include file="/WEB-INF/fragments/dashboard-footer.jspf" %>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="classGroupSetupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-8 border-0">
+            <div class="modal-header border-neutral-30">
+                <div>
+                    <h5 class="modal-title text-18 fw-semibold mb-4">Setup</h5>
+                    <span class="text-13 text-neutral-500">Course, subject, dates, modality, capacity and fixed shift.</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex align-items-center gap-10 flex-wrap mb-18">
+                    <span class="${classGroup.stateBadgeClass} px-14 py-7 border-neutral-30 border rounded-pill text-13">
+                        <c:out value="${classGroup.stateLabel}"/>
+                    </span>
+                    <span class="bg-main-50 text-main-600 px-14 py-7 rounded-pill text-13">
+                        <i class="ph ph-clock me-6"></i><c:out value="${classGroup.shift}"/>
+                    </span>
+                </div>
+                <div class="cg-info-grid">
+                    <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Course</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.courseName}"/></strong></div>
+                    <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Subject</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.subjectName}"/></strong></div>
+                    <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Capacity</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.capacityLabel}"/></strong></div>
+                    <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Shift</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.shift}"/></strong></div>
+                    <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Modality</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.modalityLabel}"/></strong></div>
+                    <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Dates</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.dateRangeLabel}"/></strong></div>
+                    <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Students</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.activeEnrollmentCountLabel}"/></strong></div>
+                    <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Teachers</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.teacherCountLabel}"/></strong></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -2599,10 +2657,11 @@
         function validateAssessmentForm(form) {
             var maxGrade = form.querySelector('[data-assessment-field="maxGrade"]');
             var passingGrade = form.querySelector('[data-assessment-field="passingGrade"]');
+            var finalGradeWeight = form.querySelector('[data-assessment-field="finalGradeWeight"]');
             var attemptsLimit = form.querySelector('[data-assessment-field="attemptsLimit"]');
             var availableFrom = form.querySelector('[data-assessment-field="availableFrom"]');
             var availableUntil = form.querySelector('[data-assessment-field="availableUntil"]');
-            [maxGrade, passingGrade, attemptsLimit, availableFrom, availableUntil].forEach(function (field) {
+            [maxGrade, passingGrade, finalGradeWeight, attemptsLimit, availableFrom, availableUntil].forEach(function (field) {
                 if (field) {
                     field.setCustomValidity('');
                 }
@@ -2624,6 +2683,12 @@
             if (maxGrade && passingGrade && maxGrade.value && passingGrade.value
                     && parseFloat(passingGrade.value) > parseFloat(maxGrade.value)) {
                 passingGrade.setCustomValidity('Passing grade cannot exceed maximum grade.');
+            }
+            if (finalGradeWeight && finalGradeWeight.value) {
+                var weightValue = parseFloat(finalGradeWeight.value);
+                if (!Number.isFinite(weightValue) || weightValue < 0 || weightValue > 100) {
+                    finalGradeWeight.setCustomValidity('Final weight must be between 0 and 100.');
+                }
             }
             if (availableFrom && availableUntil && availableFrom.value && availableUntil.value
                     && availableUntil.value < availableFrom.value) {

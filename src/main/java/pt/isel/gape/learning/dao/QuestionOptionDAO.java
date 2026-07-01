@@ -14,7 +14,6 @@ import java.util.Optional;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.QuestionOption;
 import pt.isel.gape.learning.model.QuestionOptionCreateCommand;
-import pt.isel.gape.learning.model.QuestionOptionState;
 import pt.isel.gape.learning.model.QuestionOptionUpdateCommand;
 
 public final class QuestionOptionDAO {
@@ -27,15 +26,14 @@ public final class QuestionOptionDAO {
 
     public long create(Connection connection, QuestionOptionCreateCommand command) throws SQLException {
         String sql = """
-                INSERT INTO question_option (id_question, order_no, text, correct_flag, state)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO question_option (id_question, order_no, text, correct_flag)
+                VALUES (?, ?, ?, ?)
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setLong(1, command.questionId());
             statement.setInt(2, command.orderNo());
             statement.setString(3, command.text().trim());
             setNullableBoolean(statement, 4, command.correct());
-            statement.setString(5, command.state().toDatabaseValue());
             statement.executeUpdate();
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (!generatedKeys.next()) {
@@ -126,7 +124,6 @@ public final class QuestionOptionDAO {
     public List<QuestionOption> findActiveByQuestion(Connection connection, long questionId) throws SQLException {
         String sql = selectOptionSql() + """
                 WHERE id_question = ?
-                  AND state = 'active'
                 ORDER BY order_no, id_option
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -155,15 +152,14 @@ public final class QuestionOptionDAO {
             throws SQLException {
         String sql = """
                 UPDATE question_option
-                SET order_no = ?, text = ?, correct_flag = ?, state = ?
+                SET order_no = ?, text = ?, correct_flag = ?
                 WHERE id_option = ?
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setInt(1, command.orderNo());
             statement.setString(2, command.text().trim());
             setNullableBoolean(statement, 3, command.correct());
-            statement.setString(4, command.state().toDatabaseValue());
-            statement.setLong(5, optionId);
+            statement.setLong(4, optionId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Question option not found: " + optionId);
             }
@@ -183,13 +179,22 @@ public final class QuestionOptionDAO {
         }
     }
 
+    public void delete(Connection connection, long optionId) throws SQLException {
+        String sql = "DELETE FROM question_option WHERE id_option = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, optionId);
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Question option not found: " + optionId);
+            }
+        }
+    }
+
     public long countActiveCorrectOptions(Connection connection, long questionId, Long excludedOptionId)
             throws SQLException {
         String sql = """
                 SELECT COUNT(*)
                 FROM question_option
                 WHERE id_question = ?
-                  AND state = 'active'
                   AND correct_flag = 1
                   AND (? IS NULL OR id_option <> ?)
                 """;
@@ -215,7 +220,6 @@ public final class QuestionOptionDAO {
                 SELECT COUNT(*)
                 FROM question_option
                 WHERE id_question = ?
-                  AND state = 'active'
                   AND (? IS NULL OR id_option <> ?)
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -247,7 +251,6 @@ public final class QuestionOptionDAO {
                 SELECT COUNT(*)
                 FROM question_option
                 WHERE id_question = ?
-                  AND state = 'active'
                   AND id_option IN (%s)
                 """.formatted(placeholders);
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -266,7 +269,7 @@ public final class QuestionOptionDAO {
     private static String selectOptionSql() {
         return """
                 SELECT question_option.id_option, question_option.id_question, question_option.order_no,
-                       question_option.text, question_option.correct_flag, question_option.state
+                       question_option.text, question_option.correct_flag
                 FROM question_option
                 """;
     }
@@ -289,8 +292,7 @@ public final class QuestionOptionDAO {
                 resultSet.getLong("id_question"),
                 resultSet.getInt("order_no"),
                 resultSet.getString("text"),
-                correct,
-                QuestionOptionState.fromDatabaseValue(resultSet.getString("state"))
+                correct
         );
     }
 

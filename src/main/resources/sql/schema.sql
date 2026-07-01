@@ -255,7 +255,8 @@ CREATE TABLE IF NOT EXISTS course (
     acronym VARCHAR(30) NOT NULL,
     photo VARCHAR(255) NULL,
     description VARCHAR(500) NULL,
-    ects DECIMAL(7,2) NULL,
+    ects DECIMAL(7,2) NOT NULL,
+    certificate_max_grade DECIMAL(5,2) NOT NULL DEFAULT 20.00,
     duration VARCHAR(40) NULL,
     type VARCHAR(40) NOT NULL,
     state VARCHAR(20) NOT NULL,
@@ -275,7 +276,9 @@ CREATE TABLE IF NOT EXISTS course (
     CONSTRAINT ck_course_state
         CHECK (state IN ('active', 'inactive')),
     CONSTRAINT ck_course_ects
-        CHECK (ects IS NULL OR ects >= 0),
+        CHECK (ects > 0),
+    CONSTRAINT ck_course_certificate_max_grade
+        CHECK (certificate_max_grade > 0),
     CONSTRAINT ck_course_name_separator
         CHECK (LOCATE('|', name) = 0),
     CONSTRAINT ck_course_acronym_separator
@@ -289,7 +292,8 @@ CREATE TABLE IF NOT EXISTS subject (
     acronym VARCHAR(30) NOT NULL,
     photo VARCHAR(255) NULL,
     description VARCHAR(500) NULL,
-    ects DECIMAL(7,2) NULL,
+    ects DECIMAL(7,2) NOT NULL,
+    final_grade_max DECIMAL(5,2) NOT NULL DEFAULT 20.00,
     workload_hours INT NULL,
     state VARCHAR(20) NOT NULL,
     PRIMARY KEY (id_subject),
@@ -301,7 +305,9 @@ CREATE TABLE IF NOT EXISTS subject (
         FOREIGN KEY (id_organization) REFERENCES organization (id_organization)
         ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT ck_subject_ects
-        CHECK (ects IS NULL OR ects >= 0),
+        CHECK (ects > 0),
+    CONSTRAINT ck_subject_final_grade_max
+        CHECK (final_grade_max > 0),
     CONSTRAINT ck_subject_workload_hours
         CHECK (workload_hours IS NULL OR workload_hours >= 0),
     CONSTRAINT ck_subject_state
@@ -724,6 +730,7 @@ CREATE TABLE IF NOT EXISTS assessment (
     correction_mode VARCHAR(30) NOT NULL,
     max_grade DECIMAL(5,2) NOT NULL,
     passing_grade DECIMAL(5,2) NOT NULL,
+    final_grade_weight DECIMAL(5,2) NOT NULL DEFAULT 100.00,
     attempts_limit INT NULL,
     enrollment_mode VARCHAR(30) NOT NULL DEFAULT 'auto_approve',
     state VARCHAR(20) NOT NULL,
@@ -753,6 +760,8 @@ CREATE TABLE IF NOT EXISTS assessment (
         CHECK (state IN ('draft', 'scheduled', 'active', 'completed')),
     CONSTRAINT ck_assessment_grades
         CHECK (max_grade >= 0 AND passing_grade >= 0 AND passing_grade <= max_grade),
+    CONSTRAINT ck_assessment_final_grade_weight
+        CHECK (final_grade_weight >= 0 AND final_grade_weight <= 100),
     CONSTRAINT ck_assessment_attempts_limit
         CHECK (attempts_limit IS NULL OR attempts_limit > 0),
     CONSTRAINT ck_assessment_scheduled_start
@@ -790,7 +799,6 @@ CREATE TABLE IF NOT EXISTS question (
     required_flag BOOLEAN NOT NULL,
     score DECIMAL(5,2) NOT NULL,
     expected_answer VARCHAR(2000) NULL,
-    state VARCHAR(20) NOT NULL,
     PRIMARY KEY (id_question),
     UNIQUE KEY uq_question_assessment_code (id_assessment, cod_question),
     UNIQUE KEY uq_question_assessment_order (id_assessment, order_no),
@@ -805,17 +813,13 @@ CREATE TABLE IF NOT EXISTS question (
     CONSTRAINT ck_question_score
         CHECK (score >= 0.10),
     CONSTRAINT ck_question_rating_expected_answer
-        CHECK (type <> 'rating' OR (expected_answer IS NOT NULL AND TRIM(expected_answer) <> '')),
-    CONSTRAINT ck_question_state
-        CHECK (state IN ('active', 'inactive'))
+        CHECK (type <> 'rating' OR (expected_answer IS NOT NULL AND TRIM(expected_answer) <> ''))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS enroll_assessment (
     id_student_user BIGINT UNSIGNED NOT NULL,
     id_assessment BIGINT UNSIGNED NOT NULL,
     state VARCHAR(20) NOT NULL,
-    start_date DATE NULL,
-    end_date DATE NULL,
     PRIMARY KEY (id_student_user, id_assessment),
     KEY idx_enroll_assessment_assessment (id_assessment),
     KEY idx_enroll_assessment_state (state),
@@ -825,8 +829,6 @@ CREATE TABLE IF NOT EXISTS enroll_assessment (
     CONSTRAINT fk_enroll_assessment_assessment
         FOREIGN KEY (id_assessment) REFERENCES assessment (id_assessment)
         ON UPDATE CASCADE ON DELETE CASCADE,
-    CONSTRAINT ck_enroll_assessment_dates
-        CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date),
     CONSTRAINT ck_enroll_assessment_state
         CHECK (state IN ('pending', 'active', 'inactive', 'rejected', 'completed', 'withdrawn'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -837,16 +839,13 @@ CREATE TABLE IF NOT EXISTS question_option (
     order_no INT NOT NULL,
     text VARCHAR(300) NOT NULL,
     correct_flag BOOLEAN NULL,
-    state VARCHAR(20) NOT NULL,
     PRIMARY KEY (id_option),
     UNIQUE KEY uq_question_option_order (id_question, order_no),
     CONSTRAINT fk_question_option_question
         FOREIGN KEY (id_question) REFERENCES question (id_question)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT ck_question_option_order
-        CHECK (order_no > 0),
-    CONSTRAINT ck_question_option_state
-        CHECK (state IN ('active', 'inactive'))
+        CHECK (order_no > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS attempt (
@@ -854,7 +853,7 @@ CREATE TABLE IF NOT EXISTS attempt (
     id_student_user BIGINT UNSIGNED NOT NULL,
     id_assessment BIGINT UNSIGNED NOT NULL,
     attempt_number INT NOT NULL,
-    score DECIMAL(5,2) NULL,
+    score DECIMAL(7,3) NULL,
     state VARCHAR(20) NOT NULL,
     started_at DATETIME NOT NULL,
     submitted_at DATETIME NULL,
@@ -872,6 +871,8 @@ CREATE TABLE IF NOT EXISTS attempt (
         CHECK (attempt_number > 0),
     CONSTRAINT ck_attempt_score
         CHECK (score IS NULL OR score >= 0),
+    CONSTRAINT ck_attempt_score_requires_correction
+        CHECK (score IS NULL OR state = 'corrected'),
     CONSTRAINT ck_attempt_state
         CHECK (state IN ('in_progress', 'submitted', 'corrected', 'expired', 'cancelled')),
     CONSTRAINT ck_attempt_submitted
@@ -885,7 +886,7 @@ CREATE TABLE IF NOT EXISTS response (
     cod_response VARCHAR(30) NOT NULL,
     answer VARCHAR(2000) NULL,
     attachment VARCHAR(255) NULL,
-    score DECIMAL(5,2) NULL,
+    score DECIMAL(7,3) NULL,
     answered_at DATETIME NULL,
     PRIMARY KEY (id_response),
     UNIQUE KEY uq_response_attempt_code (id_attempt, cod_response),
@@ -1153,6 +1154,9 @@ CREATE TABLE IF NOT EXISTS grade_sheet (
     id_subject BIGINT UNSIGNED NOT NULL,
     title VARCHAR(160) NOT NULL,
     type VARCHAR(40) NOT NULL,
+    max_grade DECIMAL(5,2) NOT NULL DEFAULT 20.00,
+    passing_grade DECIMAL(5,2) NOT NULL DEFAULT 9.50,
+    weight_alert VARCHAR(255) NULL,
     released_at DATETIME NULL,
     state VARCHAR(20) NOT NULL,
     PRIMARY KEY (id_grade_sheet),
@@ -1164,7 +1168,9 @@ CREATE TABLE IF NOT EXISTS grade_sheet (
     CONSTRAINT ck_grade_sheet_type
         CHECK (type IN ('final', 'continuous_assessment', 'exam', 'partial', 'other')),
     CONSTRAINT ck_grade_sheet_state
-        CHECK (state IN ('draft', 'published', 'closed'))
+        CHECK (state IN ('draft', 'published', 'closed', 'archived')),
+    CONSTRAINT ck_grade_sheet_scale
+        CHECK (max_grade > 0 AND passing_grade >= 0 AND passing_grade <= max_grade)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS associate_grade_sheet_class_group (
@@ -1183,7 +1189,7 @@ CREATE TABLE IF NOT EXISTS associate_grade_sheet_class_group (
 CREATE TABLE IF NOT EXISTS based_on_assessment (
     id_grade_sheet BIGINT UNSIGNED NOT NULL,
     id_assessment BIGINT UNSIGNED NOT NULL,
-    weight DECIMAL(5,2) NULL,
+    weight DECIMAL(5,2) NOT NULL,
     PRIMARY KEY (id_grade_sheet, id_assessment),
     KEY idx_based_on_assessment_assessment (id_assessment),
     CONSTRAINT fk_based_on_assessment_grade_sheet
@@ -1193,7 +1199,7 @@ CREATE TABLE IF NOT EXISTS based_on_assessment (
         FOREIGN KEY (id_assessment) REFERENCES assessment (id_assessment)
         ON UPDATE CASCADE ON DELETE CASCADE,
     CONSTRAINT ck_based_on_assessment_weight
-        CHECK (weight IS NULL OR (weight > 0 AND weight <= 100))
+        CHECK (weight >= 0 AND weight <= 100)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS grade_record (
@@ -1204,14 +1210,15 @@ CREATE TABLE IF NOT EXISTS grade_record (
     cod_grade_record VARCHAR(30) NOT NULL,
     value DECIMAL(5,2) NOT NULL,
     result VARCHAR(20) NOT NULL,
+    state VARCHAR(20) NOT NULL DEFAULT 'published',
     recorded_at DATETIME NOT NULL,
     notes VARCHAR(500) NULL,
-    state VARCHAR(20) NOT NULL,
+    active_student_user_id BIGINT UNSIGNED NULL,
     PRIMARY KEY (id_grade_record),
     UNIQUE KEY uq_grade_record_sheet_code (id_grade_sheet, cod_grade_record),
+    UNIQUE KEY uq_grade_record_sheet_active_student (id_grade_sheet, active_student_user_id),
     UNIQUE KEY uq_grade_record_attempt (id_attempt),
     KEY idx_grade_record_student (id_user_student),
-    KEY idx_grade_record_state (state),
     CONSTRAINT fk_grade_record_grade_sheet
         FOREIGN KEY (id_grade_sheet) REFERENCES grade_sheet (id_grade_sheet)
         ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -1222,9 +1229,9 @@ CREATE TABLE IF NOT EXISTS grade_record (
         FOREIGN KEY (id_attempt) REFERENCES attempt (id_attempt)
         ON UPDATE CASCADE ON DELETE SET NULL,
     CONSTRAINT ck_grade_record_result
-        CHECK (result IN ('approved', 'failed', 'pending', 'absent', 'reproved')),
+        CHECK (result IN ('approved', 'failed', 'pending', 'absent')),
     CONSTRAINT ck_grade_record_state
-        CHECK (state IN ('draft', 'published', 'corrected', 'active')),
+        CHECK (state IN ('draft', 'published', 'corrected', 'archived')),
     CONSTRAINT ck_grade_record_value
         CHECK (value >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -1239,13 +1246,15 @@ CREATE TABLE IF NOT EXISTS certificate (
     template VARCHAR(255) NULL,
     validation_code VARCHAR(80) NULL,
     issued_at DATETIME NULL,
+    state VARCHAR(20) NOT NULL DEFAULT 'draft',
+    revoked_at DATETIME NULL,
     final_grade DECIMAL(5,2) NULL,
-    state VARCHAR(20) NOT NULL,
+    active_student_user_id BIGINT UNSIGNED NULL,
     PRIMARY KEY (id_certificate),
     UNIQUE KEY uq_certificate_validation_code (validation_code),
+    UNIQUE KEY uq_certificate_course_active_student (id_course, active_student_user_id),
     KEY idx_certificate_course (id_course),
     KEY idx_certificate_student (id_user_student),
-    KEY idx_certificate_state (state),
     CONSTRAINT fk_certificate_course
         FOREIGN KEY (id_course) REFERENCES course (id_course)
         ON UPDATE CASCADE ON DELETE RESTRICT,
@@ -1256,8 +1265,20 @@ CREATE TABLE IF NOT EXISTS certificate (
         CHECK (type IN ('completion', 'attendance', 'qualification', 'other')),
     CONSTRAINT ck_certificate_state
         CHECK (state IN ('draft', 'active', 'issued', 'revoked')),
-    CONSTRAINT ck_certificate_issued_context
-        CHECK (state <> 'issued' OR (validation_code IS NOT NULL AND issued_at IS NOT NULL))
+    CONSTRAINT ck_certificate_issued_fields
+        CHECK (
+            (state = 'issued'
+                AND validation_code IS NOT NULL
+                AND issued_at IS NOT NULL
+                AND final_grade IS NOT NULL
+                AND revoked_at IS NULL)
+            OR (state = 'revoked'
+                AND validation_code IS NOT NULL
+                AND issued_at IS NOT NULL
+                AND revoked_at IS NOT NULL)
+            OR (state IN ('draft', 'active')
+                AND revoked_at IS NULL)
+        )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS based_on_grade_sheet_certificate (
@@ -2976,6 +2997,10 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Submitted or corrected Attempt requires submitted_at';
     END IF;
 
+    IF NEW.state <> 'corrected' AND NEW.score IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Only corrected Attempt can store score';
+    END IF;
+
     IF v_class_group IS NOT NULL THEN
         SELECT COUNT(*)
         INTO v_exists
@@ -3010,9 +3035,7 @@ BEGIN
     FROM enroll_assessment
     WHERE id_student_user = NEW.id_student_user
       AND id_assessment = NEW.id_assessment
-      AND state = 'active'
-      AND (start_date IS NULL OR start_date <= CURRENT_DATE)
-      AND (end_date IS NULL OR end_date >= CURRENT_DATE);
+      AND state = 'active';
 
     IF v_assessment_enrollment_exists = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Attempt requires an active Assessment enrollment';
@@ -3045,6 +3068,10 @@ BEGIN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Submitted or corrected Attempt requires submitted_at';
     END IF;
 
+    IF NEW.state <> 'corrected' AND NEW.score IS NOT NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Only corrected Attempt can store score';
+    END IF;
+
     IF v_class_group IS NOT NULL THEN
         SELECT COUNT(*)
         INTO v_exists
@@ -3079,9 +3106,7 @@ BEGIN
     FROM enroll_assessment
     WHERE id_student_user = NEW.id_student_user
       AND id_assessment = NEW.id_assessment
-      AND state = 'active'
-      AND (start_date IS NULL OR start_date <= CURRENT_DATE)
-      AND (end_date IS NULL OR end_date >= CURRENT_DATE);
+      AND state = 'active';
 
     IF v_assessment_enrollment_exists = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Attempt requires an active Assessment enrollment';
@@ -3366,6 +3391,27 @@ BEGIN
     END IF;
 END$$
 
+DROP TRIGGER IF EXISTS bu_associate_grade_sheet_class_group_validate$$
+CREATE TRIGGER bu_associate_grade_sheet_class_group_validate
+BEFORE UPDATE ON associate_grade_sheet_class_group
+FOR EACH ROW
+BEGIN
+    DECLARE v_grade_sheet_subject BIGINT UNSIGNED;
+    DECLARE v_class_group_subject BIGINT UNSIGNED;
+
+    SELECT id_subject INTO v_grade_sheet_subject
+    FROM grade_sheet
+    WHERE id_grade_sheet = NEW.id_grade_sheet;
+
+    SELECT id_subject INTO v_class_group_subject
+    FROM class_group
+    WHERE id_class_group = NEW.id_class_group;
+
+    IF v_grade_sheet_subject <> v_class_group_subject THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Grade_Sheet Class_Groups must belong to the same Subject';
+    END IF;
+END$$
+
 DROP TRIGGER IF EXISTS bi_based_on_assessment_validate$$
 CREATE TRIGGER bi_based_on_assessment_validate
 BEFORE INSERT ON based_on_assessment
@@ -3374,7 +3420,6 @@ BEGIN
     DECLARE v_grade_sheet_subject BIGINT UNSIGNED;
     DECLARE v_assessment_subject BIGINT UNSIGNED;
     DECLARE v_block_subject BIGINT UNSIGNED;
-    DECLARE v_total_weight DECIMAL(7,2) DEFAULT 0;
 
     SELECT id_subject INTO v_grade_sheet_subject
     FROM grade_sheet
@@ -3393,17 +3438,6 @@ BEGIN
 
     IF v_block_subject IS NOT NULL AND v_block_subject <> v_grade_sheet_subject THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Based_On_Assessment Content_Block Subject must match Grade_Sheet Subject';
-    END IF;
-
-    IF NEW.weight IS NOT NULL THEN
-        SELECT COALESCE(SUM(weight), 0)
-        INTO v_total_weight
-        FROM based_on_assessment
-        WHERE id_grade_sheet = NEW.id_grade_sheet;
-
-        IF v_total_weight + NEW.weight > 100 THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Based_On_Assessment total weight cannot exceed 100';
-        END IF;
     END IF;
 END$$
 
@@ -3415,7 +3449,6 @@ BEGIN
     DECLARE v_grade_sheet_subject BIGINT UNSIGNED;
     DECLARE v_assessment_subject BIGINT UNSIGNED;
     DECLARE v_block_subject BIGINT UNSIGNED;
-    DECLARE v_total_weight DECIMAL(7,2) DEFAULT 0;
 
     SELECT id_subject INTO v_grade_sheet_subject
     FROM grade_sheet
@@ -3434,18 +3467,6 @@ BEGIN
 
     IF v_block_subject IS NOT NULL AND v_block_subject <> v_grade_sheet_subject THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Based_On_Assessment Content_Block Subject must match Grade_Sheet Subject';
-    END IF;
-
-    IF NEW.weight IS NOT NULL THEN
-        SELECT COALESCE(SUM(weight), 0)
-        INTO v_total_weight
-        FROM based_on_assessment
-        WHERE id_grade_sheet = NEW.id_grade_sheet
-          AND id_assessment <> OLD.id_assessment;
-
-        IF v_total_weight + NEW.weight > 100 THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Based_On_Assessment total weight cannot exceed 100';
-        END IF;
     END IF;
 END$$
 
@@ -3458,8 +3479,27 @@ BEGIN
     DECLARE v_grade_sheet_subject BIGINT UNSIGNED;
     DECLARE v_assessment_subject BIGINT UNSIGNED;
     DECLARE v_block_subject BIGINT UNSIGNED;
+    DECLARE v_sheet_max_grade DECIMAL(5,2);
     DECLARE v_max_grade DECIMAL(5,2);
-    DECLARE v_active_count INT DEFAULT 0;
+
+    IF NEW.state IN ('draft', 'published', 'corrected') THEN
+        SET NEW.active_student_user_id = NEW.id_user_student;
+        IF NEW.cod_grade_record NOT LIKE 'AUTO-%'
+                AND NEW.cod_grade_record NOT LIKE 'A-%' THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Grade_Record must be automatically calculated';
+        END IF;
+    ELSE
+        SET NEW.active_student_user_id = NULL;
+    END IF;
+
+    SELECT max_grade
+    INTO v_sheet_max_grade
+    FROM grade_sheet
+    WHERE id_grade_sheet = NEW.id_grade_sheet;
+
+    IF NEW.value > v_sheet_max_grade THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Grade_Record value cannot exceed the Grade_Sheet max_grade';
+    END IF;
 
     IF NEW.id_attempt IS NOT NULL THEN
         SELECT a.id_student_user, gs.id_subject, ass.id_subject, cg.id_subject, ass.max_grade
@@ -3488,18 +3528,6 @@ BEGIN
         END IF;
     END IF;
 
-    IF NEW.state = 'active' THEN
-        SELECT COUNT(*)
-        INTO v_active_count
-        FROM grade_record
-        WHERE id_grade_sheet = NEW.id_grade_sheet
-          AND id_user_student = NEW.id_user_student
-          AND state = 'active';
-
-        IF v_active_count > 0 THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Only one active Grade_Record is allowed per Grade_Sheet and Student';
-        END IF;
-    END IF;
 END$$
 
 DROP TRIGGER IF EXISTS bu_grade_record_validate$$
@@ -3511,8 +3539,27 @@ BEGIN
     DECLARE v_grade_sheet_subject BIGINT UNSIGNED;
     DECLARE v_assessment_subject BIGINT UNSIGNED;
     DECLARE v_block_subject BIGINT UNSIGNED;
+    DECLARE v_sheet_max_grade DECIMAL(5,2);
     DECLARE v_max_grade DECIMAL(5,2);
-    DECLARE v_active_count INT DEFAULT 0;
+
+    IF NEW.state IN ('draft', 'published', 'corrected') THEN
+        SET NEW.active_student_user_id = NEW.id_user_student;
+        IF NEW.cod_grade_record NOT LIKE 'AUTO-%'
+                AND NEW.cod_grade_record NOT LIKE 'A-%' THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Active Grade_Record must be automatically calculated';
+        END IF;
+    ELSE
+        SET NEW.active_student_user_id = NULL;
+    END IF;
+
+    SELECT max_grade
+    INTO v_sheet_max_grade
+    FROM grade_sheet
+    WHERE id_grade_sheet = NEW.id_grade_sheet;
+
+    IF NEW.value > v_sheet_max_grade THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Grade_Record value cannot exceed the Grade_Sheet max_grade';
+    END IF;
 
     IF NEW.id_attempt IS NOT NULL THEN
         SELECT a.id_student_user, gs.id_subject, ass.id_subject, cg.id_subject, ass.max_grade
@@ -3541,24 +3588,62 @@ BEGIN
         END IF;
     END IF;
 
-    IF NEW.state = 'active' THEN
-        SELECT COUNT(*)
-        INTO v_active_count
-        FROM grade_record
-        WHERE id_grade_sheet = NEW.id_grade_sheet
-          AND id_user_student = NEW.id_user_student
-          AND state = 'active'
-          AND id_grade_record <> NEW.id_grade_record;
+END$$
 
-        IF v_active_count > 0 THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Only one active Grade_Record is allowed per Grade_Sheet and Student';
-        END IF;
+DROP TRIGGER IF EXISTS bi_certificate_validate$$
+CREATE TRIGGER bi_certificate_validate
+BEFORE INSERT ON certificate
+FOR EACH ROW
+BEGIN
+    IF NEW.state <> 'revoked' THEN
+        SET NEW.active_student_user_id = NEW.id_user_student;
+    ELSE
+        SET NEW.active_student_user_id = NULL;
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_certificate_validate$$
+CREATE TRIGGER bu_certificate_validate
+BEFORE UPDATE ON certificate
+FOR EACH ROW
+BEGIN
+    IF NEW.state <> 'revoked' THEN
+        SET NEW.active_student_user_id = NEW.id_user_student;
+    ELSE
+        SET NEW.active_student_user_id = NULL;
     END IF;
 END$$
 
 DROP TRIGGER IF EXISTS bi_bgsc_validate$$
 CREATE TRIGGER bi_bgsc_validate
 BEFORE INSERT ON based_on_grade_sheet_certificate
+FOR EACH ROW
+BEGIN
+    DECLARE v_course BIGINT UNSIGNED;
+    DECLARE v_subject BIGINT UNSIGNED;
+    DECLARE v_exists INT DEFAULT 0;
+
+    SELECT c.id_course, gs.id_subject
+    INTO v_course, v_subject
+    FROM certificate c
+    JOIN grade_sheet gs ON gs.id_grade_sheet = NEW.id_grade_sheet
+    WHERE c.id_certificate = NEW.id_certificate;
+
+    SELECT COUNT(*)
+    INTO v_exists
+    FROM integrate_subject
+    WHERE id_course = v_course
+      AND id_subject = v_subject
+      AND state = 'active';
+
+    IF v_exists = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Certificate Course must integrate the Subject of the referenced Grade_Sheet';
+    END IF;
+END$$
+
+DROP TRIGGER IF EXISTS bu_bgsc_validate$$
+CREATE TRIGGER bu_bgsc_validate
+BEFORE UPDATE ON based_on_grade_sheet_certificate
 FOR EACH ROW
 BEGIN
     DECLARE v_course BIGINT UNSIGNED;

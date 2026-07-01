@@ -20,6 +20,7 @@ public final class CourseView {
     private final String photo;
     private final String description;
     private final BigDecimal ects;
+    private final BigDecimal certificateMaxGrade;
     private final String duration;
     private final CourseType type;
     private final CourseState state;
@@ -47,6 +48,7 @@ public final class CourseView {
         this.photo = MediaPathValidator.safeRelativePath(course.photo()).orElse(null);
         this.description = course.description();
         this.ects = course.ects();
+        this.certificateMaxGrade = course.certificateMaxGrade();
         this.duration = course.duration();
         this.type = course.type();
         this.state = course.state();
@@ -115,6 +117,10 @@ public final class CourseView {
 
     public String getEctsLabel() {
         return ects == null ? "-" : formatDecimal(ects) + " ECTS";
+    }
+
+    public String getCertificateMaxGradeLabel() {
+        return certificateMaxGrade == null ? "-" : formatDecimal(certificateMaxGrade);
     }
 
     public String getDurationLabel() {

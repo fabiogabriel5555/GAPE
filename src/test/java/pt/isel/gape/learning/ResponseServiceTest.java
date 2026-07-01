@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
@@ -32,7 +34,6 @@ import pt.isel.gape.learning.model.Attempt;
 import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionConfiguration;
 import pt.isel.gape.learning.model.QuestionCreateCommand;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
 import pt.isel.gape.learning.model.Response;
 import pt.isel.gape.learning.model.ResponseCommand;
@@ -68,6 +69,7 @@ class ResponseServiceTest {
         questionService = new QuestionService(connectionProvider, FIXED_CLOCK);
         attemptService = new AttemptService(connectionProvider, FIXED_CLOCK);
         responseService = new ResponseService(connectionProvider, FIXED_CLOCK);
+        restoreSharedAssessmentFixture();
     }
 
     @AfterEach
@@ -103,30 +105,6 @@ class ResponseServiceTest {
                 AccessProfileType.STUDENT,
                 attempt.id(),
                 new ResponseCommand(100L, "texto indevido", null, List.of()),
-                IP
-        ));
-    }
-
-    @Test
-    void responseForInactiveQuestionIsRejected() {
-        Assessment assessment = createAssessment("Form Inactive Question");
-        createQuestion(assessment.id(), "Q-ACTIVE", QuestionType.PARAGRAPH, 1, null, QuestionState.ACTIVE);
-        Question inactive = createQuestion(
-                assessment.id(),
-                "Q-INACTIVE",
-                QuestionType.PARAGRAPH,
-                2,
-                null,
-                QuestionState.INACTIVE
-        );
-        Attempt attempt = attemptService.startAttempt(4L, null, AccessProfileType.STUDENT, assessment.id(), IP);
-
-        assertThrows(IllegalArgumentException.class, () -> responseService.saveResponse(
-                4L,
-                null,
-                AccessProfileType.STUDENT,
-                attempt.id(),
-                new ResponseCommand(inactive.id(), "Resposta indevida", null, List.of()),
                 IP
         ));
     }
@@ -330,22 +308,24 @@ class ResponseServiceTest {
         );
     }
 
+    private static void restoreSharedAssessmentFixture() throws SQLException {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     UPDATE assessment
+                     SET state = 'active',
+                         available_from = '2026-02-01 00:00:00',
+                         available_until = '2026-02-20 23:59:00'
+                     WHERE id_assessment = 90
+                     """)) {
+            statement.executeUpdate();
+        }
+    }
+
     private Question createQuestion(long assessmentId, String code, QuestionType type, int order) {
         return createQuestion(assessmentId, code, type, order, null);
     }
 
     private Question createQuestion(long assessmentId, String code, QuestionType type, int order, String expectedAnswer) {
-        return createQuestion(assessmentId, code, type, order, expectedAnswer, QuestionState.ACTIVE);
-    }
-
-    private Question createQuestion(
-            long assessmentId,
-            String code,
-            QuestionType type,
-            int order,
-            String expectedAnswer,
-            QuestionState state
-    ) {
         return questionService.createQuestion(
                 3L,
                 null,
@@ -358,8 +338,7 @@ class ResponseServiceTest {
                         order,
                         true,
                         bd("5.00"),
-                        expectedAnswer,
-                        state
+                        expectedAnswer
                 ),
                 IP
         );

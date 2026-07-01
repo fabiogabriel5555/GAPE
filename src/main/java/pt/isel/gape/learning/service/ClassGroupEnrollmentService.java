@@ -48,6 +48,7 @@ public final class ClassGroupEnrollmentService {
     private final SubjectDAO subjectDAO;
     private final CourseSubjectDAO courseSubjectDAO;
     private final EnrollmentDAO enrollmentDAO;
+    private final GradeLifecycleService gradeLifecycleService;
     private final EnrollmentApprovalPolicyDAO enrollmentApprovalPolicyDAO;
     private final PermissionChecker permissionChecker;
     private final AuditService auditService;
@@ -76,6 +77,7 @@ public final class ClassGroupEnrollmentService {
         this.subjectDAO = Objects.requireNonNull(subjectDAO, "subjectDAO is required");
         this.courseSubjectDAO = Objects.requireNonNull(courseSubjectDAO, "courseSubjectDAO is required");
         this.enrollmentDAO = Objects.requireNonNull(enrollmentDAO, "enrollmentDAO is required");
+        this.gradeLifecycleService = new GradeLifecycleService(connectionProvider, clock);
         this.enrollmentApprovalPolicyDAO = Objects.requireNonNull(
                 enrollmentApprovalPolicyDAO,
                 "enrollmentApprovalPolicyDAO is required"
@@ -165,6 +167,7 @@ public final class ClassGroupEnrollmentService {
                         throw new IllegalStateException("Class group maximum capacity exceeded");
                     }
                     classGroupEnrollmentDAO.enroll(connection, normalized);
+                    gradeLifecycleService.ensureClassGroupGradeSheetDraft(connection, classGroup, subject);
                     auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_ENROLL",
                             "class_group_enrollment",
                             enrollmentIdentifier(normalized.studentUserId(), normalized.classGroupId()),
@@ -252,6 +255,9 @@ public final class ClassGroupEnrollmentService {
                         }
                     } else {
                         classGroupEnrollmentDAO.reactivateRequest(connection, normalized, targetState);
+                    }
+                    if (targetState == EnrollmentState.ACTIVE) {
+                        gradeLifecycleService.ensureClassGroupGradeSheetDraft(connection, classGroup, subject);
                     }
 
                     auditService.record(connection, actorUserId, sessionId,
@@ -348,6 +354,7 @@ public final class ClassGroupEnrollmentService {
                             approvedStart,
                             approvedEnd
                     );
+                    gradeLifecycleService.ensureClassGroupGradeSheetDraft(connection, classGroup, subject);
                     auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_ENROLL_APPROVE",
                             "class_group_enrollment",
                             enrollmentIdentifier(studentUserId, classGroupId),
@@ -594,6 +601,9 @@ public final class ClassGroupEnrollmentService {
                             effectiveStartDate,
                             effectiveEndDate
                     );
+                    if (state == EnrollmentState.ACTIVE) {
+                        gradeLifecycleService.ensureClassGroupGradeSheetDraft(connection, classGroup, subject);
+                    }
                     auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_ENROLL_UPDATE",
                             "class_group_enrollment", enrollmentIdentifier(studentUserId, classGroupId),
                             "success", sourceIp);

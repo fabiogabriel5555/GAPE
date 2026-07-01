@@ -26,3 +26,11 @@ INSERT INTO content_block (
     access_mode, state, available_from, available_until
 ) VALUES
     (9022, 50, 'BLK-UNQ-ORDER', 'Bloco Ordem Duplicada', NULL, 1, 'open', 'active', NULL, NULL);
+
+-- Only one non-revoked certificate is allowed per course and student
+INSERT INTO certificate (
+    id_certificate, id_course, id_user_student, title, notes, type, template,
+    validation_code, issued_at, state, revoked_at, final_grade
+) VALUES
+    (9023, 30, 4, 'Duplicate Active Certificate', NULL, 'completion', 'template-v1',
+     'VAL-UNQ-ACTIVE-CERT', '2026-07-02 11:00:00', 'issued', NULL, 10.00);

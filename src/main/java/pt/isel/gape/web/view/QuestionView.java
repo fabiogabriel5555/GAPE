@@ -6,7 +6,6 @@ import java.util.List;
 import pt.isel.gape.learning.model.ContentFormat;
 import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionConfiguration;
-import pt.isel.gape.learning.model.QuestionState;
 import pt.isel.gape.learning.model.QuestionType;
 
 public final class QuestionView {
@@ -102,38 +101,16 @@ public final class QuestionView {
         return question.expectedAnswer() == null ? "" : question.expectedAnswer();
     }
 
-    public String getState() {
-        return question.state().name();
-    }
-
-    public String getStateValue() {
-        return question.state().toDatabaseValue();
-    }
-
-    public String getStateLabel() {
-        return switch (question.state()) {
-            case ACTIVE -> "Active";
-            case INACTIVE -> "Inactive";
-        };
-    }
-
-    public String getStateBadgeClass() {
-        return switch (question.state()) {
-            case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
-        };
-    }
-
-    public boolean isActive() {
-        return question.state() == QuestionState.ACTIVE;
-    }
-
     public boolean isAllowsOptions() {
         return question.type().allowsOptions();
     }
 
     public boolean isSingleSelectedOption() {
         return question.type().allowsSingleSelectedOption();
+    }
+
+    public boolean isAutomaticallyScoredObjective() {
+        return question.type().isAutomaticallyScoredObjective();
     }
 
     public boolean isTextAnswer() {
@@ -154,9 +131,7 @@ public final class QuestionView {
     }
 
     public List<QuestionOptionView> getActiveOptions() {
-        return options.stream()
-                .filter(QuestionOptionView::isActive)
-                .toList();
+        return options;
     }
 
     public int getOptionCount() {
@@ -193,6 +168,10 @@ public final class QuestionView {
 
     public int getRatingMax() {
         return QuestionConfiguration.ratingMax(question.expectedAnswer());
+    }
+
+    public int getRatingDisplayMax() {
+        return Math.min(getRatingMax(), 10);
     }
 
     public String getRatingExpectedValue() {

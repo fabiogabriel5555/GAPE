@@ -522,7 +522,8 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                             text(request, "acronym"),
                             text(request, "photo"),
                             text(request, "description"),
-                            optionalBigDecimal(request, "ects"),
+                            requiredBigDecimal(request, "ects"),
+                            requiredBigDecimal(request, "finalGradeMax"),
                             optionalInteger(request, "workloadHours"),
                             subjectState(text(request, "state")),
                             primaryInitialCourseId,
@@ -617,7 +618,8 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
                             text(request, "acronym"),
                             photo,
                             text(request, "description"),
-                            optionalBigDecimal(request, "ects"),
+                            requiredBigDecimal(request, "ects"),
+                            requiredBigDecimal(request, "finalGradeMax"),
                             optionalInteger(request, "workloadHours"),
                             subjectState(text(request, "state"))
                     ),
@@ -1628,6 +1630,14 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
     private static BigDecimal optionalBigDecimal(HttpServletRequest request, String name) {
         String value = text(request, name);
         return value == null ? null : new BigDecimal(value);
+    }
+
+    private static BigDecimal requiredBigDecimal(HttpServletRequest request, String name) {
+        BigDecimal value = optionalBigDecimal(request, name);
+        if (value == null) {
+            throw new IllegalArgumentException(name + " is required");
+        }
+        return value;
     }
 
     private static Part subjectImagePart(HttpServletRequest request) throws IOException, ServletException {
