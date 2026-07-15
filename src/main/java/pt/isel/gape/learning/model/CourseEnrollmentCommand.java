@@ -1,11 +1,12 @@
 package pt.isel.gape.learning.model;
 
-import java.time.LocalDate;
-
+/**
+ * A course enrollment always belongs to one specific occurrence. Its dates
+ * are derived from that occurrence and are therefore never user supplied.
+ */
 public record CourseEnrollmentCommand(
         long studentUserId,
         long courseId,
-        LocalDate startDate,
-        LocalDate endDate
+        long courseOccurrenceId
 ) {
 }

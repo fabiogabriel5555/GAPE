@@ -2,21 +2,13 @@ package pt.isel.gape.web.view;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.Lesson;
 import pt.isel.gape.learning.model.LessonState;
 import pt.isel.gape.learning.model.LessonType;
 
 public final class LessonView {
-
-    private static final DateTimeFormatter DISPLAY_DATE_TIME =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("pt-PT"));
-    private static final DateTimeFormatter COMPACT_DATE_TIME =
-            DateTimeFormatter.ofPattern("dd/MM HH:mm", Locale.forLanguageTag("pt-PT"));
-    private static final DateTimeFormatter INPUT_DATE_TIME =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
 
     private final Lesson lesson;
 
@@ -139,19 +131,19 @@ public final class LessonView {
     }
 
     public String getStartsAt() {
-        return lesson.startsAt() == null ? "" : DISPLAY_DATE_TIME.format(lesson.startsAt());
+        return lesson.startsAt() == null ? "" : ApplicationDateTimeFormat.dateTime(lesson.startsAt());
     }
 
     public String getEndsAt() {
-        return lesson.endsAt() == null ? "" : DISPLAY_DATE_TIME.format(lesson.endsAt());
+        return lesson.endsAt() == null ? "" : ApplicationDateTimeFormat.dateTime(lesson.endsAt());
     }
 
     public String getStartsAtInput() {
-        return lesson.startsAt() == null ? "" : INPUT_DATE_TIME.format(lesson.startsAt());
+        return lesson.startsAt() == null ? "" : ApplicationDateTimeFormat.TECHNICAL_DATE_TIME.format(lesson.startsAt());
     }
 
     public String getEndsAtInput() {
-        return lesson.endsAt() == null ? "" : INPUT_DATE_TIME.format(lesson.endsAt());
+        return lesson.endsAt() == null ? "" : ApplicationDateTimeFormat.TECHNICAL_DATE_TIME.format(lesson.endsAt());
     }
 
     public LocalDateTime getStartsAtRaw() {
@@ -177,9 +169,9 @@ public final class LessonView {
         if (lesson.startsAt() == null && lesson.endsAt() == null) {
             return "Not scheduled";
         }
-        return (lesson.startsAt() == null ? "-" : COMPACT_DATE_TIME.format(lesson.startsAt()))
+        return (lesson.startsAt() == null ? "-" : ApplicationDateTimeFormat.dateTime(lesson.startsAt()))
                 + " to "
-                + (lesson.endsAt() == null ? "-" : COMPACT_DATE_TIME.format(lesson.endsAt()));
+                + (lesson.endsAt() == null ? "-" : ApplicationDateTimeFormat.dateTime(lesson.endsAt()));
     }
 
     public String getDurationLabel() {

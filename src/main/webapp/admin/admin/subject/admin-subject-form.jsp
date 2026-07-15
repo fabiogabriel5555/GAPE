@@ -1,4 +1,4 @@
-﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
     if (request.getAttribute("activeMenu") == null) {
@@ -50,13 +50,13 @@
             <%@ include file="/WEB-INF/fragments/dashboard-topbar.jspf" %>
             <div class="px-24 py-24 flex-grow-1">
                 <%@ include file="/WEB-INF/fragments/flash-messages.jspf" %>
-                <form action="${formAction}" method="post" enctype="multipart/form-data" class="bg-white rounded-10 px-40 py-40">
+                <form action="${formAction}" method="post" enctype="multipart/form-data" class="bg-white rounded-10 px-40 py-40" data-subject-context-form>
                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                     <input type="hidden" id="photo" name="photo" value="<c:out value='${form.photo}'/>">
                     <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap border-bottom-dashed pb-24 mb-24">
                         <div>
                             <h2 class="text-18 fw-medium text-neutral-700 mb-4">${creating ? 'Create Subject' : 'Edit Subject'}</h2>
-                            <span class="text-14 text-neutral-500">Subjects are scoped to one organization.</span>
+                            <span class="text-14 text-neutral-500">Subject and organic unit must belong to the same organization.</span>
                         </div>
                         <a href="${subjectBackHref}" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03">Back</a>
                     </div>
@@ -98,9 +98,9 @@
                     </div>
 
                     <div class="row gy-4">
-                        <div class="col-lg-6 gape-select-field">
+                        <div class="col-lg-6 gape-select-field gape-course-context-field" data-subject-organization-context>
                             <label for="organizationId" class="fw-medium text-base text-neutral-800 mb-12">Organization</label>
-                            <select id="organizationId" name="organizationId" required ${creating ? '' : 'disabled'} class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
+                            <select id="organizationId" name="organizationId" required ${creating ? '' : 'disabled'} class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 gape-eduall-select" data-subject-organization>
                                 <option value="">Select organization</option>
                                 <c:forEach var="organization" items="${organizationOptions}">
                                     <option value="${organization.id}" ${form.organizationId == organization.id or selectedOrganizationId == organization.id ? 'selected' : ''}>
@@ -112,6 +112,17 @@
                                 <input type="hidden" name="organizationId" value="${form.organizationId}">
                             </c:if>
                         </div>
+                        <div class="col-lg-6 gape-select-field gape-course-context-field${selectedOrganizationId == 0 ? ' opacity-75 is-disabled' : ''}" data-subject-organic-unit-context>
+                            <label for="organicUnitId" class="fw-medium text-base text-neutral-800 mb-12">Organic Unit</label>
+                            <select id="organicUnitId" name="organicUnitId" ${selectedOrganizationId == 0 ? 'disabled' : ''} class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 gape-eduall-select" data-subject-organic-unit>
+                                <option value="">No organic unit</option>
+                                <c:forEach var="unit" items="${organicUnitOptions}">
+                                    <option value="${unit.id}" data-organization-id="${unit.organizationId}" ${selectedOrganizationId != unit.organizationId ? 'hidden disabled' : ''} ${form.organicUnitId == unit.id ? 'selected' : ''}>
+                                        <c:out value="${unit.code}"/> - <c:out value="${unit.name}"/>
+                                    </option>
+                                </c:forEach>
+                            </select>
+                        </div>
                         <div class="col-lg-6 gape-select-field">
                             <label for="state" class="fw-medium text-base text-neutral-800 mb-12">State</label>
                             <select id="state" name="state" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
@@ -119,55 +130,13 @@
                                 <option value="INACTIVE" ${form.state == 'INACTIVE' ? 'selected' : ''}>Inactive</option>
                             </select>
                         </div>
-                        <c:if test="${creating}">
-                            <div class="col-lg-6 gape-select-field">
-                                <label for="initialCourseIds" class="fw-medium text-base text-neutral-800 mb-12">Initial Courses</label>
-                                <select id="initialCourseIds" name="initialCourseIds" multiple required data-dependent-select data-parent-select="#organizationId" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
-                                    <c:forEach var="course" items="${courseOptions}">
-                                        <option value="${course.id}" data-parent-value="${course.organizationId}" title="<c:out value='${course.courseManagementContextTitle}'/>" ${form.isInitialCourseSelected(course.id) ? 'selected' : ''}>
-                                            <c:out value="${course.name}"/> | <c:out value="${course.courseManagementContextLabel}"/>
-                                        </option>
-                                    </c:forEach>
-                                </select>
-                            </div>
-                            <div class="col-lg-2">
-                                <label for="initialCurricularYear" class="fw-medium text-base text-neutral-800 mb-12">Year</label>
-                                <input id="initialCurricularYear" name="initialCurricularYear" type="number" min="1" value="<c:out value='${form.initialCurricularYear}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
-                            </div>
-                            <div class="col-lg-4 gape-select-field">
-                                <label for="initialTerm" class="fw-medium text-base text-neutral-800 mb-12">Period</label>
-                                <select id="initialTerm" name="initialTerm" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
-                                    <option value="" ${empty form.initialTerm ? 'selected' : ''}>No period</option>
-                                    <option value="ANNUAL" ${form.initialTerm == 'ANNUAL' ? 'selected' : ''}>Annual</option>
-                                    <option value="SEMESTER_1" ${form.initialTerm == 'SEMESTER_1' ? 'selected' : ''}>1st semester</option>
-                                    <option value="SEMESTER_2" ${form.initialTerm == 'SEMESTER_2' ? 'selected' : ''}>2nd semester</option>
-                                    <option value="TRIMESTER_1" ${form.initialTerm == 'TRIMESTER_1' ? 'selected' : ''}>1st trimester</option>
-                                    <option value="TRIMESTER_2" ${form.initialTerm == 'TRIMESTER_2' ? 'selected' : ''}>2nd trimester</option>
-                                    <option value="TRIMESTER_3" ${form.initialTerm == 'TRIMESTER_3' ? 'selected' : ''}>3rd trimester</option>
-                                </select>
-                            </div>
-                            <div class="col-lg-4 gape-select-field">
-                                <label for="initialApprovalMode" class="fw-medium text-base text-neutral-800 mb-12">Enrollment</label>
-                                <select id="initialApprovalMode" name="initialApprovalMode" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
-                                    <option value="">Select mode</option>
-                                    <option value="manual">Manual approval</option>
-                                    <option value="auto_approve">Auto approve</option>
-                                </select>
-                            </div>
-                            <div class="col-lg-4 d-flex align-items-end">
-                                <div class="form-check common-check">
-                                    <input class="form-check-input" type="checkbox" id="initialMandatory" name="initialMandatory" value="true" ${form.initialMandatory ? 'checked' : ''}>
-                                    <label class="form-check-label fw-medium" for="initialMandatory">Mandatory subject</label>
-                                </div>
-                            </div>
-                        </c:if>
                         <div class="col-lg-7">
                             <label for="name" class="fw-medium text-base text-neutral-800 mb-12">Name</label>
-                            <input id="name" name="name" type="text" value="<c:out value='${form.name}'/>" required pattern="[^|]*" title="Names cannot contain |" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                            <input id="name" name="name" type="text" value="<c:out value='${form.name}'/>" required pattern="[^\|]*" title="Names cannot contain |" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
                         <div class="col-lg-2">
                             <label for="acronym" class="fw-medium text-base text-neutral-800 mb-12">Acronym</label>
-                            <input id="acronym" name="acronym" type="text" value="<c:out value='${form.acronym}'/>" required pattern="[^|]*" title="Acronyms cannot contain |" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                            <input id="acronym" name="acronym" type="text" value="<c:out value='${form.acronym}'/>" required pattern="[^\|]*" title="Acronyms cannot contain |" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
                         <div class="col-lg-3">
                             <label for="ects" class="fw-medium text-base text-neutral-800 mb-12">ECTS</label>
@@ -181,19 +150,6 @@
                             <label for="workloadHours" class="fw-medium text-base text-neutral-800 mb-12">Workload Hours</label>
                             <input id="workloadHours" name="workloadHours" type="number" min="0" value="<c:out value='${form.workloadHours}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
-                        <c:if test="${creating}">
-                            <div class="col-lg-8 gape-select-field">
-                                <label for="coordinatorUserId" class="fw-medium text-base text-neutral-800 mb-12">Initial Coordinator</label>
-                                <select id="coordinatorUserId" name="coordinatorUserId" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
-                                    <option value="">No coordinator</option>
-                                    <c:forEach var="coordinator" items="${coordinatorOptions}">
-                                        <option value="${coordinator.id}" ${form.coordinatorUserId == coordinator.id ? 'selected' : ''}>
-                                            <c:out value="${coordinator.name}"/> - <c:out value="${coordinator.email}"/>
-                                        </option>
-                                    </c:forEach>
-                                </select>
-                            </div>
-                        </c:if>
                         <div class="col-12">
                             <label for="description" class="fw-medium text-base text-neutral-800 mb-12">Description</label>
                             <textarea id="description" name="description" rows="4" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600"><c:out value="${form.description}"/></textarea>
@@ -206,57 +162,13 @@
                     </div>
                 </form>
 
-                <c:if test="${not creating and canAssignSubjectCoordinators}">
-                    <div class="bg-white rounded-10 px-40 py-40 mt-24">
-                        <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap border-bottom-dashed pb-24 mb-24">
-                            <div>
-                                <h3 class="text-18 fw-medium text-neutral-700 mb-4">Coordinator Assignment</h3>
-                                <span class="text-14 text-neutral-500">Assign an active coordinator to this subject.</span>
-                            </div>
-                        </div>
-                        <form action="${pageContext.request.contextPath}${subjectBasePath}/${form.id}/assign-coordinator" method="post">
-                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                            <div class="row gy-4">
-                                <div class="col-lg-6 gape-select-field">
-                                    <label for="editCoordinatorUserId" class="fw-medium text-base text-neutral-800 mb-12">Coordinator</label>
-                                    <select id="editCoordinatorUserId" name="coordinatorUserId" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
-                                        <option value="">Select coordinator</option>
-                                        <c:forEach var="coordinator" items="${coordinatorOptions}">
-                                            <option value="${coordinator.id}"><c:out value="${coordinator.name}"/> - <c:out value="${coordinator.email}"/></option>
-                                        </c:forEach>
-                                    </select>
-                                </div>
-                                <div class="col-lg-2">
-                                    <label for="editStartDate" class="fw-medium text-base text-neutral-800 mb-12">Start Date</label>
-                                    <input id="editStartDate" name="startDate" type="date" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
-                                </div>
-                                <div class="col-lg-2">
-                                    <label for="editEndDate" class="fw-medium text-base text-neutral-800 mb-12">End Date</label>
-                                    <input id="editEndDate" name="endDate" type="date" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
-                                </div>
-                                <div class="col-lg-2 d-flex align-items-end justify-content-lg-end">
-                                    <button type="submit" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">Assign</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="mt-24">
-                        <%@ include file="/WEB-INF/fragments/subject-course-associations-panel.jspf" %>
-                    </div>
-                </c:if>
-
-                <c:if test="${not creating}">
-                    <div class="mt-24">
-                        <%@ include file="/WEB-INF/fragments/subject-enrollment-management.jspf" %>
-                    </div>
-                </c:if>
             </div>
             <%@ include file="/WEB-INF/fragments/dashboard-footer.jspf" %>
         </div>
     </div>
 </div>
 <%@ include file="/WEB-INF/fragments/template-base-scripts.jspf" %>
+<script src="${pageContext.request.contextPath}/assets/js/gape-course-context.js?v=20260714-subject-context"></script>
 <script>
     (function () {
         const imageInput = document.getElementById('subjectImageUpload');

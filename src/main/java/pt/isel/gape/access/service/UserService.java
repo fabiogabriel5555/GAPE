@@ -8,7 +8,6 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -229,6 +228,7 @@ public final class UserService {
                     Set<AccessProfileContextAssignment> selectedProfileContexts = profileContextAssignments == null
                             ? null
                             : normalizeProfileContextAssignments(profileContextAssignments);
+                    rejectCoordinatorSubjectContextAssignments(selectedProfileContexts);
                     validateNoOverlappingProfileScopes(
                             connection,
                             normalizedCommand.accessProfiles(),
@@ -395,6 +395,7 @@ public final class UserService {
                     Set<AccessProfileContextAssignment> selectedProfileContexts = profileContextAssignments == null
                             ? null
                             : normalizeProfileContextAssignments(profileContextAssignments);
+                    rejectCoordinatorSubjectContextAssignments(selectedProfileContexts);
                     validateNoOverlappingProfileScopes(
                             connection,
                             normalizedCommand.accessProfiles(),
@@ -901,18 +902,12 @@ public final class UserService {
             return;
         }
         Set<AccessProfileContextAssignment> selected = normalizeProfileContextAssignments(selectedAssignments);
-        boolean coordinatorProfile = hasProfile(targetProfiles, AccessProfileType.COORDINATOR);
         boolean teacherProfile = hasProfile(targetProfiles, AccessProfileType.TEACHER);
         boolean studentProfile = hasProfile(targetProfiles, AccessProfileType.STUDENT);
 
-        Set<Long> coordinatorSubjectIds = selectedContextIds(selected, AccessProfileType.COORDINATOR, AccessEntityType.SUBJECT);
         Set<Long> teacherClassGroupIds = selectedContextIds(selected, AccessProfileType.TEACHER, AccessEntityType.CLASS_GROUP);
         Set<Long> studentCourseIds = selectedContextIds(selected, AccessProfileType.STUDENT, AccessEntityType.COURSE);
-        Map<Long, Set<Long>> studentSubjectIdsByCourse = selectedStudentSubjects(selected);
-        studentCourseIds = new LinkedHashSet<>(studentCourseIds);
-        studentCourseIds.addAll(studentSubjectIdsByCourse.keySet());
 
-        requireProfileContextState(AccessProfileType.COORDINATOR, coordinatorProfile, coordinatorSubjectIds, targetState);
         requireProfileContextState(AccessProfileType.TEACHER, teacherProfile, teacherClassGroupIds, targetState);
         requireProfileContextState(AccessProfileType.STUDENT, studentProfile, studentCourseIds, targetState);
 
@@ -923,34 +918,16 @@ public final class UserService {
             teacherCourseIds.add(context.courseId());
             teacherSubjectIds.add(context.subjectId());
         }
-        for (long subjectId : coordinatorSubjectIds) {
-            requireActiveSubject(connection, subjectId);
-        }
         for (long courseId : studentCourseIds) {
             requireActiveCourse(connection, courseId);
         }
-        Set<Long> studentSubjectIds = new LinkedHashSet<>();
-        for (Map.Entry<Long, Set<Long>> entry : studentSubjectIdsByCourse.entrySet()) {
-            for (long subjectId : entry.getValue()) {
-                requireActiveCourseSubject(connection, entry.getKey(), subjectId);
-                studentSubjectIds.add(subjectId);
-            }
-        }
-
-        if (!disjoint(coordinatorSubjectIds, teacherSubjectIds)) {
-            throw new IllegalArgumentException("The same user cannot coordinate and teach the same subject context");
-        }
-        if (!disjoint(coordinatorSubjectIds, studentSubjectIds)) {
-            throw new IllegalArgumentException("The same user cannot coordinate and study the same subject context");
-        }
-        if (!disjoint(teacherCourseIds, studentCourseIds) || !disjoint(teacherSubjectIds, studentSubjectIds)) {
+        if (!disjoint(teacherCourseIds, studentCourseIds)) {
             throw new IllegalArgumentException("The same user cannot teach and study the same learning context");
         }
 
         LocalDate startDate = LocalDate.now(clock);
-        synchronizeCoordinatorSubjects(connection, targetUserId, coordinatorSubjectIds, startDate);
         synchronizeTeacherClassGroups(connection, targetUserId, teacherClassGroupIds, startDate);
-        synchronizeStudentEnrollments(connection, targetUserId, studentCourseIds, studentSubjectIdsByCourse, startDate);
+        synchronizeStudentCourseEnrollments(connection, targetUserId, studentCourseIds);
     }
 
     private static void validateNoOverlappingProfileScopes(
@@ -1033,12 +1010,7 @@ public final class UserService {
             case ADMINISTRATOR -> Set.of();
             case COORDINATOR -> subjectScopes(connection, AccessProfileType.COORDINATOR, assignment.contextId());
             case TEACHER -> Set.of(classGroupScope(connection, AccessProfileType.TEACHER, assignment.contextId()));
-            case STUDENT -> {
-                if (assignment.contextType() == AccessEntityType.COURSE) {
-                    yield Set.of(courseScope(connection, AccessProfileType.STUDENT, assignment.contextId()));
-                }
-                yield Set.of(courseScope(connection, AccessProfileType.STUDENT, assignment.parentContextId()));
-            }
+            case STUDENT -> Set.of(courseScope(connection, AccessProfileType.STUDENT, assignment.contextId()));
         };
     }
 
@@ -1102,7 +1074,6 @@ public final class UserService {
                 FROM subject s
                 LEFT JOIN integrate_subject isub
                        ON isub.id_subject = s.id_subject
-                      AND isub.state = 'active'
                 LEFT JOIN course c
                        ON c.id_course = isub.id_course
                       AND c.state = 'active'
@@ -1197,19 +1168,6 @@ public final class UserService {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private static Map<Long, Set<Long>> selectedStudentSubjects(Set<AccessProfileContextAssignment> selected) {
-        Map<Long, Set<Long>> subjectsByCourse = new HashMap<>();
-        for (AccessProfileContextAssignment assignment : selected) {
-            if (assignment.profileType() == AccessProfileType.STUDENT
-                    && assignment.contextType() == AccessEntityType.SUBJECT) {
-                subjectsByCourse
-                        .computeIfAbsent(assignment.parentContextId(), ignored -> new LinkedHashSet<>())
-                        .add(assignment.contextId());
-            }
-        }
-        return subjectsByCourse;
-    }
-
     private static boolean disjoint(Set<Long> left, Set<Long> right) {
         Set<Long> copy = new HashSet<>(left);
         copy.retainAll(right);
@@ -1228,30 +1186,18 @@ public final class UserService {
         return Set.copyOf(normalized);
     }
 
-    private static void synchronizeCoordinatorSubjects(
-            Connection connection,
-            long userId,
-            Set<Long> subjectIds,
-            LocalDate startDate
-    ) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE coordinate_subject SET state = 'inactive', end_date = ? WHERE id_coordinator_user = ?"
-        )) {
-            setDate(statement, 1, startDate);
-            statement.setLong(2, userId);
-            statement.executeUpdate();
+    private static void rejectCoordinatorSubjectContextAssignments(
+            Collection<AccessProfileContextAssignment> assignments
+    ) {
+        if (assignments == null) {
+            return;
         }
-        for (long subjectId : subjectIds) {
-            try (PreparedStatement statement = connection.prepareStatement("""
-                    INSERT INTO coordinate_subject (id_coordinator_user, id_subject, state, start_date, end_date)
-                    VALUES (?, ?, 'active', ?, NULL)
-                    ON DUPLICATE KEY UPDATE state = 'active', start_date = VALUES(start_date), end_date = NULL
-                    """)) {
-                statement.setLong(1, userId);
-                statement.setLong(2, subjectId);
-                setDate(statement, 3, startDate);
-                statement.executeUpdate();
-            }
+        boolean containsCoordinatorSubject = assignments.stream()
+                .anyMatch(assignment -> assignment.profileType() == AccessProfileType.COORDINATOR);
+        if (containsCoordinatorSubject) {
+            throw new IllegalArgumentException(
+                    "Subject coordinator assignments are managed exclusively from Subject Details"
+            );
         }
     }
 
@@ -1282,68 +1228,50 @@ public final class UserService {
         }
     }
 
-    private static void synchronizeStudentEnrollments(
+    private static void synchronizeStudentCourseEnrollments(
             Connection connection,
             long userId,
-            Set<Long> courseIds,
-            Map<Long, Set<Long>> subjectIdsByCourse,
-            LocalDate startDate
+            Set<Long> courseIds
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE enroll_subject SET state = 'withdrawn', end_date = ? WHERE id_student_user = ?"
+                "UPDATE enroll_course SET state = 'withdrawn' WHERE id_student_user = ?"
         )) {
-            setDate(statement, 1, startDate);
-            statement.setLong(2, userId);
-            statement.executeUpdate();
-        }
-        try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE enroll_course SET state = 'withdrawn', end_date = ? WHERE id_student_user = ?"
-        )) {
-            setDate(statement, 1, startDate);
-            statement.setLong(2, userId);
+            statement.setLong(1, userId);
             statement.executeUpdate();
         }
         for (long courseId : courseIds) {
+            long courseOccurrenceId = resolveActiveCourseOccurrence(connection, courseId);
             try (PreparedStatement statement = connection.prepareStatement("""
-                    INSERT INTO enroll_course (id_student_user, id_course, state, start_date, end_date)
-                    VALUES (?, ?, 'active', ?, NULL)
-                    ON DUPLICATE KEY UPDATE state = 'active', start_date = VALUES(start_date), end_date = NULL
+                    INSERT INTO enroll_course (id_student_user, id_course, id_course_occurrence, state, start_date, end_date)
+                    VALUES (?, ?, ?, 'active', NULL, NULL)
+                    ON DUPLICATE KEY UPDATE state = 'active'
                     """)) {
                 statement.setLong(1, userId);
                 statement.setLong(2, courseId);
-                setDate(statement, 3, startDate);
+                statement.setLong(3, courseOccurrenceId);
                 statement.executeUpdate();
-            }
-        }
-        for (Map.Entry<Long, Set<Long>> entry : subjectIdsByCourse.entrySet()) {
-            for (long subjectId : entry.getValue()) {
-                try (PreparedStatement statement = connection.prepareStatement("""
-                        INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date)
-                        VALUES (?, ?, ?, 'active', ?, NULL)
-                        ON DUPLICATE KEY UPDATE state = 'active', start_date = VALUES(start_date), end_date = NULL
-                        """)) {
-                    statement.setLong(1, userId);
-                    statement.setLong(2, entry.getKey());
-                    statement.setLong(3, subjectId);
-                    setDate(statement, 4, startDate);
-                    statement.executeUpdate();
-                }
             }
         }
     }
 
-    private static void requireActiveSubject(Connection connection, long subjectId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT COUNT(*) FROM subject WHERE id_subject = ? AND state = 'active'"
-        )) {
-            statement.setLong(1, subjectId);
+    private static long resolveActiveCourseOccurrence(Connection connection, long courseId) throws SQLException {
+        String sql = """
+                SELECT id_course_occurrence
+                FROM course_occurrence
+                WHERE id_course = ?
+                  AND CURRENT_DATE BETWEEN starts_at AND ends_at
+                ORDER BY starts_at DESC, id_course_occurrence DESC
+                LIMIT 1
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, courseId);
             try (ResultSet resultSet = statement.executeQuery()) {
-                resultSet.next();
-                if (resultSet.getInt(1) == 0) {
-                    throw new IllegalArgumentException("Active subject context not found: " + subjectId);
+                if (resultSet.next()) {
+                    return resultSet.getLong("id_course_occurrence");
                 }
             }
         }
+        throw new IllegalArgumentException("Active course occurrence not found for course: " + courseId);
     }
 
     private static void requireActiveCourse(Connection connection, long courseId) throws SQLException {
@@ -1355,31 +1283,6 @@ public final class UserService {
                 resultSet.next();
                 if (resultSet.getInt(1) == 0) {
                     throw new IllegalArgumentException("Active course context not found: " + courseId);
-                }
-            }
-        }
-    }
-
-    private static void requireActiveCourseSubject(Connection connection, long courseId, long subjectId)
-            throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement("""
-                SELECT COUNT(*)
-                FROM integrate_subject isub
-                JOIN course c ON c.id_course = isub.id_course
-                JOIN subject s ON s.id_subject = isub.id_subject
-                WHERE isub.id_course = ?
-                  AND isub.id_subject = ?
-                  AND isub.state = 'active'
-                  AND c.state = 'active'
-                  AND s.state = 'active'
-                """)) {
-            statement.setLong(1, courseId);
-            statement.setLong(2, subjectId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                resultSet.next();
-                if (resultSet.getInt(1) == 0) {
-                    throw new IllegalArgumentException("Active course subject context not found: "
-                            + courseId + ":" + subjectId);
                 }
             }
         }

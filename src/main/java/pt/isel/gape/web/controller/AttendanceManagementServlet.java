@@ -23,27 +23,18 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
-import pt.isel.gape.access.dao.UserDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.access.model.User;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
-import pt.isel.gape.learning.dao.AssessmentDAO;
-import pt.isel.gape.learning.dao.AssessmentEnrollmentDAO;
-import pt.isel.gape.learning.dao.ClassGroupDAO;
-import pt.isel.gape.learning.dao.ClassGroupEnrollmentDAO;
-import pt.isel.gape.learning.dao.ContentBlockDAO;
-import pt.isel.gape.learning.dao.CourseDAO;
-import pt.isel.gape.learning.dao.CourseSubjectDAO;
-import pt.isel.gape.learning.dao.EnrollmentDAO;
-import pt.isel.gape.learning.dao.LessonDAO;
-import pt.isel.gape.learning.dao.SubjectDAO;
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.AbsenceJustification;
 import pt.isel.gape.learning.model.AbsenceJustificationCreateCommand;
 import pt.isel.gape.learning.model.AbsenceJustificationProcessCommand;
 import pt.isel.gape.learning.model.AbsenceJustificationState;
 import pt.isel.gape.learning.model.Assessment;
 import pt.isel.gape.learning.model.AssessmentEnrollment;
+import pt.isel.gape.learning.model.Attempt;
 import pt.isel.gape.learning.model.AttendanceRecord;
 import pt.isel.gape.learning.model.AttendanceRecordCommand;
 import pt.isel.gape.learning.model.AttendanceSource;
@@ -53,17 +44,17 @@ import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupEnrollment;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseEnrollment;
+import pt.isel.gape.learning.model.CourseOccurrence;
 import pt.isel.gape.learning.model.EnrollmentState;
 import pt.isel.gape.learning.model.Subject;
-import pt.isel.gape.learning.model.SubjectEnrollment;
 import pt.isel.gape.learning.service.AbsenceJustificationService;
 import pt.isel.gape.learning.service.AttendanceRecordService;
 import pt.isel.gape.security.session.SessionUser;
-import pt.isel.gape.structure.dao.OrganicUnitDAO;
-import pt.isel.gape.structure.dao.OrganizationDAO;
-import pt.isel.gape.structure.dao.TeachClassGroupDAO;
+import pt.isel.gape.transversal.service.ApplicationReadService;
 import pt.isel.gape.web.view.AbsenceJustificationView;
 import pt.isel.gape.web.view.AttendanceRecordView;
+import pt.isel.gape.web.view.ClassGroupView;
+import pt.isel.gape.web.view.LessonView;
 import pt.isel.gape.web.view.SelectOptionView;
 import pt.isel.gape.web.media.JustificationAttachmentStorage;
 
@@ -75,6 +66,8 @@ import pt.isel.gape.web.media.JustificationAttachmentStorage;
 @WebServlet(name = "attendanceManagementServlet", urlPatterns = {
         "/learning/attendance",
         "/learning/attendance/*",
+        "/learning/lessons/attendance",
+        "/learning/lessons/attendance/*",
         "/student/attendance",
         "/student/attendance/*"
 })
@@ -82,22 +75,25 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
 
     private static final String LEARNING_ATTENDANCE_JSP = "/WEB-INF/views/learning/attendance.jsp";
     private static final String STUDENT_ATTENDANCE_JSP = "/student/student/attendance/student-attendance.jsp";
-    private static final DateTimeFormatter INPUT_DATE_TIME =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+    private static final DateTimeFormatter INPUT_DATE_TIME = ApplicationDateTimeFormat.TECHNICAL_DATE_TIME;
+    private static final int ATTENDANCE_MANAGEMENT_PAGE_SIZE = 10;
+    private static final int ENROLLMENT_MANAGEMENT_PAGE_SIZE = 10;
 
     private final AttendanceRecordService attendanceRecordService;
     private final AbsenceJustificationService justificationService;
     private final ScheduleAttendanceViewFactory viewFactory;
     private final GradeCertificateServlet gradeCertificateServlet;
     private final JustificationAttachmentStorage attachmentStorage;
-    private final EnrollmentDAO enrollmentDAO;
-    private final ClassGroupEnrollmentDAO classGroupEnrollmentDAO;
-    private final AssessmentEnrollmentDAO assessmentEnrollmentDAO;
-    private final CourseDAO courseDAO;
-    private final SubjectDAO subjectDAO;
-    private final ClassGroupDAO classGroupDAO;
-    private final AssessmentDAO assessmentDAO;
-    private final UserDAO userDAO;
+    private final ApplicationReadService.Enrollments enrollmentDAO;
+    private final ApplicationReadService.CourseOccurrences courseOccurrenceDAO;
+    private final ApplicationReadService.ClassGroupEnrollments classGroupEnrollmentDAO;
+    private final ApplicationReadService.AssessmentEnrollments assessmentEnrollmentDAO;
+    private final ApplicationReadService.Courses courseDAO;
+    private final ApplicationReadService.Subjects subjectDAO;
+    private final ApplicationReadService.ClassGroups classGroupDAO;
+    private final ApplicationReadService.Assessments assessmentDAO;
+    private final ApplicationReadService.Attempts attemptDAO;
+    private final ApplicationReadService.Users userDAO;
     private final Clock clock;
 
     public AttendanceManagementServlet() {
@@ -106,88 +102,56 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
 
     private AttendanceManagementServlet(ConnectionProvider connectionProvider, Clock clock) {
         this(
+                new ApplicationReadService(connectionProvider),
                 new AttendanceRecordService(connectionProvider, clock),
                 new AbsenceJustificationService(connectionProvider, clock),
-                new ScheduleAttendanceViewFactory(
-                        new ClassGroupDAO(connectionProvider),
-                        new LessonDAO(connectionProvider),
-                        new UserDAO(connectionProvider),
-                        new LearningViewFactory(
-                                new OrganizationDAO(connectionProvider),
-                                new OrganicUnitDAO(connectionProvider),
-                                new CourseDAO(connectionProvider),
-                                new SubjectDAO(connectionProvider),
-                                new CourseSubjectDAO(connectionProvider),
-                                new EnrollmentDAO(connectionProvider),
-                                new ClassGroupDAO(connectionProvider),
-                                new ClassGroupEnrollmentDAO(connectionProvider),
-                                new ContentBlockDAO(connectionProvider),
-                                new UserDAO(connectionProvider),
-                                new TeachClassGroupDAO(connectionProvider)
-                        )
-                ),
                 new GradeCertificateServlet(),
                 new JustificationAttachmentStorage(),
-                new EnrollmentDAO(connectionProvider),
-                new ClassGroupEnrollmentDAO(connectionProvider),
-                new AssessmentEnrollmentDAO(connectionProvider),
-                new CourseDAO(connectionProvider),
-                new SubjectDAO(connectionProvider),
-                new ClassGroupDAO(connectionProvider),
-                new AssessmentDAO(connectionProvider),
-                new UserDAO(connectionProvider),
                 clock
         );
     }
 
     AttendanceManagementServlet(
+            ApplicationReadService readService,
             AttendanceRecordService attendanceRecordService,
             AbsenceJustificationService justificationService,
-            ScheduleAttendanceViewFactory viewFactory,
-            Clock clock
-    ) {
-        this(attendanceRecordService, justificationService, viewFactory, new GradeCertificateServlet(),
-                new JustificationAttachmentStorage(),
-                new EnrollmentDAO(ConnectionProvider.defaultProvider()),
-                new ClassGroupEnrollmentDAO(ConnectionProvider.defaultProvider()),
-                new AssessmentEnrollmentDAO(ConnectionProvider.defaultProvider()),
-                new CourseDAO(ConnectionProvider.defaultProvider()),
-                new SubjectDAO(ConnectionProvider.defaultProvider()),
-                new ClassGroupDAO(ConnectionProvider.defaultProvider()),
-                new AssessmentDAO(ConnectionProvider.defaultProvider()),
-                new UserDAO(ConnectionProvider.defaultProvider()),
-                clock);
-    }
-
-    AttendanceManagementServlet(
-            AttendanceRecordService attendanceRecordService,
-            AbsenceJustificationService justificationService,
-            ScheduleAttendanceViewFactory viewFactory,
             GradeCertificateServlet gradeCertificateServlet,
             JustificationAttachmentStorage attachmentStorage,
-            EnrollmentDAO enrollmentDAO,
-            ClassGroupEnrollmentDAO classGroupEnrollmentDAO,
-            AssessmentEnrollmentDAO assessmentEnrollmentDAO,
-            CourseDAO courseDAO,
-            SubjectDAO subjectDAO,
-            ClassGroupDAO classGroupDAO,
-            AssessmentDAO assessmentDAO,
-            UserDAO userDAO,
             Clock clock
     ) {
         this.attendanceRecordService = attendanceRecordService;
         this.justificationService = justificationService;
-        this.viewFactory = viewFactory;
+        this.viewFactory = new ScheduleAttendanceViewFactory(
+                readService.classGroups(),
+                readService.lessons(),
+                readService.users(),
+                new LearningViewFactory(
+                        readService.organizations(),
+                        readService.organicUnits(),
+                        readService.courses(),
+                        readService.courseOccurrences(),
+                        readService.subjects(),
+                        readService.courseSubjects(),
+                        readService.enrollments(),
+                        readService.classGroups(),
+                        readService.classGroupEnrollments(),
+                        readService.contentBlocks(),
+                        readService.users(),
+                        readService.teachClassGroups()
+                )
+        );
         this.gradeCertificateServlet = gradeCertificateServlet;
         this.attachmentStorage = attachmentStorage;
-        this.enrollmentDAO = enrollmentDAO;
-        this.classGroupEnrollmentDAO = classGroupEnrollmentDAO;
-        this.assessmentEnrollmentDAO = assessmentEnrollmentDAO;
-        this.courseDAO = courseDAO;
-        this.subjectDAO = subjectDAO;
-        this.classGroupDAO = classGroupDAO;
-        this.assessmentDAO = assessmentDAO;
-        this.userDAO = userDAO;
+        this.enrollmentDAO = readService.enrollments();
+        this.courseOccurrenceDAO = readService.courseOccurrences();
+        this.classGroupEnrollmentDAO = readService.classGroupEnrollments();
+        this.assessmentEnrollmentDAO = readService.assessmentEnrollments();
+        this.courseDAO = readService.courses();
+        this.subjectDAO = readService.subjects();
+        this.classGroupDAO = readService.classGroups();
+        this.assessmentDAO = readService.assessments();
+        this.attemptDAO = readService.attempts();
+        this.userDAO = readService.users();
         this.clock = clock;
     }
 
@@ -268,6 +232,8 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
+        boolean lessonsAttendance = isLessonsAttendanceRequest(request);
+        String attendanceBasePath = lessonsAttendance ? "/learning/lessons/attendance" : "/learning/attendance";
         List<AbsenceJustification> justifications = justificationService.listVisibleJustifications(
                 actor.userId(),
                 currentSessionId(request),
@@ -286,43 +252,185 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         List<AttendanceRecordView> allAttendanceViews = viewFactory.attendanceRecordViews(records, justifiedRecordIds);
         List<AbsenceJustificationView> allJustificationViews =
                 viewFactory.justificationViews(justifications, allAttendanceViews);
+        Map<Long, AbsenceJustificationView> allJustificationByRecordId = new LinkedHashMap<>();
+        for (AbsenceJustificationView justification : allJustificationViews) {
+            allJustificationByRecordId.putIfAbsent(justification.getAttendanceRecordId(), justification);
+        }
 
-        String selectedStatus = normalizedFilter(request, "status");
-        String selectedJustificationState = normalizedFilter(request, "justificationState");
+        LocalDateTime now = currentMinute();
+        String selectedAttendanceState = normalizedFilter(request, "attendanceState");
         List<AttendanceRecordView> attendanceViews = allAttendanceViews.stream()
-                .filter(record -> selectedStatus == null || selectedStatus.equals(record.getStatusValue()))
+                .filter(record -> isFinishedActivity(record, now))
                 .toList();
-        List<AbsenceJustificationView> justificationViews = allJustificationViews.stream()
-                .filter(justification -> selectedJustificationState == null
-                        || selectedJustificationState.equals(justification.getStateValue()))
+        Map<Long, AbsenceJustificationView> justificationByRecordId = new LinkedHashMap<>();
+        for (AttendanceRecordView record : attendanceViews) {
+            AbsenceJustificationView justification = allJustificationByRecordId.get(record.getId());
+            if (justification != null) {
+                justificationByRecordId.put(record.getId(), justification);
+            }
+        }
+        List<AttendanceActivityView> allActivities = new ArrayList<>(attendanceActivities(
+                attendanceViews,
+                justificationByRecordId
+        ));
+        try {
+            allActivities.addAll(assessmentActivities(now));
+        } catch (SQLException exception) {
+            throw new ServletException("Failed to load assessment attendance activities", exception);
+        }
+        List<AttendanceActivityView> attendanceActivities = allActivities.stream()
+                .filter(activity -> selectedAttendanceState == null
+                        || selectedAttendanceState.equals(activity.getStateValue()))
+                .sorted(Comparator.comparing(
+                                AttendanceActivityView::getSortDateRaw,
+                                Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(Comparator.comparingLong(AttendanceActivityView::getId).reversed()))
+                .toList();
+        List<AbsenceJustificationView> justificationViews = attendanceActivities.stream()
+                .map(AttendanceActivityView::getJustification)
+                .filter(java.util.Objects::nonNull)
                 .toList();
 
-        request.setAttribute("attendanceRecords", attendanceViews);
+        request.setAttribute("attendanceRecords", attendanceActivities.stream()
+                .map(AttendanceActivityView::getRecord)
+                .filter(java.util.Objects::nonNull)
+                .toList());
+        request.setAttribute("attendanceActivities", attendanceActivities);
+        request.setAttribute("attendanceStudentGroups", attendanceStudentGroups(attendanceActivities));
         request.setAttribute("justifications", justificationViews);
-        request.setAttribute("attendanceCount", attendanceViews.size());
-        request.setAttribute("absenceCount", attendanceViews.stream()
-                .filter(record -> "absent".equals(record.getStatusValue()))
+        request.setAttribute("attendanceCount", attendanceActivities.size());
+        request.setAttribute("absenceCount", attendanceActivities.stream()
+                .filter(activity -> "absent".equals(activity.getStateValue())
+                        || "requested".equals(activity.getStateValue())
+                        || "rejected".equals(activity.getStateValue()))
                 .count());
-        request.setAttribute("lateOrPartialCount", attendanceViews.stream()
-                .filter(record -> "late".equals(record.getStatusValue()) || "partial".equals(record.getStatusValue()))
+        request.setAttribute("lateOrPartialCount", attendanceActivities.stream()
+                .filter(activity -> "requested".equals(activity.getStateValue()))
                 .count());
         request.setAttribute("pendingJustificationCount", allJustificationViews.stream()
                 .filter(AbsenceJustificationView::isSubmitted)
                 .count());
-        request.setAttribute("selectedStatus", selectedStatus);
-        request.setAttribute("selectedJustificationState", selectedJustificationState);
-        request.setAttribute("attendanceStatusOptions", attendanceStatusOptions(selectedStatus));
-        request.setAttribute("attendanceCreateStatusOptions", attendanceCreationStatusOptions());
+        request.setAttribute("selectedAttendanceState", selectedAttendanceState);
+        request.setAttribute("attendanceStateOptions", attendanceStateOptions(selectedAttendanceState));
+        request.setAttribute("attendanceCreateStateOptions", attendanceCreationStateOptions());
         request.setAttribute("attendanceCreateSourceOptions", attendanceCreationSourceOptions());
-        request.setAttribute("justificationStateOptions", justificationStateOptions(selectedJustificationState));
         request.setAttribute("defaultCheckIn", INPUT_DATE_TIME.format(currentMinute()));
+        request.setAttribute("attendanceOnly", lessonsAttendance);
+        request.setAttribute("attendanceBasePath", attendanceBasePath);
+        request.setAttribute("attendanceFilterPath", attendanceBasePath);
+        request.setAttribute("attendanceActionPath", attendanceBasePath);
+        request.setAttribute("attendanceReturnTo", attendanceBasePath + "#attendance");
+        applyAttendanceManagementPagination(request, attendanceActivities, selectedAttendanceState);
         try {
             populateEnrollmentOverviewAttributes(request);
             gradeCertificateServlet.populateManagementAttributes(request, actor, profile, request.getRemoteAddr());
-            prepareDashboard(request, "attendance", "Enrollments & Certificates");
+            prepareDashboard(
+                    request,
+                    lessonsAttendance ? "lessons" : "attendance",
+                    lessonsAttendance ? "Attendance" : "Enrollments & Certificates"
+            );
             forward(request, response, LEARNING_ATTENDANCE_JSP);
         } catch (SQLException exception) {
             throw new ServletException("Failed to load attendance management", exception);
+        }
+    }
+
+    void populateLearningAttendanceAttributes(
+            HttpServletRequest request,
+            SessionUser actor,
+            AccessProfileType profile,
+            String attendanceFilterPath,
+            String attendanceActionPath,
+            String attendanceReturnTo
+    ) throws ServletException {
+        List<AbsenceJustification> justifications = justificationService.listVisibleJustifications(
+                actor.userId(),
+                currentSessionId(request),
+                profile,
+                request.getRemoteAddr()
+        );
+        Set<Long> justifiedRecordIds = justifications.stream()
+                .map(AbsenceJustification::attendanceRecordId)
+                .collect(Collectors.toSet());
+        List<AttendanceRecord> records = attendanceRecordService.listVisibleAttendance(
+                actor.userId(),
+                currentSessionId(request),
+                profile,
+                request.getRemoteAddr()
+        );
+        List<AttendanceRecordView> allAttendanceViews = viewFactory.attendanceRecordViews(records, justifiedRecordIds);
+        List<AbsenceJustificationView> allJustificationViews =
+                viewFactory.justificationViews(justifications, allAttendanceViews);
+        Map<Long, AbsenceJustificationView> allJustificationByRecordId = new LinkedHashMap<>();
+        for (AbsenceJustificationView justification : allJustificationViews) {
+            allJustificationByRecordId.putIfAbsent(justification.getAttendanceRecordId(), justification);
+        }
+
+        LocalDateTime now = currentMinute();
+        String selectedAttendanceState = normalizedFilter(request, "attendanceState");
+        List<AttendanceRecordView> attendanceViews = allAttendanceViews.stream()
+                .filter(record -> isFinishedActivity(record, now))
+                .toList();
+        Map<Long, AbsenceJustificationView> justificationByRecordId = new LinkedHashMap<>();
+        for (AttendanceRecordView record : attendanceViews) {
+            AbsenceJustificationView justification = allJustificationByRecordId.get(record.getId());
+            if (justification != null) {
+                justificationByRecordId.put(record.getId(), justification);
+            }
+        }
+        List<AttendanceActivityView> allActivities = new ArrayList<>(attendanceActivities(
+                attendanceViews,
+                justificationByRecordId
+        ));
+        try {
+            allActivities.addAll(assessmentActivities(now));
+        } catch (SQLException exception) {
+            throw new ServletException("Failed to load assessment attendance activities", exception);
+        }
+        List<AttendanceActivityView> attendanceActivities = allActivities.stream()
+                .filter(activity -> selectedAttendanceState == null
+                        || selectedAttendanceState.equals(activity.getStateValue()))
+                .toList();
+        List<AbsenceJustificationView> justificationViews = attendanceActivities.stream()
+                .map(AttendanceActivityView::getJustification)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+
+        request.setAttribute("attendanceRecords", attendanceActivities.stream()
+                .map(AttendanceActivityView::getRecord)
+                .filter(java.util.Objects::nonNull)
+                .toList());
+        request.setAttribute("attendanceActivities", attendanceActivities);
+        request.setAttribute("attendanceStudentGroups", attendanceStudentGroups(attendanceActivities));
+        request.setAttribute("justifications", justificationViews);
+        request.setAttribute("attendanceCount", attendanceActivities.size());
+        request.setAttribute("absenceCount", attendanceActivities.stream()
+                .filter(activity -> "absent".equals(activity.getStateValue())
+                        || "requested".equals(activity.getStateValue())
+                        || "rejected".equals(activity.getStateValue()))
+                .count());
+        request.setAttribute("lateOrPartialCount", attendanceActivities.stream()
+                .filter(activity -> "requested".equals(activity.getStateValue()))
+                .count());
+        request.setAttribute("pendingJustificationCount", allJustificationViews.stream()
+                .filter(AbsenceJustificationView::isSubmitted)
+                .count());
+        request.setAttribute("selectedAttendanceState", selectedAttendanceState);
+        request.setAttribute("attendanceStateOptions", attendanceStateOptions(selectedAttendanceState));
+        request.setAttribute("attendanceCreateStateOptions", attendanceCreationStateOptions());
+        request.setAttribute("attendanceCreateSourceOptions", attendanceCreationSourceOptions());
+        request.setAttribute("defaultCheckIn", INPUT_DATE_TIME.format(currentMinute()));
+        request.setAttribute("attendanceFilterPath", attendanceFilterPath);
+        request.setAttribute("attendanceActionPath", attendanceActionPath);
+        request.setAttribute("attendanceBasePath", attendanceActionPath);
+        request.setAttribute("attendanceReturnTo", attendanceReturnTo);
+        applyAttendanceManagementPagination(request, attendanceActivities, selectedAttendanceState);
+        if (request.getAttribute("classGroupById") == null) {
+            try {
+                request.setAttribute("classGroupById", classGroupById());
+            } catch (SQLException exception) {
+                throw new ServletException("Failed to load attendance class groups", exception);
+            }
         }
     }
 
@@ -365,6 +473,7 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
 
     private void populateEnrollmentOverviewAttributes(HttpServletRequest request) throws SQLException {
         Map<Long, Course> courses = mapCourses(courseDAO.findCatalogCourses(null, null, null));
+        Map<Long, CourseOccurrence> courseOccurrences = courseOccurrencesById();
         Map<Long, Subject> subjects = mapSubjects(subjectDAO.findAll());
         Map<Long, ClassGroup> classGroups = mapClassGroups(classGroupDAO.findAll());
         Map<Long, Assessment> assessments = mapAssessments(assessmentDAO.findAll());
@@ -374,71 +483,50 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         Set<String> studentClassGroupKeys = new HashSet<>();
         for (Course course : courses.values()) {
             for (CourseEnrollment enrollment : enrollmentDAO.findCourseEnrollmentsByCourse(course.id())) {
+                CourseOccurrence occurrence = courseOccurrences.get(enrollment.courseOccurrenceId());
                 rows.add(enrollmentRow(
                         1,
                         "Course",
-                        courseLabel(course),
-                        null,
+                        courseOccurrenceLabel(occurrence, course),
+                        occurrencePeriodLabel(occurrence, enrollment.startDate(), enrollment.endDate()),
                         "course",
                         course.id(),
                         null,
                         course.id(),
+                        occurrence == null ? null : occurrence.id(),
                         null,
                         null,
                         enrollment.studentUserId(),
                         users,
                         enrollment.state(),
-                        enrollment.startDate(),
-                        enrollment.endDate(),
+                        occurrenceStartDate(occurrence, enrollment.startDate()),
+                        occurrenceEndDate(occurrence, enrollment.endDate()),
                         "/admin/courses/" + course.id() + "/enrollments/" + enrollment.studentUserId() + "/update",
                         "/admin/courses/" + course.id() + "/enrollments/" + enrollment.studentUserId() + "/delete"
                 ));
             }
         }
-        for (Subject subject : subjects.values()) {
-            for (SubjectEnrollment enrollment : enrollmentDAO.findSubjectEnrollmentsBySubject(subject.id())) {
-                rows.add(enrollmentRow(
-                        2,
-                        "Subject",
-                        subjectLabel(subject),
-                        courseLabel(courses.get(enrollment.courseId())),
-                        "subject",
-                        subject.id(),
-                        enrollment.courseId(),
-                        enrollment.courseId(),
-                        subject.id(),
-                        null,
-                        enrollment.studentUserId(),
-                        users,
-                        enrollment.state(),
-                        enrollment.startDate(),
-                        enrollment.endDate(),
-                        "/admin/subjects/" + subject.id() + "/enrollments/" + enrollment.courseId()
-                                + "/" + enrollment.studentUserId() + "/update",
-                        "/admin/subjects/" + subject.id() + "/enrollments/" + enrollment.courseId()
-                                + "/" + enrollment.studentUserId() + "/delete"
-                ));
-            }
-        }
         for (ClassGroup classGroup : classGroups.values()) {
             for (ClassGroupEnrollment enrollment : classGroupEnrollmentDAO.findByClassGroup(classGroup.id())) {
+                CourseOccurrence occurrence = courseOccurrences.get(classGroup.courseOccurrenceId());
                 studentClassGroupKeys.add(enrollmentKey(enrollment.studentUserId(), classGroup.id()));
                 rows.add(enrollmentRow(
                         3,
                         "Class Group",
                         classGroup.code(),
-                        classGroupContextLabel(classGroup, subjects, courses),
+                        classGroupContextLabel(classGroup, subjects, courses, occurrence),
                         "class-group",
                         classGroup.id(),
                         classGroup.subjectId(),
                         classGroup.courseId(),
+                        occurrence == null ? null : occurrence.id(),
                         classGroup.subjectId(),
                         classGroup.id(),
                         enrollment.studentUserId(),
                         users,
                         enrollment.state(),
-                        enrollment.startDate(),
-                        enrollment.endDate(),
+                        occurrenceStartDate(occurrence, enrollment.startDate()),
+                        occurrenceEndDate(occurrence, enrollment.endDate()),
                         "/learning/class-groups/" + classGroup.id() + "/enrollments/"
                                 + enrollment.studentUserId() + "/update",
                         "/learning/class-groups/" + classGroup.id() + "/enrollments/"
@@ -456,22 +544,25 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
                             || !studentClassGroupKeys.contains(enrollmentKey(enrollment.studentUserId(), classGroupId))) {
                         continue;
                     }
+                    CourseOccurrence occurrence = courseOccurrences.get(classGroup.courseOccurrenceId());
                     rows.add(enrollmentRow(
                             4,
                             "Assessment",
                             assessment.title(),
-                            assessmentContextLabel(assessment, subjects) + " | " + classGroup.code(),
+                            assessmentContextLabel(assessment, subjects) + " | "
+                                    + classGroup.code() + " | " + courseOccurrenceLabel(occurrence, courses.get(classGroup.courseId())),
                             "assessment",
                             assessment.id(),
                             classGroup.id(),
                             classGroup.courseId(),
+                            occurrence == null ? null : occurrence.id(),
                             classGroup.subjectId(),
                             classGroup.id(),
                             enrollment.studentUserId(),
                             users,
                             enrollment.state(),
-                            null,
-                            null,
+                            occurrenceStartDate(occurrence, null),
+                            occurrenceEndDate(occurrence, null),
                             "/learning/assessments/" + assessment.id() + "/enrollments/"
                                     + enrollment.studentUserId() + "/update",
                             "/learning/assessments/" + assessment.id() + "/enrollments/"
@@ -488,6 +579,7 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
                             "assessment",
                             assessment.id(),
                             assessment.subjectId(),
+                            null,
                             null,
                             assessment.subjectId(),
                             null,
@@ -510,11 +602,46 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
                 .thenComparingInt(EnrollmentOverviewView::getContextOrder)
                 .thenComparing(EnrollmentOverviewView::getContextLabel, String.CASE_INSENSITIVE_ORDER));
 
+        EnrollmentScopeRows enrollmentScopes = enrollmentScopes(rows);
+        List<EnrollmentStudentGroupView> activeEnrollmentGroups = enrollmentGroups(enrollmentScopes.activeRows());
+        List<EnrollmentStudentGroupView> completedEnrollmentGroups = enrollmentGroups(enrollmentScopes.completedRows());
+        boolean completedScope = "completed".equals(text(request, "enrollmentsScope"));
+        OverviewPage<EnrollmentStudentGroupView> enrollmentPage = enrollmentManagementPage(
+                request,
+                completedScope ? completedEnrollmentGroups : activeEnrollmentGroups
+        );
+
         request.setAttribute("enrollmentRows", rows);
-        request.setAttribute("enrollmentGroups", enrollmentGroups(rows));
+        request.setAttribute("enrollmentGroups", enrollmentPage.rows());
         request.setAttribute("enrollmentCount", rows.size());
         request.setAttribute("activeEnrollmentCount", rows.stream().filter(EnrollmentOverviewView::isActive).count());
         request.setAttribute("pendingEnrollmentCount", rows.stream().filter(EnrollmentOverviewView::isPending).count());
+        request.setAttribute("enrollmentManagementScope", completedScope ? "completed" : "active");
+        request.setAttribute("enrollmentManagementTotal", enrollmentPage.total());
+        // The management list renders one student group per row.  Keep the
+        // archive counter at that same granularity; counting the underlying
+        // enrollment records made the Completed Enrollments row disagree with
+        // the collection it opens and with Class Group Management.
+        request.setAttribute("enrollmentManagementCompletedTotal", completedEnrollmentGroups.size());
+        request.setAttribute("enrollmentManagementCurrentPage", enrollmentPage.currentPage());
+        request.setAttribute("enrollmentManagementPageCount", enrollmentPage.pageCount());
+        request.setAttribute("enrollmentManagementHasPreviousPage", enrollmentPage.currentPage() > 1);
+        request.setAttribute("enrollmentManagementHasNextPage", enrollmentPage.currentPage() < enrollmentPage.pageCount());
+        request.setAttribute("enrollmentManagementPreviousPage", Math.max(1, enrollmentPage.currentPage() - 1));
+        request.setAttribute("enrollmentManagementNextPage", Math.min(enrollmentPage.pageCount(), enrollmentPage.currentPage() + 1));
+        request.setAttribute("enrollmentManagementLoadAll", enrollmentPage.loadAll());
+    }
+
+    private static <T> OverviewPage<T> enrollmentManagementPage(HttpServletRequest request, List<T> items) {
+        int total = items.size();
+        boolean loadAll = Boolean.parseBoolean(text(request, "enrollmentsLoadAll"));
+        int pageCount = Math.max(1, (total + ENROLLMENT_MANAGEMENT_PAGE_SIZE - 1) / ENROLLMENT_MANAGEMENT_PAGE_SIZE);
+        int currentPage = loadAll
+                ? 1
+                : Math.min(pageCount, Math.max(1, integerParameter(request, "enrollmentsPage", 1)));
+        int fromIndex = loadAll ? 0 : Math.min((currentPage - 1) * ENROLLMENT_MANAGEMENT_PAGE_SIZE, total);
+        int toIndex = loadAll ? total : Math.min(fromIndex + ENROLLMENT_MANAGEMENT_PAGE_SIZE, total);
+        return new OverviewPage<>(List.copyOf(items.subList(fromIndex, toIndex)), total, currentPage, pageCount, loadAll);
     }
 
     private static EnrollmentOverviewView enrollmentRow(
@@ -526,6 +653,7 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
             long contextId,
             Long parentContextId,
             Long courseId,
+            Long courseOccurrenceId,
             Long subjectId,
             Long classGroupId,
             long studentUserId,
@@ -548,6 +676,7 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
                 contextId,
                 parentContextId,
                 courseId,
+                courseOccurrenceId,
                 subjectId,
                 classGroupId,
                 studentUserId,
@@ -591,10 +720,48 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         return List.copyOf(groups);
     }
 
+    /**
+     * A course-occurrence enrollment is the lifecycle root for its class-group
+     * and assessment enrollments.  Keeping the whole occurrence in one scope
+     * makes the current and completed views both internally coherent, even
+     * when a student has another occurrence with a different state.
+     */
+    private static EnrollmentScopeRows enrollmentScopes(List<EnrollmentOverviewView> rows) {
+        Map<String, Boolean> completedByOccurrence = new LinkedHashMap<>();
+        Map<String, Boolean> completedByLegacyCourse = new LinkedHashMap<>();
+        rows.stream()
+                .filter(EnrollmentOverviewView::isCourse)
+                .forEach(row -> {
+                    completedByOccurrence.put(row.getOccurrenceScopeKey(), row.isCompleted());
+                    if (row.getCourseOccurrenceId() == null) {
+                        completedByLegacyCourse.put(row.getCourseScopeKey(), row.isCompleted());
+                    }
+                });
+        List<EnrollmentOverviewView> activeRows = new ArrayList<>();
+        List<EnrollmentOverviewView> completedRows = new ArrayList<>();
+        for (EnrollmentOverviewView row : rows) {
+            Boolean rootCompletion = completedByOccurrence.get(row.getOccurrenceScopeKey());
+            if (rootCompletion == null) {
+                rootCompletion = completedByLegacyCourse.get(row.getCourseScopeKey());
+            }
+            boolean completed = rootCompletion == null ? row.isCompleted() : rootCompletion;
+            (completed ? completedRows : activeRows).add(row);
+        }
+        return new EnrollmentScopeRows(List.copyOf(activeRows), List.copyOf(completedRows));
+    }
+
     private static Map<Long, Course> mapCourses(List<Course> values) {
         Map<Long, Course> result = new LinkedHashMap<>();
         for (Course value : values) {
             result.put(value.id(), value);
+        }
+        return result;
+    }
+
+    private Map<Long, CourseOccurrence> courseOccurrencesById() throws SQLException {
+        Map<Long, CourseOccurrence> result = new LinkedHashMap<>();
+        for (CourseOccurrence occurrence : courseOccurrenceDAO.findAll()) {
+            result.put(occurrence.id(), occurrence);
         }
         return result;
     }
@@ -634,9 +801,11 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
     private static String classGroupContextLabel(
             ClassGroup classGroup,
             Map<Long, Subject> subjects,
-            Map<Long, Course> courses
+            Map<Long, Course> courses,
+            CourseOccurrence occurrence
     ) {
-        return subjectLabel(subjects.get(classGroup.subjectId())) + " | " + courseLabel(courses.get(classGroup.courseId()));
+        return courseOccurrenceLabel(occurrence, courses.get(classGroup.courseId()))
+                + " | " + subjectLabel(subjects.get(classGroup.subjectId()));
     }
 
     private static String assessmentContextLabel(Assessment assessment, Map<Long, Subject> subjects) {
@@ -653,6 +822,32 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         return course.acronym() == null || course.acronym().isBlank()
                 ? course.name()
                 : course.acronym() + " - " + course.name();
+    }
+
+    private static String courseOccurrenceLabel(CourseOccurrence occurrence, Course course) {
+        if (occurrence == null) {
+            return courseLabel(course);
+        }
+        String occurrenceCode = occurrence.code() == null || occurrence.code().isBlank()
+                ? "Occurrence #" + occurrence.id()
+                : occurrence.code();
+        return occurrenceCode + " — " + courseLabel(course);
+    }
+
+    private static String occurrencePeriodLabel(
+            CourseOccurrence occurrence,
+            LocalDate fallbackStart,
+            LocalDate fallbackEnd
+    ) {
+        return periodLabel(occurrenceStartDate(occurrence, fallbackStart), occurrenceEndDate(occurrence, fallbackEnd));
+    }
+
+    private static LocalDate occurrenceStartDate(CourseOccurrence occurrence, LocalDate fallback) {
+        return occurrence == null || occurrence.startsAt() == null ? fallback : occurrence.startsAt();
+    }
+
+    private static LocalDate occurrenceEndDate(CourseOccurrence occurrence, LocalDate fallback) {
+        return occurrence == null || occurrence.endsAt() == null ? fallback : occurrence.endsAt();
     }
 
     private static String subjectLabel(Subject subject) {
@@ -680,12 +875,29 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
             return "No dates";
         }
         if (startDate == null) {
-            return "Until " + endDate;
+            return "Until " + ApplicationDateTimeFormat.date(endDate);
         }
         if (endDate == null) {
-            return "From " + startDate;
+            return "From " + ApplicationDateTimeFormat.date(startDate);
         }
-        return startDate + " to " + endDate;
+        return ApplicationDateTimeFormat.date(startDate) + " to " + ApplicationDateTimeFormat.date(endDate);
+    }
+
+    private static String formatActivityPeriod(LocalDateTime startsAt, LocalDateTime endsAt) {
+        if (startsAt == null && endsAt == null) {
+            return "-";
+        }
+        if (startsAt == null) {
+            return "Until " + formatActivityDateTime(endsAt);
+        }
+        if (endsAt == null) {
+            return "From " + formatActivityDateTime(startsAt);
+        }
+        return formatActivityDateTime(startsAt) + " to " + formatActivityDateTime(endsAt);
+    }
+
+    private static String formatActivityDateTime(LocalDateTime value) {
+        return value == null ? "-" : ApplicationDateTimeFormat.dateTime(value);
     }
 
     private static String stateLabel(EnrollmentState state) {
@@ -703,7 +915,7 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         return switch (state) {
             case PENDING -> "bg-warning-50 text-warning-600";
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-neutral-30 text-neutral-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
             case REJECTED -> "bg-danger-50 text-danger-600";
             case COMPLETED -> "bg-main-50 text-main-600";
             case WITHDRAWN -> "bg-neutral-30 text-neutral-600";
@@ -744,7 +956,7 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirect(request, response, "/learning/attendance");
+        redirectToReturnPath(request, response, learningAttendanceFallback(request));
     }
 
     private void submitJustification(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -779,8 +991,9 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
             String action
     ) throws IOException {
         SessionUser actor = requireCurrentUser(request);
+        boolean ajaxRequest = isAjaxRequest(request);
         try {
-            justificationService.processJustification(
+            AbsenceJustification processed = justificationService.processJustification(
                     actor.userId(),
                     currentSessionId(request),
                     primaryProfile(actor),
@@ -792,11 +1005,20 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
                     ),
                     request.getRemoteAddr()
             );
+            if (ajaxRequest) {
+                writeJustificationProcessResponse(response, processed);
+                return;
+            }
             flashSuccess(request, "Justification processed.");
         } catch (RuntimeException exception) {
+            if (ajaxRequest) {
+                writeJson(response, HttpServletResponse.SC_BAD_REQUEST,
+                        "{\"success\":false,\"message\":\"" + jsonEscape(messageFor(exception)) + "\"}");
+                return;
+            }
             flashError(request, messageFor(exception));
         }
-        redirect(request, response, "/learning/attendance");
+        redirectToReturnPath(request, response, learningAttendanceFallback(request));
     }
 
     private AttendanceRecordCommand attendanceCommand(HttpServletRequest request) {
@@ -824,6 +1046,69 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         return "/student/attendance".equals(request.getServletPath());
     }
 
+    private static boolean isLessonsAttendanceRequest(HttpServletRequest request) {
+        return "/learning/lessons/attendance".equals(request.getServletPath());
+    }
+
+    private static String learningAttendanceFallback(HttpServletRequest request) {
+        return isLessonsAttendanceRequest(request) ? "/learning/lessons#attendance" : "/learning/attendance#attendance";
+    }
+
+    private static boolean isAjaxRequest(HttpServletRequest request) {
+        return "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"));
+    }
+
+    private static void writeJustificationProcessResponse(
+            HttpServletResponse response,
+            AbsenceJustification justification
+    ) throws IOException {
+        AttendanceDisplayState displayState = displayStateForJustification(justification.state());
+        String payload = "{"
+                + "\"success\":true,"
+                + "\"activityId\":" + justification.attendanceRecordId() + ","
+                + "\"stateValue\":\"" + jsonEscape(displayState.value()) + "\","
+                + "\"stateLabel\":\"" + jsonEscape(displayState.label()) + "\","
+                + "\"badgeClass\":\"" + jsonEscape(displayState.badgeClass()) + "\","
+                + "\"canApprove\":" + canApproveJustification(displayState.value()) + ","
+                + "\"canReject\":" + canRejectJustification(displayState.value())
+                + "}";
+        writeJson(response, HttpServletResponse.SC_OK, payload);
+    }
+
+    private static void writeJson(HttpServletResponse response, int status, String payload) throws IOException {
+        response.setStatus(status);
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json; charset=UTF-8");
+        response.getWriter().write(payload);
+    }
+
+    private static String jsonEscape(String value) {
+        if (value == null) {
+            return "";
+        }
+        StringBuilder escaped = new StringBuilder(value.length() + 16);
+        for (int index = 0; index < value.length(); index++) {
+            char current = value.charAt(index);
+            switch (current) {
+                case '"' -> escaped.append("\\\"");
+                case '\\' -> escaped.append("\\\\");
+                case '\b' -> escaped.append("\\b");
+                case '\f' -> escaped.append("\\f");
+                case '\n' -> escaped.append("\\n");
+                case '\r' -> escaped.append("\\r");
+                case '\t' -> escaped.append("\\t");
+                default -> {
+                    if (current < 0x20) {
+                        escaped.append(String.format("\\u%04x", (int) current));
+                    } else {
+                        escaped.append(current);
+                    }
+                }
+            }
+        }
+        return escaped.toString();
+    }
+
     private LocalDateTime currentMinute() {
         return LocalDateTime.now(clock).truncatedTo(ChronoUnit.MINUTES);
     }
@@ -834,7 +1119,7 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
             LocalDateTime defaultValue
     ) {
         String value = text(request, name);
-        return value == null ? defaultValue : LocalDateTime.parse(value);
+        return value == null ? defaultValue : ApplicationDateTimeFormat.parseUserDateTime(value);
     }
 
     private static String defaultText(HttpServletRequest request, String name, String fallback) {
@@ -851,19 +1136,179 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private static List<SelectOptionView> attendanceStatusOptions(String selected) {
-        return Arrays.stream(AttendanceStatus.values())
-                .map(status -> new SelectOptionView(
-                        status.toDatabaseValue(),
-                        statusLabel(status),
-                        status.toDatabaseValue().equals(selected)
+    private static boolean isFinishedActivity(AttendanceRecordView record, LocalDateTime now) {
+        LocalDateTime endsAt = record.getActivityEndsAtRaw();
+        return endsAt == null || !endsAt.isAfter(now);
+    }
+
+    private static List<AttendanceActivityView> attendanceActivities(
+            List<AttendanceRecordView> records,
+            Map<Long, AbsenceJustificationView> justificationByRecordId
+    ) {
+        return records.stream()
+                .map(record -> new AttendanceActivityView(record, justificationByRecordId.get(record.getId())))
+                .toList();
+    }
+
+    private List<AttendanceActivityView> assessmentActivities(LocalDateTime now) throws SQLException {
+        Map<Long, User> users = mapUsers(userDAO.findAll());
+        List<AttendanceActivityView> activities = new ArrayList<>();
+        for (Assessment assessment : assessmentDAO.findAll()) {
+            if (!isFinishedAssessment(assessment, now)) {
+                continue;
+            }
+            List<Long> applicableClassGroupIds = assessmentDAO.findApplicableClassGroupIds(assessment.id());
+            Map<Long, Attempt> latestAttemptByStudent = latestAttemptByStudent(attemptDAO.findByAssessment(assessment.id()));
+            for (AssessmentEnrollment enrollment : assessmentEnrollmentDAO.findByAssessment(assessment.id())) {
+                if (!isRelevantAssessmentEnrollment(enrollment)) {
+                    continue;
+                }
+                activities.add(new AttendanceActivityView(
+                        new AssessmentAttendanceSource(
+                                assessment,
+                                enrollment,
+                                users.get(enrollment.studentUserId()),
+                                latestAttemptByStudent.get(enrollment.studentUserId()),
+                                contextClassGroupId(enrollment.studentUserId(), applicableClassGroupIds)
+                        )
+                ));
+            }
+        }
+        return List.copyOf(activities);
+    }
+
+    private Long contextClassGroupId(long studentUserId, List<Long> applicableClassGroupIds) throws SQLException {
+        if (applicableClassGroupIds == null || applicableClassGroupIds.isEmpty()) {
+            return null;
+        }
+        for (Long classGroupId : applicableClassGroupIds) {
+            if (classGroupId == null) {
+                continue;
+            }
+            ClassGroupEnrollment enrollment = classGroupEnrollmentDAO
+                    .findEnrollment(studentUserId, classGroupId)
+                    .orElse(null);
+            if (enrollment != null && isRelevantClassGroupEnrollment(enrollment)) {
+                return classGroupId;
+            }
+        }
+        return applicableClassGroupIds.get(0);
+    }
+
+    private static boolean isRelevantClassGroupEnrollment(ClassGroupEnrollment enrollment) {
+        return enrollment.state() == EnrollmentState.ACTIVE || enrollment.state() == EnrollmentState.COMPLETED;
+    }
+
+    private static boolean isFinishedAssessment(Assessment assessment, LocalDateTime now) {
+        if (assessment.state() == pt.isel.gape.learning.model.AssessmentState.COMPLETED) {
+            return true;
+        }
+        return assessment.availableUntil() != null && !assessment.availableUntil().isAfter(now);
+    }
+
+    private static boolean isRelevantAssessmentEnrollment(AssessmentEnrollment enrollment) {
+        return enrollment.state() == EnrollmentState.ACTIVE || enrollment.state() == EnrollmentState.COMPLETED;
+    }
+
+    private static Map<Long, Attempt> latestAttemptByStudent(List<Attempt> attempts) {
+        Map<Long, Attempt> result = new LinkedHashMap<>();
+        for (Attempt attempt : attempts) {
+            result.putIfAbsent(attempt.studentUserId(), attempt);
+        }
+        return result;
+    }
+
+    private static List<AttendanceStudentGroupView> attendanceStudentGroups(List<AttendanceActivityView> activities) {
+        Map<Long, List<AttendanceActivityView>> byStudent = new LinkedHashMap<>();
+        for (AttendanceActivityView activity : activities) {
+            byStudent.computeIfAbsent(activity.getStudentUserId(), ignored -> new ArrayList<>()).add(activity);
+        }
+        return byStudent.values().stream()
+                .map(group -> new AttendanceStudentGroupView(List.copyOf(group)))
+                .sorted(Comparator.comparing(
+                                AttendanceStudentGroupView::getSortDateRaw,
+                                Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(AttendanceStudentGroupView::getStudentLabel, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    /**
+     * Attendance details and their dialogs are only rendered for the current
+     * student page.  This keeps the Lessons and Enrollments dashboards quick
+     * even when their audit history contains thousands of activity records.
+     */
+    private static void applyAttendanceManagementPagination(
+            HttpServletRequest request,
+            List<AttendanceActivityView> activities,
+            String selectedAttendanceState
+    ) {
+        List<AttendanceStudentGroupView> allGroups = attendanceStudentGroups(activities);
+        int total = allGroups.size();
+        boolean loadAll = Boolean.parseBoolean(text(request, "attendanceLoadAll"));
+        int pageCount = Math.max(1, (total + ATTENDANCE_MANAGEMENT_PAGE_SIZE - 1) / ATTENDANCE_MANAGEMENT_PAGE_SIZE);
+        int currentPage = loadAll
+                ? 1
+                : Math.min(pageCount, Math.max(1, integerParameter(request, "attendancePage", 1)));
+        int fromIndex = loadAll ? 0 : Math.min((currentPage - 1) * ATTENDANCE_MANAGEMENT_PAGE_SIZE, total);
+        int toIndex = loadAll ? total : Math.min(fromIndex + ATTENDANCE_MANAGEMENT_PAGE_SIZE, total);
+        List<AttendanceStudentGroupView> pageGroups = allGroups.subList(fromIndex, toIndex);
+        Set<Long> pageStudentIds = pageGroups.stream()
+                .map(AttendanceStudentGroupView::getStudentUserId)
+                .collect(Collectors.toSet());
+
+        request.setAttribute("attendanceStudentGroups", List.copyOf(pageGroups));
+        request.setAttribute("attendanceActivities", activities.stream()
+                .filter(activity -> pageStudentIds.contains(activity.getStudentUserId()))
+                .toList());
+        request.setAttribute("attendanceManagementTotal", total);
+        request.setAttribute("attendanceManagementCurrentPage", currentPage);
+        request.setAttribute("attendanceManagementPageCount", pageCount);
+        request.setAttribute("attendanceManagementHasPreviousPage", currentPage > 1);
+        request.setAttribute("attendanceManagementHasNextPage", currentPage < pageCount);
+        request.setAttribute("attendanceManagementPreviousPage", Math.max(1, currentPage - 1));
+        request.setAttribute("attendanceManagementNextPage", Math.min(pageCount, currentPage + 1));
+        request.setAttribute("attendanceManagementLoadAll", loadAll);
+        request.setAttribute(
+                "attendancePaginationStateQuery",
+                selectedAttendanceState == null || selectedAttendanceState.isBlank()
+                        ? ""
+                        : "&attendanceState=" + selectedAttendanceState
+        );
+    }
+
+    private static int integerParameter(HttpServletRequest request, String name, int fallback) {
+        String value = text(request, name);
+        if (value == null) {
+            return fallback;
+        }
+        try {
+            return Math.max(1, Integer.parseInt(value));
+        } catch (NumberFormatException ignored) {
+            return fallback;
+        }
+    }
+
+    private Map<Long, ClassGroupView> classGroupById() throws SQLException {
+        Map<Long, ClassGroupView> byId = new LinkedHashMap<>();
+        for (ClassGroupView classGroup : viewFactory.classGroupViews(classGroupDAO.findAll())) {
+            byId.put(classGroup.getId(), classGroup);
+        }
+        return byId;
+    }
+
+    private static List<SelectOptionView> attendanceStateOptions(String selected) {
+        return attendanceDisplayStates().stream()
+                .map(state -> new SelectOptionView(
+                        state.value(),
+                        state.label(),
+                        state.value().equals(selected)
                 ))
                 .toList();
     }
 
-    private static List<SelectOptionView> attendanceCreationStatusOptions() {
+    private static List<SelectOptionView> attendanceCreationStateOptions() {
         return Arrays.stream(AttendanceStatus.values())
-                .filter(status -> status != AttendanceStatus.JUSTIFIED)
+                .filter(status -> status == AttendanceStatus.PRESENT || status == AttendanceStatus.ABSENT)
                 .map(status -> new SelectOptionView(status.toDatabaseValue(), statusLabel(status), false))
                 .toList();
     }
@@ -890,14 +1335,31 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
                 && contentType.toLowerCase(java.util.Locale.ROOT).startsWith("multipart/");
     }
 
-    private static List<SelectOptionView> justificationStateOptions(String selected) {
-        return Arrays.stream(AbsenceJustificationState.values())
-                .map(state -> new SelectOptionView(
-                        state.toDatabaseValue(),
-                        justificationStateLabel(state),
-                        state.toDatabaseValue().equals(selected)
-                ))
-                .toList();
+    private static List<AttendanceDisplayState> attendanceDisplayStates() {
+        return List.of(
+                new AttendanceDisplayState("present", "Present", "bg-success-50 text-success-600"),
+                new AttendanceDisplayState("absent", "Absent", "bg-danger-50 text-danger-600"),
+                new AttendanceDisplayState("requested", "Requested", "bg-warning-50 text-warning-600"),
+                new AttendanceDisplayState("justified", "Justified", "bg-main-50 text-main-600"),
+                new AttendanceDisplayState("rejected", "Rejected", "bg-danger-50 text-danger-600")
+        );
+    }
+
+    private static AttendanceDisplayState displayStateForJustification(AbsenceJustificationState state) {
+        return switch (state) {
+            case SUBMITTED, UNDER_REVIEW -> attendanceDisplayStates().get(2);
+            case APPROVED -> attendanceDisplayStates().get(3);
+            case REJECTED -> attendanceDisplayStates().get(4);
+            case CANCELLED -> attendanceDisplayStates().get(1);
+        };
+    }
+
+    private static boolean canApproveJustification(String activityStateValue) {
+        return "requested".equals(activityStateValue) || "rejected".equals(activityStateValue);
+    }
+
+    private static boolean canRejectJustification(String activityStateValue) {
+        return "requested".equals(activityStateValue) || "justified".equals(activityStateValue);
     }
 
     private static String statusLabel(AttendanceStatus status) {
@@ -918,14 +1380,372 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         };
     }
 
-    private static String justificationStateLabel(AbsenceJustificationState state) {
-        return switch (state) {
-            case SUBMITTED -> "Submitted";
-            case UNDER_REVIEW -> "Under review";
-            case APPROVED -> "Approved";
-            case REJECTED -> "Rejected";
-            case CANCELLED -> "Cancelled";
-        };
+    private record AttendanceDisplayState(String value, String label, String badgeClass) {
+    }
+
+    private record OverviewPage<T>(List<T> rows, int total, int currentPage, int pageCount, boolean loadAll) {
+    }
+
+    private record EnrollmentScopeRows(
+            List<EnrollmentOverviewView> activeRows,
+            List<EnrollmentOverviewView> completedRows
+    ) {
+    }
+
+    private record AssessmentAttendanceSource(
+            Assessment assessment,
+            AssessmentEnrollment enrollment,
+            User student,
+            Attempt attempt,
+            Long classGroupId
+    ) {
+    }
+
+    public static final class AttendanceStudentGroupView {
+
+        private final List<AttendanceActivityView> activities;
+        private final List<AttendanceStateSummaryView> stateSummaries;
+        private final long permanenceMinutes;
+
+        private AttendanceStudentGroupView(List<AttendanceActivityView> activities) {
+            this.activities = activities;
+            this.stateSummaries = attendanceStateSummaries(activities);
+            this.permanenceMinutes = activities.stream()
+                    .mapToLong(AttendanceActivityView::getPermanenceMinutes)
+                    .sum();
+        }
+
+        public long getStudentUserId() {
+            return primaryActivity().getStudentUserId();
+        }
+
+        public String getStudentLabel() {
+            return primaryActivity().getStudentLabel();
+        }
+
+        public String getStudentEmail() {
+            return primaryActivity().getStudentEmail();
+        }
+
+        public int getActivityCount() {
+            return activities.size();
+        }
+
+        public String getActivityCountLabel() {
+            return activities.size() == 1 ? "1 activity" : activities.size() + " activities";
+        }
+
+        public String getTimeLabel() {
+            return "Shown per activity";
+        }
+
+        public String getPermanenceLabel() {
+            return "Shown per activity";
+        }
+
+        public List<AttendanceStateSummaryView> getStateSummaries() {
+            return stateSummaries;
+        }
+
+        public List<AttendanceActivityView> getActivities() {
+            return activities;
+        }
+
+        public LocalDateTime getSortDateRaw() {
+            return activities.stream()
+                    .map(AttendanceActivityView::getSortDateRaw)
+                    .filter(java.util.Objects::nonNull)
+                    .max(Comparator.naturalOrder())
+                    .orElse(null);
+        }
+
+        public String getSortDateValue() {
+            LocalDateTime sortDate = getSortDateRaw();
+            return sortDate == null ? "" : sortDate.toString();
+        }
+
+        public String getPrimaryStateLabel() {
+            return primaryActivity().getStateLabel();
+        }
+
+        public String getPrimaryActivityLabel() {
+            return primaryActivity().getActivityLabel();
+        }
+
+        public Long getClassGroupId() {
+            return primaryActivity().getClassGroupId();
+        }
+
+        private AttendanceActivityView primaryActivity() {
+            return activities.get(0);
+        }
+    }
+
+    public static final class AttendanceActivityView {
+
+        private final AttendanceRecordView record;
+        private final AssessmentAttendanceSource assessmentSource;
+        private final AbsenceJustificationView justification;
+        private final AttendanceDisplayState state;
+
+        private AttendanceActivityView(AttendanceRecordView record, AbsenceJustificationView justification) {
+            this.record = record;
+            this.assessmentSource = null;
+            this.justification = justification;
+            this.state = resolveAttendanceState(record, justification);
+        }
+
+        private AttendanceActivityView(AssessmentAttendanceSource assessmentSource) {
+            this.record = null;
+            this.assessmentSource = assessmentSource;
+            this.justification = null;
+            this.state = assessmentSource.attempt() == null
+                    ? attendanceDisplayStates().get(1)
+                    : attendanceDisplayStates().get(0);
+        }
+
+        public AttendanceRecordView getRecord() {
+            return record;
+        }
+
+        public AbsenceJustificationView getJustification() {
+            return justification;
+        }
+
+        public long getId() {
+            return record == null
+                    ? -(assessmentSource.assessment().id() * 100000L + assessmentSource.enrollment().studentUserId())
+                    : record.getId();
+        }
+
+        public long getStudentUserId() {
+            return record == null ? assessmentSource.enrollment().studentUserId() : record.getStudentUserId();
+        }
+
+        public String getStudentLabel() {
+            if (record != null) {
+                return record.getStudentLabel();
+            }
+            return getStudentUserId() + " - " + studentName();
+        }
+
+        public String getStudentEmail() {
+            if (record != null) {
+                return record.getStudentEmail();
+            }
+            return assessmentSource.student() == null ? "-" : assessmentSource.student().email();
+        }
+
+        public String getActivityLabel() {
+            return record == null
+                    ? "Assessment - " + safeAssessmentTitle()
+                    : record.getActivityLabel();
+        }
+
+        public String getActivityMeta() {
+            return record == null
+                    ? "Assessment #" + assessmentSource.assessment().id()
+                    : record.getActivityTypeLabel() + " #" + record.getLessonId();
+        }
+
+        public String getActivityScheduleLabel() {
+            if (record != null) {
+                return record.getActivityScheduleLabel();
+            }
+            return formatActivityPeriod(
+                    assessmentSource.assessment().availableFrom(),
+                    assessmentSource.assessment().availableUntil()
+            );
+        }
+
+        public LocalDateTime getSortDateRaw() {
+            if (record != null) {
+                return record.getActivityEndsAtRaw();
+            }
+            if (assessmentSource.assessment().availableUntil() != null) {
+                return assessmentSource.assessment().availableUntil();
+            }
+            return assessmentSource.assessment().availableFrom();
+        }
+
+        public String getSortDateValue() {
+            LocalDateTime sortDate = getSortDateRaw();
+            return sortDate == null ? "" : sortDate.toString();
+        }
+
+        public Long getClassGroupId() {
+            if (record != null) {
+                LessonView lesson = record.getLesson();
+                return lesson == null ? null : lesson.getClassGroupId();
+            }
+            return assessmentSource.classGroupId();
+        }
+
+        public String getStateValue() {
+            return state.value();
+        }
+
+        public String getStateLabel() {
+            return state.label();
+        }
+
+        public String getStateBadgeClass() {
+            return state.badgeClass();
+        }
+
+        public String getTimeLabel() {
+            if (record != null) {
+                return record.getTimeLabel();
+            }
+            Attempt attempt = assessmentSource.attempt();
+            if (attempt == null) {
+                return "Assessment: " + getActivityScheduleLabel();
+            }
+            return "Started: " + formatActivityDateTime(attempt.startedAt())
+                    + " | Submitted: " + formatActivityDateTime(attempt.submittedAt());
+        }
+
+        public String getPermanenceLabel() {
+            return AttendanceRecordView.durationLabel(getPermanenceMinutes());
+        }
+
+        public long getPermanenceMinutes() {
+            if (record != null) {
+                return record.getPermanenceMinutes();
+            }
+            Attempt attempt = assessmentSource.attempt();
+            if (attempt == null || attempt.startedAt() == null || attempt.submittedAt() == null) {
+                return 0;
+            }
+            return Math.max(0, ChronoUnit.MINUTES.between(attempt.startedAt(), attempt.submittedAt()));
+        }
+
+        public String getSourceLabel() {
+            return record == null ? "Assessment" : record.getSourceLabel();
+        }
+
+        public String getNotes() {
+            if (record != null) {
+                return record.getNotes();
+            }
+            Attempt attempt = assessmentSource.attempt();
+            return attempt == null
+                    ? "No attempt was recorded before the assessment ended."
+                    : "Attempt #" + attempt.attemptNumber() + " - " + attempt.state().toDatabaseValue();
+        }
+
+        public boolean isHasJustification() {
+            return justification != null;
+        }
+
+        public boolean isHasSettings() {
+            return justification != null
+                    && ("requested".equals(getStateValue())
+                    || "justified".equals(getStateValue())
+                    || "rejected".equals(getStateValue()));
+        }
+
+        public boolean isCanApprove() {
+            return canApproveJustification(getStateValue());
+        }
+
+        public boolean isCanReject() {
+            return canRejectJustification(getStateValue());
+        }
+
+        public String getDetailModalId() {
+            if (record != null) {
+                return "attendanceDetail" + getId();
+            }
+            return "attendanceAssessmentDetail"
+                    + assessmentSource.assessment().id()
+                    + "Student"
+                    + assessmentSource.enrollment().studentUserId();
+        }
+
+        public String getSettingsModalId() {
+            return "attendanceSettings" + getId();
+        }
+
+        private String studentName() {
+            User student = assessmentSource.student();
+            return student == null || student.name() == null || student.name().isBlank()
+                    ? "Student " + getStudentUserId()
+                    : student.name();
+        }
+
+        private String safeAssessmentTitle() {
+            String title = assessmentSource.assessment().title();
+            return title == null || title.isBlank()
+                    ? "Assessment " + assessmentSource.assessment().id()
+                    : title;
+        }
+    }
+
+    public static final class AttendanceStateSummaryView {
+
+        private final int count;
+        private final String label;
+        private final String badgeClass;
+
+        private AttendanceStateSummaryView(int count, String label, String badgeClass) {
+            this.count = count;
+            this.label = label;
+            this.badgeClass = badgeClass;
+        }
+
+        public int getCount() {
+            return count;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        public String getBadgeClass() {
+            return badgeClass;
+        }
+    }
+
+    private static AttendanceDisplayState resolveAttendanceState(
+            AttendanceRecordView record,
+            AbsenceJustificationView justification
+    ) {
+        if (justification != null) {
+            return switch (justification.getStateValue()) {
+                case "submitted", "under_review" -> attendanceDisplayStates().get(2);
+                case "approved" -> attendanceDisplayStates().get(3);
+                case "rejected" -> attendanceDisplayStates().get(4);
+                default -> baseAttendanceState(record);
+            };
+        }
+        return baseAttendanceState(record);
+    }
+
+    private static AttendanceDisplayState baseAttendanceState(AttendanceRecordView record) {
+        if ("present".equals(record.getStatusValue())) {
+            return attendanceDisplayStates().get(0);
+        }
+        if ("justified".equals(record.getStatusValue())) {
+            return attendanceDisplayStates().get(3);
+        }
+        return attendanceDisplayStates().get(1);
+    }
+
+    private static List<AttendanceStateSummaryView> attendanceStateSummaries(List<AttendanceActivityView> activities) {
+        List<AttendanceStateSummaryView> summaries = new ArrayList<>();
+        for (AttendanceDisplayState state : attendanceDisplayStates()) {
+            int count = 0;
+            for (AttendanceActivityView activity : activities) {
+                if (state.value().equals(activity.getStateValue())) {
+                    count++;
+                }
+            }
+            if (count > 0) {
+                summaries.add(new AttendanceStateSummaryView(count, state.label(), state.badgeClass()));
+            }
+        }
+        return List.copyOf(summaries);
     }
 
     public static final class EnrollmentOverviewView {
@@ -937,6 +1757,7 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         private final long contextId;
         private final Long parentContextId;
         private final Long courseId;
+        private final Long courseOccurrenceId;
         private final Long subjectId;
         private final Long classGroupId;
         private final long studentUserId;
@@ -964,6 +1785,7 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
                 long contextId,
                 Long parentContextId,
                 Long courseId,
+                Long courseOccurrenceId,
                 Long subjectId,
                 Long classGroupId,
                 long studentUserId,
@@ -990,6 +1812,7 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
             this.contextId = contextId;
             this.parentContextId = parentContextId;
             this.courseId = courseId;
+            this.courseOccurrenceId = courseOccurrenceId;
             this.subjectId = subjectId;
             this.classGroupId = classGroupId;
             this.studentUserId = studentUserId;
@@ -1039,6 +1862,10 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
 
         public Long getCourseId() {
             return courseId;
+        }
+
+        public Long getCourseOccurrenceId() {
+            return courseOccurrenceId;
         }
 
         public Long getSubjectId() {
@@ -1101,6 +1928,24 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
             return pending;
         }
 
+        public boolean isCompleted() {
+            return "completed".equals(stateValue);
+        }
+
+        public String getOccurrenceScopeKey() {
+            if (courseOccurrenceId != null && courseOccurrenceId > 0) {
+                return studentUserId + ":occurrence:" + courseOccurrenceId;
+            }
+            return getCourseScopeKey();
+        }
+
+        public String getCourseScopeKey() {
+            if (courseId != null && courseId > 0) {
+                return studentUserId + ":course:" + courseId;
+            }
+            return studentUserId + ":" + contextKey + ":" + contextId;
+        }
+
         public String getUpdateAction() {
             return updateAction;
         }
@@ -1117,10 +1962,6 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
             return "course".equals(contextKey);
         }
 
-        public boolean isSubject() {
-            return "subject".equals(contextKey);
-        }
-
         public boolean isClassGroup() {
             return "class-group".equals(contextKey);
         }
@@ -1134,12 +1975,13 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         }
 
         public boolean isEditable() {
-            return isCourse() || isSubject();
+            return isCourse();
         }
 
         public String getModalKey() {
             return contextKey.replace("-", "") + contextId + "_"
                     + (parentContextId == null ? 0 : parentContextId) + "_"
+                    + (courseOccurrenceId == null ? 0 : courseOccurrenceId) + "_"
                     + (classGroupId == null ? 0 : classGroupId) + "_"
                     + studentUserId;
         }
@@ -1172,14 +2014,14 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
     public static final class EnrollmentStudentGroupView {
         private final List<EnrollmentOverviewView> enrollments;
         private final List<EnrollmentCourseGroupView> courseGroups;
-        private final List<EnrollmentStateSummaryView> courseStateSummaries;
+        private final List<EnrollmentOverviewView> unattachedEnrollments;
+        private final List<EnrollmentStateSummaryView> stateSummaries;
 
         private EnrollmentStudentGroupView(List<EnrollmentOverviewView> enrollments) {
             this.enrollments = enrollments;
             this.courseGroups = courseGroups(enrollments);
-            this.courseStateSummaries = stateSummaries(this.courseGroups.stream()
-                    .map(EnrollmentCourseGroupView::getEnrollment)
-                    .toList());
+            this.unattachedEnrollments = unattachedEnrollments(enrollments, courseGroups);
+            this.stateSummaries = stateSummaries(enrollments);
         }
 
         public long getStudentUserId() {
@@ -1218,8 +2060,12 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
             return courseGroups;
         }
 
-        public List<EnrollmentStateSummaryView> getCourseStateSummaries() {
-            return courseStateSummaries;
+        public List<EnrollmentStateSummaryView> getStateSummaries() {
+            return stateSummaries;
+        }
+
+        public List<EnrollmentOverviewView> getUnattachedEnrollments() {
+            return unattachedEnrollments;
         }
 
         private EnrollmentOverviewView primaryEnrollment() {
@@ -1234,57 +2080,34 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
                     .forEach(course -> groups.add(new EnrollmentCourseGroupView(course, enrollments)));
             return List.copyOf(groups);
         }
+
+        private static List<EnrollmentOverviewView> unattachedEnrollments(
+                List<EnrollmentOverviewView> enrollments,
+                List<EnrollmentCourseGroupView> courseGroups
+        ) {
+            Set<String> attachedKeys = new HashSet<>();
+            for (EnrollmentCourseGroupView courseGroup : courseGroups) {
+                attachedKeys.add(courseGroup.getEnrollment().getModalKey());
+                for (EnrollmentClassGroupView classGroup : courseGroup.getClassGroups()) {
+                    attachedKeys.add(classGroup.getEnrollment().getModalKey());
+                    for (EnrollmentOverviewView assessment : classGroup.getAssessmentEnrollments()) {
+                        attachedKeys.add(assessment.getModalKey());
+                    }
+                }
+            }
+            return enrollments.stream()
+                    .filter(enrollment -> !attachedKeys.contains(enrollment.getModalKey()))
+                    .sorted(enrollmentComparator())
+                    .toList();
+        }
     }
 
     public static final class EnrollmentCourseGroupView {
         private final EnrollmentOverviewView enrollment;
-        private final List<EnrollmentSubjectGroupView> subjectGroups;
-        private final List<EnrollmentStateSummaryView> subjectStateSummaries;
-
-        private EnrollmentCourseGroupView(EnrollmentOverviewView enrollment, List<EnrollmentOverviewView> allEnrollments) {
-            this.enrollment = enrollment;
-            this.subjectGroups = subjectGroups(enrollment, allEnrollments);
-            this.subjectStateSummaries = stateSummaries(this.subjectGroups.stream()
-                    .map(EnrollmentSubjectGroupView::getEnrollment)
-                    .toList());
-        }
-
-        public EnrollmentOverviewView getEnrollment() {
-            return enrollment;
-        }
-
-        public List<EnrollmentSubjectGroupView> getSubjectGroups() {
-            return subjectGroups;
-        }
-
-        public int getSubjectEnrollmentCount() {
-            return subjectGroups.size();
-        }
-
-        public List<EnrollmentStateSummaryView> getSubjectStateSummaries() {
-            return subjectStateSummaries;
-        }
-
-        private static List<EnrollmentSubjectGroupView> subjectGroups(
-                EnrollmentOverviewView course,
-                List<EnrollmentOverviewView> allEnrollments
-        ) {
-            List<EnrollmentSubjectGroupView> groups = new ArrayList<>();
-            allEnrollments.stream()
-                    .filter(EnrollmentOverviewView::isSubject)
-                    .filter(subject -> course.getCourseId() != null && course.getCourseId().equals(subject.getCourseId()))
-                    .sorted(enrollmentComparator())
-                    .forEach(subject -> groups.add(new EnrollmentSubjectGroupView(subject, allEnrollments)));
-            return List.copyOf(groups);
-        }
-    }
-
-    public static final class EnrollmentSubjectGroupView {
-        private final EnrollmentOverviewView enrollment;
         private final List<EnrollmentClassGroupView> classGroups;
         private final List<EnrollmentStateSummaryView> classGroupStateSummaries;
 
-        private EnrollmentSubjectGroupView(EnrollmentOverviewView enrollment, List<EnrollmentOverviewView> allEnrollments) {
+        private EnrollmentCourseGroupView(EnrollmentOverviewView enrollment, List<EnrollmentOverviewView> allEnrollments) {
             this.enrollment = enrollment;
             this.classGroups = classGroups(enrollment, allEnrollments);
             this.classGroupStateSummaries = stateSummaries(this.classGroups.stream()
@@ -1309,19 +2132,29 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         }
 
         private static List<EnrollmentClassGroupView> classGroups(
-                EnrollmentOverviewView subject,
+                EnrollmentOverviewView course,
                 List<EnrollmentOverviewView> allEnrollments
         ) {
             List<EnrollmentClassGroupView> groups = new ArrayList<>();
             allEnrollments.stream()
                     .filter(EnrollmentOverviewView::isClassGroup)
-                    .filter(classGroup -> subject.getCourseId() != null
-                            && subject.getCourseId().equals(classGroup.getCourseId())
-                            && subject.getSubjectId() != null
-                            && subject.getSubjectId().equals(classGroup.getSubjectId()))
+                    .filter(classGroup -> course.getCourseId() != null
+                            && course.getCourseId().equals(classGroup.getCourseId()))
+                    .filter(classGroup -> sameCourseOccurrence(course, classGroup))
                     .sorted(enrollmentComparator())
                     .forEach(classGroup -> groups.add(new EnrollmentClassGroupView(classGroup, allEnrollments)));
             return List.copyOf(groups);
+        }
+
+        private static boolean sameCourseOccurrence(
+                EnrollmentOverviewView course,
+                EnrollmentOverviewView classGroup
+        ) {
+            Long courseOccurrenceId = course.getCourseOccurrenceId();
+            Long classGroupOccurrenceId = classGroup.getCourseOccurrenceId();
+            return courseOccurrenceId == null
+                    || classGroupOccurrenceId == null
+                    || courseOccurrenceId.equals(classGroupOccurrenceId);
         }
     }
 

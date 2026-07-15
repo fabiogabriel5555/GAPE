@@ -204,8 +204,6 @@ public final class ScheduleEventDAO {
                     WHERE ecg.id_class_group IN (%s)
                       AND ecg.state = 'active'
                       AND u.state = 'active'
-                      AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                      AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
                     UNION
                     SELECT tcg.id_teacher_user AS id_user
                     FROM teach_class_group tcg
@@ -213,8 +211,6 @@ public final class ScheduleEventDAO {
                     WHERE tcg.id_class_group IN (%s)
                       AND tcg.state = 'active'
                       AND u.state = 'active'
-                      AND (tcg.start_date IS NULL OR tcg.start_date <= CURRENT_DATE)
-                      AND (tcg.end_date IS NULL OR tcg.end_date >= CURRENT_DATE)
                     UNION
                     SELECT cs.id_coordinator_user AS id_user
                     FROM class_group cg
@@ -223,8 +219,6 @@ public final class ScheduleEventDAO {
                     WHERE cg.id_class_group IN (%s)
                       AND cs.state = 'active'
                       AND u.state = 'active'
-                      AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
-                      AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 ) recipients
                 ORDER BY id_user
                 """.formatted(placeholders, placeholders, placeholders);
@@ -264,8 +258,6 @@ public final class ScheduleEventDAO {
                         AND cg.state = 'active'
                         AND c.state = 'active'
                         AND s.state = 'active'
-                        AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                        AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
                   )
                 ORDER BY se.starts_at, se.id_schedule_event
                 """;
@@ -290,8 +282,6 @@ public final class ScheduleEventDAO {
                         AND p.state = 'active'
                         AND u.state = 'active'
                         AND cg.state = 'active'
-                        AND (tcg.start_date IS NULL OR tcg.start_date <= CURRENT_DATE)
-                        AND (tcg.end_date IS NULL OR tcg.end_date >= CURRENT_DATE)
                   )
                 ORDER BY se.starts_at, se.id_schedule_event
                 """;
@@ -317,8 +307,6 @@ public final class ScheduleEventDAO {
                         AND p.state = 'active'
                         AND u.state = 'active'
                         AND cg.state = 'active'
-                        AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
-                        AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                   )
                 ORDER BY se.starts_at, se.id_schedule_event
                 """;

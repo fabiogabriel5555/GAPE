@@ -57,28 +57,11 @@
                             <input id="name" name="name" type="text" value="<c:out value='${form.name}'/>" required pattern="[^|]*" title="Names cannot contain |" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
                         <div class="col-lg-4 gape-select-field">
-                            <label for="accessMode" class="fw-medium text-base text-neutral-800 mb-12">Access Mode</label>
-                            <select id="accessMode" name="accessMode" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
-                                <option value="OPEN" ${form.accessMode == 'OPEN' ? 'selected' : ''}>Open</option>
-                                <option value="RESTRICTED" ${form.accessMode == 'RESTRICTED' ? 'selected' : ''}>Restricted</option>
-                                <option value="SCHEDULED" ${form.accessMode == 'SCHEDULED' ? 'selected' : ''}>Scheduled</option>
-                            </select>
-                        </div>
-                        <div class="col-lg-4 gape-select-field">
                             <label for="state" class="fw-medium text-base text-neutral-800 mb-12">State</label>
                             <select id="state" name="state" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
-                                <option value="DRAFT" ${form.state == 'DRAFT' ? 'selected' : ''}>Draft</option>
                                 <option value="ACTIVE" ${form.state == 'ACTIVE' ? 'selected' : ''}>Active</option>
                                 <option value="INACTIVE" ${form.state == 'INACTIVE' ? 'selected' : ''}>Inactive</option>
                             </select>
-                        </div>
-                        <div class="col-lg-4">
-                            <label for="availableFrom" class="fw-medium text-base text-neutral-800 mb-12">Available From</label>
-                            <input id="availableFrom" name="availableFrom" type="datetime-local" value="<c:out value='${form.availableFrom}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
-                        </div>
-                        <div class="col-lg-4">
-                            <label for="availableUntil" class="fw-medium text-base text-neutral-800 mb-12">Available Until</label>
-                            <input id="availableUntil" name="availableUntil" type="datetime-local" value="<c:out value='${form.availableUntil}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                         </div>
                         <div class="col-12">
                             <label for="description" class="fw-medium text-base text-neutral-800 mb-12">Description</label>

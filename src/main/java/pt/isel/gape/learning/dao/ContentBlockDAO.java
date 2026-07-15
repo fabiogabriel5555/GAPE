@@ -5,20 +5,20 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.ContentBlock;
-import pt.isel.gape.learning.model.ContentBlockAccessMode;
 import pt.isel.gape.learning.model.ContentBlockCreateCommand;
 import pt.isel.gape.learning.model.ContentBlockState;
 import pt.isel.gape.learning.model.ContentBlockUpdateCommand;
 
-public final class ContentBlockDAO {
+public final class ContentBlockDAO implements pt.isel.gape.transversal.service.ApplicationReadService.ContentBlocks {
 
     private final ConnectionProvider connectionProvider;
 
@@ -30,8 +30,8 @@ public final class ContentBlockDAO {
         String sql = """
                 INSERT INTO content_block (
                     id_class_group, cod_content_block, name, description, order_no,
-                    access_mode, state, available_from, available_until
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    state
+                ) VALUES (?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -40,10 +40,7 @@ public final class ContentBlockDAO {
             statement.setString(3, command.name().trim());
             setNullableString(statement, 4, command.description());
             statement.setInt(5, command.orderNo());
-            statement.setString(6, command.accessMode().toDatabaseValue());
-            statement.setString(7, command.state().toDatabaseValue());
-            setTimestamp(statement, 8, command.availableFrom());
-            setTimestamp(statement, 9, command.availableUntil());
+            statement.setString(6, command.state().toDatabaseValue());
             statement.executeUpdate();
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (!generatedKeys.next()) {
@@ -63,7 +60,7 @@ public final class ContentBlockDAO {
     public Optional<ContentBlock> findById(Connection connection, long contentBlockId) throws SQLException {
         String sql = """
                 SELECT id_content_block, id_class_group, cod_content_block, name, description,
-                       order_no, access_mode, state, available_from, available_until
+                       order_no, state, created_at, updated_at
                 FROM content_block
                 WHERE id_content_block = ?
                 """;
@@ -82,7 +79,7 @@ public final class ContentBlockDAO {
     public List<ContentBlock> findByClassGroup(long classGroupId) throws SQLException {
         String sql = """
                 SELECT id_content_block, id_class_group, cod_content_block, name, description,
-                       order_no, access_mode, state, available_from, available_until
+                       order_no, state, created_at, updated_at
                 FROM content_block
                 WHERE id_class_group = ?
                 ORDER BY order_no, name
@@ -105,7 +102,7 @@ public final class ContentBlockDAO {
             throws SQLException {
         String sql = """
                 SELECT id_content_block, id_class_group, cod_content_block, name, description,
-                       order_no, access_mode, state, available_from, available_until
+                       order_no, state, created_at, updated_at
                 FROM content_block
                 WHERE id_class_group = ?
                 ORDER BY order_no, name
@@ -123,12 +120,39 @@ public final class ContentBlockDAO {
         }
     }
 
+    public Map<Long, Integer> countByClassGroupIds(Collection<Long> classGroupIds) throws SQLException {
+        if (classGroupIds == null || classGroupIds.isEmpty()) {
+            return Map.of();
+        }
+        String sql = """
+                SELECT id_class_group, COUNT(*) AS block_count
+                FROM content_block
+                WHERE id_class_group IN (%s)
+                GROUP BY id_class_group
+                """.formatted(placeholders(classGroupIds.size()));
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            for (Long classGroupId : classGroupIds) {
+                statement.setLong(index++, classGroupId);
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, Integer> counts = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    counts.put(resultSet.getLong("id_class_group"), resultSet.getInt("block_count"));
+                }
+                return counts;
+            }
+        }
+    }
+
     public void update(Connection connection, long contentBlockId, ContentBlockUpdateCommand command)
             throws SQLException {
         String sql = """
                 UPDATE content_block
                 SET cod_content_block = ?, name = ?, description = ?, order_no = ?,
-                    access_mode = ?, state = ?, available_from = ?, available_until = ?
+                    state = ?
                 WHERE id_content_block = ?
                 """;
 
@@ -137,22 +161,8 @@ public final class ContentBlockDAO {
             statement.setString(2, command.name().trim());
             setNullableString(statement, 3, command.description());
             statement.setInt(4, command.orderNo());
-            statement.setString(5, command.accessMode().toDatabaseValue());
-            statement.setString(6, command.state().toDatabaseValue());
-            setTimestamp(statement, 7, command.availableFrom());
-            setTimestamp(statement, 8, command.availableUntil());
-            statement.setLong(9, contentBlockId);
-            if (statement.executeUpdate() == 0) {
-                throw new SQLException("Content block not found: " + contentBlockId);
-            }
-        }
-    }
-
-    public void updateState(Connection connection, long contentBlockId, ContentBlockState state) throws SQLException {
-        String sql = "UPDATE content_block SET state = ? WHERE id_content_block = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, state.toDatabaseValue());
-            statement.setLong(2, contentBlockId);
+            statement.setString(5, command.state().toDatabaseValue());
+            statement.setLong(6, contentBlockId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Content block not found: " + contentBlockId);
             }
@@ -190,7 +200,7 @@ public final class ContentBlockDAO {
         }
     }
 
-    public boolean activeOrderExists(
+    public boolean orderExists(
             Connection connection,
             long classGroupId,
             int orderNo,
@@ -201,7 +211,6 @@ public final class ContentBlockDAO {
                 FROM content_block
                 WHERE id_class_group = ?
                   AND order_no = ?
-                  AND state = 'active'
                   AND (? IS NULL OR id_content_block <> ?)
                 """;
 
@@ -255,8 +264,6 @@ public final class ContentBlockDAO {
     }
 
     private static ContentBlock mapContentBlock(ResultSet resultSet) throws SQLException {
-        Timestamp availableFrom = resultSet.getTimestamp("available_from");
-        Timestamp availableUntil = resultSet.getTimestamp("available_until");
         return new ContentBlock(
                 resultSet.getLong("id_content_block"),
                 resultSet.getLong("id_class_group"),
@@ -264,10 +271,11 @@ public final class ContentBlockDAO {
                 resultSet.getString("name"),
                 resultSet.getString("description"),
                 resultSet.getInt("order_no"),
-                ContentBlockAccessMode.fromDatabaseValue(resultSet.getString("access_mode")),
                 ContentBlockState.fromDatabaseValue(resultSet.getString("state")),
-                availableFrom == null ? null : availableFrom.toLocalDateTime(),
-                availableUntil == null ? null : availableUntil.toLocalDateTime()
+                resultSet.getTimestamp("created_at").toLocalDateTime(),
+                resultSet.getTimestamp("updated_at") == null
+                        ? null
+                        : resultSet.getTimestamp("updated_at").toLocalDateTime()
         );
     }
 
@@ -279,11 +287,7 @@ public final class ContentBlockDAO {
         }
     }
 
-    private static void setTimestamp(PreparedStatement statement, int index, LocalDateTime value) throws SQLException {
-        if (value == null) {
-            statement.setNull(index, java.sql.Types.TIMESTAMP);
-        } else {
-            statement.setTimestamp(index, Timestamp.valueOf(value));
-        }
+    private static String placeholders(int count) {
+        return String.join(", ", java.util.Collections.nCopies(count, "?"));
     }
 }

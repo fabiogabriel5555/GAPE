@@ -81,8 +81,6 @@ class RoleAssignmentServiceTest {
                 null,
                 2L,
                 41L,
-                LocalDate.of(2026, 2, 1),
-                null,
                 "127.0.0.1"
         );
 
@@ -141,16 +139,22 @@ class RoleAssignmentServiceTest {
     }
 
     @Test
-    void expiredAssignmentDoesNotAuthorizeContext() {
+    void inactiveAssignmentDoesNotAuthorizeContext() throws Exception {
         roleAssignmentService.assignCoordinatorToSubject(
                 1L,
                 null,
                 2L,
                 41L,
-                LocalDate.of(2026, 1, 1),
-                LocalDate.of(2026, 1, 31),
                 "127.0.0.1"
         );
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "UPDATE coordinate_subject SET state = 'inactive' WHERE id_coordinator_user = ? AND id_subject = ?"
+             )) {
+            statement.setLong(1, 2L);
+            statement.setLong(2, 41L);
+            statement.executeUpdate();
+        }
 
         assertFalse(roleAssignmentService.coordinatorCoordinatesSubject(2L, 41L));
     }

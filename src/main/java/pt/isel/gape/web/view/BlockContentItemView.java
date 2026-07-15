@@ -171,7 +171,7 @@ public final class BlockContentItemView {
         return switch (state) {
             case DRAFT -> "bg-neutral-30 text-neutral-600";
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
         };
     }
 
@@ -179,7 +179,7 @@ public final class BlockContentItemView {
         return state == ContentItemState.ACTIVE;
     }
 
-    public boolean isArchived() {
+    public boolean isInactive() {
         return state == ContentItemState.INACTIVE;
     }
 

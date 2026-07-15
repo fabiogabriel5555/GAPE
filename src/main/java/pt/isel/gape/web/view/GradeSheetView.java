@@ -2,20 +2,16 @@ package pt.isel.gape.web.view;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.common.validation.MediaPathValidator;
 import pt.isel.gape.learning.model.GradeSheet;
 import pt.isel.gape.learning.model.GradeSheetState;
 import pt.isel.gape.learning.model.GradeSheetType;
 
 public final class GradeSheetView {
-
-    private static final DateTimeFormatter DISPLAY_DATE_TIME =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("pt-PT"));
 
     private final GradeSheet gradeSheet;
     private final long courseId;
@@ -26,6 +22,16 @@ public final class GradeSheetView {
     private final BigDecimal courseCertificateMaxGrade;
     private final String courseContextHtml;
     private final String courseContextTitle;
+    private final long organizationId;
+    private final String organizationLabel;
+    private final Long organicUnitId;
+    private final String organicUnitLabel;
+    private final long courseOccurrenceId;
+    private final String courseOccurrenceLabel;
+    private final String courseOccurrenceDateRangeLabel;
+    private final String courseOccurrenceStateValue;
+    private final Long primaryClassGroupId;
+    private final boolean primaryClassGroupCompleted;
     private final String subjectLabel;
     private final String subjectName;
     private final String subjectAcronym;
@@ -54,6 +60,16 @@ public final class GradeSheetView {
             BigDecimal courseCertificateMaxGrade,
             String courseContextHtml,
             String courseContextTitle,
+            long organizationId,
+            String organizationLabel,
+            Long organicUnitId,
+            String organicUnitLabel,
+            long courseOccurrenceId,
+            String courseOccurrenceLabel,
+            String courseOccurrenceDateRangeLabel,
+            String courseOccurrenceStateValue,
+            Long primaryClassGroupId,
+            boolean primaryClassGroupCompleted,
             String subjectLabel,
             String subjectName,
             String subjectAcronym,
@@ -81,6 +97,16 @@ public final class GradeSheetView {
         this.courseCertificateMaxGrade = courseCertificateMaxGrade;
         this.courseContextHtml = emptyLabel(courseContextHtml, escapeHtml(this.courseAcronym));
         this.courseContextTitle = emptyLabel(courseContextTitle, this.courseName);
+        this.organizationId = organizationId;
+        this.organizationLabel = emptyLabel(organizationLabel, "Unknown organization");
+        this.organicUnitId = organicUnitId;
+        this.organicUnitLabel = emptyLabel(organicUnitLabel, "No organic unit");
+        this.courseOccurrenceId = courseOccurrenceId;
+        this.courseOccurrenceLabel = emptyLabel(courseOccurrenceLabel, "Occurrence " + courseOccurrenceId);
+        this.courseOccurrenceDateRangeLabel = emptyLabel(courseOccurrenceDateRangeLabel, "-");
+        this.courseOccurrenceStateValue = emptyLabel(courseOccurrenceStateValue, "scheduled");
+        this.primaryClassGroupId = primaryClassGroupId;
+        this.primaryClassGroupCompleted = primaryClassGroupCompleted;
         this.subjectLabel = emptyLabel(subjectLabel, "Subject " + gradeSheet.subjectId());
         this.subjectName = emptyLabel(subjectName, this.subjectLabel);
         this.subjectAcronym = emptyLabel(subjectAcronym, this.subjectName);
@@ -89,9 +115,9 @@ public final class GradeSheetView {
         this.subjectFinalGradeMax = subjectFinalGradeMax;
         this.subjectContextHtml = emptyLabel(subjectContextHtml, escapeHtml(this.subjectAcronym));
         this.subjectContextTitle = emptyLabel(subjectContextTitle, this.subjectName);
-        this.classGroupLabel = emptyLabel(classGroupLabel, "All subject enrollments");
+        this.classGroupLabel = emptyLabel(classGroupLabel, "All class groups");
         this.classGroupCode = emptyLabel(classGroupCode, this.classGroupLabel);
-        this.periodLabel = emptyLabel(periodLabel, "__.__.____ - __.__.____");
+        this.periodLabel = emptyLabel(periodLabel, "__-__-____ - __-__-____");
         this.contextHtml = emptyLabel(contextHtml, escapeHtml(this.classGroupCode));
         this.contextTitle = emptyLabel(contextTitle, this.classGroupLabel);
         this.assessmentWeightLabel = emptyLabel(assessmentWeightLabel, "Absolute average (all assessments)");
@@ -117,6 +143,16 @@ public final class GradeSheetView {
                 null,
                 null,
                 null,
+                0L,
+                null,
+                null,
+                null,
+                gradeSheet.courseOccurrenceId(),
+                null,
+                null,
+                null,
+                null,
+                false,
                 subjectLabel,
                 subjectLabel,
                 subjectLabel,
@@ -165,6 +201,161 @@ public final class GradeSheetView {
             List<AssessmentColumnView> assessmentColumns,
             List<StudentGradeRowView> studentRows
     ) {
+        return from(
+                gradeSheet,
+                courseId,
+                courseLabel,
+                courseName,
+                courseAcronym,
+                coursePhoto,
+                courseCertificateMaxGrade,
+                courseContextHtml,
+                courseContextTitle,
+                0L,
+                null,
+                null,
+                null,
+                gradeSheet.courseOccurrenceId(),
+                null,
+                null,
+                null,
+                null,
+                false,
+                subjectLabel,
+                subjectName,
+                subjectAcronym,
+                subjectPhoto,
+                subjectEcts,
+                subjectFinalGradeMax,
+                subjectContextHtml,
+                subjectContextTitle,
+                classGroupLabel,
+                classGroupCode,
+                periodLabel,
+                contextHtml,
+                contextTitle,
+                assessmentWeightLabel,
+                recordCount,
+                assessmentColumns,
+                studentRows
+        );
+    }
+
+    public static GradeSheetView from(
+            GradeSheet gradeSheet,
+            long courseId,
+            String courseLabel,
+            String courseName,
+            String courseAcronym,
+            String coursePhoto,
+            BigDecimal courseCertificateMaxGrade,
+            String courseContextHtml,
+            String courseContextTitle,
+            long organizationId,
+            String organizationLabel,
+            Long organicUnitId,
+            String organicUnitLabel,
+            long courseOccurrenceId,
+            String courseOccurrenceLabel,
+            String courseOccurrenceDateRangeLabel,
+            String courseOccurrenceStateValue,
+            Long primaryClassGroupId,
+            String subjectLabel,
+            String subjectName,
+            String subjectAcronym,
+            String subjectPhoto,
+            BigDecimal subjectEcts,
+            BigDecimal subjectFinalGradeMax,
+            String subjectContextHtml,
+            String subjectContextTitle,
+            String classGroupLabel,
+            String classGroupCode,
+            String periodLabel,
+            String contextHtml,
+            String contextTitle,
+            String assessmentWeightLabel,
+            int recordCount,
+            List<AssessmentColumnView> assessmentColumns,
+            List<StudentGradeRowView> studentRows
+    ) {
+        return from(
+                gradeSheet,
+                courseId,
+                courseLabel,
+                courseName,
+                courseAcronym,
+                coursePhoto,
+                courseCertificateMaxGrade,
+                courseContextHtml,
+                courseContextTitle,
+                organizationId,
+                organizationLabel,
+                organicUnitId,
+                organicUnitLabel,
+                courseOccurrenceId,
+                courseOccurrenceLabel,
+                courseOccurrenceDateRangeLabel,
+                courseOccurrenceStateValue,
+                primaryClassGroupId,
+                false,
+                subjectLabel,
+                subjectName,
+                subjectAcronym,
+                subjectPhoto,
+                subjectEcts,
+                subjectFinalGradeMax,
+                subjectContextHtml,
+                subjectContextTitle,
+                classGroupLabel,
+                classGroupCode,
+                periodLabel,
+                contextHtml,
+                contextTitle,
+                assessmentWeightLabel,
+                recordCount,
+                assessmentColumns,
+                studentRows
+        );
+    }
+
+    public static GradeSheetView from(
+            GradeSheet gradeSheet,
+            long courseId,
+            String courseLabel,
+            String courseName,
+            String courseAcronym,
+            String coursePhoto,
+            BigDecimal courseCertificateMaxGrade,
+            String courseContextHtml,
+            String courseContextTitle,
+            long organizationId,
+            String organizationLabel,
+            Long organicUnitId,
+            String organicUnitLabel,
+            long courseOccurrenceId,
+            String courseOccurrenceLabel,
+            String courseOccurrenceDateRangeLabel,
+            String courseOccurrenceStateValue,
+            Long primaryClassGroupId,
+            boolean primaryClassGroupCompleted,
+            String subjectLabel,
+            String subjectName,
+            String subjectAcronym,
+            String subjectPhoto,
+            BigDecimal subjectEcts,
+            BigDecimal subjectFinalGradeMax,
+            String subjectContextHtml,
+            String subjectContextTitle,
+            String classGroupLabel,
+            String classGroupCode,
+            String periodLabel,
+            String contextHtml,
+            String contextTitle,
+            String assessmentWeightLabel,
+            int recordCount,
+            List<AssessmentColumnView> assessmentColumns,
+            List<StudentGradeRowView> studentRows
+    ) {
         return new GradeSheetView(
                 gradeSheet,
                 courseId,
@@ -175,6 +366,16 @@ public final class GradeSheetView {
                 courseCertificateMaxGrade,
                 courseContextHtml,
                 courseContextTitle,
+                organizationId,
+                organizationLabel,
+                organicUnitId,
+                organicUnitLabel,
+                courseOccurrenceId,
+                courseOccurrenceLabel,
+                courseOccurrenceDateRangeLabel,
+                courseOccurrenceStateValue,
+                primaryClassGroupId,
+                primaryClassGroupCompleted,
                 subjectLabel,
                 subjectName,
                 subjectAcronym,
@@ -235,45 +436,30 @@ public final class GradeSheetView {
         return format(gradeSheet.releasedAt());
     }
 
+    public String getReleasedAtSort() {
+        return gradeSheet.releasedAt() == null ? "" : gradeSheet.releasedAt().toString();
+    }
+
     public String getStateValue() {
-        return effectiveState().toDatabaseValue();
+        return gradeSheet.state().toDatabaseValue();
     }
 
     public String getStateLabel() {
-        return switch (effectiveState()) {
+        return switch (gradeSheet.state()) {
             case DRAFT -> "Draft";
             case PUBLISHED -> "Published";
             case CLOSED -> "Closed";
-            case ARCHIVED -> "Archived";
+            case INACTIVE -> "Inactive";
         };
     }
 
     public String getStateBadgeClass() {
-        return switch (effectiveState()) {
+        return switch (gradeSheet.state()) {
             case DRAFT -> "bg-warning-50 text-warning-600";
             case PUBLISHED -> "bg-success-50 text-success-600";
             case CLOSED -> "bg-neutral-20 text-neutral-600";
-            case ARCHIVED -> "bg-neutral-30 text-neutral-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
         };
-    }
-
-    private GradeSheetState effectiveState() {
-        if (gradeSheet.state() == GradeSheetState.PUBLISHED && !hasAllVisibleGrades()) {
-            return GradeSheetState.DRAFT;
-        }
-        return gradeSheet.state();
-    }
-
-    private boolean hasAllVisibleGrades() {
-        if (studentRows.isEmpty()) {
-            return false;
-        }
-        for (StudentGradeRowView row : studentRows) {
-            if (!row.hasCompleteDisplayedGrades()) {
-                return false;
-            }
-        }
-        return true;
     }
 
     public long getCourseId() {
@@ -314,6 +500,50 @@ public final class GradeSheetView {
 
     public String getCourseContextTitle() {
         return courseContextTitle;
+    }
+
+    public long getOrganizationId() {
+        return organizationId;
+    }
+
+    public String getOrganizationLabel() {
+        return organizationLabel;
+    }
+
+    public Long getOrganicUnitId() {
+        return organicUnitId;
+    }
+
+    public String getOrganicUnitLabel() {
+        return organicUnitLabel;
+    }
+
+    public long getCourseOccurrenceId() {
+        return courseOccurrenceId;
+    }
+
+    public String getCourseOccurrenceLabel() {
+        return courseOccurrenceLabel;
+    }
+
+    public String getCourseOccurrenceDateRangeLabel() {
+        return courseOccurrenceDateRangeLabel;
+    }
+
+    public String getCourseOccurrenceStateValue() {
+        return courseOccurrenceStateValue;
+    }
+
+    public boolean isCourseOccurrenceCompleted() {
+        return "completed".equals(courseOccurrenceStateValue);
+    }
+
+    public Long getPrimaryClassGroupId() {
+        return primaryClassGroupId;
+    }
+
+    public boolean isPrimaryClassGroupCompleted() {
+        return primaryClassGroupCompleted;
     }
 
     public String getSubjectLabel() {
@@ -396,6 +626,29 @@ public final class GradeSheetView {
         return gradeSheet.weightAlert() != null && !gradeSheet.weightAlert().isBlank();
     }
 
+    public String getPublicationExplanation() {
+        return gradeSheet.publicationExplanation();
+    }
+
+    public boolean isHasPublicationExplanation() {
+        return gradeSheet.publicationExplanation() != null && !gradeSheet.publicationExplanation().isBlank();
+    }
+
+    public String getRemarks() {
+        List<String> remarks = new ArrayList<>();
+        if (isHasPublicationExplanation()) {
+            remarks.add(gradeSheet.publicationExplanation().trim());
+        }
+        if (isHasWeightAlert()) {
+            remarks.add(gradeSheet.weightAlert().trim());
+        }
+        return String.join(" ", remarks);
+    }
+
+    public boolean isHasRemarks() {
+        return !getRemarks().isBlank();
+    }
+
     public int getRecordCount() {
         return recordCount;
     }
@@ -411,7 +664,7 @@ public final class GradeSheetView {
     public GradeDocumentView getDocument() {
         List<GradeDocumentView.ColumnView> columns;
         if (assessmentColumns.isEmpty()) {
-            columns = List.of(new GradeDocumentView.ColumnView("Avaliacoes", ""));
+            columns = List.of(new GradeDocumentView.ColumnView("Assessments", ""));
         } else {
             columns = assessmentColumns.stream()
                     .map(column -> new GradeDocumentView.ColumnView(
@@ -430,16 +683,16 @@ public final class GradeSheetView {
                 .toList();
         String classContextHtml = removeLeadingContextPart(contextHtml, classGroupCode);
         return new GradeDocumentView(
-                "Pauta da Turma",
-                "Disciplina",
+                "Class group grade sheet",
+                "Subject",
                 subjectName,
                 "<strong>" + escapeHtml(classGroupCode) + "</strong><span>" + classContextHtml + "</span>",
                 contextTitle,
                 periodLabel,
                 null,
                 "ph ph-users-three",
-                "Sem registos de nota.",
-                getWeightAlert(),
+                "No grade records.",
+                getRemarks(),
                 columns,
                 rows
         );
@@ -491,7 +744,7 @@ public final class GradeSheetView {
     }
 
     public static String format(LocalDateTime value) {
-        return value == null ? "-" : DISPLAY_DATE_TIME.format(value);
+        return value == null ? "-" : ApplicationDateTimeFormat.dateTime(value);
     }
 
     public static String typeLabel(GradeSheetType type) {

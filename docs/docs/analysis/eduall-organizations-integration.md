@@ -29,13 +29,13 @@ The organization UI is exposed through `/admin/organizations` and `/admin/organi
 - `GET /admin/organizations/{id}/edit`: edit organization form.
 - `POST /admin/organizations/{id}`: update organization.
 - `POST /admin/organizations/{id}/assign-admin`: assign an administrator.
-- `POST /admin/organizations/{id}/archive`: archive organization.
+- `POST /admin/organizations/{id}/deactivate`: deactivate organization.
 - `POST /admin/organizations/{id}/delete`: delete organization when no dependencies block it.
 - `GET /admin/organizations/{id}/units/new`: create organic unit form.
 - `POST /admin/organizations/{id}/units`: create organic unit.
 - `GET /admin/organizations/{id}/units/{unitId}/edit`: edit organic unit form.
 - `POST /admin/organizations/{id}/units/{unitId}`: update organic unit.
-- `POST /admin/organizations/{id}/units/{unitId}/archive`: archive organic unit.
+- `POST /admin/organizations/{id}/units/{unitId}/deactivate`: deactivate organic unit.
 - `POST /admin/organizations/{id}/units/{unitId}/delete`: delete organic unit when no dependencies block it.
 
 ## JSP Organization
@@ -56,8 +56,8 @@ Organization JSPs:
 
 The servlet calls the tested services directly:
 
-- `OrganizationService` for CRUD, administrator assignment, archive/delete and contextual permissions.
-- `OrganicUnitService` for CRUD, hierarchy validation, archive/delete and contextual permissions.
+- `OrganizationService` for CRUD, administrator assignment, deactivate/delete and contextual permissions.
+- `OrganicUnitService` for CRUD, hierarchy validation, deactivate/delete and contextual permissions.
 - `UserService` to list active administrator users for assignment options.
 - `ProfilePhotoStorage` to save organization photos under the same WebP resize/crop pipeline used by user profile photos.
 
@@ -65,7 +65,7 @@ Mutating routes are protected by the existing CSRF filter. The sidebar uses `gap
 
 Organization photos are stored in the `organization.photo` column and served through `/media/{photo}`. Create and edit flows both accept `organizationImage`; the create flow persists the organization first to obtain the id, then stores the uploaded image under `organizations/{id}/profile.webp` through the same WebP pipeline used by user profile photos.
 
-Archive is intentionally not exposed as a normal `State` option in edit forms. Organizations and organic units can only be archived through the dedicated archive actions, so the audit trail records `ORGANIZATION_ARCHIVE` and `ORGANIC_UNIT_ARCHIVE` instead of generic update events.
+Inactive is exposed as a normal `State` option in edit forms. Organizations and organic units can only be deactivated through the dedicated deactivate actions, so the audit trail records `ORGANIZATION_ARCHIVE` and `ORGANIC_UNIT_ARCHIVE` instead of generic update events.
 
 Organic unit codes are no longer entered by administrators. The service generates them from the unit type with a sequential prefix per organization, for example `SCH-001`, `FAC-001`, `DEP-001`, `CTR-001`, `OFF-001`, `SRV-001`, `SEC-001`, `DIR-001` and `UNT-001`.
 
@@ -83,17 +83,17 @@ The pages keep EduAll dashboard cards, tables, rounded controls, Phosphor icons,
 - Create root and child organic units and verify hierarchy indentation.
 - Create organic units of different types and verify the application-generated code prefix matches the selected type.
 - Try assigning a parent that would create a cycle through the edit form and verify the error message.
-- Archive and delete actions open confirmation modals and return success or dependency errors.
+- Deactivate and delete actions open confirmation modals and return success or dependency errors.
 
 ## Verification Run
 
-Executed on 2026-06-10.
+Executed on 10-06-2026.
 
 - `mvn test "-Dtest=OrganizationServiceTest"`: passed, 7 tests, after reinforcing active-organization administrator invariants.
-- `mvn test "-Dtest=OrganicUnitServiceTest"`: passed, 9 tests, after reinforcing hierarchy and archived-operation behavior.
+- `mvn test "-Dtest=OrganicUnitServiceTest"`: passed, 9 tests, after reinforcing hierarchy and inactive-operation behavior.
 - `mvn test "-Dtest=UserServiceTest"`: passed, 13 tests, including protection against removing the last active administrator of an active organization.
 - `mvn test "-Dtest=DatabaseRestrictionCoverageTest"`: passed, 2 tests, including SQL guards for active organizations, hierarchy cycles, controlled assignment state and dependency deletion.
-- `mvn test "-Dtest=TemplateStructureTest"`: passed, 18 tests, including organization photo upload, current administrator display, archived action hiding and archive-only flows.
+- `mvn test "-Dtest=TemplateStructureTest"`: passed, 18 tests, including organization photo upload, current administrator display, inactive action hiding and inactive-only flows.
 - `mvn test`: passed, 160 tests.
 - `mvn package -DskipTests`: passed and packaged `target/gape.war`.
 

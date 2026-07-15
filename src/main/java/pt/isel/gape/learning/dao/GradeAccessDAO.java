@@ -80,8 +80,6 @@ public final class GradeAccessDAO {
                   AND gc.cod_permission = 'MANAGE_LEARNING'
                   AND p.state = 'active'
                   AND u.state = 'active'
-                  AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
-                  AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 """;
         return countExists(connection, sql, courseId, coordinatorUserId);
     }
@@ -143,8 +141,6 @@ public final class GradeAccessDAO {
                   AND gc.cod_permission = 'MANAGE_LEARNING'
                   AND p.state = 'active'
                   AND u.state = 'active'
-                  AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
-                  AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 ORDER BY cg.id_class_group
                 """;
         return findIds(connection, sql, coordinatorUserId);

@@ -189,7 +189,7 @@ class OrganizationServiceTest {
     }
 
     @Test
-    void archivedOrganizationBlocksFurtherOperations() {
+    void inactiveOrganizationBlocksFurtherOperations() {
         organizationService.assignAdministrator(
                 1L,
                 null,

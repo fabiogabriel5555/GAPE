@@ -14,19 +14,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import pt.isel.gape.access.dao.UserDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
-import pt.isel.gape.learning.dao.ClassGroupDAO;
-import pt.isel.gape.learning.dao.ClassGroupEnrollmentDAO;
-import pt.isel.gape.learning.dao.ContentBlockDAO;
-import pt.isel.gape.learning.dao.CourseDAO;
-import pt.isel.gape.learning.dao.CourseSubjectDAO;
-import pt.isel.gape.learning.dao.EnrollmentDAO;
-import pt.isel.gape.learning.dao.LessonDAO;
-import pt.isel.gape.learning.dao.PhysicalRoomDAO;
-import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.PhysicalRoom;
 import pt.isel.gape.learning.model.PhysicalRoomCreateCommand;
 import pt.isel.gape.learning.model.PhysicalRoomState;
@@ -34,11 +24,9 @@ import pt.isel.gape.learning.model.PhysicalRoomUpdateCommand;
 import pt.isel.gape.learning.service.LessonService;
 import pt.isel.gape.learning.service.PhysicalRoomService;
 import pt.isel.gape.security.session.SessionUser;
-import pt.isel.gape.structure.dao.OrganicUnitDAO;
-import pt.isel.gape.structure.dao.OrganizationDAO;
-import pt.isel.gape.structure.dao.TeachClassGroupDAO;
 import pt.isel.gape.structure.model.OrganicUnit;
 import pt.isel.gape.structure.model.Organization;
+import pt.isel.gape.transversal.service.ApplicationReadService;
 import pt.isel.gape.web.view.OrganicUnitOptionView;
 import pt.isel.gape.web.view.OrganizationOptionView;
 import pt.isel.gape.web.view.LessonView;
@@ -55,10 +43,10 @@ public final class PhysicalRoomManagementServlet extends DashboardServletSupport
 
     private final PhysicalRoomService roomService;
     private final LessonService lessonService;
-    private final PhysicalRoomDAO physicalRoomDAO;
-    private final LessonDAO lessonDAO;
-    private final OrganizationDAO organizationDAO;
-    private final OrganicUnitDAO organicUnitDAO;
+    private final ApplicationReadService.PhysicalRooms physicalRoomDAO;
+    private final ApplicationReadService.Lessons lessonDAO;
+    private final ApplicationReadService.Organizations organizationDAO;
+    private final ApplicationReadService.OrganicUnits organicUnitDAO;
     private final LearningViewFactory viewFactory;
 
     public PhysicalRoomManagementServlet() {
@@ -67,44 +55,37 @@ public final class PhysicalRoomManagementServlet extends DashboardServletSupport
 
     private PhysicalRoomManagementServlet(ConnectionProvider connectionProvider, Clock clock) {
         this(
+                new ApplicationReadService(connectionProvider),
                 new PhysicalRoomService(connectionProvider, clock),
-                new LessonService(connectionProvider, clock),
-                new PhysicalRoomDAO(connectionProvider),
-                new LessonDAO(connectionProvider),
-                new OrganizationDAO(connectionProvider),
-                new OrganicUnitDAO(connectionProvider),
-                new LearningViewFactory(
-                        new OrganizationDAO(connectionProvider),
-                        new OrganicUnitDAO(connectionProvider),
-                        new CourseDAO(connectionProvider),
-                        new SubjectDAO(connectionProvider),
-                        new CourseSubjectDAO(connectionProvider),
-                        new EnrollmentDAO(connectionProvider),
-                        new ClassGroupDAO(connectionProvider),
-                        new ClassGroupEnrollmentDAO(connectionProvider),
-                        new ContentBlockDAO(connectionProvider),
-                        new UserDAO(connectionProvider),
-                        new TeachClassGroupDAO(connectionProvider)
-                )
+                new LessonService(connectionProvider, clock)
         );
     }
 
     PhysicalRoomManagementServlet(
+            ApplicationReadService readService,
             PhysicalRoomService roomService,
-            LessonService lessonService,
-            PhysicalRoomDAO physicalRoomDAO,
-            LessonDAO lessonDAO,
-            OrganizationDAO organizationDAO,
-            OrganicUnitDAO organicUnitDAO,
-            LearningViewFactory viewFactory
+            LessonService lessonService
     ) {
         this.roomService = roomService;
         this.lessonService = lessonService;
-        this.physicalRoomDAO = physicalRoomDAO;
-        this.lessonDAO = lessonDAO;
-        this.organizationDAO = organizationDAO;
-        this.organicUnitDAO = organicUnitDAO;
-        this.viewFactory = viewFactory;
+        this.physicalRoomDAO = readService.physicalRooms();
+        this.lessonDAO = readService.lessons();
+        this.organizationDAO = readService.organizations();
+        this.organicUnitDAO = readService.organicUnits();
+        this.viewFactory = new LearningViewFactory(
+                readService.organizations(),
+                readService.organicUnits(),
+                readService.courses(),
+                readService.courseOccurrences(),
+                readService.subjects(),
+                readService.courseSubjects(),
+                readService.enrollments(),
+                readService.classGroups(),
+                readService.classGroupEnrollments(),
+                readService.contentBlocks(),
+                readService.users(),
+                readService.teachClassGroups()
+        );
     }
 
     @Override
@@ -182,7 +163,7 @@ public final class PhysicalRoomManagementServlet extends DashboardServletSupport
         request.setAttribute("selectedOrganizationId", selectedScope.organizationId());
         request.setAttribute("roomCount", rooms.size());
         request.setAttribute("activeRoomCount", rooms.stream().filter(PhysicalRoomView::isActive).count());
-        request.setAttribute("archivedRoomCount", rooms.stream().filter(PhysicalRoomView::isArchived).count());
+        request.setAttribute("inactiveRoomCount", rooms.stream().filter(PhysicalRoomView::isInactive).count());
         prepareDashboard(
                 request,
                 "rooms",
@@ -272,6 +253,8 @@ public final class PhysicalRoomManagementServlet extends DashboardServletSupport
             request.setAttribute("canManageRoom", true);
             request.setAttribute("learningRoomContextCode", encodePath(form.getCode()));
             request.setAttribute("learningRoomActiveChild", "edit");
+        } else if (creating) {
+            request.setAttribute("learningRoomActiveChild", "new");
         }
         if (error != null) {
             request.setAttribute("errorMessage", error);

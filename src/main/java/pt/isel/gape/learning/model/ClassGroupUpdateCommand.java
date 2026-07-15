@@ -5,6 +5,8 @@ import java.time.LocalDate;
 public record ClassGroupUpdateCommand(
         long subjectId,
         long courseId,
+        Long courseOccurrenceId,
+        Long courseOccurrencePeriodId,
         String code,
         ClassGroupModality modality,
         ClassGroupState state,
@@ -15,4 +17,33 @@ public record ClassGroupUpdateCommand(
         ClassGroupShift shift,
         boolean showContentThumbnails
 ) {
+    public ClassGroupUpdateCommand(
+            long subjectId,
+            long courseId,
+            String code,
+            ClassGroupModality modality,
+            ClassGroupState state,
+            Integer minStudents,
+            Integer maxStudents,
+            LocalDate startsAt,
+            LocalDate endsAt,
+            ClassGroupShift shift,
+            boolean showContentThumbnails
+    ) {
+        this(
+                subjectId,
+                courseId,
+                null,
+                null,
+                code,
+                modality,
+                state,
+                minStudents,
+                maxStudents,
+                startsAt,
+                endsAt,
+                shift,
+                showContentThumbnails
+        );
+    }
 }

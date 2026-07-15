@@ -17,7 +17,7 @@ import java.util.Optional;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.Response;
 
-public final class ResponseDAO {
+public final class ResponseDAO implements pt.isel.gape.transversal.service.ApplicationReadService.Responses {
 
     private final ConnectionProvider connectionProvider;
 

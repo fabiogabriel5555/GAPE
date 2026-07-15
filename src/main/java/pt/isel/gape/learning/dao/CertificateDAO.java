@@ -20,7 +20,7 @@ import pt.isel.gape.learning.model.Certificate;
 import pt.isel.gape.learning.model.CertificateState;
 import pt.isel.gape.learning.model.CertificateType;
 
-public final class CertificateDAO {
+public final class CertificateDAO implements pt.isel.gape.transversal.service.ApplicationReadService.Certificates {
 
     private final ConnectionProvider connectionProvider;
 
@@ -31,34 +31,67 @@ public final class CertificateDAO {
     public long createDraftIfAbsent(
             Connection connection,
             long courseId,
+            long courseOccurrenceId,
             long studentUserId,
             String title
     ) throws SQLException {
-        Optional<Certificate> existing = findByCourseAndStudent(connection, courseId, studentUserId);
+        Optional<Certificate> existing = findByCourseOccurrenceAndStudent(
+                connection,
+                courseId,
+                courseOccurrenceId,
+                studentUserId
+        );
         if (existing.isPresent()) {
             return existing.get().id();
         }
         String sql = """
                 INSERT INTO certificate (
-                    id_course, id_user_student, title, notes, type, template,
-                    validation_code, issued_at, state, revoked_at, final_grade
-                ) VALUES (?, ?, ?, NULL, ?, NULL, NULL, NULL, ?, NULL, NULL)
-                ON DUPLICATE KEY UPDATE id_certificate = LAST_INSERT_ID(id_certificate)
+                    id_course, id_course_occurrence, id_user_student, title, notes, type, template,
+                    validation_code, issued_at, state, final_grade
+                ) VALUES (?, ?, ?, ?, NULL, ?, NULL, NULL, NULL, ?, NULL)
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setLong(1, courseId);
-            statement.setLong(2, studentUserId);
-            statement.setString(3, title.trim());
-            statement.setString(4, CertificateType.COMPLETION.toDatabaseValue());
-            statement.setString(5, CertificateState.DRAFT.toDatabaseValue());
+            statement.setLong(2, courseOccurrenceId);
+            statement.setLong(3, studentUserId);
+            statement.setString(4, title.trim());
+            statement.setString(5, CertificateType.COMPLETION.toDatabaseValue());
+            statement.setString(6, CertificateState.DRAFT.toDatabaseValue());
             statement.executeUpdate();
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                if (!generatedKeys.next()) {
-                    throw new SQLException("Creating certificate failed, no id generated");
+                if (generatedKeys.next()) {
+                    return generatedKeys.getLong(1);
                 }
-                return generatedKeys.getLong(1);
             }
+            return findByCourseOccurrenceAndStudent(connection, courseId, courseOccurrenceId, studentUserId)
+                    .map(Certificate::id)
+                    .orElseThrow(() -> new SQLException("Creating certificate failed, no id generated"));
+        } catch (SQLException exception) {
+            if (isDuplicateKey(exception)) {
+                return findByCourseOccurrenceAndStudentForUpdate(connection, courseId, courseOccurrenceId, studentUserId)
+                        .map(Certificate::id)
+                        .orElseThrow(() -> exception);
+            }
+            throw exception;
         }
+    }
+
+    public long createDraftIfAbsent(
+            Connection connection,
+            long courseId,
+            long studentUserId,
+            String title
+    ) throws SQLException {
+        long occurrenceId = resolveLatestCourseEnrollmentOccurrence(connection, courseId, studentUserId);
+        return createDraftIfAbsent(connection, courseId, occurrenceId, studentUserId, title);
+    }
+
+    private static boolean isDuplicateKey(SQLException exception) {
+        String message = exception.getMessage();
+        return exception.getErrorCode() == 1062
+                || ("23000".equals(exception.getSQLState())
+                && message != null
+                && message.toLowerCase().contains("duplicate"));
     }
 
     public void updateIssued(
@@ -75,7 +108,7 @@ public final class CertificateDAO {
         String sql = """
                 UPDATE certificate
                 SET title = ?, notes = ?, type = ?, template = ?,
-                    validation_code = ?, issued_at = ?, state = ?, revoked_at = NULL, final_grade = ?
+                    validation_code = ?, issued_at = ?, state = ?, final_grade = ?
                 WHERE id_certificate = ?
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -107,9 +140,8 @@ public final class CertificateDAO {
         String sql = """
                 UPDATE certificate
                 SET title = ?, notes = ?, type = ?, template = ?,
-                    validation_code = NULL, issued_at = NULL, state = ?, revoked_at = NULL, final_grade = NULL
+                    validation_code = NULL, issued_at = NULL, state = ?, final_grade = NULL
                 WHERE id_certificate = ?
-                  AND state <> ?
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, title.trim());
@@ -118,33 +150,8 @@ public final class CertificateDAO {
             setNullableString(statement, 4, template);
             statement.setString(5, CertificateState.DRAFT.toDatabaseValue());
             statement.setLong(6, certificateId);
-            statement.setString(7, CertificateState.REVOKED.toDatabaseValue());
             if (statement.executeUpdate() == 0) {
-                throw new SQLException("Certificate not found or revoked: " + certificateId);
-            }
-        }
-    }
-
-    public void revoke(
-            Connection connection,
-            long certificateId,
-            LocalDateTime revokedAt
-    ) throws SQLException {
-        String sql = """
-                UPDATE certificate
-                SET state = ?, revoked_at = ?
-                WHERE id_certificate = ?
-                  AND state = ?
-                  AND validation_code IS NOT NULL
-                  AND issued_at IS NOT NULL
-                """;
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, CertificateState.REVOKED.toDatabaseValue());
-            statement.setTimestamp(2, Timestamp.valueOf(revokedAt));
-            statement.setLong(3, certificateId);
-            statement.setString(4, CertificateState.ISSUED.toDatabaseValue());
-            if (statement.executeUpdate() == 0) {
-                throw new SQLException("Issued certificate not found: " + certificateId);
+                throw new SQLException("Certificate not found: " + certificateId);
             }
         }
     }
@@ -189,13 +196,89 @@ public final class CertificateDAO {
         String sql = selectCertificateSql() + """
                 WHERE id_course = ?
                   AND id_user_student = ?
-                  AND state <> 'revoked'
                 ORDER BY issued_at DESC, id_certificate DESC
                 LIMIT 1
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, courseId);
             statement.setLong(2, studentUserId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(mapCertificate(connection, resultSet));
+            }
+        }
+    }
+
+    private Optional<Certificate> findByCourseAndStudentForUpdate(
+            Connection connection,
+            long courseId,
+            long studentUserId
+    ) throws SQLException {
+        String sql = selectCertificateSql() + """
+                WHERE id_course = ?
+                  AND id_user_student = ?
+                ORDER BY issued_at DESC, id_certificate DESC
+                LIMIT 1
+                FOR UPDATE
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, courseId);
+            statement.setLong(2, studentUserId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(mapCertificate(connection, resultSet));
+            }
+        }
+    }
+
+    public Optional<Certificate> findByCourseOccurrenceAndStudent(
+            Connection connection,
+            long courseId,
+            long courseOccurrenceId,
+            long studentUserId
+    ) throws SQLException {
+        String sql = selectCertificateSql() + """
+                WHERE id_course = ?
+                  AND id_course_occurrence = ?
+                  AND id_user_student = ?
+                ORDER BY issued_at DESC, id_certificate DESC
+                LIMIT 1
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, courseId);
+            statement.setLong(2, courseOccurrenceId);
+            statement.setLong(3, studentUserId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(mapCertificate(connection, resultSet));
+            }
+        }
+    }
+
+    private Optional<Certificate> findByCourseOccurrenceAndStudentForUpdate(
+            Connection connection,
+            long courseId,
+            long courseOccurrenceId,
+            long studentUserId
+    ) throws SQLException {
+        String sql = selectCertificateSql() + """
+                WHERE id_course = ?
+                  AND id_course_occurrence = ?
+                  AND id_user_student = ?
+                ORDER BY issued_at DESC, id_certificate DESC
+                LIMIT 1
+                FOR UPDATE
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, courseId);
+            statement.setLong(2, courseOccurrenceId);
+            statement.setLong(3, studentUserId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next()) {
                     return Optional.empty();
@@ -225,12 +308,8 @@ public final class CertificateDAO {
     }
 
     public boolean validationCodeExists(Connection connection, String validationCode) throws SQLException {
-        String sql = """
-                SELECT COUNT(*)
-                FROM certificate
-                WHERE validation_code = ?
-                """;
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT COUNT(*) FROM certificate WHERE validation_code = ?")) {
             statement.setString(1, validationCode);
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
@@ -381,7 +460,6 @@ public final class CertificateDAO {
                 FROM integrate_subject isub
                 JOIN subject s ON s.id_subject = isub.id_subject
                 WHERE isub.id_course = ?
-                  AND isub.state = 'active'
                   AND s.state = 'active'
                 ORDER BY isub.curricular_year, isub.term, s.id_subject
                 """;
@@ -404,6 +482,7 @@ public final class CertificateDAO {
     public List<SubjectApprovedGrade> findApprovedSubjectGradeCandidates(
             Connection connection,
             long courseId,
+            long courseOccurrenceId,
             long subjectId,
             long studentUserId
     ) throws SQLException {
@@ -415,29 +494,19 @@ public final class CertificateDAO {
                   AND gr.result = 'approved'
                   AND gr.state = 'published'
                   AND gs.id_subject = ?
+                  AND gs.id_course_occurrence = ?
                   AND gs.state IN ('published', 'closed')
-                  AND (
-                        EXISTS (
-                            SELECT 1
-                            FROM associate_grade_sheet_class_group agscg
-                            JOIN class_group cg ON cg.id_class_group = agscg.id_class_group
-                            WHERE agscg.id_grade_sheet = gs.id_grade_sheet
-                              AND cg.id_course = ?
-                              AND cg.id_subject = ?
-                        )
-                        OR NOT EXISTS (
-                            SELECT 1
-                            FROM associate_grade_sheet_class_group agscg
-                            WHERE agscg.id_grade_sheet = gs.id_grade_sheet
-                        )
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM associate_grade_sheet_class_group agscg
+                        WHERE agscg.id_grade_sheet = gs.id_grade_sheet
                   )
                 ORDER BY gr.recorded_at DESC, gr.id_grade_record DESC
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, studentUserId);
             statement.setLong(2, subjectId);
-            statement.setLong(3, courseId);
-            statement.setLong(4, subjectId);
+            statement.setLong(3, courseOccurrenceId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<SubjectApprovedGrade> grades = new ArrayList<>();
                 while (resultSet.next()) {
@@ -454,8 +523,8 @@ public final class CertificateDAO {
 
     private static String selectCertificateSql() {
         return """
-                SELECT id_certificate, id_course, id_user_student, title, notes, type, template,
-                       validation_code, issued_at, state, revoked_at, final_grade
+                SELECT id_certificate, id_course, id_course_occurrence, id_user_student, title, notes, type, template,
+                       validation_code, issued_at, state, final_grade
                 FROM certificate
                 """;
     }
@@ -465,6 +534,7 @@ public final class CertificateDAO {
         return new Certificate(
                 id,
                 resultSet.getLong("id_course"),
+                resultSet.getLong("id_course_occurrence"),
                 resultSet.getLong("id_user_student"),
                 resultSet.getString("title"),
                 resultSet.getString("notes"),
@@ -473,10 +543,34 @@ public final class CertificateDAO {
                 resultSet.getString("validation_code"),
                 getTimestamp(resultSet, "issued_at"),
                 CertificateState.fromDatabaseValue(resultSet.getString("state")),
-                getTimestamp(resultSet, "revoked_at"),
                 resultSet.getBigDecimal("final_grade"),
                 findGradeSheetIds(connection, id)
         );
+    }
+
+    private static long resolveLatestCourseEnrollmentOccurrence(
+            Connection connection,
+            long courseId,
+            long studentUserId
+    ) throws SQLException {
+        String sql = """
+                SELECT id_course_occurrence
+                FROM enroll_course
+                WHERE id_course = ?
+                  AND id_student_user = ?
+                ORDER BY state = 'active' DESC, start_date DESC, id_course_occurrence DESC
+                LIMIT 1
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, courseId);
+            statement.setLong(2, studentUserId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getLong("id_course_occurrence");
+                }
+            }
+        }
+        throw new SQLException("Course enrollment occurrence not found for certificate");
     }
 
     private static LocalDateTime getTimestamp(ResultSet resultSet, String column) throws SQLException {

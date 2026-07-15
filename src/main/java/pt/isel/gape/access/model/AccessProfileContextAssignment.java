@@ -34,15 +34,10 @@ public record AccessProfileContextAssignment(
                 parentContextId = null;
             }
             case STUDENT -> {
-                if (contextType == AccessEntityType.COURSE) {
-                    parentContextId = null;
-                } else if (contextType == AccessEntityType.SUBJECT) {
-                    if (parentContextId == null || parentContextId <= 0L) {
-                        throw new IllegalArgumentException("Student subject context requires a course context");
-                    }
-                } else {
-                    throw new IllegalArgumentException("Student context must be a course or subject");
+                if (contextType != AccessEntityType.COURSE) {
+                    throw new IllegalArgumentException("Student context must be a course");
                 }
+                parentContextId = null;
             }
             case ADMINISTRATOR -> throw new IllegalArgumentException("Administrator contexts are handled separately");
         }

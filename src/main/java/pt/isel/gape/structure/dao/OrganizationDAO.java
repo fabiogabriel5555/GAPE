@@ -17,7 +17,7 @@ import pt.isel.gape.structure.model.OrganizationState;
 import pt.isel.gape.structure.model.OrganizationType;
 import pt.isel.gape.structure.model.OrganizationUpdateCommand;
 
-public final class OrganizationDAO {
+public final class OrganizationDAO implements pt.isel.gape.transversal.service.ApplicationReadService.Organizations {
 
     private final ConnectionProvider connectionProvider;
 

@@ -51,8 +51,8 @@ final class SqlErrorTranslator {
                 reason = "A data final da sessao nao pode ser anterior a inicial.";
             } else if (c.contains("ck_deletion_processed_after_submitted")) {
                 reason = "processed_at nao pode ser anterior a submitted_at.";
-            } else if (c.contains("ck_content_block_availability")) {
-                reason = "available_until nao pode ser anterior a available_from.";
+            } else if (c.contains("ck_content_block_state")) {
+                reason = "O estado do bloco deve ser active ou inactive.";
             } else if (c.contains("ck_content_item_state") || c.contains("ck_content_item_format")) {
                 reason = "O valor de state/format nao pertence aos valores permitidos.";
             }

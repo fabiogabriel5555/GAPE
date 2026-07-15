@@ -8,54 +8,12 @@ import java.sql.SQLException;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.EnrollmentApprovalMode;
 
-public final class EnrollmentApprovalPolicyDAO {
+public final class EnrollmentApprovalPolicyDAO implements pt.isel.gape.transversal.service.ApplicationReadService.EnrollmentApprovalPolicies {
 
     private final ConnectionProvider connectionProvider;
 
     public EnrollmentApprovalPolicyDAO(ConnectionProvider connectionProvider) {
         this.connectionProvider = connectionProvider;
-    }
-
-    public EnrollmentApprovalMode subjectMode(Connection connection, long courseId, long subjectId)
-            throws SQLException {
-        String sql = """
-                SELECT approval_mode
-                FROM subject_enrollment_policy
-                WHERE id_course = ?
-                  AND id_subject = ?
-                """;
-
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, courseId);
-            statement.setLong(2, subjectId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next()
-                        ? EnrollmentApprovalMode.fromDatabaseValue(resultSet.getString("approval_mode"))
-                        : EnrollmentApprovalMode.MANUAL;
-            }
-        }
-    }
-
-    public EnrollmentApprovalMode subjectMode(long courseId, long subjectId) throws SQLException {
-        try (Connection connection = connectionProvider.getConnection()) {
-            return subjectMode(connection, courseId, subjectId);
-        }
-    }
-
-    public void upsertSubjectMode(Connection connection, long courseId, long subjectId, EnrollmentApprovalMode mode)
-            throws SQLException {
-        String sql = """
-                INSERT INTO subject_enrollment_policy (id_course, id_subject, approval_mode)
-                VALUES (?, ?, ?)
-                ON DUPLICATE KEY UPDATE approval_mode = VALUES(approval_mode)
-                """;
-
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, courseId);
-            statement.setLong(2, subjectId);
-            statement.setString(3, mode.toDatabaseValue());
-            statement.executeUpdate();
-        }
     }
 
     public EnrollmentApprovalMode classGroupMode(Connection connection, long classGroupId) throws SQLException {

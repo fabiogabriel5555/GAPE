@@ -374,7 +374,7 @@ class ContentItemServiceTest {
     }
 
     @Test
-    void contentInActiveMandatoryBlockIsArchivedInsteadOfPhysicallyDeleted() throws Exception {
+    void contentInActiveMandatoryBlockIsMarkedInactiveInsteadOfPhysicallyDeleted() throws Exception {
         ContentDeletionResult result = contentItemService.deleteContentItem(
                 3L,
                 null,
@@ -389,7 +389,7 @@ class ContentItemServiceTest {
     }
 
     @Test
-    void contentLinkedToSubmittedAssessmentAttemptIsArchivedInsteadOfPhysicallyDeleted() throws Exception {
+    void contentLinkedToSubmittedAssessmentAttemptIsMarkedInactiveInsteadOfPhysicallyDeleted() throws Exception {
         ContentItem contentItem = createTextContent("Content with attempt");
         associateContentToAssessment90(contentItem.id());
 
@@ -456,7 +456,7 @@ class ContentItemServiceTest {
     }
 
     @Test
-    void deletingMandatoryContentFromActiveBlockArchivesInsteadOfPhysicallyDeleting() throws Exception {
+    void deletingMandatoryContentFromActiveBlockMarksItInactiveInsteadOfPhysicallyDeleting() throws Exception {
         ContentItem contentItem = createContent("Content active required",
                 "contents/items/mandatory-active/protected.pdf");
         associateContentToBlock60(contentItem.id(), true);

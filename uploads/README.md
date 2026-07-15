@@ -1,6 +1,6 @@
 # GAPE Uploads
 
-This folder keeps only the local upload structure. Real files uploaded by users must not be versioned.
+This folder keeps the local upload structure. Real files uploaded by users must not be versioned. The small files explicitly allowed by `.gitignore` are deterministic demo fixtures referenced by `sql/seed/*.sql`; `SeedAssetReferenceTest` verifies that every seeded path exists and has a valid file signature.
 
 Structure:
 

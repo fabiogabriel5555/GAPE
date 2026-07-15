@@ -53,18 +53,18 @@ INSERT INTO course (
 
 -- Class_Group exige Subject integrada no Course
 INSERT INTO class_group (
-    id_class_group, id_subject, id_course, cod_class_group, modality, state,
+    id_class_group, id_subject, id_course, id_course_occurrence, id_course_occurrence_period, cod_class_group, modality, state,
     min_students, max_students, starts_at, ends_at, shift
 ) VALUES
-    (9102, 40, 31, 'CG-NAO-INTEGRADA', 'onsite', 'active', 5, 20, '2026-02-01', '2026-06-30', 'mixed');
+    (9102, 40, 31, 310, 3101, 'CG-NAO-INTEGRADA', 'onsite', 'active', 5, 20, '2026-02-01', '2026-06-30', 'mixed');
 
--- Enroll_Subject must be covered by the complete course enrollment period
-INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date)
-VALUES (4, 30, 41, 'active', '2026-01-01', NULL);
+-- Enroll_Course must be inside the selected course occurrence period
+INSERT INTO enroll_course (id_student_user, id_course, id_course_occurrence, state, start_date, end_date)
+VALUES (4, 31, 310, 'active', '2025-01-01', NULL);
 
--- Enroll_Class_Group requires active enrollment in the class group subject
+-- Enroll_Class_Group requires active enrollment in the class group course occurrence
 INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date)
-VALUES (4, 52, 'active', '2026-02-01', NULL);
+VALUES (5, 52, 'active', '2026-02-01', NULL);
 
 -- Class_Group cannot lower max_students below active enrollments
 UPDATE class_group
@@ -75,9 +75,9 @@ WHERE id_class_group = 50;
 -- Active Content_Block order must be unique in the class group
 INSERT INTO content_block (
     id_content_block, id_class_group, cod_content_block, name, description, order_no,
-    access_mode, state, available_from, available_until
+    state
 ) VALUES
-    (9124, 50, 'BLK-ACTIVE-ORDER', 'Ordem ativa duplicada', NULL, 1, 'open', 'active', NULL, NULL);
+    (9124, 50, 'BLK-ACTIVE-ORDER', 'Duplicate active order', NULL, 1, 'active');
 
 -- Physical_Room Organic_Unit tem de pertencer a mesma Organization
 INSERT INTO physical_room (
@@ -133,18 +133,18 @@ INSERT INTO lesson (
 
 -- Questionnaire exige Content_Block
 INSERT INTO assessment (
-    id_assessment, id_subject, id_content_block, title, description, type, mode, correction_mode,
+    id_assessment, id_subject, id_content_block, cod_physical_room, title, description, type, mode, correction_mode,
     max_grade, passing_grade, attempts_limit, state, available_from, available_until
 ) VALUES
-    (9109, 40, NULL, 'Form without block', NULL, 'form', 'online', 'automatic',
+    (9109, 40, NULL, NULL, 'Form without block', NULL, 'form', 'online', 'automatic',
      20.00, 10.00, 1, 'active', '2026-03-01 00:00:00', '2026-03-10 00:00:00');
 
 -- Assessment subject must match the Content_Block subject
 INSERT INTO assessment (
-    id_assessment, id_subject, id_content_block, title, description, type, mode, correction_mode,
+    id_assessment, id_subject, id_content_block, cod_physical_room, title, description, type, mode, correction_mode,
     max_grade, passing_grade, attempts_limit, state, available_from, available_until
 ) VALUES
-    (9110, 40, 62, 'Assessment incoerente', NULL, 'form', 'online', 'automatic',
+    (9110, 40, 62, NULL, 'Assessment incoerente', NULL, 'form', 'online', 'automatic',
      20.00, 10.00, 1, 'active', '2026-03-01 00:00:00', '2026-03-10 00:00:00');
 
 -- Assessment_Class_Group only applies to subject-level exams
@@ -244,12 +244,6 @@ INSERT INTO grade_record (
 INSERT INTO based_on_grade_sheet_certificate (id_certificate, id_grade_sheet) VALUES
     (192, 170);
 
--- Certificate Grade_Sheet subject validation also applies on update
-UPDATE based_on_grade_sheet_certificate
-SET id_certificate = 192
-WHERE id_certificate = 191
-  AND id_grade_sheet = 170;
-
 -- Message sender tem de participar no Channel
 INSERT INTO message (
     id_message, id_channel, id_user_sender, id_parent_message, id_schedule_event_origin,
@@ -265,12 +259,6 @@ INSERT INTO message (
 ) VALUES
     (9121, 191, 3, 222, NULL, 'Resposta noutro canal', 'Body', 'comment', 'normal', NULL,
      '2026-03-01 11:10:00', NULL, NULL, '2026-03-01 11:11:00', 'sent');
-
--- delivery_mode email requires an active user
-INSERT INTO receive_message (
-    id_user, id_message, delivered_at, read_at, delivery_mode, state
-) VALUES
-    (5, 222, '2026-03-01 11:30:00', NULL, 'email', 'delivered');
 
 -- Activity_Log Session tem de pertencer ao mesmo User
 INSERT INTO activity_log (

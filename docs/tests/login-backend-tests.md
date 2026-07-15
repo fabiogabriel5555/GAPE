@@ -65,7 +65,7 @@ mvn package -DskipTests
 ## Ajustes feitos durante a execucao
 - `DatabaseTestSupport` foi tornado `public` para poder ser reutilizado pelos novos testes de autenticacao fora do package `transversal`.
 - `AuthenticationFilterTest` recebeu `imports` e helpers em falta no fake `HttpSession`.
-- Os casos de expiracao passaram a usar timestamps mais antigos para evitar fragilidade de fixture entre JDBC, `DATETIME` e UTC.
+- Os casos de expiracao passaram a usar timestamps mais antigos para evitar fragilidade de fixture entre JDBC, `DATETIME` e a timezone de sessao.
 - Foi acrescentado teste de fronteira de 30 minutos diretamente sobre a regra de dominio.
 - `LogoutServletTest` cobre rejeicao de `GET`, rejeicao de CSRF invalido e logout valido por `POST`.
 - O template visual foi ligado aos endpoints reais:

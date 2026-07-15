@@ -13,6 +13,7 @@ public record Course(
         BigDecimal ects,
         BigDecimal certificateMaxGrade,
         String duration,
+        CourseFrequency frequency,
         CourseType type,
         CourseState state
 ) {

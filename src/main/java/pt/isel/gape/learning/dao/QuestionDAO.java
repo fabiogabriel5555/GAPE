@@ -17,7 +17,7 @@ import pt.isel.gape.learning.model.QuestionCreateCommand;
 import pt.isel.gape.learning.model.QuestionType;
 import pt.isel.gape.learning.model.QuestionUpdateCommand;
 
-public final class QuestionDAO {
+public final class QuestionDAO implements pt.isel.gape.transversal.service.ApplicationReadService.Questions {
 
     private final ConnectionProvider connectionProvider;
 

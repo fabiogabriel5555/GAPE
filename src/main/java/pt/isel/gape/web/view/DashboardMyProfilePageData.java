@@ -13,7 +13,6 @@ import java.util.function.Predicate;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AccessProfileContextAssignment;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.access.model.AdministratorPermissionAssignment;
@@ -24,22 +23,15 @@ import pt.isel.gape.access.service.UserService;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.config.SupportedDocumentTypeCatalog;
 import pt.isel.gape.common.config.SupportedLanguageCatalog;
-import pt.isel.gape.learning.dao.CourseDAO;
-import pt.isel.gape.learning.dao.EnrollmentDAO;
-import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.Subject;
-import pt.isel.gape.learning.model.SubjectEnrollment;
 import pt.isel.gape.security.authorization.AccessEntityType;
 import pt.isel.gape.security.authorization.AuthorizationPolicy;
 import pt.isel.gape.security.session.SessionManager;
 import pt.isel.gape.security.session.SessionUser;
-import pt.isel.gape.structure.dao.CoordinateSubjectDAO;
-import pt.isel.gape.structure.dao.OrganicUnitDAO;
-import pt.isel.gape.structure.dao.OrganizationDAO;
-import pt.isel.gape.structure.dao.TeachClassGroupDAO;
 import pt.isel.gape.structure.model.ClassGroupContext;
 import pt.isel.gape.structure.model.OrganicUnit;
+import pt.isel.gape.transversal.service.ApplicationReadService;
 
 public final class DashboardMyProfilePageData {
 
@@ -62,6 +54,7 @@ public final class DashboardMyProfilePageData {
         OptionalLong sessionId = sessionManager.getDatabaseSessionId(request);
         Long currentSessionId = sessionId.isPresent() ? sessionId.getAsLong() : null;
         ConnectionProvider connectionProvider = ConnectionProvider.defaultProvider();
+        ApplicationReadService readService = new ApplicationReadService(connectionProvider);
 
         UserService userService = new UserService(connectionProvider);
         DeletionRequestService deletionRequestService = new DeletionRequestService(connectionProvider);
@@ -84,8 +77,8 @@ public final class DashboardMyProfilePageData {
         request.setAttribute("user", UserView.from(user));
         request.setAttribute("form", UserFormData.from(user));
         request.setAttribute("profileSummaryDetails", profileSummaryDetails(user));
-        request.setAttribute("administratorAccessDetails", administratorAccessDetails(connectionProvider, actor));
-        request.setAttribute("profileContextDetails", profileContextDetails(connectionProvider, actor.userId()));
+        request.setAttribute("administratorAccessDetails", administratorAccessDetails(readService, actor));
+        request.setAttribute("profileContextDetails", profileContextDetails(readService, actor.userId()));
         request.setAttribute("languageOptions", SupportedLanguageCatalog.all());
         request.setAttribute("documentTypeOptions", SupportedDocumentTypeCatalog.all());
         request.setAttribute("returnTo", request.getServletPath());
@@ -106,17 +99,17 @@ public final class DashboardMyProfilePageData {
     }
 
     private static List<UserContextAssignmentView> administratorAccessDetails(
-            ConnectionProvider connectionProvider,
+            ApplicationReadService readService,
             SessionUser actor
     ) {
         if (!actor.profileTypes().contains(AccessProfileType.ADMINISTRATOR)) {
             return List.of();
         }
-        PermissionDAO permissionDAO = new PermissionDAO(connectionProvider);
-        ContextLabelResolver contextLabels = new ContextLabelResolver(connectionProvider);
+        ContextLabelResolver contextLabels = new ContextLabelResolver(readService);
         try {
             List<UserContextAssignmentView> details = new ArrayList<>();
-            for (AdministratorPermissionAssignment assignment : permissionDAO.findActiveAdministratorAssignments(actor.userId())) {
+            for (AdministratorPermissionAssignment assignment : readService.permissions()
+                    .findActiveAdministratorAssignments(actor.userId())) {
                 details.add(new UserContextAssignmentView(
                         "Access Level",
                         permissionLabel(assignment.permissionCode()),
@@ -131,13 +124,13 @@ public final class DashboardMyProfilePageData {
     }
 
     private static List<UserContextAssignmentView> profileContextDetails(
-            ConnectionProvider connectionProvider,
+            ApplicationReadService readService,
             long userId
     ) {
-        ContextLabelResolver contextLabels = new ContextLabelResolver(connectionProvider);
+        ContextLabelResolver contextLabels = new ContextLabelResolver(readService);
         try {
             List<UserContextAssignmentView> details = new ArrayList<>();
-            for (AccessProfileContextAssignment assignment : activeProfileContextAssignments(connectionProvider, userId)) {
+            for (AccessProfileContextAssignment assignment : activeProfileContextAssignments(readService, userId)) {
                 details.add(new UserContextAssignmentView(
                         "Profile Context",
                         profileLabel(assignment.profileType()),
@@ -155,14 +148,11 @@ public final class DashboardMyProfilePageData {
     }
 
     private static Set<AccessProfileContextAssignment> activeProfileContextAssignments(
-            ConnectionProvider connectionProvider,
+            ApplicationReadService readService,
             long userId
     ) throws SQLException {
-        CoordinateSubjectDAO coordinateSubjectDAO = new CoordinateSubjectDAO(connectionProvider);
-        TeachClassGroupDAO teachClassGroupDAO = new TeachClassGroupDAO(connectionProvider);
-        EnrollmentDAO enrollmentDAO = new EnrollmentDAO(connectionProvider);
         Set<AccessProfileContextAssignment> assignments = new LinkedHashSet<>();
-        for (Long subjectId : coordinateSubjectDAO.findActiveSubjectIdsByCoordinator(userId)) {
+        for (Long subjectId : readService.coordinateSubjects().findActiveSubjectIdsByCoordinator(userId)) {
             assignments.add(new AccessProfileContextAssignment(
                     AccessProfileType.COORDINATOR,
                     AccessEntityType.SUBJECT,
@@ -170,7 +160,7 @@ public final class DashboardMyProfilePageData {
                     null
             ));
         }
-        for (Long classGroupId : teachClassGroupDAO.findActiveClassGroupIdsByTeacher(userId)) {
+        for (Long classGroupId : readService.teachClassGroups().findActiveClassGroupIdsByTeacher(userId)) {
             assignments.add(new AccessProfileContextAssignment(
                     AccessProfileType.TEACHER,
                     AccessEntityType.CLASS_GROUP,
@@ -178,20 +168,12 @@ public final class DashboardMyProfilePageData {
                     null
             ));
         }
-        for (Long courseId : enrollmentDAO.findActiveCourseIdsByStudent(userId)) {
+        for (Long courseId : readService.enrollments().findActiveCourseIdsByStudent(userId)) {
             assignments.add(new AccessProfileContextAssignment(
                     AccessProfileType.STUDENT,
                     AccessEntityType.COURSE,
                     courseId,
                     null
-            ));
-        }
-        for (SubjectEnrollment enrollment : enrollmentDAO.findActiveSubjectEnrollmentsByStudent(userId)) {
-            assignments.add(new AccessProfileContextAssignment(
-                    AccessProfileType.STUDENT,
-                    AccessEntityType.SUBJECT,
-                    enrollment.subjectId(),
-                    enrollment.courseId()
             ));
         }
         return Set.copyOf(assignments);
@@ -239,18 +221,18 @@ public final class DashboardMyProfilePageData {
 
     private static final class ContextLabelResolver {
 
-        private final OrganizationDAO organizationDAO;
-        private final OrganicUnitDAO organicUnitDAO;
-        private final CourseDAO courseDAO;
-        private final SubjectDAO subjectDAO;
-        private final TeachClassGroupDAO teachClassGroupDAO;
+        private final ApplicationReadService.Organizations organizationDAO;
+        private final ApplicationReadService.OrganicUnits organicUnitDAO;
+        private final ApplicationReadService.Courses courseDAO;
+        private final ApplicationReadService.Subjects subjectDAO;
+        private final ApplicationReadService.TeachClassGroups teachClassGroupDAO;
 
-        private ContextLabelResolver(ConnectionProvider connectionProvider) {
-            this.organizationDAO = new OrganizationDAO(connectionProvider);
-            this.organicUnitDAO = new OrganicUnitDAO(connectionProvider);
-            this.courseDAO = new CourseDAO(connectionProvider);
-            this.subjectDAO = new SubjectDAO(connectionProvider);
-            this.teachClassGroupDAO = new TeachClassGroupDAO(connectionProvider);
+        private ContextLabelResolver(ApplicationReadService readService) {
+            this.organizationDAO = readService.organizations();
+            this.organicUnitDAO = readService.organicUnits();
+            this.courseDAO = readService.courses();
+            this.subjectDAO = readService.subjects();
+            this.teachClassGroupDAO = readService.teachClassGroups();
         }
 
         private String labelFor(AccessEntityType contextType, long contextId, Long parentContextId)

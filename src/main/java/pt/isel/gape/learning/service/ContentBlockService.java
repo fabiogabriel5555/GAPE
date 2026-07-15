@@ -3,7 +3,6 @@ package pt.isel.gape.learning.service;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -16,9 +15,7 @@ import pt.isel.gape.common.validation.AcademicTextValidator;
 import pt.isel.gape.learning.dao.ClassGroupDAO;
 import pt.isel.gape.learning.dao.ContentBlockDAO;
 import pt.isel.gape.learning.model.ClassGroup;
-import pt.isel.gape.learning.model.ClassGroupState;
 import pt.isel.gape.learning.model.ContentBlock;
-import pt.isel.gape.learning.model.ContentBlockAccessMode;
 import pt.isel.gape.learning.model.ContentBlockCreateCommand;
 import pt.isel.gape.learning.model.ContentBlockState;
 import pt.isel.gape.learning.model.ContentBlockUpdateCommand;
@@ -85,15 +82,8 @@ public final class ContentBlockService {
                 try {
                     ClassGroup classGroup = requireClassGroup(connection, command.classGroupId());
                     requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
-                    requireClassGroupEditable(classGroup);
-                    if (command.state() == ContentBlockState.ACTIVE
-                            && contentBlockDAO.activeOrderExists(
-                                    connection,
-                                    command.classGroupId(),
-                                    command.orderNo(),
-                                    null
-                            )) {
-                        throw new IllegalStateException("Active content block order already exists in this class group");
+                    if (contentBlockDAO.orderExists(connection, command.classGroupId(), command.orderNo(), null)) {
+                        throw new IllegalStateException("Content block order already exists in this class group");
                     }
                     long contentBlockId = contentBlockDAO.create(connection, command);
                     auditService.record(connection, actorUserId, sessionId, "CONTENT_BLOCK_CREATE",
@@ -168,7 +158,6 @@ public final class ContentBlockService {
                 try {
                     ClassGroup classGroup = requireClassGroup(connection, classGroupId);
                     requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
-                    requireClassGroupEditable(classGroup);
                     List<ContentBlock> blocks = contentBlockDAO.findByClassGroup(connection, classGroupId, true);
                     Set<Long> expectedIds = new HashSet<>();
                     for (ContentBlock block : blocks) {
@@ -209,19 +198,16 @@ public final class ContentBlockService {
                 connection.setAutoCommit(false);
                 try {
                     ContentBlock current = requireContentBlock(connection, contentBlockId);
-                    requireContentBlockEditable(current);
                     requireSameContentBlockContext(current, command);
                     ClassGroup classGroup = requireClassGroup(connection, current.classGroupId());
                     requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
-                    requireClassGroupEditable(classGroup);
-                    if (command.state() == ContentBlockState.ACTIVE
-                            && contentBlockDAO.activeOrderExists(
-                                    connection,
-                                    current.classGroupId(),
-                                    command.orderNo(),
-                                    contentBlockId
-                            )) {
-                        throw new IllegalStateException("Active content block order already exists in this class group");
+                    if (contentBlockDAO.orderExists(
+                            connection,
+                            current.classGroupId(),
+                            command.orderNo(),
+                            contentBlockId
+                    )) {
+                        throw new IllegalStateException("Content block order already exists in this class group");
                     }
                     contentBlockDAO.update(connection, contentBlockId, command);
                     auditService.record(connection, actorUserId, sessionId, "CONTENT_BLOCK_UPDATE",
@@ -242,84 +228,6 @@ public final class ContentBlockService {
         }
     }
 
-    public void archiveContentBlock(
-            long actorUserId,
-            Long sessionId,
-            AccessProfileType actorProfileType,
-            long contentBlockId,
-            String sourceIp
-    ) {
-        try {
-            try (Connection connection = connectionProvider.getConnection()) {
-                boolean originalAutoCommit = connection.getAutoCommit();
-                connection.setAutoCommit(false);
-                try {
-                    ContentBlock current = requireContentBlock(connection, contentBlockId);
-                    requireContentBlockEditable(current);
-                    ClassGroup classGroup = requireClassGroup(connection, current.classGroupId());
-                    requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
-                    requireClassGroupEditable(classGroup);
-                    contentBlockDAO.updateState(connection, contentBlockId, ContentBlockState.INACTIVE);
-                    auditService.record(connection, actorUserId, sessionId, "CONTENT_BLOCK_ARCHIVE",
-                            "content_block", Long.toString(contentBlockId), "success", sourceIp);
-                    connection.commit();
-                } catch (RuntimeException | SQLException exception) {
-                    connection.rollback();
-                    throw exception;
-                } finally {
-                    connection.setAutoCommit(originalAutoCommit);
-                }
-            }
-        } catch (RuntimeException | SQLException exception) {
-            auditFailure(actorUserId, sessionId, "CONTENT_BLOCK_ARCHIVE", Long.toString(contentBlockId), sourceIp);
-            throw wrap(exception, "Failed to archive content block");
-        }
-    }
-
-    public void unarchiveContentBlock(
-            long actorUserId,
-            Long sessionId,
-            AccessProfileType actorProfileType,
-            long contentBlockId,
-            String sourceIp
-    ) {
-        try {
-            try (Connection connection = connectionProvider.getConnection()) {
-                boolean originalAutoCommit = connection.getAutoCommit();
-                connection.setAutoCommit(false);
-                try {
-                    ContentBlock current = requireContentBlock(connection, contentBlockId);
-                    if (current.state() != ContentBlockState.INACTIVE) {
-                        throw new IllegalStateException("Only inactive content blocks can be restored");
-                    }
-                    ClassGroup classGroup = requireClassGroup(connection, current.classGroupId());
-                    requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
-                    requireClassGroupEditable(classGroup);
-                    if (contentBlockDAO.activeOrderExists(
-                            connection,
-                            current.classGroupId(),
-                            current.orderNo(),
-                            contentBlockId
-                    )) {
-                        throw new IllegalStateException("Another active content block already uses this order");
-                    }
-                    contentBlockDAO.updateState(connection, contentBlockId, ContentBlockState.ACTIVE);
-                    auditService.record(connection, actorUserId, sessionId, "CONTENT_BLOCK_UNARCHIVE",
-                            "content_block", Long.toString(contentBlockId), "success", sourceIp);
-                    connection.commit();
-                } catch (RuntimeException | SQLException exception) {
-                    connection.rollback();
-                    throw exception;
-                } finally {
-                    connection.setAutoCommit(originalAutoCommit);
-                }
-            }
-        } catch (RuntimeException | SQLException exception) {
-            auditFailure(actorUserId, sessionId, "CONTENT_BLOCK_UNARCHIVE", Long.toString(contentBlockId), sourceIp);
-            throw wrap(exception, "Failed to unarchive content block");
-        }
-    }
-
     public void deleteContentBlock(
             long actorUserId,
             Long sessionId,
@@ -333,10 +241,8 @@ public final class ContentBlockService {
                 connection.setAutoCommit(false);
                 try {
                     ContentBlock current = requireContentBlock(connection, contentBlockId);
-                    requireContentBlockEditable(current);
                     ClassGroup classGroup = requireClassGroup(connection, current.classGroupId());
                     requireContentBlockManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
-                    requireClassGroupEditable(classGroup);
                     if (contentBlockDAO.hasDomainDependencies(connection, contentBlockId)) {
                         throw new IllegalStateException("Content block with domain dependencies cannot be deleted");
                     }
@@ -422,10 +328,7 @@ public final class ContentBlockService {
                 command.code(),
                 command.name(),
                 command.orderNo(),
-                command.accessMode(),
-                command.state(),
-                command.availableFrom(),
-                command.availableUntil()
+                command.state()
         );
     }
 
@@ -436,10 +339,7 @@ public final class ContentBlockService {
                 command.code(),
                 command.name(),
                 command.orderNo(),
-                command.accessMode(),
-                command.state(),
-                command.availableFrom(),
-                command.availableUntil()
+                command.state()
         );
     }
 
@@ -454,10 +354,7 @@ public final class ContentBlockService {
             String code,
             String name,
             int orderNo,
-            ContentBlockAccessMode accessMode,
-            ContentBlockState state,
-            LocalDateTime availableFrom,
-            LocalDateTime availableUntil
+            ContentBlockState state
     ) {
         if (classGroupId <= 0) {
             throw new IllegalArgumentException("Content block class group is required");
@@ -468,29 +365,7 @@ public final class ContentBlockService {
         if (orderNo <= 0) {
             throw new IllegalArgumentException("Content block order must be positive");
         }
-        Objects.requireNonNull(accessMode, "content block access mode is required");
         Objects.requireNonNull(state, "content block state is required");
-        if (accessMode == ContentBlockAccessMode.SCHEDULED && availableFrom == null) {
-            throw new IllegalArgumentException("Scheduled content blocks require an availability start date");
-        }
-        if (availableUntil != null && availableFrom == null) {
-            throw new IllegalArgumentException("Content block availability end requires a start date");
-        }
-        if (availableFrom != null && availableUntil != null && availableUntil.isBefore(availableFrom)) {
-            throw new IllegalArgumentException("Content block availability end cannot be before start");
-        }
-    }
-
-    private static void requireClassGroupEditable(ClassGroup classGroup) {
-        if (classGroup.state() == ClassGroupState.COMPLETED) {
-            throw new IllegalStateException("Completed class groups cannot receive content block changes");
-        }
-    }
-
-    private static void requireContentBlockEditable(ContentBlock contentBlock) {
-        if (contentBlock.state() == ContentBlockState.INACTIVE) {
-            throw new IllegalStateException("Inactive content blocks cannot be changed");
-        }
     }
 
     private static void requireText(String value, String message) {

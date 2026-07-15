@@ -34,6 +34,35 @@ function Find-SampleImage {
     return $image
 }
 
+function Get-ImageMimeType {
+    param([string] $Path)
+    switch ([System.IO.Path]::GetExtension($Path).ToLowerInvariant()) {
+        ".png" { "image/png" }
+        ".jpg" { "image/jpeg" }
+        ".jpeg" { "image/jpeg" }
+        ".webp" { "image/webp" }
+        default { throw "Unsupported sample image extension: $Path" }
+    }
+}
+
+function Get-CsrfTokenFromHtml {
+    param([string] $Html)
+    $inputMatch = [regex]::Match(
+        $Html,
+        '<input\b(?=[^>]*\bname\s*=\s*["'']csrfToken["''])[^>]*>',
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+    $valueMatch = if ($inputMatch.Success) {
+        [regex]::Match($inputMatch.Value, '\bvalue\s*=\s*(["''])(.*?)\1')
+    } else {
+        $null
+    }
+    if ($null -eq $valueMatch -or -not $valueMatch.Success -or [string]::IsNullOrWhiteSpace($valueMatch.Groups[2].Value)) {
+        throw "Login page did not expose a non-empty CSRF token."
+    }
+    return [System.Net.WebUtility]::HtmlDecode($valueMatch.Groups[2].Value)
+}
+
 function Invoke-Upload {
     param(
         [string] $BaseUrl,
@@ -44,7 +73,8 @@ function Invoke-Upload {
         [string] $Name,
         [string] $Format,
         [string] $Role,
-        [string] $File
+        [string] $File,
+        [string] $MimeType
     )
 
     $status = & curl.exe -s -L -b $CookieJar -c $CookieJar -o $ResponsePath -w "%{http_code}" -X POST "$BaseUrl/contents/upload" `
@@ -56,7 +86,7 @@ function Invoke-Upload {
         -F "contextType=content_block" `
         -F "contextId=$BlockId" `
         -F "role=$Role" `
-        -F "file=@$File;type=application/octet-stream"
+        -F "file=@$File;type=$MimeType"
 
     $body = ""
     if (Test-Path -LiteralPath $ResponsePath) {
@@ -79,24 +109,42 @@ if ($Prepare) {
 
 $testRoot = Join-Path $env:TEMP ("gape-upload-test-" + [guid]::NewGuid().ToString("N"))
 New-Item -ItemType Directory -Path $testRoot | Out-Null
+$createdContentItems = [System.Collections.Generic.List[object]]::new()
+$csrfToken = $null
 
 $cookieJar = Join-Path $testRoot "cookies.txt"
+$loginPagePath = Join-Path $testRoot "login.html"
+$loginHeadersPath = Join-Path $testRoot "login.headers"
 $pagePath = Join-Path $testRoot "class-group.html"
 $pdfPath = if ($PdfFile) {
     (Resolve-Path -LiteralPath $PdfFile).Path
 } else {
-    New-TestFile -Directory $testRoot -Name "sample.pdf" -Content "%PDF-1.4`n1 0 obj`n<<>>`nendobj`n%%EOF`n"
+    (Resolve-Path -LiteralPath (Join-Path $workspace "uploads\contents\guide-prj.pdf")).Path
 }
 $txtPath = New-TestFile -Directory $testRoot -Name "sample.txt" -Content "conteudo textual de teste" -Encoding ([System.Text.Encoding]::UTF8)
-$mp3Path = New-TestFile -Directory $testRoot -Name "sample.mp3" -Content "audio placeholder"
-$mp4Path = New-TestFile -Directory $testRoot -Name "sample.mp4" -Content "video placeholder"
+$audioPath = (Resolve-Path -LiteralPath (Join-Path $workspace "uploads\contents\audio\review.m4a")).Path
+$videoPath = (Resolve-Path -LiteralPath (Join-Path $workspace "uploads\contents\videos\normalization.mp4")).Path
 $badPdfPath = New-TestFile -Directory $testRoot -Name "broken.pdf" -Content "not a pdf"
 $badImagePath = New-TestFile -Directory $testRoot -Name "broken.png" -Content "not an image"
 $imagePath = Find-SampleImage
 
-& curl.exe -s -L -c $cookieJar -b $cookieJar -X POST "$baseUrl/auth/login" `
+try {
+& curl.exe -s -L -c $cookieJar -b $cookieJar "$baseUrl/login.jsp" -o $loginPagePath | Out-Null
+$loginCsrfToken = Get-CsrfTokenFromHtml -Html (Get-Content -LiteralPath $loginPagePath -Raw)
+
+$loginStatus = & curl.exe -s -c $cookieJar -b $cookieJar -D $loginHeadersPath -o $loginPagePath -w "%{http_code}" "$baseUrl/auth/login" `
+    --data-urlencode "csrfToken=$loginCsrfToken" `
     --data-urlencode "email=$Email" `
-    --data-urlencode "password=$Password" | Out-Null
+    --data-urlencode "password=$Password"
+if ($LASTEXITCODE -ne 0) {
+    throw "Login request failed with exit code $LASTEXITCODE."
+}
+$loginLocation = Select-String -LiteralPath $loginHeadersPath -Pattern '(?i)^Location:\s*(.+?)\s*$' |
+    Select-Object -Last 1 |
+    ForEach-Object { $_.Matches[0].Groups[1].Value.Trim() }
+if ($loginStatus -notin @("302", "303") -or [string]::IsNullOrWhiteSpace($loginLocation) -or $loginLocation -match '(?i)/login\.jsp') {
+    throw "Authentication failed for $Email (HTTP $loginStatus)."
+}
 
 & curl.exe -s -L -c $cookieJar -b $cookieJar "$baseUrl/learning/class-groups/$ClassGroupId" -o $pagePath | Out-Null
 
@@ -116,16 +164,16 @@ $blockId = $blockMatches[0].Groups[1].Value
 $repositoryBlockId = if ($blockMatches.Count -gt 1) { $blockMatches[1].Groups[1].Value } else { $blockId }
 
 $cases = @(
-    @{ Name = "pdf"; Format = "pdf"; Role = "support_material"; File = $pdfPath },
-    @{ Name = "text"; Format = "text"; Role = "text"; File = $txtPath },
-    @{ Name = "image"; Format = "image"; Role = "image"; File = $imagePath },
-    @{ Name = "audio"; Format = "audio"; Role = "audio"; File = $mp3Path },
-    @{ Name = "video"; Format = "video"; Role = "video"; File = $mp4Path }
+    @{ Name = "pdf"; Format = "pdf"; Role = "support_material"; File = $pdfPath; MimeType = "application/pdf" },
+    @{ Name = "text"; Format = "text"; Role = "text"; File = $txtPath; MimeType = "text/plain" },
+    @{ Name = "image"; Format = "image"; Role = "image"; File = $imagePath; MimeType = (Get-ImageMimeType $imagePath) },
+    @{ Name = "audio"; Format = "audio"; Role = "audio"; File = $audioPath; MimeType = "audio/mp4" },
+    @{ Name = "video"; Format = "video"; Role = "video"; File = $videoPath; MimeType = "video/mp4" }
 )
 
 $results = foreach ($case in $cases) {
     $responsePath = Join-Path $testRoot ($case.Name + ".response.txt")
-    Invoke-Upload `
+    $result = Invoke-Upload `
         -BaseUrl $baseUrl `
         -CookieJar $cookieJar `
         -ResponsePath $responsePath `
@@ -134,7 +182,12 @@ $results = foreach ($case in $cases) {
         -Name $case.Name `
         -Format $case.Format `
         -Role $case.Role `
-        -File $case.File
+        -File $case.File `
+        -MimeType $case.MimeType
+    if ($result.Status -eq "201" -and $result.Body -match '^\d+$') {
+        $createdContentItems.Add([PSCustomObject]@{ BlockId = $blockId; ContentItemId = [long] $result.Body })
+    }
+    $result
 }
 
 $results | Format-Table -AutoSize
@@ -181,6 +234,7 @@ if ($repositoryStatus -ne "201" -or $repositoryBody -match "\D") {
     throw "Repository file reuse failed."
 }
 $repositoryNewContentItemId = [long] $repositoryBody
+$createdContentItems.Add([PSCustomObject]@{ BlockId = $repositoryBlockId; ContentItemId = $repositoryNewContentItemId })
 if ($repositoryNewContentItemId -eq $repositoryContentItemId) {
     throw "Repository file reuse must create a new pedagogical item instead of associating item $repositoryContentItemId again."
 }
@@ -195,8 +249,8 @@ if (Test-Path -LiteralPath $repositoryNewProcessedDirectory) {
 }
 
 $negativeCases = @(
-    @{ Name = "invalid-pdf"; Format = "pdf"; Role = "support_material"; File = $badPdfPath },
-    @{ Name = "invalid-image"; Format = "image"; Role = "image"; File = $badImagePath }
+    @{ Name = "invalid-pdf"; Format = "pdf"; Role = "support_material"; File = $badPdfPath; MimeType = "application/pdf" },
+    @{ Name = "invalid-image"; Format = "image"; Role = "image"; File = $badImagePath; MimeType = "image/png" }
 )
 
 $negativeResults = foreach ($case in $negativeCases) {
@@ -210,7 +264,8 @@ $negativeResults = foreach ($case in $negativeCases) {
         -Name $case.Name `
         -Format $case.Format `
         -Role $case.Role `
-        -File $case.File
+        -File $case.File `
+        -MimeType $case.MimeType
 }
 
 $negativeResults | Format-Table -AutoSize
@@ -221,4 +276,35 @@ $unexpectedNegative = @($negativeResults | Where-Object {
 
 if ($unexpectedNegative.Count -gt 0) {
     throw "One or more invalid upload checks returned an unexpected response."
+}
+} finally {
+    $cleanupFailures = [System.Collections.Generic.List[string]]::new()
+    if ($csrfToken -and (Test-Path -LiteralPath $cookieJar)) {
+        foreach ($created in @($createdContentItems | Sort-Object ContentItemId -Descending)) {
+            $deleteUrl = "$baseUrl/learning/class-groups/$ClassGroupId/blocks/$($created.BlockId)/contents/$($created.ContentItemId)/delete"
+            $deleteStatus = & curl.exe -s -b $cookieJar -c $cookieJar -o "NUL" -w "%{http_code}" `
+                -X POST $deleteUrl `
+                --data-urlencode "csrfToken=$csrfToken"
+            if ($deleteStatus -notin @("200", "204", "302", "303")) {
+                $cleanupFailures.Add("delete $($created.ContentItemId) returned HTTP $deleteStatus")
+            }
+        }
+        foreach ($created in $createdContentItems) {
+            $probeStatus = & curl.exe -s -b $cookieJar -o "NUL" -w "%{http_code}" `
+                "$baseUrl/contents/download/$($created.ContentItemId)"
+            if ($probeStatus -notin @("400", "404", "410")) {
+                $cleanupFailures.Add("content $($created.ContentItemId) is still downloadable (HTTP $probeStatus)")
+            }
+            $storedDirectory = Join-Path $workspace "uploads\contents\items\$($created.ContentItemId)"
+            if (Test-Path -LiteralPath $storedDirectory) {
+                $cleanupFailures.Add("stored directory remains for content $($created.ContentItemId): $storedDirectory")
+            }
+        }
+    }
+    if (Test-Path -LiteralPath $testRoot) {
+        Remove-Item -LiteralPath $testRoot -Recurse -Force
+    }
+    if ($cleanupFailures.Count -gt 0) {
+        throw "Upload smoke cleanup failed: $($cleanupFailures -join '; ')"
+    }
 }

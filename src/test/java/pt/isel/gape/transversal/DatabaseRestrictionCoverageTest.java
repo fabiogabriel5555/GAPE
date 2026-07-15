@@ -1,6 +1,8 @@
 package pt.isel.gape.transversal;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -12,6 +14,9 @@ import java.sql.Statement;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.api.parallel.ResourceLock;
 
 /**
  * Cobertura de restricoes da base de dados (Fase 1, prompt 2.8).
@@ -28,11 +33,14 @@ import org.junit.jupiter.api.Test;
  * content_item, lesson, physical_room, assessment, enroll_assessment, question, question_option, attempt,
  * response, certificate, message.
  */
+@Execution(ExecutionMode.SAME_THREAD)
+@ResourceLock("gape-db")
 class DatabaseRestrictionCoverageTest {
 
     private static final List<String> CORE_TABLES_WITH_VALID_DATA = List.of(
-            "user_account", "user_session", "organization", "organic_unit", "course", "subject",
-            "integrate_subject", "class_group", "enroll_course", "enroll_subject", "enroll_class_group",
+            "user_account", "user_session", "organization", "organic_unit", "course",
+            "course_occurrence", "course_occurrence_period", "subject",
+            "integrate_subject", "class_group", "enroll_course", "enroll_class_group",
             "content_block", "content_item",
             "physical_room", "lesson", "assessment", "enroll_assessment", "question", "question_option", "attempt",
             "response", "certificate", "message", "activity_log"
@@ -69,6 +77,41 @@ class DatabaseRestrictionCoverageTest {
             }
 
             connection.rollback();
+        }
+    }
+
+    @Test
+    void inactiveSubjectsKeepExistingAssociationsButRejectNewActiveAssignments() throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             Statement statement = connection.createStatement()) {
+            DatabaseTestSupport.resetDatabase(connection);
+            DatabaseTestSupport.executeScript(connection, DatabaseTestSupport.SQL_SEED_DIR.resolve("base.sql"));
+
+            assertEquals(1, statement.executeUpdate("UPDATE subject SET state = 'inactive' WHERE id_subject = 40"));
+
+            statement.executeUpdate("""
+                    INSERT INTO subject (
+                        id_subject, id_organization, name, acronym, description, ects, workload_hours, state
+                    ) VALUES (9300, 10, 'Inactive Trigger Subject', 'ITS', NULL, 6.00, 60, 'inactive')
+                    """);
+            SQLException association = assertThrows(
+                    SQLException.class,
+                    () -> statement.executeUpdate("""
+                            INSERT INTO integrate_subject (
+                                id_course, id_subject, curricular_year, term, mandatory, state, ended_at
+                            ) VALUES (30, 9300, 1, 'semester_1', 1, 'active', NULL)
+                            """)
+            );
+            DatabaseTestSupport.assertIntegrityException(association);
+
+            SQLException coordinatorAssignment = assertThrows(
+                    SQLException.class,
+                    () -> statement.executeUpdate("""
+                            INSERT INTO coordinate_subject (id_coordinator_user, id_subject, state)
+                            VALUES (2, 9300, 'active')
+                            """)
+            );
+            DatabaseTestSupport.assertIntegrityException(coordinatorAssignment);
         }
     }
 

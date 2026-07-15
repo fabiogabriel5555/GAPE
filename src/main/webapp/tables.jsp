@@ -1,4 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%
+    request.setAttribute("pageTitle", "Assessment Attempts");
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -125,7 +128,7 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Message</a>
+                <a href="${pageContext.request.contextPath}/admin/admin-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Messages</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/admin/admin-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
@@ -239,8 +242,8 @@
 
 <!-- ========Dashdord Sidebar start======== -->
 <div class="dashboard-sidebar px-20 py-24 max-w-288-px bg-white w-100 border-end border-neutral-40 position-relative">
-    <a href="#">
-      <img src="assets/images/logo/logo.svg" alt="" class="">
+    <a href="${pageContext.request.contextPath}/index.jsp" class="dashboard-sidebar__site-logo">
+      <img src="assets/images/logo/logo.svg" alt="GAPE" class="">
     </a>
     <span class="w-100 bg-neutral-40 mb-24 mt-24 h-1"></span>
      <div class="overflow-x-auto">
@@ -304,131 +307,7 @@
 <!-- ========Dashdord Sidebar end======== -->
 
          <div class="dashbord-body my-profile flex-grow-1">
-            <!-- =====messsage dashbord nab start======== -->
-<div class="px-24 py-16 bg-neutral-10 border-bottom border-neutral-40 w-100">
-    <div class="d-flex align-items-center justify-content-between gap-24 w-100">
-        <div class="d-flex align-items-center gap-24">
-            <button type="button" class="toggle-dashbord-button text-neutral-500 text-28 line-height-1 d-lg-none d-block">
-                <i class="ph-bold ph-list"></i>
-            </button>
-            <div class="max-w-357-px position-relative d-sm-block d-none">
-                <form action="#">
-                    <input type="text" placeholder="Search" class="ps-16 pe-36 py-9 border border-neutral-40 rounded-pill focus-visible-outline focus-border-main-600 text-14 line-height-1">
-                    <button type="button" class="w-28 h-28 bg-main-600 text-white text-16 rounded-circle justify-content-center align-items-center d-flex position-absolute top-50-percent translate-middle-y inset-inline-end-0-px me-4">
-                        <i class="ph-bold ph-magnifying-glass"></i>
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <div class="d-flex align-items-center gap-16">
-            <a href="#" class="px-20 py-10 border-main-600 border rounded-pill text-14 text-main-600 hover-bg-main-600 hover-text-white hover-border-600 d-lg-block d-none line-height-1">Create a New Course</a>
-            <div class="w-36 h-36 border-neutral-50 border rounded-pill justify-content-center align-items-center d-flex text-20 text-neutral-500 hover-bg-main-600  transition-03">
-                <button type="button" class="hover-text-white transition-03">
-                    <i class="ph ph-translate"></i>
-                </button>
-            </div>
-            <div class="position-relative">
-                <div class="w-36 h-36 border-neutral-50 border rounded-pill justify-content-center align-items-center d-flex text-20 text-neutral-500 position-relative">
-                    <div>
-                        <button class="dropdown-toggle w-36 h-36 border-neutral-50 border rounded-pill hover-bg-main-600 hover-text-white transition-03" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="ph ph-bell-simple"></i>
-                        </button>
-                        <ul class="dropdown-menu rounded-12">
-
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center gap-12 px-16 py-12" href="javascript:void(0)">
-                                <div class="d-flex w-100 justify-content-between gap-12">
-                                    <div class="d-flex align-items-center gap-12 ">
-                                        <span class="w-36 h-36">
-                                            <img src="assets/images/thumbs/reviewer-img1.png" alt="">
-                                        </span>
-                                        <div>
-                                            <span class="text-md fw-semibold text-line-1">Ronald Richards</span>
-                                            <p class="text-sm text-line-1 text-neutral-300">You can stitch between artboards</p>
-                                        </div>
-                                    </div>
-                                    <span class="text-sm fw-medium text-neutral-400">23 Mins ago</span>
-                                </div>
-                                </a>
-                            </li>
-
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center gap-12 px-16 py-12" href="javascript:void(0)">
-                                <div class="d-flex w-100 justify-content-between gap-12">
-                                    <div class="d-flex align-items-center gap-12 ">
-                                        <span class="w-36 h-36"><img src="assets/images/thumbs/reviewer-img4.png" alt=""></span>
-                                        <div>
-                                            <span class="text-md fw-semibold text-line-1">Arlene McCoy</span>
-                                            <p class="text-sm text-line-1 text-neutral-300">Invite you to prototyping</p>
-                                        </div>
-                                    </div>
-                                    <span class="text-sm fw-medium text-neutral-400">23 Mins ago</span>
-                                </div>
-                                </a>
-                            </li>
-
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center gap-12 px-16 py-12" href="javascript:void(0)">
-                                <div class="d-flex w-100 justify-content-between gap-12">
-                                    <div class="d-flex align-items-center gap-12 ">
-                                        <span class="w-36 h-36"><img src="assets/images/thumbs/instructor-details-thumb.png" alt=""></span>
-                                        <div>
-                                            <span class="text-md fw-semibold text-line-1">Annette Black</span>
-                                            <p class="text-sm text-line-1 text-neutral-300">Invite you to prototyping</p>
-                                        </div>
-                                    </div>
-                                    <span class="text-sm fw-medium text-neutral-400">23 Mins ago</span>
-                                </div>
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="position-absolute inset-inline-start-22px top--20-percent">
-                        <span class="bg-main-600 text-white w-16 h-16 rounded-circle text-9 d-flex justify-content-center align-items-center">2</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="w-36 h-36 border-neutral-50 border rounded-pill justify-content-center align-items-center d-flex text-20 text-neutral-500 hover-bg-main-600 transition-03">
-                <button type="button" class=" hover-text-white transition-03">
-                    <i class="ph ph-chat-dots"></i>
-                </button>
-            </div>
-
-            <div class="dropdown d-flex align-items-center gap-12">
-                <button class="dropdown-toggle gape-user-avatar-trigger w-36 h-36 border-neutral-50 border rounded-pill" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="${sessionScope['gape.auth.userEmail']}">
-                    <%@ include file="/WEB-INF/fragments/user-avatar-content.jspf" %>
-                </button>
-                <ul class="dropdown-menu rounded-12">
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="${pageContext.request.contextPath}/profile">
-                        <span><i class="ph ph-user-circle"></i></span>
-                        <span>My Profile</span>
-                        </a>
-                    </li>
-                    <li>
-                        <a class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03" href="${pageContext.request.contextPath}/profile">
-                        <span><i class="ph ph-gear"></i></span>
-                        <span>My Profile</span>
-                        </a>
-                    </li>
-                    <li>
-                        <form action="${pageContext.request.contextPath}/auth/logout" method="post" class="m-0">
-                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.logoutCsrfToken']}">
-                            <button type="submit" class="dropdown-item d-flex align-items-center gap-12 hover-text-main-600 transition-03 border-0 bg-transparent w-100 text-start">
-                        <span><i class="ph ph-power"></i></span>
-                        <span>Log Out</span>
-                            </button>
-                        </form>
-                    </li>
-                </ul>
-            </div>
-
-        </div>
-    </div>
-</div>
-<!-- =====message nab end======== -->
+            <%@ include file="/WEB-INF/fragments/dashboard-topbar.jspf" %>
 
             <!-- ============Feedbacks start============ -->
                 <div class="px-24 py-24">

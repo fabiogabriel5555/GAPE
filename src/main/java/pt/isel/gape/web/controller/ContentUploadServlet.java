@@ -1,7 +1,7 @@
 package pt.isel.gape.web.controller;
 
 import java.io.IOException;
-import java.time.Clock;
+import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.UUID;
@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
@@ -35,10 +37,12 @@ import pt.isel.gape.transversal.service.AuditService;
 
 @MultipartConfig(
         fileSizeThreshold = 1024 * 1024,
-        maxFileSize = 2L * 1024L * 1024L * 1024L,
-        maxRequestSize = 2L * 1024L * 1024L * 1024L + 16L * 1024L * 1024L
+        maxFileSize = 250L * 1024L * 1024L,
+        maxRequestSize = 266L * 1024L * 1024L
 )
 public final class ContentUploadServlet extends HttpServlet {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContentUploadServlet.class);
 
     private final SessionManager sessionManager;
     private final ContentItemService contentItemService;
@@ -52,7 +56,7 @@ public final class ContentUploadServlet extends HttpServlet {
         this(
                 new SessionManager(),
                 new ContentItemService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new ContentAssociationService(ConnectionProvider.defaultProvider(), Clock.systemUTC()),
+                new ContentAssociationService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new AssessmentService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new ContentFileService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
                 new PdfUploadService(),
@@ -102,20 +106,21 @@ public final class ContentUploadServlet extends HttpServlet {
             throws ServletException, IOException {
         Optional<SessionUser> sessionUser = sessionManager.getSessionUser(request);
         if (sessionUser.isEmpty()) {
-            auditService.record(null, null, "CONTENT_UPLOAD", "content_item", "new", "unauthorized", request.getRemoteAddr());
+            recordAudit(null, null, "CONTENT_UPLOAD", "content_item", "new", "unauthorized", request);
             writePlainError(response, HttpServletResponse.SC_UNAUTHORIZED, "Authentication is required to upload content.");
             return;
         }
         Optional<AccessProfileType> profileType = sessionUser.get().primaryProfileType();
         if (profileType.isEmpty()) {
-            auditService.record(sessionUser.get().userId(), sessionId(request), "CONTENT_UPLOAD",
-                    "content_item", "new", "forbidden", request.getRemoteAddr());
+            recordAudit(sessionUser.get().userId(), sessionId(request), "CONTENT_UPLOAD",
+                    "content_item", "new", "forbidden", request);
             writePlainError(response, HttpServletResponse.SC_FORBIDDEN, "A valid profile is required to upload content.");
             return;
         }
 
         Long sessionId = sessionId(request);
         Long pendingFileContentItemId = null;
+        UploadedContentFile pendingUploadedFile = null;
         try {
             ContentAssociationCommand associationCommand = associationCommand(request);
             Long repositorySourceContentItemId = optionalLongParameter(request, "repositorySourceContentItemId");
@@ -152,9 +157,9 @@ public final class ContentUploadServlet extends HttpServlet {
                     response.setStatus(HttpServletResponse.SC_CREATED);
                     response.setContentType("text/plain;charset=UTF-8");
                     response.getWriter().write(Long.toString(clonedAssessment.id()));
-                    auditService.record(sessionUser.get().userId(), sessionId, "CONTENT_ASSESSMENT_REUSE",
+                    recordAudit(sessionUser.get().userId(), sessionId, "CONTENT_ASSESSMENT_REUSE",
                             "assessment", sourceAssessmentId + ":" + clonedAssessment.id(),
-                            "success", request.getRemoteAddr());
+                            "success", request);
                     return;
                 }
                 ContentItem contentItem = contentItemService.createContentItem(
@@ -196,9 +201,9 @@ public final class ContentUploadServlet extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_CREATED);
                 response.setContentType("text/plain;charset=UTF-8");
                 response.getWriter().write(Long.toString(contentItem.id()));
-                auditService.record(sessionUser.get().userId(), sessionId, "CONTENT_FILE_REUSE",
+                recordAudit(sessionUser.get().userId(), sessionId, "CONTENT_FILE_REUSE",
                         "content_item", contentItem.id() + ":" + repositorySourceContentItemId,
-                        "success", request.getRemoteAddr());
+                        "success", request);
                 return;
             }
 
@@ -235,6 +240,7 @@ public final class ContentUploadServlet extends HttpServlet {
                         sessionUser.get().userId()
                 );
                 uploadedFile = pdfUploadService.saveContentFile(format, filePart, storageContext);
+                pendingUploadedFile = uploadedFile;
                 contentItem = contentItemService.replaceContentSource(
                         sessionUser.get().userId(),
                         sessionId,
@@ -244,7 +250,6 @@ public final class ContentUploadServlet extends HttpServlet {
                         uploadedFile.relativePath(),
                         request.getRemoteAddr()
                 );
-                pendingFileContentItemId = null;
                 recordContentFileMetadata(contentItem.id(), uploadedFile, sessionUser.get(), sessionId, request);
             } else if (format == ContentFormat.URL || format == ContentFormat.EMBED) {
                 source = requiredParameter(request, "source", "Content source is required");
@@ -270,6 +275,7 @@ public final class ContentUploadServlet extends HttpServlet {
                         ),
                         request.getRemoteAddr()
                 );
+                pendingFileContentItemId = contentItem.id();
             }
 
             if (associationCommand != null) {
@@ -286,32 +292,39 @@ public final class ContentUploadServlet extends HttpServlet {
                 );
             }
 
+            pendingFileContentItemId = null;
+            pendingUploadedFile = null;
+
             response.setStatus(HttpServletResponse.SC_CREATED);
             response.setContentType("text/plain;charset=UTF-8");
             response.getWriter().write(Long.toString(contentItem.id()));
-            auditService.record(sessionUser.get().userId(), sessionId, "CONTENT_UPLOAD",
-                    "content_item", Long.toString(contentItem.id()), "success", request.getRemoteAddr());
+            recordAudit(sessionUser.get().userId(), sessionId, "CONTENT_UPLOAD",
+                    "content_item", Long.toString(contentItem.id()), "success", request);
         } catch (IllegalArgumentException exception) {
-            cleanupPendingContentItem(pendingFileContentItemId, sessionUser.get(), sessionId, profileType.get(), request);
-            auditService.record(sessionUser.get().userId(), sessionId, "CONTENT_UPLOAD",
-                    "content_item", "new", "failure", request.getRemoteAddr());
+            cleanupPendingContentItem(pendingFileContentItemId, pendingUploadedFile,
+                    sessionUser.get(), sessionId, profileType.get(), request);
+            recordAudit(sessionUser.get().userId(), sessionId, "CONTENT_UPLOAD",
+                    "content_item", "new", "failure", request);
             writePlainError(response, HttpServletResponse.SC_BAD_REQUEST, exception.getMessage());
         } catch (SecurityException exception) {
-            cleanupPendingContentItem(pendingFileContentItemId, sessionUser.get(), sessionId, profileType.get(), request);
-            auditService.record(sessionUser.get().userId(), sessionId, "CONTENT_UPLOAD",
-                    "content_item", "new", "denied", request.getRemoteAddr());
+            cleanupPendingContentItem(pendingFileContentItemId, pendingUploadedFile,
+                    sessionUser.get(), sessionId, profileType.get(), request);
+            recordAudit(sessionUser.get().userId(), sessionId, "CONTENT_UPLOAD",
+                    "content_item", "new", "denied", request);
             writePlainError(response, HttpServletResponse.SC_FORBIDDEN, exception.getMessage());
         } catch (IOException | ServletException exception) {
-            cleanupPendingContentItem(pendingFileContentItemId, sessionUser.get(), sessionId, profileType.get(), request);
-            auditService.record(sessionUser.get().userId(), sessionId, "CONTENT_UPLOAD",
-                    "content_item", "new", "failure", request.getRemoteAddr());
+            cleanupPendingContentItem(pendingFileContentItemId, pendingUploadedFile,
+                    sessionUser.get(), sessionId, profileType.get(), request);
+            recordAudit(sessionUser.get().userId(), sessionId, "CONTENT_UPLOAD",
+                    "content_item", "new", "failure", request);
             getServletContext().log("Content file upload failed", exception);
             writePlainError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     uploadProcessingMessage(exception));
         } catch (RuntimeException exception) {
-            cleanupPendingContentItem(pendingFileContentItemId, sessionUser.get(), sessionId, profileType.get(), request);
-            auditService.record(sessionUser.get().userId(), sessionId, "CONTENT_UPLOAD",
-                    "content_item", "new", "failure", request.getRemoteAddr());
+            cleanupPendingContentItem(pendingFileContentItemId, pendingUploadedFile,
+                    sessionUser.get(), sessionId, profileType.get(), request);
+            recordAudit(sessionUser.get().userId(), sessionId, "CONTENT_UPLOAD",
+                    "content_item", "new", "failure", request);
             getServletContext().log("Content upload could not be saved", exception);
             writePlainError(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "Content could not be saved. Please try again.");
@@ -320,25 +333,46 @@ public final class ContentUploadServlet extends HttpServlet {
 
     private void cleanupPendingContentItem(
             Long contentItemId,
+            UploadedContentFile uploadedFile,
             SessionUser sessionUser,
             Long sessionId,
             AccessProfileType profileType,
             HttpServletRequest request
     ) {
-        if (contentItemId == null) {
-            return;
+        boolean databaseDiscarded = contentItemId == null;
+        if (contentItemId != null) {
+            try {
+                contentItemService.discardPendingDetachedContentItem(
+                        sessionUser.userId(),
+                        sessionId,
+                        profileType,
+                        contentItemId,
+                        request.getRemoteAddr()
+                );
+                databaseDiscarded = true;
+            } catch (RuntimeException cleanupException) {
+                LOGGER.error("Pending content item cleanup failed; stored files were preserved for content item {}",
+                        contentItemId, cleanupException);
+            }
         }
-        try {
-            contentItemService.discardPendingDetachedContentItem(
-                    sessionUser.userId(),
-                    sessionId,
-                    profileType,
-                    contentItemId,
-                    request.getRemoteAddr()
-            );
-        } catch (RuntimeException cleanupException) {
-            getServletContext().log("Pending content item cleanup failed: " + contentItemId, cleanupException);
+        if (uploadedFile != null && databaseDiscarded) {
+            try {
+                pdfUploadService.deleteStoredContentFiles(uploadArtifactPaths(uploadedFile));
+            } catch (IOException cleanupException) {
+                LOGGER.error("Pending content file cleanup failed for {}", uploadedFile.relativePath(), cleanupException);
+            }
         }
+    }
+
+    private static List<String> uploadArtifactPaths(UploadedContentFile uploadedFile) {
+        return java.util.stream.Stream.of(
+                        uploadedFile.relativePath(),
+                        uploadedFile.originalRelativePath(),
+                        uploadedFile.thumbnailRelativePath()
+                )
+                .filter(path -> path != null && !path.isBlank())
+                .distinct()
+                .toList();
     }
 
     private void recordContentFileMetadata(
@@ -351,8 +385,33 @@ public final class ContentUploadServlet extends HttpServlet {
         try {
             contentFileService.recordReadyFile(contentItemId, uploadedFile);
         } catch (RuntimeException exception) {
-            auditService.record(sessionUser.userId(), sessionId, "CONTENT_FILE_METADATA",
-                    "content_item", Long.toString(contentItemId), "failure", request.getRemoteAddr());
+            recordAudit(sessionUser.userId(), sessionId, "CONTENT_FILE_METADATA",
+                    "content_item", Long.toString(contentItemId), "failure", request);
+            throw exception;
+        }
+    }
+
+    private void recordAudit(
+            Long actorUserId,
+            Long sessionId,
+            String operation,
+            String entity,
+            String identifier,
+            String outcome,
+            HttpServletRequest request
+    ) {
+        try {
+            auditService.record(
+                    actorUserId,
+                    sessionId,
+                    operation,
+                    entity,
+                    identifier,
+                    outcome,
+                    request.getRemoteAddr()
+            );
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Could not record {} audit for {} {}", operation, entity, identifier, exception);
         }
     }
 

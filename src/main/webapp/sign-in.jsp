@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -504,6 +505,7 @@
                             <div class="alert alert-success rounded-8 mb-24" role="alert">Session closed successfully.</div>
                         </c:if>
                         <form action="auth/login" method="post" novalidate>
+                            <input type="hidden" name="csrfToken" value="${fn:escapeXml(sessionScope['gape.auth.csrfToken'])}">
                             <div class="mb-24">
                                 <label for="email" class="fw-medium text-lg text-neutral-500 mb-16">Enter Your Email ID</label>
                                 <input type="email" class="common-input rounded-pill" id="email" name="email" autocomplete="username" placeholder="Enter Your Email..." required>

@@ -71,7 +71,7 @@
                 </div>
                 <div class="gape-student-course-metric">
                     <span class="text-13 text-neutral-500 d-block mb-8">Subjects</span>
-                    <strong class="text-16 text-neutral-800">${fn:length(courseSubjects)} in structure | ${activeSubjectCount} active</strong>
+                    <strong class="text-16 text-neutral-800">${curricularSubjectCount} in the curricular structure</strong>
                 </div>
                 <div class="gape-student-course-metric">
                     <span class="text-13 text-neutral-500 d-block mb-8">Class groups</span>
@@ -107,8 +107,7 @@
             </c:if>
             <div class="col-xxl-3 col-xl-4 col-md-6">
                 <article id="course-subject-${subject.subjectId}"
-                         class="gape-student-card gape-student-structure-card h-100 overflow-hidden"
-                         data-gape-enrollment-target="subject-${course.id}-${subject.subjectId}">
+                         class="gape-student-card gape-student-structure-card h-100 overflow-hidden">
                     <div class="gape-student-structure-card__thumb m-10 mb-0">
                         <c:choose>
                             <c:when test="${subject.subject.hasPhoto}">
@@ -127,11 +126,7 @@
                     <div class="gape-student-structure-card__body px-16 py-16">
                         <div class="d-flex align-items-start justify-content-between gap-12 mb-12">
                             <span class="gape-student-icon gape-student-soft-green text-20"><i class="ph ph-book-open-text"></i></span>
-                            <span class="${subject.enrollmentBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12"
-                                  data-gape-enrollment-badge
-                                  data-gape-enrollment-badge-fixed="px-12 py-7 border-neutral-30 border rounded-pill text-12">
-                                <c:out value="${subject.enrollmentStateLabel}"/>
-                            </span>
+                            <span class="bg-neutral-20 text-neutral-600 px-12 py-7 border-neutral-30 border rounded-pill text-12"><c:out value="${subject.mandatoryLabel}"/></span>
                         </div>
                         <h4 class="text-16 fw-semibold text-neutral-800 mb-6">
                             <a href="${pageContext.request.contextPath}/student/subjects/${course.id}/${subject.subjectId}" class="text-neutral-800 hover-text-main-600">
@@ -145,25 +140,10 @@
                             <span class="bg-neutral-20 text-neutral-600 px-9 py-5 rounded-8 text-12"><c:out value="${subject.curricularPositionLabel}"/></span>
                             <span class="bg-neutral-20 text-neutral-600 px-9 py-5 rounded-8 text-12"><c:out value="${subject.mandatoryLabel}"/></span>
                         </div>
-                        <div class="gape-student-card-actions"
-                             data-gape-enrollment-actions
-                             data-gape-enrollment-actions-kind="subject-open-compact">
-                            <c:choose>
-                                <c:when test="${subject.activeEnrollment}">
-                                    <a href="${pageContext.request.contextPath}/student/subjects/${course.id}/${subject.subjectId}" class="gape-student-card-icon-button" aria-label="Open subject" title="Open subject">
-                                        <i class="ph ph-eye"></i>
-                                    </a>
-                                </c:when>
-                                <c:when test="${course.activeEnrollment and not subject.pendingEnrollment}">
-                                    <form action="${pageContext.request.contextPath}/student/enrollments/courses/${course.id}/subjects/${subject.subjectId}" method="post" class="m-0">
-                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                        <input type="hidden" name="returnTo" value="/student/courses/${course.id}">
-                                        <button type="submit" class="gape-student-card-icon-button gape-student-card-icon-button--request" aria-label="Request enrollment" title="Request enrollment">
-                                            <i class="ph ph-user-plus"></i>
-                                        </button>
-                                    </form>
-                                </c:when>
-                            </c:choose>
+                        <div class="gape-student-card-actions">
+                            <a href="${pageContext.request.contextPath}/student/subjects/${course.id}/${subject.subjectId}" class="gape-student-card-icon-button" aria-label="Open subject" title="Open subject">
+                                <i class="ph ph-eye"></i>
+                            </a>
                         </div>
                     </div>
                 </article>

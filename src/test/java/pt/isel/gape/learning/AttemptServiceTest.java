@@ -263,6 +263,7 @@ class AttemptServiceTest {
         return new AssessmentCreateCommand(
                 null,
                 60L,
+                mode == AssessmentMode.ONSITE ? "SALA-A1" : null,
                 title,
                 null,
                 AssessmentType.FORM,

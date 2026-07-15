@@ -1,0 +1,131 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<c:choose>
+    <c:when test="${learningManagementKind eq 'lessons'}">
+        <c:forEach var="lesson" items="${lessons}" varStatus="lessonLoop">
+            <c:set var="classGroup" value="${classGroupById[lesson.classGroupId]}"/>
+            <c:set var="canManageLessonRow" value="${canManageClassGroupById[lesson.classGroupId]}"/>
+            <c:choose>
+                <c:when test="${not empty classGroup}">
+                    <c:set var="learningGroupTitle" value="${classGroup.code} — ${classGroup.occurrenceLabel} — ${classGroup.subjectName}"/>
+                    <c:set var="learningGroupContext" value="${classGroup.contextGroupLabel}"/>
+                </c:when>
+                <c:otherwise>
+                    <c:set var="learningGroupTitle" value="No class group — No course occurrence — No subject"/>
+                    <c:set var="learningGroupContext" value="Lesson without an available class group context"/>
+                </c:otherwise>
+            </c:choose>
+            <article class="gape-learning-management-node border border-neutral-30 rounded-8 px-16 py-12 bg-white"
+                     data-learning-management-row
+                     data-learning-management-completed="${lesson.completed}"
+                     data-sort-index="${learningManagementOffset + lessonLoop.index}"
+                     data-sort-name="${fn:escapeXml(lesson.title)}"
+                     data-sort-date="${lesson.startsAtRaw}"
+                     data-sort-status="${fn:escapeXml(lesson.stateLabel)}"
+                     data-group-organization-id="${not empty classGroup ? classGroup.course.organizationId : ''}"
+                     data-group-organization="${not empty classGroup ? fn:escapeXml(classGroup.course.organizationName) : 'Unknown organization'}"
+                     data-group-course-id="${not empty classGroup ? classGroup.courseId : ''}"
+                     data-group-course="${not empty classGroup ? fn:escapeXml(classGroup.courseName) : 'No course'}"
+                     data-group-subject-id="${not empty classGroup ? classGroup.subjectId : ''}"
+                     data-group-subject="${not empty classGroup ? fn:escapeXml(classGroup.subjectName) : 'No subject'}"
+                     data-group-class-group-id="${lesson.classGroupId}"
+                     data-group-class-group="${not empty classGroup ? fn:escapeXml(classGroup.code) : 'No class group'}"
+                     data-group-class-group-title="${fn:escapeXml(learningGroupTitle)}"
+                     data-group-class-group-context="${fn:escapeXml(learningGroupContext)}">
+                <div class="gape-learning-management-row">
+                    <div class="d-flex align-items-start gap-12 min-w-0">
+                        <span class="${lesson.typeBadgeClass} gape-learning-management-icon text-20" aria-hidden="true"><i class="${lesson.typeIconClass}"></i></span>
+                        <div class="min-w-0">
+                            <a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}"
+                               class="fw-medium text-14 text-neutral-700 hover-text-main-600"
+                               data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}"
+                               data-lesson-modal-title="Lesson Details"><c:out value="${lesson.title}"/></a>
+                            <span class="gape-node-meta text-12"><span><c:out value="${lesson.typeLabel}"/></span><span><c:out value="${lesson.durationLabel}"/></span></span>
+                        </div>
+                    </div>
+                    <div class="text-13 text-neutral-500" data-gape-datetime-display><c:out value="${lesson.startsAt}"/><span class="d-block text-12 text-neutral-500">to <c:out value="${lesson.endsAt}"/></span></div>
+                    <div class="text-13 text-neutral-500">
+                        <c:choose>
+                            <c:when test="${lesson.hasRoom}"><span class="bg-main-two-50 text-main-two-600 px-12 py-7 rounded-pill text-12"><i class="ph ph-door me-6"></i><c:out value="${lesson.physicalRoomCode}"/></span></c:when>
+                            <c:when test="${lesson.hasMeetingLink}"><span class="bg-main-50 text-main-600 px-12 py-7 rounded-pill text-12"><i class="ph ph-video-camera me-6"></i>Meeting link</span></c:when>
+                            <c:otherwise>-</c:otherwise>
+                        </c:choose>
+                    </div>
+                    <div><span class="${lesson.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13"><c:out value="${lesson.stateLabel}"/></span></div>
+                    <div class="d-flex align-items-center gap-10 flex-wrap justify-content-end">
+                        <a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail Lesson" aria-label="Detail Lesson" data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}" data-lesson-modal-title="Lesson Details"><i class="ph ph-eye" aria-hidden="true"></i></a>
+                        <c:if test="${canManageLessonRow}"><a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/edit?returnTo=${currentReturnToParam}" class="text-20 text-neutral-500 hover-text-main-600" title="Edit Lesson" aria-label="Edit Lesson" data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/edit?returnTo=${currentReturnToParam}" data-lesson-modal-title="Edit Lesson"><i class="ph ph-pencil-simple-line" aria-hidden="true"></i></a><form action="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/delete" method="post" class="m-0"><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><input type="hidden" name="returnTo" value="/learning/lessons"><button type="submit" class="text-20 text-neutral-500 hover-text-danger-600 border-0 bg-transparent p-0" title="Delete Lesson" aria-label="Delete Lesson"><i class="ph ph-trash" aria-hidden="true"></i></button></form></c:if>
+                    </div>
+                </div>
+            </article>
+        </c:forEach>
+        <c:if test="${empty lessons and learningManagementCompletedCount eq 0}"><div class="border border-neutral-30 rounded-8 px-20 py-28 text-center text-14 text-neutral-500 bg-white">No lessons available in your management context.</div></c:if>
+    </c:when>
+    <c:otherwise>
+        <c:forEach var="assessment" items="${assessments}" varStatus="assessmentLoop">
+            <c:set var="classGroup" value="${classGroupById[assessment.classGroupId]}"/>
+            <c:set var="assessmentPendingEnrollmentCount" value="${pendingAssessmentEnrollmentCountById[assessment.id]}"/>
+            <c:set var="assessmentPendingCorrectionCount" value="${pendingAssessmentCorrectionCountById[assessment.id]}"/>
+            <c:set var="assessmentPendingEventCount" value="${assessmentPendingEnrollmentCount + assessmentPendingCorrectionCount}"/>
+            <c:choose>
+                <c:when test="${not empty classGroup}">
+                    <c:set var="learningGroupTitle" value="${classGroup.code} — ${classGroup.occurrenceLabel} — ${classGroup.subjectName}"/>
+                    <c:set var="learningGroupContext" value="${classGroup.contextGroupLabel}"/>
+                </c:when>
+                <c:otherwise>
+                    <c:set var="learningGroupTitle" value="No class group — No course occurrence — ${assessment.subjectName}"/>
+                    <c:set var="learningGroupContext" value="${assessment.subjectName}"/>
+                </c:otherwise>
+            </c:choose>
+            <article class="gape-learning-management-node border border-neutral-30 rounded-8 px-16 py-12 bg-white"
+                     data-learning-management-row
+                     data-learning-management-completed="${assessment.completed}"
+                     data-learning-management-event-count="${assessmentPendingEventCount}"
+                     data-sort-index="${learningManagementOffset + assessmentLoop.index}"
+                     data-sort-name="${fn:escapeXml(assessment.title)}"
+                     data-sort-date="${assessment.availableFromRaw}"
+                     data-sort-status="${fn:escapeXml(assessment.stateLabel)}"
+                     data-group-organization-id="${not empty classGroup ? classGroup.course.organizationId : ''}"
+                     data-group-organization="${not empty classGroup ? fn:escapeXml(classGroup.course.organizationName) : 'Unknown organization'}"
+                     data-group-course-id="${not empty classGroup ? classGroup.courseId : ''}"
+                     data-group-course="${not empty classGroup ? fn:escapeXml(classGroup.courseName) : 'No course'}"
+                     data-group-subject-id="${not empty classGroup ? classGroup.subjectId : assessment.subjectId}"
+                     data-group-subject="${not empty classGroup ? fn:escapeXml(classGroup.subjectName) : fn:escapeXml(assessment.subjectName)}"
+                     data-group-class-group-id="${not empty classGroup ? classGroup.id : assessment.classGroupId}"
+                     data-group-class-group="${not empty classGroup ? fn:escapeXml(classGroup.code) : 'No class group'}"
+                     data-group-class-group-title="${fn:escapeXml(learningGroupTitle)}"
+                     data-group-class-group-context="${fn:escapeXml(learningGroupContext)}">
+                <div class="gape-learning-management-row">
+                    <div class="d-flex align-items-start gap-12 min-w-0">
+                        <span class="gape-learning-management-icon-wrap">
+                            <c:if test="${assessmentPendingEventCount > 0}"><span class="gape-learning-pending-corner-badge" title="${assessmentPendingEnrollmentCount} pending enrollment request(s) and ${assessmentPendingCorrectionCount} pending correction(s)"><c:out value="${assessmentPendingEventCount}"/></span></c:if>
+                            <span class="${assessment.softClass} gape-learning-management-icon text-20" aria-hidden="true"><i class="${assessment.iconClass}"></i></span>
+                        </span>
+                        <div class="min-w-0">
+                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600"><c:out value="${assessment.title}"/></a>
+                            <span class="gape-node-meta text-12"><span><c:out value="${assessment.typeLabel}"/></span><span><c:out value="${assessment.modeLabel}"/></span><span><c:out value="${assessment.correctionModeLabel}"/></span></span>
+                        </div>
+                    </div>
+                    <div class="text-13 text-neutral-500" data-gape-datetime-display><c:out value="${assessment.availabilityLabel}"/></div>
+                    <div class="text-13 text-neutral-500"><span class="d-block"><c:out value="${assessment.questionCountLabel}"/></span><span class="d-block text-12 text-neutral-500"><c:out value="${assessment.attemptCountLabel}"/></span></div>
+                    <div><span class="${assessment.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13"><c:out value="${assessment.stateLabel}"/></span></div>
+                    <div class="d-flex align-items-center gap-10 flex-wrap justify-content-end">
+                        <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail Assessment" aria-label="Detail Assessment"><i class="ph ph-eye" aria-hidden="true"></i></a>
+                        <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit" class="text-20 text-neutral-500 hover-text-main-600" title="Edit Assessment" aria-label="Edit Assessment"><i class="ph ph-pencil-simple-line" aria-hidden="true"></i></a>
+                        <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/pdf" class="text-20 text-neutral-500 hover-text-main-600" title="Download Assessment" aria-label="Download Assessment"><i class="ph ph-download-simple" aria-hidden="true"></i></a>
+                        <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/delete" method="post" class="m-0"><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><input type="hidden" name="returnTo" value="/learning/lessons#assessments"><button type="submit" class="text-20 text-neutral-500 hover-text-danger-600 border-0 bg-transparent p-0" title="Delete Assessment" aria-label="Delete Assessment"><i class="ph ph-trash" aria-hidden="true"></i></button></form>
+                    </div>
+                </div>
+            </article>
+        </c:forEach>
+        <c:if test="${empty assessments and learningManagementCompletedCount eq 0}"><div class="border border-neutral-30 rounded-8 px-20 py-28 text-center text-14 text-neutral-500 bg-white">No assessments available in your management context.</div></c:if>
+    </c:otherwise>
+</c:choose>
+<span hidden data-learning-management-meta
+      data-current-page="${learningManagementCurrentPage}"
+      data-load-all="${learningManagementLoadAll}"
+      data-next-offset="${learningManagementNextOffset}"
+      data-has-more="${learningManagementHasMore}"
+      data-completed-count="${learningManagementCompletedCount}"
+      data-bucket="${learningManagementBucket}"></span>

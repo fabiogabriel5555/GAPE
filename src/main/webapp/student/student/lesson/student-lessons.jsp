@@ -60,7 +60,7 @@
                                         <h4 class="text-16 fw-semibold text-neutral-800 mb-6"><c:out value="${lesson.title}"/></h4>
                                         <p class="text-12 text-neutral-500 mb-12"><c:out value="${lesson.description}"/></p>
                                         <div class="gape-student-class-group-card__meta gape-student-class-group-card__meta--wide mb-14">
-                                            <span>Date: <c:out value="${lesson.dateRangeLabel}"/></span>
+                                            <span data-gape-datetime-display>Date: <c:out value="${lesson.dateRangeLabel}"/></span>
                                             <span>Duration: <c:out value="${lesson.durationLabel}"/></span>
                                             <c:if test="${not empty classGroup}">
                                                 <span title="<c:out value='${classGroup.contextTitle}'/>">

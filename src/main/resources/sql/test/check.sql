@@ -9,30 +9,30 @@ INSERT INTO user_account (
 
 -- Integrate_Subject exige curricular_year e term em conjunto
 INSERT INTO integrate_subject (
-    id_course, id_subject, curricular_year, term, mandatory, state
+    id_course, id_subject, curricular_year, term, mandatory
 ) VALUES
-    (31, 40, 1, NULL, 1, 'active');
+    (31, 40, 1, NULL, 1);
 
 -- min_students cannot exceed max_students when both are set
 INSERT INTO class_group (
-    id_class_group, id_subject, id_course, cod_class_group, modality, state,
+    id_class_group, id_subject, id_course, id_course_occurrence, id_course_occurrence_period, cod_class_group, modality, state,
     min_students, max_students, starts_at, ends_at, shift
 ) VALUES
-    (9026, 40, 30, 'PRJ-RANGE', 'onsite', 'active', 10, 5, '2026-02-01', '2026-06-30', 'evening');
+    (9026, 40, 30, 300, 3001, 'PRJ-RANGE', 'onsite', 'active', 10, 5, '2026-02-01', '2026-06-30', 'evening');
 
 -- ends_at cannot be earlier than starts_at when both are set
 INSERT INTO class_group (
-    id_class_group, id_subject, id_course, cod_class_group, modality, state,
+    id_class_group, id_subject, id_course, id_course_occurrence, id_course_occurrence_period, cod_class_group, modality, state,
     min_students, max_students, starts_at, ends_at, shift
 ) VALUES
-    (9027, 40, 30, 'PRJ-DATES', 'onsite', 'active', 5, 20, '2026-06-30', '2026-02-01', 'evening');
+    (9027, 40, 30, 300, 3001, 'PRJ-DATES', 'onsite', 'active', 5, 20, '2026-06-30', '2026-02-01', 'evening');
 
--- Scheduled block requires available_from
+-- Content_Block accepts only supported states
 INSERT INTO content_block (
     id_content_block, id_class_group, cod_content_block, name, description, order_no,
-    access_mode, state, available_from, available_until
+    state
 ) VALUES
-    (9028, 50, 'BLK-SCHED', 'Block without date', NULL, 2, 'scheduled', 'active', NULL, NULL);
+    (9028, 50, 'BLK-BAD-STATE', 'Block with invalid state', NULL, 2, 'scheduled');
 
 -- capacity > 0 quando preenchido
 INSERT INTO physical_room (
@@ -60,10 +60,10 @@ INSERT INTO question (
 
 -- Invalid Assessment mode
 INSERT INTO assessment (
-    id_assessment, id_subject, id_content_block, title, description, type, mode, correction_mode,
+    id_assessment, id_subject, id_content_block, cod_physical_room, title, description, type, mode, correction_mode,
     max_grade, passing_grade, attempts_limit, state, available_from, available_until
 ) VALUES
-    (9036, 40, 60, 'Invalid Assessment Mode', NULL, 'form', 'hybrid', 'automatic',
+    (9036, 40, 60, NULL, 'Invalid Assessment Mode', NULL, 'form', 'hybrid', 'automatic',
      20.00, 10.00, 1, 'active', '2026-03-01 00:00:00', '2026-03-10 00:00:00');
 
 -- Invalid state in Attempt
@@ -95,9 +95,9 @@ INSERT INTO absence_justification (
 
 -- Grade_Sheet with invalid state
 INSERT INTO grade_sheet (
-    id_grade_sheet, id_subject, title, type, released_at, state
+    id_grade_sheet, id_subject, id_course_occurrence, title, type, released_at, state
 ) VALUES
-    (9036, 40, 'Invalid Grade Sheet', 'partial', NULL, 'active');
+    (9036, 40, 300, 'Invalid Grade Sheet', 'partial', NULL, 'active');
 
 -- weight tem de estar entre 0 e 100
 INSERT INTO based_on_assessment (id_grade_sheet, id_assessment, weight) VALUES
@@ -105,9 +105,25 @@ INSERT INTO based_on_assessment (id_grade_sheet, id_assessment, weight) VALUES
 
 -- Certificate type must be valid
 INSERT INTO certificate (
-    id_certificate, id_course, id_user_student, title, notes, type, template, validation_code, issued_at, final_grade
+    id_certificate, id_course, id_course_occurrence, id_user_student, title, notes, type, template, issued_at, final_grade
 ) VALUES
-    (9037, 30, 4, 'Invalid Certificate', NULL, 'invalid', NULL, NULL, NULL, NULL);
+    (9037, 30, 300, 4, 'Invalid Certificate', NULL, 'invalid', NULL, NULL, NULL);
+
+-- Issued Certificate requires validation code, issued_at and final_grade
+INSERT INTO certificate (
+    id_certificate, id_course, id_course_occurrence, id_user_student, title, notes, type, template,
+    validation_code, issued_at, state, final_grade
+) VALUES
+    (9040, 30, 300, 5, 'Issued Certificate Without Code', NULL, 'completion', NULL,
+     NULL, '2026-07-01 10:00:00', 'issued', 15.00);
+
+-- Draft Certificate cannot expose issued fields
+INSERT INTO certificate (
+    id_certificate, id_course, id_course_occurrence, id_user_student, title, notes, type, template,
+    validation_code, issued_at, state, final_grade
+) VALUES
+    (9041, 31, 310, 5, 'Draft Certificate With Code', NULL, 'completion', NULL,
+     'CERT-INVALID-DRAFT', NULL, 'draft', NULL);
 
 -- Message scheduled exige scheduled_at
 INSERT INTO message (
@@ -124,9 +140,3 @@ INSERT INTO message (
 ) VALUES
     (9039, 190, 3, NULL, NULL, 'Message with Attachment', 'Body', 'attachment', 'normal', NULL,
      '2026-03-01 10:00:00', NULL, NULL, '2026-03-01 10:05:00', 'sent');
-
--- Invalid delivery_mode in Receive_Message
-INSERT INTO receive_message (
-    id_user, id_message, delivered_at, read_at, delivery_mode, state
-) VALUES
-    (4, 222, '2026-03-01 10:01:00', NULL, 'in_app', 'delivered');

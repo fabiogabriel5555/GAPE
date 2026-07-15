@@ -18,8 +18,8 @@
     </div>
     <div class="col-md-4">
         <div class="gape-student-stat-card h-100">
-            <span class="text-14 text-neutral-500">Subject records</span>
-            <h3 class="text-32 fw-semibold text-main-600 mb-0">${fn:length(subjectEnrollments)}</h3>
+            <span class="text-14 text-neutral-500">Curricular subjects</span>
+            <h3 class="text-32 fw-semibold text-main-600 mb-0">${curricularSubjectCount}</h3>
         </div>
     </div>
     <div class="col-md-4">

@@ -24,10 +24,7 @@ import pt.isel.gape.access.model.UserState;
 import pt.isel.gape.access.service.UserService;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
-import pt.isel.gape.learning.dao.ClassGroupDAO;
-import pt.isel.gape.learning.dao.CourseDAO;
-import pt.isel.gape.learning.dao.CourseSubjectDAO;
-import pt.isel.gape.learning.dao.SubjectDAO;
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.Subject;
@@ -49,6 +46,7 @@ import pt.isel.gape.structure.model.OrganizationType;
 import pt.isel.gape.structure.model.OrganizationUpdateCommand;
 import pt.isel.gape.structure.service.OrganicUnitService;
 import pt.isel.gape.structure.service.OrganizationService;
+import pt.isel.gape.transversal.service.ApplicationReadService;
 import pt.isel.gape.web.media.ProfilePhotoStorage;
 import pt.isel.gape.web.view.AdministratorOptionView;
 import pt.isel.gape.web.view.OrganicUnitAdministratorView;
@@ -75,10 +73,10 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
     private final OrganicUnitService organicUnitService;
     private final UserService userService;
     private final ProfilePhotoStorage photoStorage;
-    private final CourseDAO courseDAO;
-    private final SubjectDAO subjectDAO;
-    private final CourseSubjectDAO courseSubjectDAO;
-    private final ClassGroupDAO classGroupDAO;
+    private final ApplicationReadService.Courses courseDAO;
+    private final ApplicationReadService.Subjects subjectDAO;
+    private final ApplicationReadService.CourseSubjects courseSubjectDAO;
+    private final ApplicationReadService.ClassGroups classGroupDAO;
     private final CourseService courseService;
     private final SubjectService subjectService;
     private final CourseSubjectService courseSubjectService;
@@ -86,59 +84,30 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
     private final ClassGroupActivityViewSupport activityViewSupport;
 
     public OrganizationManagementServlet() {
+        this(ConnectionProvider.defaultProvider(), ApplicationClock.system());
+    }
+
+    private OrganizationManagementServlet(ConnectionProvider connectionProvider, java.time.Clock clock) {
         this(
-                new OrganizationService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new OrganicUnitService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new UserService(ConnectionProvider.defaultProvider()),
+                new ApplicationReadService(connectionProvider),
+                new OrganizationService(connectionProvider, clock),
+                new OrganicUnitService(connectionProvider, clock),
+                new UserService(connectionProvider),
                 new ProfilePhotoStorage(),
-                new CourseDAO(ConnectionProvider.defaultProvider()),
-                new SubjectDAO(ConnectionProvider.defaultProvider()),
-                new CourseSubjectDAO(ConnectionProvider.defaultProvider()),
-                new ClassGroupDAO(ConnectionProvider.defaultProvider()),
-                new CourseService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new SubjectService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new CourseSubjectService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new ClassGroupService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new ClassGroupActivityViewSupport(ConnectionProvider.defaultProvider(), ApplicationClock.system())
+                new CourseService(connectionProvider, clock),
+                new SubjectService(connectionProvider, clock),
+                new CourseSubjectService(connectionProvider, clock),
+                new ClassGroupService(connectionProvider, clock),
+                new ClassGroupActivityViewSupport(connectionProvider, clock)
         );
     }
 
     OrganizationManagementServlet(
+            ApplicationReadService readService,
             OrganizationService organizationService,
             OrganicUnitService organicUnitService,
             UserService userService,
             ProfilePhotoStorage photoStorage,
-            CourseDAO courseDAO,
-            SubjectDAO subjectDAO,
-            CourseSubjectDAO courseSubjectDAO,
-            ClassGroupDAO classGroupDAO
-    ) {
-        this(
-                organizationService,
-                organicUnitService,
-                userService,
-                photoStorage,
-                courseDAO,
-                subjectDAO,
-                courseSubjectDAO,
-                classGroupDAO,
-                new CourseService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new SubjectService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new CourseSubjectService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new ClassGroupService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                new ClassGroupActivityViewSupport(ConnectionProvider.defaultProvider(), ApplicationClock.system())
-        );
-    }
-
-    OrganizationManagementServlet(
-            OrganizationService organizationService,
-            OrganicUnitService organicUnitService,
-            UserService userService,
-            ProfilePhotoStorage photoStorage,
-            CourseDAO courseDAO,
-            SubjectDAO subjectDAO,
-            CourseSubjectDAO courseSubjectDAO,
-            ClassGroupDAO classGroupDAO,
             CourseService courseService,
             SubjectService subjectService,
             CourseSubjectService courseSubjectService,
@@ -149,10 +118,10 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         this.organicUnitService = organicUnitService;
         this.userService = userService;
         this.photoStorage = photoStorage;
-        this.courseDAO = courseDAO;
-        this.subjectDAO = subjectDAO;
-        this.courseSubjectDAO = courseSubjectDAO;
-        this.classGroupDAO = classGroupDAO;
+        this.courseDAO = readService.courses();
+        this.subjectDAO = readService.subjects();
+        this.courseSubjectDAO = readService.courseSubjects();
+        this.classGroupDAO = readService.classGroups();
         this.courseService = courseService;
         this.subjectService = subjectService;
         this.courseSubjectService = courseSubjectService;
@@ -187,16 +156,17 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 return;
             }
             if (segments.length == 3 && "units".equals(segments[1]) && "new".equals(segments[2])) {
-                showUnitCreateForm(request, response, Long.parseLong(segments[0]),
-                        OrganicUnitFormData.blank(Long.parseLong(segments[0])), null);
+                redirect(request, response, "/admin/organizations/" + Long.parseLong(segments[0]) + "?unitModal=create");
                 return;
             }
             if (segments.length == 3 && "units".equals(segments[1])) {
-                showUnitDetail(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
+                redirect(request, response, "/admin/organizations/" + Long.parseLong(segments[0])
+                        + "?unitDetail=" + Long.parseLong(segments[2]));
                 return;
             }
             if (segments.length == 4 && "units".equals(segments[1]) && "edit".equals(segments[3])) {
-                showUnitEditForm(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]), null);
+                redirect(request, response, "/admin/organizations/" + Long.parseLong(segments[0])
+                        + "?unitEdit=" + Long.parseLong(segments[2]));
                 return;
             }
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -265,39 +235,20 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         List<OrganizationView> views = new ArrayList<>();
         Map<Long, Boolean> canCreateOrganicUnitsByOrganizationId = new HashMap<>();
         Map<Long, Boolean> canModifyOrganicUnitById = new HashMap<>();
-        Set<Long> courseIds = new HashSet<>();
-        Set<Long> subjectIds = new HashSet<>();
-        Set<Long> classGroupIds = new HashSet<>();
         for (Organization organization : organizations) {
             List<OrganicUnit> units = safeOrganicUnits(actor, organization.id(), request);
-            Map<Long, List<OrganizationCourseTreeView>> coursesByUnit = courseTreesByOrganicUnit(organization.id());
-            OrganizationView view = OrganizationView.from(organization, hierarchyViews(units, null, coursesByUnit));
+            OrganizationView view = OrganizationView.from(organization, hierarchyViews(units, null));
             views.add(view);
-            collectPedagogicalTreeIds(view, courseIds, subjectIds, classGroupIds);
             canCreateOrganicUnitsByOrganizationId.put(
                     organization.id(),
-                    canCreateAnyOrganicUnit(actor, organization.id(), units, request) && !view.isArchived()
+                    canCreateAnyOrganicUnit(actor, organization.id(), units, request) && !view.isInactive()
             );
             canModifyOrganicUnitById.putAll(canModifyOrganicUnitById(actor, units, request));
         }
+        views.sort(Comparator.comparingLong(OrganizationView::getId).reversed());
         request.setAttribute("organizations", views);
         request.setAttribute("canCreateOrganicUnitsByOrganizationId", canCreateOrganicUnitsByOrganizationId);
         request.setAttribute("canModifyOrganicUnitById", canModifyOrganicUnitById);
-        request.setAttribute("canModifyCourseById", canModifyCourseById(actor, courseIds, request));
-        request.setAttribute("canManageCourseChildrenById", canManageCourseChildrenById(actor, courseIds, request));
-        request.setAttribute("canModifySubjectById", canModifySubjectById(actor, subjectIds, request));
-        request.setAttribute("canManageSubjectAssociationsById",
-                canManageSubjectAssociationsById(actor, subjectIds, request));
-        request.setAttribute("canModifyClassGroupById", canModifyClassGroupById(actor, classGroupIds, request));
-        request.setAttribute("canManageClassGroupStructureById",
-                canManageClassGroupStructureById(actor, classGroupIds, request));
-        activityViewSupport.exposeClassGroupActivities(
-                request,
-                actor,
-                currentSessionId(request),
-                primaryProfile(actor),
-                classGroupIds
-        );
         request.setAttribute("organizationCount", views.size());
         request.setAttribute("activeOrganizations", views.stream().filter(OrganizationView::isActive).count());
         request.setAttribute("inactiveOrganizations", views.stream().filter(OrganizationView::isInactive).count());
@@ -325,6 +276,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 organizationId,
                 request.getRemoteAddr()
         );
+        markLearningEventsReadForCurrentUser(request, "/admin/organizations/" + organization.id(), false);
         List<OrganicUnit> units = organicUnitService.listOrganicUnits(
                 actor.userId(),
                 currentSessionId(request),
@@ -332,16 +284,37 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 organizationId,
                 request.getRemoteAddr()
         );
-        OrganizationView organizationView = OrganizationView.from(organization, units.size());
+        Map<Long, List<OrganizationCourseTreeView>> coursesByUnit = courseTreesByOrganicUnit(organizationId);
+        OrganizationView organizationView = OrganizationView.from(organization, hierarchyViews(units, null, coursesByUnit));
+        Set<Long> courseIds = new HashSet<>();
+        Set<Long> subjectIds = new HashSet<>();
+        Set<Long> classGroupIds = new HashSet<>();
+        collectPedagogicalTreeIds(organizationView, courseIds, subjectIds, classGroupIds);
         boolean canModifyOrganization = canManageOrganizationRoots(actor);
         boolean canCreateOrganicUnits = canCreateAnyOrganicUnit(actor, organizationId, units, request)
-                && !organizationView.isArchived();
+                && !organizationView.isInactive();
         request.setAttribute("organization", organizationView);
-        request.setAttribute("organicUnits", hierarchyViews(units, null));
+        request.setAttribute("organicUnits", organizationView.getOrganicUnits());
         request.setAttribute("canModifyOrganization", canModifyOrganization);
         request.setAttribute("canAssignOrganizationAdministrators", canModifyOrganization);
         request.setAttribute("canCreateOrganicUnits", canCreateOrganicUnits);
         request.setAttribute("canModifyOrganicUnitById", canModifyOrganicUnitById(actor, units, request));
+        request.setAttribute("canModifyCourseById", canModifyCourseById(actor, courseIds, request));
+        request.setAttribute("canManageCourseChildrenById", canManageCourseChildrenById(actor, courseIds, request));
+        request.setAttribute("canModifySubjectById", canModifySubjectById(actor, subjectIds, request));
+        request.setAttribute("canManageSubjectAssociationsById",
+                canManageSubjectAssociationsById(actor, subjectIds, request));
+        request.setAttribute("canModifyClassGroupById", canModifyClassGroupById(actor, classGroupIds, request));
+        request.setAttribute("canManageClassGroupStructureById",
+                canManageClassGroupStructureById(actor, classGroupIds, request));
+        activityViewSupport.exposeClassGroupActivities(
+                request,
+                actor,
+                currentSessionId(request),
+                primaryProfile(actor),
+                classGroupIds
+        );
+        exposeOrganizationElementCounts(request, organizationView);
         request.setAttribute("assignedAdministrators", organizationService.listAdministrators(
                 actor.userId(),
                 currentSessionId(request),
@@ -351,7 +324,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         ).stream().map(OrganizationAdministratorView::from).toList());
         request.setAttribute("administratorOptions", administratorOptions(request, Set.of()));
         prepareOrganizationContext(request, organizationView, "detail");
-        prepareDashboard(request, "organizations", "Organization Detail");
+        prepareDashboard(request, "organizations", "Organization Details");
         forward(request, response, ORGANIZATION_DETAIL_JSP);
     }
 
@@ -378,13 +351,13 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                 primaryProfile(actor),
                 unitId,
                 request.getRemoteAddr()
-        ) && !unitView.isArchived();
+        ) && !unitView.isInactive();
         request.setAttribute("organization", organizationView);
         request.setAttribute("unit", unitView);
         request.setAttribute("canModifyUnit", canModifyUnit);
         request.setAttribute("canModifyOrganization", canManageOrganizationRoots(actor));
         request.setAttribute("canCreateOrganicUnits", canCreateAnyOrganicUnit(actor, organizationId, units, request)
-                && !organizationView.isArchived());
+                && !organizationView.isInactive());
         prepareUnitAdministratorPanel(request, actor, organizationId, unitId);
         prepareOrganizationContext(request, organizationView, "unit-detail");
         prepareDashboard(request, "organizations", "Organic Unit Detail");
@@ -405,6 +378,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         if (error != null) {
             request.setAttribute("errorMessage", error);
         }
+        request.setAttribute("adminOrganizationActiveChild", "new");
         prepareDashboard(request, "organizations", "Create Organization");
         forward(request, response, ORGANIZATION_FORM_JSP);
     }
@@ -678,7 +652,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         SessionUser actor = requireCurrentUser(request);
         OrganicUnitFormData form = OrganicUnitFormData.from(request, null, organizationId);
         try {
-            OrganicUnit created = organicUnitService.createOrganicUnit(
+            organicUnitService.createOrganicUnit(
                     actor.userId(),
                     currentSessionId(request),
                     primaryProfile(actor),
@@ -694,9 +668,18 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Organic unit created successfully.");
-            redirect(request, response, "/admin/organizations/" + organizationId + "/units/" + created.id());
+            if (isDynamicOrganizationRequest(request)) {
+                renderOrganizationDetailForDynamicRequest(request, response, organizationId, HttpServletResponse.SC_OK);
+                return;
+            }
+            redirectToReturnPath(request, response, "/admin/organizations/" + organizationId);
         } catch (RuntimeException exception) {
-            showUnitCreateForm(request, response, organizationId, form, messageFor(exception));
+            flashError(request, messageFor(exception));
+            if (isDynamicOrganizationRequest(request)) {
+                renderOrganizationDetailForDynamicRequest(request, response, organizationId, 422);
+                return;
+            }
+            redirectToReturnPath(request, response, "/admin/organizations/" + organizationId + "?unitModal=create");
         }
     }
 
@@ -723,10 +706,33 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Organic unit updated successfully.");
-            redirect(request, response, "/admin/organizations/" + organizationId + "/units/" + unitId);
+            if (isDynamicOrganizationRequest(request)) {
+                renderOrganizationDetailForDynamicRequest(request, response, organizationId, HttpServletResponse.SC_OK);
+                return;
+            }
+            redirectToReturnPath(request, response, "/admin/organizations/" + organizationId);
         } catch (RuntimeException exception) {
-            showUnitEditForm(request, response, organizationId, unitId, messageFor(exception));
+            flashError(request, messageFor(exception));
+            if (isDynamicOrganizationRequest(request)) {
+                renderOrganizationDetailForDynamicRequest(request, response, organizationId, 422);
+                return;
+            }
+            redirectToReturnPath(request, response, "/admin/organizations/" + organizationId + "?unitEdit=" + unitId);
         }
+    }
+
+    private void renderOrganizationDetailForDynamicRequest(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long organizationId,
+            int status
+    ) throws ServletException, IOException {
+        response.setStatus(status);
+        showDetail(request, response, organizationId);
+    }
+
+    private static boolean isDynamicOrganizationRequest(HttpServletRequest request) {
+        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"));
     }
 
     private void deleteOrganicUnit(HttpServletRequest request, HttpServletResponse response, long organizationId, long unitId)
@@ -826,7 +832,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         prepareOrganizationContext(request, organizationView, creating ? "unit-new" : "unit-edit");
         request.setAttribute("canModifyOrganization", canManageOrganizationRoots(actor));
         request.setAttribute("canCreateOrganicUnits", canCreateAnyOrganicUnit(actor, organization.id(), units, request)
-                && !organizationView.isArchived());
+                && !organizationView.isInactive());
         if (!creating && editingUnitId != null) {
             OrganicUnit editingUnit = units.stream()
                     .filter(unit -> unit.id() == editingUnitId)
@@ -1029,6 +1035,44 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private static void exposeOrganizationElementCounts(
+            HttpServletRequest request,
+            OrganizationView organization
+    ) {
+        Map<Long, Integer> activityCountByClassGroup =
+                (Map<Long, Integer>) request.getAttribute("classGroupActivityCountByClassGroup");
+        if (activityCountByClassGroup == null) {
+            activityCountByClassGroup = Map.of();
+        }
+
+        Map<Long, Integer> classGroupElementCountById = new HashMap<>();
+        Map<String, Integer> subjectElementCountByKey = new HashMap<>();
+        Map<Long, Integer> courseElementCountById = new HashMap<>();
+        Map<Long, Integer> unitElementCountById = new HashMap<>();
+
+        for (OrganicUnitView unit : organization.getOrganicUnits()) {
+            unitElementCountById.put(unit.getId(), unit.getCourses().size());
+            for (OrganizationCourseTreeView course : unit.getCourses()) {
+                courseElementCountById.put(course.getId(), course.getSubjects().size());
+                for (OrganizationSubjectTreeView subject : course.getSubjects()) {
+                    subjectElementCountByKey.put(subject.getTreeKey(), subject.getClassGroups().size());
+                    for (OrganizationClassGroupTreeView classGroup : subject.getClassGroups()) {
+                        classGroupElementCountById.put(
+                                classGroup.getId(),
+                                activityCountByClassGroup.getOrDefault(classGroup.getId(), 0)
+                        );
+                    }
+                }
+            }
+        }
+
+        request.setAttribute("organizationUnitElementCountById", unitElementCountById);
+        request.setAttribute("organizationCourseElementCountById", courseElementCountById);
+        request.setAttribute("organizationSubjectElementCountByKey", subjectElementCountByKey);
+        request.setAttribute("organizationClassGroupElementCountById", classGroupElementCountById);
+    }
+
     private Map<Long, Boolean> canModifyCourseById(
             SessionUser actor,
             Set<Long> courseIds,
@@ -1177,15 +1221,14 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
             return true;
         }
         for (OrganicUnit unit : units) {
-            if (!unit.state().equals(OrganicUnitState.INACTIVE)
-                    && organicUnitService.canCreateOrganicUnit(
-                            actor.userId(),
-                            currentSessionId(request),
-                            primaryProfile(actor),
-                            organizationId,
-                            unit.id(),
-                            request.getRemoteAddr()
-                    )) {
+            if (organicUnitService.canCreateOrganicUnit(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    organizationId,
+                    unit.id(),
+                    request.getRemoteAddr()
+            )) {
                 return true;
             }
         }
@@ -1321,7 +1364,7 @@ public final class OrganizationManagementServlet extends DashboardServletSupport
 
     private static LocalDate optionalDate(HttpServletRequest request, String name) {
         String value = text(request, name);
-        return value == null ? null : LocalDate.parse(value);
+        return value == null ? null : ApplicationDateTimeFormat.parseUserDate(value);
     }
 
     private static Part organizationImagePart(HttpServletRequest request) throws IOException, ServletException {

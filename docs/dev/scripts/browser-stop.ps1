@@ -15,7 +15,7 @@ if ($listeners.Count -eq 0) {
 foreach ($listener in $listeners) {
     $processInfo = Get-CimInstance Win32_Process -Filter "ProcessId = $($listener.OwningProcess)"
     $commandLine = [string] $processInfo.CommandLine
-    if ($commandLine -like "*browser-tomcat10*" -or $commandLine -like "*apache-tomcat-10.1.24*") {
+    if ($commandLine -like "*$expectedBase*") {
         Stop-Process -Id $listener.OwningProcess -Force
         Write-Output "Stopped Browser Tomcat process $($listener.OwningProcess)."
         continue

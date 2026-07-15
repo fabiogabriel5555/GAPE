@@ -78,15 +78,47 @@ class CertificateServiceTest {
                 IP
         );
 
-        assertNotNull(certificate.validationCode());
-        assertTrue(certificate.validationCode().startsWith("CERT-"));
         assertEquals(bd("13.33"), certificate.finalGrade());
         assertEquals(gradeSheets.stream().map(GradeSheet::id).toList(), certificate.gradeSheetIds());
+        assertEquals(300L, certificate.courseOccurrenceId());
+        assertEquals(CertificateState.ISSUED, certificate.state());
         assertNotNull(certificate.issuedAt());
+        assertNotNull(certificate.validationCode());
+        assertTrue(certificate.validationCode().matches("CERT-[A-F0-9]{32}"));
 
-        CertificateValidationResult validation = certificateService.validateCertificate(certificate.validationCode(), IP);
+        CertificateValidationResult validation = certificateService.validateCertificate(
+                certificate.validationCode(),
+                IP
+        );
         assertTrue(validation.valid());
         assertEquals(certificate.id(), validation.certificateId());
+        assertEquals(30L, validation.courseId());
+        assertEquals(300L, validation.courseOccurrenceId());
+    }
+
+    @Test
+    void issuedCertificateSnapshotAndValidationCodeRemainStable() throws Exception {
+        prepareCourse30ForCompletion();
+        Certificate issued = certificateService.issueCertificate(
+                1L, null, AccessProfileType.ADMINISTRATOR, issueCommand(), IP);
+        makePublishedGradeUnavailable(issued.gradeSheetIds().get(0));
+
+        Certificate synchronizedAgain = certificateService.issueCertificate(
+                1L, null, AccessProfileType.ADMINISTRATOR, issueCommand(), IP);
+
+        assertEquals(issued.id(), synchronizedAgain.id());
+        assertEquals(issued.validationCode(), synchronizedAgain.validationCode());
+        assertEquals(issued.issuedAt(), synchronizedAgain.issuedAt());
+        assertEquals(issued.finalGrade(), synchronizedAgain.finalGrade());
+        assertTrue(certificateService.validateCertificate(issued.validationCode(), IP).valid());
+    }
+
+    @Test
+    void publicValidationRejectsBlankMalformedAndUnknownCodes() {
+        assertFalse(certificateService.validateCertificate(null, IP).valid());
+        assertFalse(certificateService.validateCertificate("  ", IP).valid());
+        assertFalse(certificateService.validateCertificate("X".repeat(81), IP).valid());
+        assertFalse(certificateService.validateCertificate("CERT-DOES-NOT-EXIST", IP).valid());
     }
 
     @Test
@@ -184,83 +216,7 @@ class CertificateServiceTest {
                 issueCommand(),
                 IP
         ));
-        assertFalse(certificateService.validateCertificate("CERT-TEST-MISSING-ASSESSMENT", IP).valid());
         assertNotNull(mathematicsSheet);
-    }
-
-    @Test
-    void revokedCertificateIsNotPubliclyValid() throws Exception {
-        List<GradeSheet> gradeSheets = prepareCourse30ForCompletion();
-        Certificate issued = certificateService.issueCertificate(
-                1L,
-                null,
-                AccessProfileType.ADMINISTRATOR,
-                issueCommand(),
-                IP
-        );
-
-        Certificate revoked = certificateService.revokeCertificate(
-                1L,
-                null,
-                AccessProfileType.ADMINISTRATOR,
-                issued.id(),
-                IP
-        );
-
-        assertEquals(CertificateState.REVOKED, revoked.state());
-        assertNotNull(revoked.revokedAt());
-        assertFalse(certificateService.validateCertificate(issued.validationCode(), IP).valid());
-        assertThrows(SecurityException.class, () -> certificateService.getCertificate(
-                4L,
-                null,
-                AccessProfileType.STUDENT,
-                issued.id(),
-                IP
-        ));
-    }
-
-    @Test
-    void revokeCertificateRequiresCertificateManager() throws Exception {
-        List<GradeSheet> gradeSheets = prepareCourse30ForCompletion();
-        Certificate issued = certificateService.issueCertificate(
-                1L,
-                null,
-                AccessProfileType.ADMINISTRATOR,
-                issueCommand(),
-                IP
-        );
-
-        assertThrows(SecurityException.class, () -> certificateService.revokeCertificate(
-                4L,
-                null,
-                AccessProfileType.STUDENT,
-                issued.id(),
-                IP
-        ));
-        assertThrows(SecurityException.class, () -> certificateService.revokeCertificate(
-                3L,
-                null,
-                AccessProfileType.TEACHER,
-                issued.id(),
-                IP
-        ));
-    }
-
-    @Test
-    void certificateValidationCodeIsGeneratedAutomatically() throws Exception {
-        List<GradeSheet> gradeSheets = prepareCourse30ForCompletion();
-
-        Certificate certificate = certificateService.issueCertificate(
-                1L,
-                null,
-                AccessProfileType.ADMINISTRATOR,
-                issueCommand(),
-                IP
-        );
-
-        assertNotNull(certificate.validationCode());
-        assertTrue(certificate.validationCode().startsWith("CERT-"));
-        assertFalse("VAL-2026-0005".equals(certificate.validationCode()));
     }
 
     @Test
@@ -343,12 +299,11 @@ class CertificateServiceTest {
         assertFalse(certificateService.listOwnCertificates(4L, null, AccessProfileType.STUDENT, IP)
                 .stream()
                 .anyMatch(certificate -> certificate.id() == 192L));
-        assertFalse(certificateService.validateCertificate("VAL-2026-0005", IP).valid());
     }
 
     private List<GradeSheet> prepareCourse30ForCompletion() throws SQLException {
         prepareCourse30CertificateBase();
-        GradeSheet projectSheet = createPublishedApprovedGradeSheet(
+        createPublishedApprovedGradeSheet(
                 3L,
                 AccessProfileType.TEACHER,
                 40L,
@@ -358,7 +313,7 @@ class CertificateServiceTest {
                 "GR-CERT-PRJ",
                 bd("12.00")
         );
-        GradeSheet mathematicsSheet = createPublishedApprovedGradeSheet(
+        createPublishedApprovedGradeSheet(
                 1L,
                 AccessProfileType.ADMINISTRATOR,
                 41L,
@@ -368,7 +323,7 @@ class CertificateServiceTest {
                 "GR-CERT-MAT",
                 bd("16.00")
         );
-        return List.of(projectSheet, mathematicsSheet);
+        return List.of(subjectGradeSheet(40L), subjectGradeSheet(41L));
     }
 
     private static void prepareCourse30CertificateBase() throws SQLException {
@@ -400,16 +355,9 @@ class CertificateServiceTest {
                 statement.executeUpdate();
             }
             try (PreparedStatement statement = connection.prepareStatement("""
-                    INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date)
-                    VALUES (4, 30, 41, 'active', '2026-02-01', NULL)
-                    ON DUPLICATE KEY UPDATE state = 'active', start_date = '2026-02-01', end_date = NULL
-                    """)) {
-                statement.executeUpdate();
-            }
-            try (PreparedStatement statement = connection.prepareStatement("""
                     INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date)
-                    VALUES (4, 52, 'active', '2026-02-01', NULL)
-                    ON DUPLICATE KEY UPDATE state = 'active', start_date = '2026-02-01', end_date = NULL
+                    VALUES (4, 52, 'active', '2026-01-01', '2026-06-30')
+                    ON DUPLICATE KEY UPDATE state = 'active', start_date = '2026-01-01', end_date = '2026-06-30'
                     """)) {
                 statement.executeUpdate();
             }
@@ -433,7 +381,7 @@ class CertificateServiceTest {
                 new GradeSheetCreateCommand(
                         subjectId,
                         title,
-                        GradeSheetType.PARTIAL,
+                        GradeSheetType.FINAL,
                         bd("20.00"),
                         bd("9.50"),
                         GradeSheetState.DRAFT,
@@ -498,6 +446,54 @@ class CertificateServiceTest {
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to force publish grade sheet fixture", exception);
+        }
+    }
+
+    private static void makePublishedGradeUnavailable(long gradeSheetId) {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     UPDATE grade_record
+                     SET state = 'inactive'
+                     WHERE id_grade_sheet = ?
+                       AND id_user_student = 4
+                     """)) {
+            statement.setLong(1, gradeSheetId);
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to invalidate certificate calculation fixture", exception);
+        }
+    }
+
+    private GradeSheet subjectGradeSheet(long subjectId) {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT gs.id_grade_sheet
+                     FROM grade_sheet gs
+                     WHERE gs.id_subject = ?
+                       AND gs.id_course_occurrence = 300
+                       AND NOT EXISTS (
+                             SELECT 1
+                             FROM associate_grade_sheet_class_group agscg
+                             WHERE agscg.id_grade_sheet = gs.id_grade_sheet
+                       )
+                     ORDER BY gs.id_grade_sheet
+                     LIMIT 1
+                     """)) {
+            statement.setLong(1, subjectId);
+            try (var resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new IllegalStateException("Consolidated subject grade sheet fixture was not found");
+                }
+                return gradeSheetService.getGradeSheet(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        resultSet.getLong(1),
+                        IP
+                );
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load consolidated subject grade sheet fixture", exception);
         }
     }
 

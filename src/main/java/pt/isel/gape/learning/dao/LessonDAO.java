@@ -8,7 +8,10 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import pt.isel.gape.common.config.ConnectionProvider;
@@ -19,7 +22,7 @@ import pt.isel.gape.learning.model.LessonType;
 import pt.isel.gape.learning.model.LessonUpdateCommand;
 import pt.isel.gape.security.authorization.AuthorizationPolicy;
 
-public final class LessonDAO {
+public final class LessonDAO implements pt.isel.gape.transversal.service.ApplicationReadService.Lessons {
 
     private final ConnectionProvider connectionProvider;
 
@@ -66,6 +69,23 @@ public final class LessonDAO {
         }
     }
 
+    public List<Lesson> findByIds(Connection connection, Collection<Long> lessonIds) throws SQLException {
+        if (lessonIds == null || lessonIds.isEmpty()) {
+            return List.of();
+        }
+        String sql = selectLessonSql()
+                + " WHERE id_lesson IN (" + placeholders(lessonIds.size()) + ") ORDER BY starts_at DESC, id_lesson";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            for (Long lessonId : lessonIds) {
+                statement.setLong(index++, lessonId);
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return mapLessons(resultSet);
+            }
+        }
+    }
+
     public Optional<Lesson> lockById(Connection connection, long lessonId) throws SQLException {
         String sql = selectLessonSql() + " WHERE id_lesson = ? FOR UPDATE";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -86,6 +106,40 @@ public final class LessonDAO {
             statement.setLong(1, classGroupId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return mapLessons(resultSet);
+            }
+        }
+    }
+
+    public Map<Long, Integer> countByClassGroupIds(Collection<Long> classGroupIds) throws SQLException {
+        if (classGroupIds == null || classGroupIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> uniqueIds = classGroupIds.stream()
+                .filter(java.util.Objects::nonNull)
+                .filter(id -> id > 0)
+                .distinct()
+                .toList();
+        if (uniqueIds.isEmpty()) {
+            return Map.of();
+        }
+        String sql = """
+                SELECT id_class_group, COUNT(*) AS lesson_count
+                FROM lesson
+                WHERE id_class_group IN (%s)
+                GROUP BY id_class_group
+                """.formatted(placeholders(uniqueIds.size()));
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            for (Long classGroupId : uniqueIds) {
+                statement.setLong(index++, classGroupId);
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, Integer> counts = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    counts.put(resultSet.getLong("id_class_group"), resultSet.getInt("lesson_count"));
+                }
+                return Map.copyOf(counts);
             }
         }
     }
@@ -143,6 +197,11 @@ public final class LessonDAO {
     public List<Lesson> findPersonalCalendarForStudent(long studentUserId) throws SQLException {
         String sql = selectLessonSql() + """
                 WHERE state IN ('scheduled', 'active', 'completed')
+                  AND id_content_block IN (
+                    SELECT id_content_block
+                    FROM content_block
+                    WHERE state = 'active'
+                  )
                   AND id_class_group IN (
                     SELECT ecg.id_class_group
                     FROM enroll_class_group ecg
@@ -157,8 +216,6 @@ public final class LessonDAO {
                       AND c.state = 'active'
                       AND s.state = 'active'
                       AND u.state = 'active'
-                      AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                      AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
                 )
                 ORDER BY starts_at, id_lesson
                 """;
@@ -228,8 +285,6 @@ public final class LessonDAO {
                       AND u.state = 'active'
                       AND gc.cod_permission = ?
                       AND p.state = 'active'
-                      AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
-                      AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 )
                 ORDER BY starts_at, id_lesson
                 """;
@@ -286,8 +341,6 @@ public final class LessonDAO {
                       AND u.state = 'active'
                       AND gc.cod_permission = ?
                       AND p.state = 'active'
-                      AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
-                      AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 )
                   )
                 ORDER BY starts_at, id_lesson
@@ -468,8 +521,6 @@ public final class LessonDAO {
                   AND c.state = 'active'
                   AND s.state = 'active'
                   AND u.state = 'active'
-                  AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                  AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, studentUserId);
@@ -611,5 +662,9 @@ public final class LessonDAO {
         } else {
             statement.setString(index, value.trim());
         }
+    }
+
+    private static String placeholders(int count) {
+        return String.join(", ", java.util.Collections.nCopies(count, "?"));
     }
 }

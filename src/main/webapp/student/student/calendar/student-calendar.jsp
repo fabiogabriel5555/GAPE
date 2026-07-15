@@ -36,7 +36,7 @@
                             <div class="min-w-0">
                                 <h4 class="text-17 fw-semibold text-neutral-800 mb-0"><c:out value="${event.title}"/></h4>
                                 <div class="d-flex align-items-center gap-10 flex-wrap mt-8">
-                                    <span class="text-13 text-neutral-500"><i class="ph ph-clock me-6"></i><c:out value="${event.startsAt}"/> - <c:out value="${event.endsAt}"/></span>
+                                    <span class="text-13 text-neutral-500" data-gape-datetime-display><i class="ph ph-clock me-6"></i><c:out value="${event.startsAt}"/> - <c:out value="${event.endsAt}"/></span>
                                     <span class="text-13 text-neutral-500"><i class="ph ph-timer me-6"></i><c:out value="${event.durationLabel}"/></span>
                                     <span class="text-13 text-neutral-500"><i class="ph ph-users-three me-6"></i><c:out value="${event.classGroupLabel}"/></span>
                                     <span class="text-13 text-neutral-500"><i class="ph ph-bell-ringing me-6"></i><c:out value="${event.reminderLabel}"/></span>
@@ -63,7 +63,7 @@
                             <div class="min-w-0">
                                 <h4 class="text-17 fw-semibold text-neutral-800 mb-0"><c:out value="${lesson.title}"/></h4>
                                 <div class="d-flex align-items-center gap-10 flex-wrap mt-8">
-                                    <span class="text-13 text-neutral-500"><i class="ph ph-clock me-6"></i><c:out value="${lesson.startsAt}"/> - <c:out value="${lesson.endsAt}"/></span>
+                                    <span class="text-13 text-neutral-500" data-gape-datetime-display><i class="ph ph-clock me-6"></i><c:out value="${lesson.startsAt}"/> - <c:out value="${lesson.endsAt}"/></span>
                                     <span class="text-13 text-neutral-500"><i class="ph ph-timer me-6"></i><c:out value="${lesson.durationLabel}"/></span>
                                     <span class="text-13 text-neutral-500"><i class="ph ph-stack me-6"></i><c:out value="${block.name}"/></span>
                                     <span class="text-13 text-neutral-500"><i class="ph ph-user-check me-6"></i><c:out value="${lesson.attendanceLabel}"/></span>

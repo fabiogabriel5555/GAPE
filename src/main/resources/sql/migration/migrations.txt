@@ -1,0 +1,30 @@
+# version|description|classpath resource
+1|Current schema baseline|sql/migration/V001__current_schema_baseline.sql
+2|Remove legacy subject enrollment artifacts|sql/migration/V002__remove_subject_enrollment_artifacts.sql
+3|Remove certificate revocation artifacts|sql/migration/V003__remove_certificate_revocation_artifacts.sql
+4|Scope class group codes to course occurrence|sql/migration/V004__scope_class_group_codes_to_occurrence.sql
+5|Enforce direct message channel invariants|sql/migration/V005__enforce_direct_message_channel_invariants.sql
+6|Remove external delivery artifacts|sql/migration/V006__remove_external_delivery_artifacts.sql
+7|Automate course occurrences and enrollments|sql/migration/V007__automate_course_occurrences_and_enrollments.sql
+8|Align course occurrence lifecycle|sql/migration/V008__align_course_occurrence_lifecycle.sql
+9|Support scheduled course enrollments and repair occurrence grade sheets|sql/migration/V009__support_scheduled_enrollments_and_grade_sheets.sql
+10|Translate automatic grade sheet titles to English|sql/migration/V010__translate_grade_sheet_titles_to_english.sql
+11|Derive course occurrences from reference year|sql/migration/V011__derive_course_occurrences_from_reference_year.sql
+12|Consolidate subject grade sheets from class groups|sql/migration/V012__consolidate_subject_grade_sheets_from_class_groups.sql
+13|Keep a subject initial course association|sql/migration/V013__keep_subject_initial_course_association.sql
+14|Validate course enrollment dates|sql/migration/V014__validate_course_enrollment_dates.sql
+15|Require enrollment dates|sql/migration/V015__require_enrollment_dates.sql
+16|Keep historical course-subject associations|sql/migration/V016__keep_historical_course_subject_associations.sql
+17|Share class groups across equivalent course occurrences|sql/migration/V017__share_class_groups_across_equivalent_course_occurrences.sql
+18|Validate shared class group contexts|sql/migration/V018__validate_shared_class_group_contexts.sql
+19|Require class group capacity and scheduled contexts|sql/migration/V019__require_class_group_capacity_and_scheduled_contexts.sql
+20|Enforce course occurrence calendars|sql/migration/V020__enforce_course_occurrence_calendars.sql
+21|Make class groups single-course|sql/migration/V021__make_class_groups_single_course.sql
+22|Publish grade sheets for completed periods with pending-grade explanations|sql/migration/V022__publish_completed_period_grade_sheets.sql
+23|Derive grade sheets from real class-group occurrences|sql/migration/V023__derive_grade_sheets_from_real_class_group_occurrences.sql
+24|Remove the subject initial course invariant|sql/migration/V024__remove_subject_initial_course.sql
+25|Enforce subject and course-association state invariants|sql/migration/V025__enforce_subject_association_state_invariants.sql
+26|Normalize academic lifecycle data|sql/migration/V026__normalize_academic_lifecycle_data.sql
+27|Allow inactive subjects to retain existing associations|sql/migration/V027__allow_inactive_subjects_with_existing_associations.sql
+28|Add subject organic-unit context and allow cross-organization course associations|sql/migration/V028__add_subject_organic_unit_and_allow_cross_organization_associations.sql
+29|Derive class-group enrollment periods from their occurrence|sql/migration/V029__derive_class_group_enrollment_periods.sql

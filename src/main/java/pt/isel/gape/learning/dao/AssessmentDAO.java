@@ -10,9 +10,12 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -26,7 +29,7 @@ import pt.isel.gape.learning.model.AssessmentType;
 import pt.isel.gape.learning.model.AssessmentUpdateCommand;
 import pt.isel.gape.learning.model.EnrollmentApprovalMode;
 
-public final class AssessmentDAO {
+public final class AssessmentDAO implements pt.isel.gape.transversal.service.ApplicationReadService.Assessments {
 
     private final ConnectionProvider connectionProvider;
 
@@ -47,10 +50,10 @@ public final class AssessmentDAO {
     public long create(Connection connection, AssessmentCreateCommand command) throws SQLException {
         String sql = """
                 INSERT INTO assessment (
-                    id_subject, id_content_block, title, description, type, mode, correction_mode,
+                    id_subject, id_content_block, cod_physical_room, title, description, type, mode, correction_mode,
                     max_grade, passing_grade, final_grade_weight, attempts_limit, enrollment_mode, state,
                     available_from, available_until
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -138,6 +141,200 @@ public final class AssessmentDAO {
         }
     }
 
+    public List<Assessment> findByClassGroup(long classGroupId) throws SQLException {
+        try (Connection connection = connectionProvider.getConnection()) {
+            return findByClassGroup(connection, classGroupId);
+        }
+    }
+
+    public List<Assessment> findByClassGroup(Connection connection, long classGroupId) throws SQLException {
+        String sql = """
+                SELECT DISTINCT a.id_assessment, a.id_subject, a.id_content_block, a.cod_physical_room,
+                       a.title, a.description, a.type, a.mode, a.correction_mode, a.max_grade,
+                       a.passing_grade, a.final_grade_weight, a.attempts_limit, a.enrollment_mode,
+                       a.state, a.available_from, a.available_until, a.order_no
+                FROM assessment a
+                LEFT JOIN content_block cb ON cb.id_content_block = a.id_content_block
+                LEFT JOIN assessment_class_group acg ON acg.id_assessment = a.id_assessment
+                WHERE cb.id_class_group = ?
+                   OR acg.id_class_group = ?
+                ORDER BY COALESCE(a.order_no, 2147483647), a.available_from, a.id_assessment
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, classGroupId);
+            statement.setLong(2, classGroupId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return mapAssessments(resultSet);
+            }
+        }
+    }
+
+    /**
+     * Counts the assessments visible in each requested class-group context in
+     * one query.  An assessment may be attached through a content block or a
+     * direct class-group association, so the union mirrors findByClassGroup.
+     */
+    public Map<Long, Integer> countByClassGroupIds(Collection<Long> classGroupIds) throws SQLException {
+        if (classGroupIds == null || classGroupIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> uniqueIds = classGroupIds.stream()
+                .filter(java.util.Objects::nonNull)
+                .filter(id -> id > 0)
+                .distinct()
+                .toList();
+        if (uniqueIds.isEmpty()) {
+            return Map.of();
+        }
+        String placeholders = placeholders(uniqueIds.size());
+        String sql = """
+                SELECT class_group_id, COUNT(DISTINCT id_assessment) AS assessment_count
+                FROM (
+                    SELECT cb.id_class_group AS class_group_id, a.id_assessment
+                    FROM assessment a
+                    JOIN content_block cb ON cb.id_content_block = a.id_content_block
+                    WHERE cb.id_class_group IN (%s)
+                    UNION ALL
+                    SELECT acg.id_class_group AS class_group_id, acg.id_assessment
+                    FROM assessment_class_group acg
+                    WHERE acg.id_class_group IN (%s)
+                ) applicable_assessments
+                GROUP BY class_group_id
+                """.formatted(placeholders, placeholders);
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            for (Long classGroupId : uniqueIds) {
+                statement.setLong(index++, classGroupId);
+            }
+            for (Long classGroupId : uniqueIds) {
+                statement.setLong(index++, classGroupId);
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, Integer> counts = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    counts.put(resultSet.getLong("class_group_id"), resultSet.getInt("assessment_count"));
+                }
+                return Map.copyOf(counts);
+            }
+        }
+    }
+
+    /**
+     * Counts uncorrected submitted attempts in each requested class-group context.  An
+     * assessment can belong to a group through its content block or through a
+     * direct association; using {@code UNION} keeps an attempt represented once
+     * for that group when both associations exist.
+     */
+    public Map<Long, Integer> countSubmittedAttemptsByClassGroupIds(Collection<Long> classGroupIds)
+            throws SQLException {
+        if (classGroupIds == null || classGroupIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> uniqueIds = classGroupIds.stream()
+                .filter(java.util.Objects::nonNull)
+                .filter(id -> id > 0)
+                .distinct()
+                .toList();
+        if (uniqueIds.isEmpty()) {
+            return Map.of();
+        }
+        String placeholders = placeholders(uniqueIds.size());
+        String sql = """
+                SELECT applicable_assessments.class_group_id, COUNT(attempt.id_attempt) AS attempt_count
+                FROM (
+                    SELECT cb.id_class_group AS class_group_id, assessment.id_assessment
+                    FROM assessment
+                    JOIN content_block cb ON cb.id_content_block = assessment.id_content_block
+                    WHERE cb.id_class_group IN (%s)
+                    UNION
+                    SELECT acg.id_class_group AS class_group_id, acg.id_assessment
+                    FROM assessment_class_group acg
+                    WHERE acg.id_class_group IN (%s)
+                ) applicable_assessments
+                JOIN attempt ON attempt.id_assessment = applicable_assessments.id_assessment
+                WHERE attempt.state = 'submitted'
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM grade_record
+                      WHERE grade_record.id_attempt = attempt.id_attempt
+                  )
+                GROUP BY applicable_assessments.class_group_id
+                """.formatted(placeholders, placeholders);
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            for (Long classGroupId : uniqueIds) {
+                statement.setLong(index++, classGroupId);
+            }
+            for (Long classGroupId : uniqueIds) {
+                statement.setLong(index++, classGroupId);
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, Integer> counts = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    counts.put(resultSet.getLong("class_group_id"), resultSet.getInt("attempt_count"));
+                }
+                return Map.copyOf(counts);
+            }
+        }
+    }
+
+    /**
+     * Counts uncorrected submitted attempts once across a set of class groups.  The global
+     * dashboard badge represents actionable attempts, not the number of
+     * group-association paths by which an attempt can be reached.
+     */
+    public int countDistinctSubmittedAttemptsByClassGroupIds(Collection<Long> classGroupIds)
+            throws SQLException {
+        if (classGroupIds == null || classGroupIds.isEmpty()) {
+            return 0;
+        }
+        List<Long> uniqueIds = classGroupIds.stream()
+                .filter(java.util.Objects::nonNull)
+                .filter(id -> id > 0)
+                .distinct()
+                .toList();
+        if (uniqueIds.isEmpty()) {
+            return 0;
+        }
+        String placeholders = placeholders(uniqueIds.size());
+        String sql = """
+                SELECT COUNT(DISTINCT attempt.id_attempt)
+                FROM (
+                    SELECT cb.id_class_group AS class_group_id, assessment.id_assessment
+                    FROM assessment
+                    JOIN content_block cb ON cb.id_content_block = assessment.id_content_block
+                    WHERE cb.id_class_group IN (%s)
+                    UNION
+                    SELECT acg.id_class_group AS class_group_id, acg.id_assessment
+                    FROM assessment_class_group acg
+                    WHERE acg.id_class_group IN (%s)
+                ) applicable_assessments
+                JOIN attempt ON attempt.id_assessment = applicable_assessments.id_assessment
+                WHERE attempt.state = 'submitted'
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM grade_record
+                      WHERE grade_record.id_attempt = attempt.id_attempt
+                  )
+                """.formatted(placeholders, placeholders);
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            for (Long classGroupId : uniqueIds) {
+                statement.setLong(index++, classGroupId);
+            }
+            for (Long classGroupId : uniqueIds) {
+                statement.setLong(index++, classGroupId);
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1);
+            }
+        }
+    }
+
     public List<Assessment> findActiveAccessibleByStudent(long studentUserId) throws SQLException {
         String sql = selectAssessmentSql() + """
                 WHERE state IN ('active', 'scheduled')
@@ -156,13 +353,14 @@ public final class AssessmentDAO {
                                 JOIN course c ON c.id_course = cg.id_course
                                 JOIN subject s ON s.id_subject = cg.id_subject
                                 WHERE cb.id_content_block = assessment.id_content_block
+                                  AND cb.state = 'active'
                                   AND ecg.id_student_user = ?
                                   AND ecg.state = 'active'
                                   AND cg.state = 'active'
                                   AND c.state = 'active'
                                   AND s.state = 'active'
-                                  AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                                  AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
+                                  AND ecg.start_date <= DATE(assessment.available_from)
+                                  AND ecg.end_date >= DATE(assessment.available_until)
                             )
                         )
                         OR (
@@ -173,24 +371,17 @@ public final class AssessmentDAO {
                                 FROM assessment_class_group acg
                                 JOIN class_group cg ON cg.id_class_group = acg.id_class_group
                                 JOIN enroll_class_group ecg ON ecg.id_class_group = cg.id_class_group
-                                JOIN enroll_subject es
-                                  ON es.id_student_user = ecg.id_student_user
-                                 AND es.id_subject = cg.id_subject
-                                 AND es.id_course = cg.id_course
                                 JOIN subject s ON s.id_subject = cg.id_subject
                                 JOIN course c ON c.id_course = cg.id_course
                                 WHERE acg.id_assessment = assessment.id_assessment
                                   AND ecg.id_student_user = ?
                                   AND ecg.state = 'active'
                                   AND cg.state = 'active'
-                                  AND es.state = 'active'
                                   AND cg.id_subject = assessment.id_subject
                                   AND s.state = 'active'
                                   AND c.state = 'active'
-                                  AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                                  AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
-                                  AND (es.start_date IS NULL OR es.start_date <= CURRENT_DATE)
-                                  AND (es.end_date IS NULL OR es.end_date >= CURRENT_DATE)
+                                  AND ecg.start_date <= DATE(assessment.available_from)
+                                  AND ecg.end_date >= DATE(assessment.available_until)
                             )
                         )
                   )
@@ -210,8 +401,8 @@ public final class AssessmentDAO {
             throws SQLException {
         String sql = """
                 UPDATE assessment
-                SET id_subject = ?, id_content_block = ?, title = ?, description = ?, type = ?,
-                    mode = ?, correction_mode = ?, max_grade = ?, passing_grade = ?,
+                SET id_subject = ?, id_content_block = ?, cod_physical_room = ?, title = ?, description = ?,
+                    type = ?, mode = ?, correction_mode = ?, max_grade = ?, passing_grade = ?,
                     final_grade_weight = ?, attempts_limit = ?, enrollment_mode = ?, state = ?,
                     available_from = ?, available_until = ?
                 WHERE id_assessment = ?
@@ -219,7 +410,7 @@ public final class AssessmentDAO {
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             setStatementValues(statement, command);
-            statement.setLong(16, assessmentId);
+            statement.setLong(17, assessmentId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Assessment not found: " + assessmentId);
             }
@@ -297,6 +488,19 @@ public final class AssessmentDAO {
                 """,
                 now
         );
+        int scheduled = updateTemporalState(
+                connection,
+                """
+                UPDATE assessment
+                SET state = 'scheduled'
+                WHERE state = 'active'
+                  AND available_from IS NOT NULL
+                  AND available_from > ?
+                  AND (available_until IS NULL OR available_until > ?)
+                """,
+                now,
+                now
+        );
         int active = updateTemporalState(
                 connection,
                 """
@@ -310,7 +514,7 @@ public final class AssessmentDAO {
                 now,
                 now
         );
-        return completed + active;
+        return completed + scheduled + active;
     }
 
     public boolean hasSubmittedAttempts(Connection connection, long assessmentId) throws SQLException {
@@ -453,6 +657,59 @@ public final class AssessmentDAO {
         }
     }
 
+    public Map<Long, List<Long>> findApplicableClassGroupIdsByAssessmentIds(Collection<Long> assessmentIds)
+            throws SQLException {
+        if (assessmentIds == null || assessmentIds.isEmpty()) {
+            return Map.of();
+        }
+        try (Connection connection = connectionProvider.getConnection()) {
+            return findApplicableClassGroupIdsByAssessmentIds(connection, assessmentIds);
+        }
+    }
+
+    public Map<Long, List<Long>> findApplicableClassGroupIdsByAssessmentIds(
+            Connection connection,
+            Collection<Long> assessmentIds
+    ) throws SQLException {
+        if (assessmentIds == null || assessmentIds.isEmpty()) {
+            return Map.of();
+        }
+        String placeholders = placeholders(assessmentIds.size());
+        String sql = """
+                SELECT id_assessment, class_group_id, MIN(order_no) AS order_no
+                FROM (
+                    SELECT a.id_assessment, cb.id_class_group AS class_group_id, 0 AS order_no
+                    FROM assessment a
+                    JOIN content_block cb ON cb.id_content_block = a.id_content_block
+                    WHERE a.id_assessment IN (%s)
+                    UNION ALL
+                    SELECT acg.id_assessment, acg.id_class_group AS class_group_id, 1 AS order_no
+                    FROM assessment_class_group acg
+                    WHERE acg.id_assessment IN (%s)
+                ) applicable_groups
+                GROUP BY id_assessment, class_group_id
+                ORDER BY id_assessment, order_no, class_group_id
+                """.formatted(placeholders, placeholders);
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            for (Long assessmentId : assessmentIds) {
+                statement.setLong(index++, assessmentId);
+            }
+            for (Long assessmentId : assessmentIds) {
+                statement.setLong(index++, assessmentId);
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, List<Long>> result = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    result.computeIfAbsent(resultSet.getLong("id_assessment"), ignored -> new ArrayList<>())
+                            .add(resultSet.getLong("class_group_id"));
+                }
+                return result;
+            }
+        }
+    }
+
     public void upsertWeightForMatchingGradeSheets(
             Connection connection,
             long assessmentId,
@@ -468,17 +725,28 @@ public final class AssessmentDAO {
                     UNION
                     SELECT gs.id_grade_sheet
                     FROM grade_sheet gs
-                    JOIN assessment a ON a.id_assessment = ?
-                    LEFT JOIN content_block cb ON cb.id_content_block = a.id_content_block
-                    LEFT JOIN class_group block_cg ON block_cg.id_class_group = cb.id_class_group
-                    WHERE NOT EXISTS (
+                    JOIN (
+                        SELECT cg.id_subject, cg.id_course_occurrence
+                        FROM assessment a
+                        JOIN content_block cb ON cb.id_content_block = a.id_content_block
+                        JOIN class_group cg ON cg.id_class_group = cb.id_class_group
+                        WHERE a.id_assessment = ?
+                          AND (a.id_subject IS NULL OR a.id_subject = cg.id_subject)
+                        UNION
+                        SELECT cg.id_subject, cg.id_course_occurrence
+                        FROM assessment a
+                        JOIN assessment_class_group acg ON acg.id_assessment = a.id_assessment
+                        JOIN class_group cg ON cg.id_class_group = acg.id_class_group
+                        WHERE a.id_assessment = ?
+                          AND (a.id_subject IS NULL OR a.id_subject = cg.id_subject)
+                    ) assessment_context
+                      ON assessment_context.id_subject = gs.id_subject
+                     AND assessment_context.id_course_occurrence = gs.id_course_occurrence
+                    WHERE gs.scope = 'subject_occurrence'
+                      AND NOT EXISTS (
                             SELECT 1
                             FROM associate_grade_sheet_class_group agscg
                             WHERE agscg.id_grade_sheet = gs.id_grade_sheet
-                        )
-                      AND (
-                            a.id_subject = gs.id_subject
-                            OR block_cg.id_subject = gs.id_subject
                         )
                     UNION
                     SELECT gs.id_grade_sheet
@@ -489,7 +757,8 @@ public final class AssessmentDAO {
                     LEFT JOIN content_block cb ON cb.id_content_block = a.id_content_block
                     LEFT JOIN assessment_class_group acg
                       ON acg.id_assessment = a.id_assessment
-                    WHERE (
+                    WHERE gs.scope = 'class_group'
+                      AND (
                             cb.id_class_group = agscg.id_class_group
                             OR acg.id_class_group = agscg.id_class_group
                         )
@@ -506,6 +775,7 @@ public final class AssessmentDAO {
             statement.setLong(3, assessmentId);
             statement.setLong(4, assessmentId);
             statement.setLong(5, assessmentId);
+            statement.setLong(6, assessmentId);
             statement.executeUpdate();
         }
     }
@@ -601,6 +871,7 @@ public final class AssessmentDAO {
                 WHERE a.id_assessment = ?
                   AND a.mode = 'online'
                   AND u.state = 'active'
+                  AND (a.id_content_block IS NULL OR cb.state = 'active')
                   AND EXISTS (
                         SELECT 1
                         FROM enroll_assessment ea
@@ -623,8 +894,8 @@ public final class AssessmentDAO {
                                   AND cg.state = 'active'
                                   AND c.state = 'active'
                                   AND s.state = 'active'
-                                  AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                                  AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
+                                  AND ecg.start_date <= DATE(a.available_from)
+                                  AND ecg.end_date >= DATE(a.available_until)
                             )
                         )
                         OR (
@@ -635,24 +906,17 @@ public final class AssessmentDAO {
                                 FROM assessment_class_group acg
                                 JOIN class_group cg ON cg.id_class_group = acg.id_class_group
                                 JOIN enroll_class_group ecg ON ecg.id_class_group = cg.id_class_group
-                                JOIN enroll_subject es
-                                  ON es.id_student_user = ecg.id_student_user
-                                 AND es.id_subject = cg.id_subject
-                                 AND es.id_course = cg.id_course
                                 JOIN subject s ON s.id_subject = cg.id_subject
                                 JOIN course c ON c.id_course = cg.id_course
                                 WHERE acg.id_assessment = a.id_assessment
                                   AND ecg.id_student_user = ?
                                   AND ecg.state = 'active'
                                   AND cg.state = 'active'
-                                  AND es.state = 'active'
                                   AND cg.id_subject = a.id_subject
                                   AND s.state = 'active'
                                   AND c.state = 'active'
-                                  AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                                  AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
-                                  AND (es.start_date IS NULL OR es.start_date <= CURRENT_DATE)
-                                  AND (es.end_date IS NULL OR es.end_date >= CURRENT_DATE)
+                                  AND ecg.start_date <= DATE(a.available_from)
+                                  AND ecg.end_date >= DATE(a.available_until)
                             )
                         )
                   )
@@ -764,48 +1028,86 @@ public final class AssessmentDAO {
         }
     }
 
+    public boolean roomHasOverlappingReservedAssessment(
+            Connection connection,
+            String physicalRoomCode,
+            LocalDateTime availableFrom,
+            LocalDateTime availableUntil,
+            Long excludedAssessmentId
+    ) throws SQLException {
+        String sql = """
+                SELECT COUNT(*)
+                FROM assessment
+                WHERE cod_physical_room = ?
+                  AND mode = 'onsite'
+                  AND state IN ('scheduled', 'active')
+                  AND available_from IS NOT NULL
+                  AND available_until IS NOT NULL
+                  AND NOT (? <= available_from OR ? >= available_until)
+                  AND (? IS NULL OR id_assessment <> ?)
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, physicalRoomCode);
+            statement.setTimestamp(2, Timestamp.valueOf(availableUntil));
+            statement.setTimestamp(3, Timestamp.valueOf(availableFrom));
+            if (excludedAssessmentId == null) {
+                statement.setNull(4, Types.BIGINT);
+                statement.setNull(5, Types.BIGINT);
+            } else {
+                statement.setLong(4, excludedAssessmentId);
+                statement.setLong(5, excludedAssessmentId);
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getLong(1) > 0;
+            }
+        }
+    }
+
     private static void setStatementValues(PreparedStatement statement, AssessmentCreateCommand command)
             throws SQLException {
         setNullableLong(statement, 1, command.subjectId());
         setNullableLong(statement, 2, command.contentBlockId());
-        statement.setString(3, command.title().trim());
-        setNullableString(statement, 4, command.description());
-        statement.setString(5, command.type().toDatabaseValue());
-        statement.setString(6, command.mode().toDatabaseValue());
-        statement.setString(7, command.correctionMode().toDatabaseValue());
-        statement.setBigDecimal(8, command.maxGrade());
-        statement.setBigDecimal(9, command.passingGrade());
-        statement.setBigDecimal(10, command.finalGradeWeight());
-        setNullableInteger(statement, 11, command.attemptsLimit());
-        statement.setString(12, command.enrollmentMode().toDatabaseValue());
-        statement.setString(13, command.state().toDatabaseValue());
-        setTimestamp(statement, 14, command.availableFrom());
-        setTimestamp(statement, 15, command.availableUntil());
+        setNullableString(statement, 3, command.physicalRoomCode());
+        statement.setString(4, command.title().trim());
+        setNullableString(statement, 5, command.description());
+        statement.setString(6, command.type().toDatabaseValue());
+        statement.setString(7, command.mode().toDatabaseValue());
+        statement.setString(8, command.correctionMode().toDatabaseValue());
+        statement.setBigDecimal(9, command.maxGrade());
+        statement.setBigDecimal(10, command.passingGrade());
+        statement.setBigDecimal(11, command.finalGradeWeight());
+        setNullableInteger(statement, 12, command.attemptsLimit());
+        statement.setString(13, command.enrollmentMode().toDatabaseValue());
+        statement.setString(14, command.state().toDatabaseValue());
+        setTimestamp(statement, 15, command.availableFrom());
+        setTimestamp(statement, 16, command.availableUntil());
     }
 
     private static void setStatementValues(PreparedStatement statement, AssessmentUpdateCommand command)
             throws SQLException {
         setNullableLong(statement, 1, command.subjectId());
         setNullableLong(statement, 2, command.contentBlockId());
-        statement.setString(3, command.title().trim());
-        setNullableString(statement, 4, command.description());
-        statement.setString(5, command.type().toDatabaseValue());
-        statement.setString(6, command.mode().toDatabaseValue());
-        statement.setString(7, command.correctionMode().toDatabaseValue());
-        statement.setBigDecimal(8, command.maxGrade());
-        statement.setBigDecimal(9, command.passingGrade());
-        statement.setBigDecimal(10, command.finalGradeWeight());
-        setNullableInteger(statement, 11, command.attemptsLimit());
-        statement.setString(12, command.enrollmentMode().toDatabaseValue());
-        statement.setString(13, command.state().toDatabaseValue());
-        setTimestamp(statement, 14, command.availableFrom());
-        setTimestamp(statement, 15, command.availableUntil());
+        setNullableString(statement, 3, command.physicalRoomCode());
+        statement.setString(4, command.title().trim());
+        setNullableString(statement, 5, command.description());
+        statement.setString(6, command.type().toDatabaseValue());
+        statement.setString(7, command.mode().toDatabaseValue());
+        statement.setString(8, command.correctionMode().toDatabaseValue());
+        statement.setBigDecimal(9, command.maxGrade());
+        statement.setBigDecimal(10, command.passingGrade());
+        statement.setBigDecimal(11, command.finalGradeWeight());
+        setNullableInteger(statement, 12, command.attemptsLimit());
+        statement.setString(13, command.enrollmentMode().toDatabaseValue());
+        statement.setString(14, command.state().toDatabaseValue());
+        setTimestamp(statement, 15, command.availableFrom());
+        setTimestamp(statement, 16, command.availableUntil());
     }
 
     private static String selectAssessmentSql() {
         return """
-                SELECT id_assessment, id_subject, id_content_block, title, description, type, mode,
-                       correction_mode, max_grade, passing_grade, final_grade_weight, attempts_limit,
+                SELECT id_assessment, id_subject, id_content_block, cod_physical_room, title, description, type,
+                       mode, correction_mode, max_grade, passing_grade, final_grade_weight, attempts_limit,
                        enrollment_mode, state, available_from, available_until, order_no
                 FROM assessment
                 """;
@@ -824,6 +1126,7 @@ public final class AssessmentDAO {
                 resultSet.getLong("id_assessment"),
                 nullableLong(resultSet, "id_subject"),
                 nullableLong(resultSet, "id_content_block"),
+                resultSet.getString("cod_physical_room"),
                 resultSet.getString("title"),
                 resultSet.getString("description"),
                 AssessmentType.fromDatabaseValue(resultSet.getString("type")),
@@ -907,5 +1210,9 @@ public final class AssessmentDAO {
             }
             return statement.executeUpdate();
         }
+    }
+
+    private static String placeholders(int count) {
+        return String.join(", ", Collections.nCopies(count, "?"));
     }
 }

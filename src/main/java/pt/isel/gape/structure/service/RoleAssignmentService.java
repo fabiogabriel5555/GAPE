@@ -74,17 +74,14 @@ public final class RoleAssignmentService {
             Long sessionId,
             long coordinatorUserId,
             long subjectId,
-            LocalDate startDate,
-            LocalDate endDate,
             String sourceIp
     ) {
         try {
             requireRoleAssignmentManager(actorUserId);
-            requireValidDates(startDate, endDate);
             if (!coordinateSubjectDAO.canAssign(coordinatorUserId, subjectId)) {
                 throw new IllegalArgumentException("Subject assignment requires active coordinator and existing subject");
             }
-            coordinateSubjectDAO.assign(coordinatorUserId, subjectId, startDate, endDate);
+            coordinateSubjectDAO.assign(coordinatorUserId, subjectId);
             audit(actorUserId, sessionId, "ROLE_ASSIGN_COORDINATE_SUBJECT", coordinatorUserId, subjectId, "success", sourceIp);
         } catch (RuntimeException | SQLException exception) {
             audit(actorUserId, sessionId, "ROLE_ASSIGN_COORDINATE_SUBJECT", coordinatorUserId, subjectId, "failure", sourceIp);

@@ -1,6 +1,6 @@
 # Testes de Organizacoes e Unidades Organicas
 
-Data: 2026-06-10
+Data: 10-06-2026
 
 ## Cobertura automatica
 
@@ -41,7 +41,7 @@ mvn test -Dtest=OrganicUnitServiceTest
 mvn test -Dtest=UserServiceTest
 ```
 
-## Execucao de 2026-06-10
+## Execucao de 10-06-2026
 
 - `mvn test -Dtest=OrganizationServiceTest`: sucesso, 7 testes.
 - `mvn test -Dtest=OrganicUnitServiceTest`: sucesso, 9 testes.

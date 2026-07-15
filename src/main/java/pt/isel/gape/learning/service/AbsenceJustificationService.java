@@ -165,9 +165,8 @@ public final class AbsenceJustificationService {
                     AbsenceJustification justification = justificationDAO.lockById(connection, justificationId)
                             .orElseThrow(() -> new IllegalArgumentException(
                                     "Absence justification not found: " + justificationId));
-                    if (justification.state().isFinalDecision()
-                            || justification.state() == AbsenceJustificationState.CANCELLED) {
-                        throw new IllegalStateException("Absence justification already has a final state");
+                    if (justification.state() == AbsenceJustificationState.CANCELLED) {
+                        throw new IllegalStateException("Absence justification is cancelled");
                     }
                     AttendanceRecord record = attendanceRecordDAO.lockById(connection, justification.attendanceRecordId())
                             .orElseThrow(() -> new IllegalArgumentException(
@@ -178,6 +177,15 @@ public final class AbsenceJustificationService {
                     LocalDateTime processedAt = currentMinute();
                     if (processedAt.isBefore(justification.submittedAt())) {
                         throw new IllegalArgumentException("Absence justification processed date cannot be before submission");
+                    }
+                    if (command.decision() == AbsenceJustificationState.REJECTED
+                            && record.status() == AttendanceStatus.JUSTIFIED) {
+                        attendanceRecordDAO.updateStatus(
+                                connection,
+                                record.id(),
+                                AttendanceStatus.ABSENT,
+                                AttendanceState.CORRECTED
+                        );
                     }
                     justificationDAO.process(
                             connection,

@@ -5,17 +5,30 @@
 <html lang="en">
 <head>
     <base href="${pageContext.request.contextPath}/">
-    <title>GAPE - Assessment Detail</title>
+    <title>GAPE - Assessment Details</title>
     <%@ include file="/WEB-INF/fragments/template-base-head.jspf" %>
     <style>
         .ad-shell {
             --ad-primary: #2563eb;
             --ad-primary-dark: #1d4ed8;
+            --ad-primary-soft: #eff6ff;
+            --ad-primary-surface: #f4f8ff;
+            --ad-primary-rgb: 37, 99, 235;
+            --ad-primary-highlight-rgb: 14, 165, 233;
             --ad-border: #e6edf0;
             --ad-muted: #64748b;
             --ad-ink: #172033;
             max-width: 100%;
             min-width: 0;
+        }
+
+        .ad-shell--completed {
+            --ad-primary: #dc2626;
+            --ad-primary-dark: #b91c1c;
+            --ad-primary-soft: #fef2f2;
+            --ad-primary-surface: #fffafa;
+            --ad-primary-rgb: 220, 38, 38;
+            --ad-primary-highlight-rgb: 248, 113, 113;
         }
 
         .dashbord-body {
@@ -33,7 +46,7 @@
         }
 
         .ad-hero {
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.13), rgba(14, 165, 233, 0.07)), #fff;
+            background: linear-gradient(135deg, rgba(var(--ad-primary-rgb), 0.13), rgba(var(--ad-primary-highlight-rgb), 0.07)), #fff;
         }
 
         .ad-hero h2,
@@ -136,9 +149,9 @@
         }
 
         .ad-mode-card.is-active {
-            background: linear-gradient(135deg, rgba(37, 99, 235, 0.16), rgba(14, 165, 233, 0.06)), #f4f8ff;
-            border-color: rgba(37, 99, 235, 0.7);
-            box-shadow: 0 16px 36px rgba(37, 99, 235, 0.12);
+            background: linear-gradient(135deg, rgba(var(--ad-primary-rgb), 0.16), rgba(var(--ad-primary-highlight-rgb), 0.06)), var(--ad-primary-surface);
+            border-color: rgba(var(--ad-primary-rgb), 0.7);
+            box-shadow: 0 16px 36px rgba(var(--ad-primary-rgb), 0.12);
             transform: translateY(-1px);
         }
 
@@ -320,9 +333,27 @@
         .ad-correction-modal {
             --ad-primary: #2563eb;
             --ad-primary-dark: #1d4ed8;
+            --ad-primary-soft: #eff6ff;
+            --ad-primary-surface: #f4f8ff;
+            --ad-primary-rgb: 37, 99, 235;
+            --ad-primary-highlight-rgb: 14, 165, 233;
             --ad-border: #e6edf0;
             --ad-muted: #64748b;
             --ad-ink: #172033;
+        }
+
+        .ad-correction-modal--corrected {
+            --ad-primary: #16a34a;
+            --ad-primary-dark: #15803d;
+            --ad-primary-soft: #f0fdf4;
+            --ad-primary-surface: #f7fef9;
+            --ad-primary-rgb: 22, 163, 74;
+            --ad-primary-highlight-rgb: 74, 222, 128;
+        }
+
+        .ad-correction-modal--corrected .modal-header {
+            background: linear-gradient(135deg, rgba(var(--ad-primary-rgb), .12), rgba(var(--ad-primary-highlight-rgb), .06)), #fff;
+            border-bottom-color: rgba(var(--ad-primary-rgb), .24);
         }
 
         .ad-correction-modal .modal-content {
@@ -791,7 +822,8 @@
         }
 
         .ad-outline-button,
-        .ad-primary-button {
+        .ad-primary-button,
+        .ad-danger-button {
             align-items: center;
             border-radius: 8px;
             cursor: pointer;
@@ -828,6 +860,79 @@
             color: #fff;
             transform: translateY(-1px);
         }
+
+        .ad-danger-button {
+            background: #dc2626;
+            border: 1px solid #dc2626;
+            color: #fff;
+        }
+
+        .ad-danger-button:hover {
+            background: #b91c1c;
+            border-color: #b91c1c;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        /* Shared fixed panel grammar: this keeps Assessment Details aligned
+           with Subject Details while retaining the assessment-blue palette. */
+        .ad-detail-panel { background: transparent; border: 0; border-radius: 0; padding: 0; }
+        .ad-detail-panel-content { padding: 0 !important; }
+        .ad-detail-panel-header { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; margin-bottom: 16px; }
+        .ad-detail-panel-heading { min-width: 0; }
+        .ad-detail-panel-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 12px; }
+        .ad-sort-toggle { align-items: center; background: #fff; border: 1px solid var(--ad-border); border-radius: 12px; color: #334155; display: inline-flex; font-weight: 600; gap: 8px; padding: 12px 20px; transition: background-color .2s ease, border-color .2s ease, color .2s ease; }
+        .ad-sort-toggle:hover, .ad-sort-toggle.is-active { background: #eff6ff; border-color: rgba(37, 99, 235, .34); color: var(--ad-primary-dark); }
+        .ad-structure-list-header, .ad-structure-row { align-items: center; display: grid; gap: 14px; grid-template-columns: minmax(280px, 1.7fr) minmax(120px, .55fr) minmax(120px, .55fr) minmax(120px, .55fr) minmax(150px, auto); }
+        .ad-structure-list-header { color: #475569; font-size: 13px; font-weight: 600; padding: 0 16px 12px; }
+        .ad-assignment-list-header, .ad-assignment-row { grid-template-columns: minmax(250px, 1.25fr) minmax(220px, 1.05fr) minmax(135px, .55fr) minmax(92px, auto); }
+        .ad-attempt-list-header, .ad-attempt-row { grid-template-columns: minmax(230px, 1.4fr) minmax(70px, .35fr) minmax(145px, .7fr) minmax(118px, .55fr) minmax(112px, .5fr) minmax(72px, auto); }
+        /* A row may contain a two-line student identity beside one-line values.
+           Let every grid cell occupy the same row height, then centre its own
+           content.  This keeps the Attempt, Submitted, Score, State and Actions
+           columns on one horizontal axis instead of drifting with the student
+           e-mail line. */
+        .ad-attempt-row { align-items: stretch; }
+        .ad-attempt-cell--number,
+        .ad-attempt-cell--submitted,
+        .ad-attempt-cell--score,
+        .ad-attempt-cell--state { align-items: center; display: flex; min-height: 42px; }
+        .ad-structure-node { transition: border-color .2s ease, box-shadow .2s ease; }
+        .ad-structure-node:hover { border-color: rgba(37, 99, 235, .28) !important; box-shadow: 0 10px 26px rgba(15, 23, 42, .05); }
+        .ad-element-count { color: var(--ad-ink); font-size: 13px; font-weight: 500; }
+        .ad-node-meta { color: #64748b; display: block; line-height: 1.35; }
+        .ad-assignment-cell, .ad-attempt-cell { min-width: 0; }
+        .ad-structure-cell-label { color: #64748b; display: none; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+        .ad-attempt-waiting { color: #94a3b8; font-size: 13px; white-space: nowrap; }
+        .ad-detail-action { background: transparent; border: 0; color: #64748b; font-size: 20px; line-height: 1; padding: 0; }
+        .ad-detail-action:hover { color: var(--ad-primary-dark); }
+        .ad-detail-action--danger:hover { color: #dc2626; }
+        .ad-detail-action--decision { align-items: center; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; color: var(--ad-primary); display: inline-flex; font-size: 18px; height: 34px; justify-content: center; transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .2s ease; width: 34px; }
+        .ad-detail-action--decision:hover { background: #dbeafe; border-color: #60a5fa; color: var(--ad-primary-dark); transform: translateY(-1px); }
+        .ad-enrollment-tabs { border-bottom: 1px solid var(--ad-border); display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 20px; padding-bottom: 12px; }
+        .ad-enrollment-tab { align-items: center; background: #fff; border: 1px solid var(--ad-border); border-radius: 8px; color: var(--ad-ink); display: flex; font-size: 14px; font-weight: 600; gap: 10px; justify-content: center; min-height: 46px; padding: 10px 14px; transition: background-color .2s ease, border-color .2s ease, color .2s ease; }
+        .ad-enrollment-tab:hover, .ad-enrollment-tab.is-active { background: #eff6ff; border-color: rgba(37, 99, 235, .55); color: var(--ad-primary-dark); }
+        .ad-enrollment-tab-panel[hidden] { display: none !important; }
+        .ad-tab-loading { align-items: center; display: inline-flex; justify-content: center; min-height: 1.2em; min-width: 1.2em; }
+        .ad-tab-loading > i { animation: ad-tab-spin .8s linear infinite; display: inline-block; }
+        @keyframes ad-tab-spin { to { transform: rotate(360deg); } }
+        .ad-pending-corner-badge { align-items: center; background: #dc2626; border: 2px solid #fff; border-radius: 999px; color: #fff; display: inline-flex; font-size: 11px; font-weight: 700; justify-content: center; left: -8px; line-height: 1; min-height: 22px; min-width: 22px; padding: 3px 6px; position: absolute; top: -8px; z-index: 2; }
+        .ad-mode-card { position: relative; }
+        .modal.gape-assessment-modal-root { overflow: hidden; }
+        .modal-dialog.gape-assessment-modal-dialog { max-height: calc(100dvh - 48px); width: min(1040px, calc(100vw - 32px)); }
+        .modal-dialog.gape-assessment-modal-dialog .modal-content { display: flex; max-height: calc(100dvh - 48px); overflow: hidden; }
+        .modal-dialog.gape-assessment-modal-dialog .modal-body { min-height: 0; overflow: auto; overscroll-behavior: contain; }
+        .modal-dialog.gape-assessment-modal-dialog .modal-footer, .modal-dialog.gape-assessment-modal-dialog .modal-header { flex: 0 0 auto; }
+        .modal-dialog.gape-assessment-modal-dialog.ad-correction-dialog { width: min(1120px, calc(100vw - 32px)); }
+        .modal-dialog.gape-assessment-modal-dialog.ad-enrollment-modal-dialog { width: min(620px, calc(100vw - 32px)); }
+        .ad-enrollment-modal-dialog .modal-content { border: 0; border-radius: 12px; }
+        .ad-enrollment-modal-dialog .modal-header { padding: 20px 24px; }
+        .ad-enrollment-modal-dialog .modal-body { padding: 22px 24px; }
+        .ad-enrollment-modal-dialog .modal-footer { padding: 16px 24px; }
+        .ad-enrollment-decision-summary { background: #f8fafc; border: 1px solid var(--ad-border); border-radius: 8px; display: flex; flex-direction: column; padding: 14px 16px; }
+        .ad-shell--completed .ad-hero .bg-info-50 { background: var(--ad-primary-soft) !important; color: var(--ad-primary) !important; }
+        .ad-shell--completed .ad-sort-toggle:hover, .ad-shell--completed .ad-sort-toggle.is-active,
+        .ad-shell--completed .ad-enrollment-tab:hover, .ad-shell--completed .ad-enrollment-tab.is-active { background: var(--ad-primary-soft); border-color: rgba(var(--ad-primary-rgb), .55); }
 
         .ad-info-grid {
             display: grid;
@@ -1575,6 +1680,44 @@
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
+            #assessment-enrollments .ad-structure-list-header,
+            #assessment-attempts .ad-structure-list-header {
+                display: none;
+            }
+
+            #assessment-enrollments .ad-assignment-row,
+            #assessment-attempts .ad-attempt-row {
+                align-items: start;
+                gap: 14px 16px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            #assessment-enrollments .ad-assignment-row > :first-child,
+            #assessment-attempts .ad-attempt-cell--student,
+            #assessment-enrollments .ad-assignment-row > :last-child,
+            #assessment-attempts .ad-attempt-cell--actions {
+                grid-column: 1 / -1;
+            }
+
+            #assessment-enrollments .ad-assignment-row > :last-child,
+            #assessment-attempts .ad-attempt-cell--actions {
+                justify-content: flex-start !important;
+            }
+
+            #assessment-enrollments .ad-structure-cell-label,
+            #assessment-attempts .ad-structure-cell-label {
+                display: block;
+            }
+
+            #assessment-attempts .ad-attempt-cell--number,
+            #assessment-attempts .ad-attempt-cell--submitted,
+            #assessment-attempts .ad-attempt-cell--score,
+            #assessment-attempts .ad-attempt-cell--state {
+                align-items: flex-start;
+                display: block;
+                min-height: 0;
+            }
+
             #enrollments .ad-data-table {
                 min-width: 0;
                 width: 100%;
@@ -1698,6 +1841,11 @@
 
             .ad-mode-grid,
             .ad-info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            #assessment-enrollments .ad-assignment-row,
+            #assessment-attempts .ad-attempt-row {
                 grid-template-columns: 1fr;
             }
 
@@ -1928,7 +2076,7 @@
         <%@ include file="/WEB-INF/fragments/dashboard-sidebar.jspf" %>
         <div class="dashbord-body flex-grow-1 d-flex flex-column min-vh-100">
             <%@ include file="/WEB-INF/fragments/dashboard-topbar.jspf" %>
-            <div class="ad-shell px-24 py-24 flex-grow-1">
+            <div class="ad-shell ${assessment.completed ? 'ad-shell--completed' : ''} px-24 py-24 flex-grow-1" id="assessmentDetailLiveRoot" data-assessment-detail-live-root>
                 <%@ include file="/WEB-INF/fragments/flash-messages.jspf" %>
                 <c:url var="assessmentListUrl" value="/learning/assessments"/>
                 <c:url var="assessmentEditUrl" value="/learning/assessments/${assessment.id}/edit"/>
@@ -1969,12 +2117,14 @@
                             <a href="${assessmentPdfUrl}" class="ad-outline-button">
                                 <i class="ph ph-download-simple me-8"></i>Download
                             </a>
-                            <button type="button" class="ad-outline-button" data-bs-toggle="modal" data-bs-target="#assessmentSetupModal">
-                                <i class="ph ph-sliders-horizontal me-8"></i>Setup
-                            </button>
-                            <a href="${assessmentEditUrl}" class="ad-primary-button">
-                                <i class="ph ph-pencil-simple me-8"></i>Edit
-                            </a>
+                            <c:if test="${not assessment.completed}">
+                                <button type="button" class="ad-outline-button" data-bs-toggle="modal" data-bs-target="#assessmentSetupModal">
+                                    <i class="ph ph-sliders-horizontal me-8"></i>Setup
+                                </button>
+                                <a href="${assessmentEditUrl}" class="ad-primary-button">
+                                    <i class="ph ph-pencil-simple me-8"></i>Edit
+                                </a>
+                            </c:if>
                         </div>
                     </div>
                 </section>
@@ -1984,29 +2134,31 @@
                         <span class="d-flex align-items-start gap-14">
                             <span class="ad-mode-icon bg-info-50 text-info-600 text-22"><i class="ph ph-pencil-ruler"></i></span>
                             <span class="min-w-0 ad-mode-content">
-                                <span class="d-block text-17 fw-semibold text-neutral-800 mb-5">Builder</span>
+                                <span class="d-block text-17 fw-semibold text-neutral-800 mb-5 ad-mode-card__title">Builder</span>
                                 <span class="d-block text-14 text-neutral-500 mb-10 ad-mode-description">Questions, options and scoring.</span>
                                 <span class="d-block text-13 text-main-600 fw-semibold ad-mode-metric"><c:out value="${assessment.questionCountLabel}"/></span>
                             </span>
                         </span>
                     </button>
                     <button type="button" class="ad-mode-card" data-ad-tab="enrollments" role="tab" aria-selected="false">
+                        <c:if test="${assessmentPendingEnrollmentCount > 0}"><span class="ad-pending-corner-badge" data-assessment-enrollment-card-pending-badge><c:out value="${assessmentPendingEnrollmentCount}"/></span></c:if>
                         <span class="d-flex align-items-start gap-14">
                             <span class="ad-mode-icon bg-info-50 text-info-600 text-22"><i class="ph ph-users-three"></i></span>
                             <span class="min-w-0 ad-mode-content">
-                                <span class="d-block text-17 fw-semibold text-neutral-800 mb-5">Enrollments</span>
+                                <span class="d-block text-17 fw-semibold text-neutral-800 mb-5 ad-mode-card__title">Enrollments</span>
                                 <span class="d-block text-14 text-neutral-500 mb-10 ad-mode-description">Requests, policy and student access.</span>
                                 <span class="d-block text-13 text-main-600 fw-semibold ad-mode-metric">
-                                    ${fn:length(activeAssessmentEnrollments)} active<c:if test="${not empty pendingAssessmentEnrollments}"> | ${fn:length(pendingAssessmentEnrollments)} pending</c:if>
+                                    ${assessmentActiveEnrollmentCount} active<c:if test="${assessmentPendingEnrollmentCount > 0}"> | ${assessmentPendingEnrollmentCount} pending</c:if>
                                 </span>
                             </span>
                         </span>
                     </button>
                     <button type="button" class="ad-mode-card" data-ad-tab="attempts" role="tab" aria-selected="false">
+                        <c:if test="${assessmentDetailPendingCorrectionCount > 0}"><span class="ad-pending-corner-badge" data-assessment-correction-card-pending-badge><c:out value="${assessmentDetailPendingCorrectionCount}"/></span></c:if>
                         <span class="d-flex align-items-start gap-14">
                             <span class="ad-mode-icon bg-info-50 text-info-600 text-22"><i class="ph ph-checks"></i></span>
                             <span class="min-w-0 ad-mode-content">
-                                <span class="d-block text-17 fw-semibold text-neutral-800 mb-5">Attempts</span>
+                                <span class="d-block text-17 fw-semibold text-neutral-800 mb-5 ad-mode-card__title">Attempts</span>
                                 <span class="d-block text-14 text-neutral-500 mb-10 ad-mode-description">Submissions, answers and correction results.</span>
                                 <span class="d-block text-13 text-main-600 fw-semibold ad-mode-metric"><c:out value="${assessment.attemptCountLabel}"/></span>
                             </span>
@@ -2305,6 +2457,15 @@
                 </section>
 
                 <section class="ad-tab-panel" id="enrollments" data-ad-panel="enrollments" role="tabpanel" hidden>
+                    <div data-assessment-lazy-panel="enrollments"
+                         data-assessment-lazy-url="${pageContext.request.contextPath}/learning/assessments/${assessment.id}?lazyPanel=enrollments"
+                         aria-busy="false"<c:if test="${assessmentDetailEnrollmentsLoaded}"> data-assessment-lazy-loaded="true"</c:if>>
+                        <c:if test="${assessmentDetailEnrollmentsLoaded}"><%@ include file="/WEB-INF/fragments/assessment-enrollment-management.jspf" %></c:if>
+                    </div>
+                </section>
+
+                <c:if test="${false}">
+                <section class="ad-tab-panel" data-ad-panel="legacy-enrollments" role="tabpanel" hidden>
                     <div class="ad-surface px-24 py-24 mb-20">
                         <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-20">
                             <div>
@@ -2460,16 +2621,6 @@
                                                                 </button>
                                                             </form>
                                                         </c:if>
-                                                        <c:if test="${enrollment.reactivateAvailable}">
-                                                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments/${enrollment.studentUserId}/update" method="post" class="m-0">
-                                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                                <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments">
-                                                                <input type="hidden" name="state" value="active">
-                                                                <button type="submit" class="ad-enrollment-icon-button ad-enrollment-icon-button--success" title="Reactivate enrollment" aria-label="Reactivate enrollment">
-                                                                    <i class="ph ph-user-plus"></i>
-                                                                </button>
-                                                            </form>
-                                                        </c:if>
                                                         <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/enrollments/${enrollment.studentUserId}/delete" method="post" class="m-0">
                                                             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                                             <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#enrollments">
@@ -2493,8 +2644,18 @@
                         </div>
                     </div>
                 </section>
+                </c:if>
 
                 <section class="ad-tab-panel" id="attempts" data-ad-panel="attempts" role="tabpanel" hidden>
+                    <div data-assessment-lazy-panel="attempts"
+                         data-assessment-lazy-url="${pageContext.request.contextPath}/learning/assessments/${assessment.id}?lazyPanel=attempts"
+                         aria-busy="false"<c:if test="${assessmentDetailAttemptsLoaded}"> data-assessment-lazy-loaded="true"</c:if>>
+                        <c:if test="${assessmentDetailAttemptsLoaded}"><%@ include file="/WEB-INF/fragments/assessment-attempt-management.jspf" %></c:if>
+                    </div>
+                </section>
+
+                <c:if test="${false}">
+                <section class="ad-tab-panel" data-ad-panel="legacy-attempts" role="tabpanel" hidden>
                     <div class="ad-surface px-24 py-24">
                         <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
                             <div>
@@ -2523,8 +2684,8 @@
                                             <span class="d-block text-12 text-neutral-500"><c:out value="${attempt.studentEmail}"/></span>
                                         </td>
                                         <td class="py-20 px-20 text-14 text-neutral-500" data-label="Attempt">#${attempt.attemptNumber}</td>
-                                        <td class="py-20 px-20 text-14 text-neutral-500" data-label="Started"><c:out value="${attempt.startedAt}"/></td>
-                                        <td class="py-20 px-20 text-14 text-neutral-500" data-label="Submitted"><c:out value="${attempt.submittedAt}"/></td>
+                                        <td class="py-20 px-20 text-14 text-neutral-500" data-label="Started" data-gape-datetime-display><c:out value="${attempt.startedAt}"/></td>
+                                        <td class="py-20 px-20 text-14 text-neutral-500" data-label="Submitted" data-gape-datetime-display><c:out value="${attempt.submittedAt}"/></td>
                                         <td class="py-20 px-20 text-14 text-neutral-500" data-label="Score" data-ad-attempt-score="${attempt.id}"><c:out value="${attempt.scoreOverMaxLabel}"/></td>
                                         <td class="py-20 px-20" data-label="State">
                                             <span class="${attempt.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13" data-ad-attempt-state="${attempt.id}">
@@ -2557,6 +2718,7 @@
                         </div>
                     </div>
                 </section>
+                </c:if>
             </div>
             <%@ include file="/WEB-INF/fragments/dashboard-footer.jspf" %>
         </div>
@@ -2578,7 +2740,7 @@
                     <span class="${assessment.stateBadgeClass} px-14 py-7 border-neutral-30 border rounded-pill text-13">
                         <c:out value="${assessment.stateLabel}"/>
                     </span>
-                    <span class="bg-main-50 text-main-600 px-14 py-7 rounded-pill text-13">
+                    <span class="bg-main-50 text-main-600 px-14 py-7 rounded-pill text-13" data-gape-datetime-display>
                         <i class="ph ph-clock me-6"></i><c:out value="${assessment.availabilityLabel}"/>
                     </span>
                 </div>
@@ -2602,7 +2764,7 @@
 <c:forEach var="attempt" items="${attempts}">
     <c:if test="${attempt.correctionOpen}">
         <c:set var="attemptResponses" value="${responsesByAttemptId[attempt.id]}"/>
-        <div class="modal fade ad-correction-modal" id="correctAttemptModal${attempt.id}" tabindex="-1" aria-labelledby="correctAttemptTitle${attempt.id}" aria-hidden="true">
+        <div class="modal fade ad-correction-modal ${attempt.corrected ? 'ad-correction-modal--corrected' : ''}" id="correctAttemptModal${attempt.id}" tabindex="-1" aria-labelledby="correctAttemptTitle${attempt.id}" aria-hidden="true" data-assessment-correction-modal data-assessment-rigid-modal>
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable ad-correction-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
@@ -2634,7 +2796,7 @@
                             </div>
                         </div>
 
-                        <form id="manualCorrectionForm${attempt.id}" action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/attempts/${attempt.id}/manual-correct" method="post" class="m-0">
+                        <form id="manualCorrectionForm${attempt.id}" action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/attempts/${attempt.id}/manual-correct" method="post" class="m-0" data-assessment-live-correction-form>
                             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                             <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#attempts">
                         </form>
@@ -2722,14 +2884,14 @@
                                                         </c:otherwise>
                                                     </c:choose>
                                                     <c:if test="${not empty response.answeredAt}">
-                                                        <span class="text-12 text-neutral-500 d-block mt-8">Answered at <c:out value="${response.answeredAt}"/></span>
+                                                        <span class="text-12 text-neutral-500 d-block mt-8" data-gape-datetime-display>Answered at <c:out value="${response.answeredAt}"/></span>
                                                     </c:if>
                                                 </div>
                                                 <c:if test="${response.hasExpectedAnswer}">
-                                                    <button type="button" class="ad-outline-button ad-correction-expected-toggle" data-ad-expected-toggle aria-expanded="false" aria-controls="expectedAnswer${response.id}">
+                                                    <button type="button" class="ad-outline-button ad-correction-expected-toggle" data-ad-expected-toggle aria-expanded="false" aria-controls="attemptExpectedAnswer${attempt.id}_${response.id}">
                                                         <i class="ph ph-eye me-8" data-ad-expected-toggle-icon></i><span data-ad-expected-toggle-label>Show expected answer</span>
                                                     </button>
-                                                    <div class="ad-correction-expected-answer" id="expectedAnswer${response.id}" data-ad-expected-panel hidden>
+                                                    <div class="ad-correction-expected-answer" id="attemptExpectedAnswer${attempt.id}_${response.id}" data-ad-expected-panel hidden>
                                                         <span class="ad-correction-answer-label">Expected answer</span>
                                                         <c:choose>
                                                             <c:when test="${response.question.allowsOptions}">
@@ -2766,7 +2928,7 @@
                                             <div class="ad-correction-controls">
                                                 <div class="d-flex align-items-center gap-10 flex-wrap">
                                                     <c:if test="${response.objectiveWithExpectedAnswer}">
-                                                        <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/attempts/${attempt.id}/responses/${response.id}/auto-correct" method="post" class="m-0" data-ad-auto-correct-form data-ad-auto-correct-scope="response" data-ad-attempt-id="${attempt.id}">
+                                                        <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/attempts/${attempt.id}/responses/${response.id}/auto-correct" method="post" class="m-0" data-ad-auto-correct-form data-assessment-live-correction-form data-ad-auto-correct-scope="response" data-ad-attempt-id="${attempt.id}">
                                                             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                                             <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#attempts">
                                                             <button type="submit" class="ad-outline-button ad-correction-auto-button" aria-label="Auto correct response" data-ad-auto-correct-button>
@@ -2794,7 +2956,7 @@
                             <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/attempts/${attempt.id}/pdf" class="ad-outline-button ad-correction-download-button" title="Download" aria-label="Download attempt PDF">
                                 <i class="ph ph-download-simple me-8"></i>Download
                             </a>
-                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/attempts/${attempt.id}/auto-correct-eligible" method="post" class="m-0" data-ad-auto-correct-form data-ad-auto-correct-scope="attempt" data-ad-attempt-id="${attempt.id}">
+                            <form action="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/attempts/${attempt.id}/auto-correct-eligible" method="post" class="m-0" data-ad-auto-correct-form data-assessment-live-correction-form data-ad-auto-correct-scope="attempt" data-ad-attempt-id="${attempt.id}">
                                 <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                 <input type="hidden" name="returnTo" value="/learning/assessments/${assessment.id}#attempts">
                                 <button type="submit" class="ad-outline-button ad-correction-auto-button" <c:if test="${empty attemptResponses}">disabled</c:if> data-ad-auto-correct-button>
@@ -2917,50 +3079,6 @@
         }
 
         ready(function () {
-            var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-ad-tab]'));
-            var panels = Array.prototype.slice.call(document.querySelectorAll('[data-ad-panel]'));
-            if (!tabs.length || !panels.length) {
-                return;
-            }
-
-            function panelFromHash(hash) {
-                var value = (hash || '').replace(/^#/, '');
-                if (value === 'enrollments' || value === 'enrollments-attempts' || value === 'assessment-settings') {
-                    return 'enrollments';
-                }
-                if (value === 'attempts' || value === 'assessment-attempts' || value === 'settings-attempts') {
-                    return 'attempts';
-                }
-                return value === 'builder' ? 'builder' : 'builder';
-            }
-
-            function activatePanel(name, updateHash) {
-                tabs.forEach(function (tab) {
-                    var active = tab.dataset.adTab === name;
-                    tab.classList.toggle('is-active', active);
-                    tab.setAttribute('aria-selected', active ? 'true' : 'false');
-                });
-                panels.forEach(function (panel) {
-                    panel.hidden = panel.dataset.adPanel !== name;
-                });
-                if (updateHash && window.history && window.history.replaceState) {
-                    window.history.replaceState(null, '', window.location.pathname + window.location.search + '#' + name);
-                }
-            }
-
-            tabs.forEach(function (tab) {
-                tab.addEventListener('click', function () {
-                    activatePanel(tab.dataset.adTab || 'builder', true);
-                });
-            });
-            window.addEventListener('hashchange', function () {
-                activatePanel(panelFromHash(window.location.hash), false);
-            });
-            var initialPanel = window.location.hash ? panelFromHash(window.location.hash) : 'builder';
-            activatePanel(initialPanel, false);
-        });
-
-        ready(function () {
             var tabs = Array.prototype.slice.call(document.querySelectorAll('[data-ad-enrollment-tab]'));
             var panels = Array.prototype.slice.call(document.querySelectorAll('[data-ad-enrollment-panel]'));
             if (!tabs.length || !panels.length) {
@@ -2988,6 +3106,9 @@
 
         ready(function () {
             Array.prototype.slice.call(document.querySelectorAll('[data-ad-expected-toggle]')).forEach(function (button) {
+                if (button.closest('[data-assessment-correction-modal]')) {
+                    return;
+                }
                 var panel = document.getElementById(button.getAttribute('aria-controls') || '');
                 var label = button.querySelector('[data-ad-expected-toggle-label]');
                 var icon = button.querySelector('[data-ad-expected-toggle-icon]');
@@ -3232,6 +3353,9 @@
             }
 
             forms.forEach(function (form) {
+                if (form.hasAttribute('data-assessment-live-correction-form')) {
+                    return;
+                }
                 form.addEventListener('submit', function (event) {
                     event.preventDefault();
                     var attemptId = form.dataset.adAttemptId || '';
@@ -4198,6 +4322,10 @@
                     button.className = 'gape-rating-unit';
                     button.dataset.ratingUnit = String(unit);
                     button.disabled = readonly;
+                    button.setAttribute(
+                        'aria-label',
+                        (readonly ? 'Expected rating ' : 'Set expected rating to ') + unit + ' of ' + max
+                    );
                     if (value >= unit) {
                         button.classList.add('is-full');
                     } else if (step === 'half' && value >= unit - 0.5) {
@@ -4394,6 +4522,675 @@
                 updateScoreBalanceWarning();
                 prepareNavigationFlush();
             }
+        });
+    })();
+</script>
+<script>
+    (function () {
+        'use strict';
+
+        function ready(callback) {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', callback);
+                return;
+            }
+            callback();
+        }
+
+        function root() {
+            return document.querySelector('[data-assessment-detail-live-root]');
+        }
+
+        function activePanel() {
+            var current = root() && root().querySelector('[data-ad-tab].is-active');
+            return current ? current.getAttribute('data-ad-tab') : 'builder';
+        }
+
+        function panelFromHash(hash) {
+            var value = (hash || '').replace(/^#/, '');
+            if (value === 'enrollments' || value === 'enrollments-attempts' || value === 'assessment-settings') {
+                return 'enrollments';
+            }
+            if (value === 'attempts' || value === 'assessment-attempts' || value === 'settings-attempts') {
+                return 'attempts';
+            }
+            return value === 'builder' ? 'builder' : 'builder';
+        }
+
+        function currentEnrollmentTab() {
+            var current = root() && root().querySelector('[data-ad-enrollment-tab].is-active');
+            return current ? current.getAttribute('data-ad-enrollment-tab') : 'enrollments';
+        }
+
+        function currentAttemptTab() {
+            var current = root() && root().querySelector('[data-ad-attempt-tab].is-active');
+            return current ? current.getAttribute('data-ad-attempt-tab') : 'attempts';
+        }
+
+        function loadingMarkup() {
+            return '<span class="ad-tab-loading" role="status" aria-label="Loading">'
+                    + '<i class="ph ph-spinner-gap" aria-hidden="true"></i>'
+                    + '<span class="visually-hidden">Loading</span>'
+                    + '</span>';
+        }
+
+        function setControlLoading(control, busy) {
+            if (!control) {
+                return;
+            }
+            if (busy) {
+                if (!control.dataset.assessmentIdleHtml) {
+                    control.dataset.assessmentIdleHtml = control.innerHTML;
+                    control.dataset.assessmentIdleTitle = control.getAttribute('title') || '';
+                    control.dataset.assessmentIdleAria = control.getAttribute('aria-label') || '';
+                }
+                control.disabled = true;
+                control.setAttribute('aria-busy', 'true');
+                control.innerHTML = loadingMarkup();
+                return;
+            }
+            if (control.dataset.assessmentIdleHtml) {
+                control.innerHTML = control.dataset.assessmentIdleHtml;
+                control.setAttribute('title', control.dataset.assessmentIdleTitle || '');
+                control.setAttribute('aria-label', control.dataset.assessmentIdleAria || '');
+                delete control.dataset.assessmentIdleHtml;
+                delete control.dataset.assessmentIdleTitle;
+                delete control.dataset.assessmentIdleAria;
+            }
+            control.disabled = false;
+            control.removeAttribute('aria-busy');
+        }
+
+        function setTabLoading(name, busy) {
+            var tab = root() && root().querySelector('[data-ad-tab="' + name + '"]');
+            var title = tab ? tab.querySelector('.ad-mode-card__title') : null;
+            if (!tab || !title) {
+                return;
+            }
+            if (busy) {
+                if (title.dataset.assessmentLoadingOriginalHtml === undefined) {
+                    title.dataset.assessmentLoadingOriginalHtml = title.innerHTML;
+                }
+                tab.setAttribute('aria-busy', 'true');
+                tab.disabled = true;
+                title.innerHTML = loadingMarkup();
+                return;
+            }
+            if (title.dataset.assessmentLoadingOriginalHtml !== undefined) {
+                title.innerHTML = title.dataset.assessmentLoadingOriginalHtml;
+                delete title.dataset.assessmentLoadingOriginalHtml;
+            }
+            tab.removeAttribute('aria-busy');
+            tab.disabled = false;
+        }
+
+        function revealPanel(name) {
+            var host = root();
+            if (!host) {
+                return;
+            }
+            host.querySelectorAll('[data-ad-tab]').forEach(function (tab) {
+                var active = tab.getAttribute('data-ad-tab') === name;
+                tab.classList.toggle('is-active', active);
+                tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            host.querySelectorAll('[data-ad-panel]').forEach(function (panel) {
+                panel.hidden = panel.getAttribute('data-ad-panel') !== name;
+            });
+        }
+
+        function syncEnrollmentTab(name, scope) {
+            var target = scope || root();
+            if (!target || !name) {
+                return;
+            }
+            target.querySelectorAll('[data-ad-enrollment-tab]').forEach(function (tab) {
+                var active = tab.getAttribute('data-ad-enrollment-tab') === name;
+                tab.classList.toggle('is-active', active);
+                tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            target.querySelectorAll('[data-ad-enrollment-panel]').forEach(function (panel) {
+                panel.hidden = panel.getAttribute('data-ad-enrollment-panel') !== name;
+            });
+        }
+
+        function syncAttemptTab(name, scope) {
+            var target = scope || root();
+            if (!target || !name) {
+                return;
+            }
+            target.querySelectorAll('[data-ad-attempt-tab]').forEach(function (tab) {
+                var active = tab.getAttribute('data-ad-attempt-tab') === name;
+                tab.classList.toggle('is-active', active);
+                tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            target.querySelectorAll('[data-ad-attempt-panel]').forEach(function (panel) {
+                panel.hidden = panel.getAttribute('data-ad-attempt-panel') !== name;
+            });
+        }
+
+        function appendCorrectionModals(parsedDocument) {
+            document.querySelectorAll('[data-assessment-correction-modal]').forEach(function (modal) {
+                modal.remove();
+            });
+            parsedDocument.querySelectorAll('[data-assessment-correction-modal]').forEach(function (modal) {
+                document.body.appendChild(document.importNode(modal, true));
+            });
+        }
+
+        function initializeSelects(scope) {
+            if (!scope || !window.jQuery || !window.jQuery.fn || !window.jQuery.fn.select2) {
+                return;
+            }
+            window.jQuery(scope).find('.js-example-basic-single').each(function () {
+                var select = window.jQuery(this);
+                if (!select.hasClass('select2-hidden-accessible')) {
+                    select.select2({
+                        width: '100%',
+                        placeholder: this.dataset.select2Placeholder || undefined,
+                        dropdownParent: window.jQuery(this.closest('.modal') || document.body),
+                        matcher: function (params, data) {
+                            var term = (params.term || '').trim().toLocaleLowerCase();
+                            if (!term || !data.text || data.text.toLocaleLowerCase().indexOf(term) !== -1) {
+                                return data;
+                            }
+                            return null;
+                        }
+                    });
+                }
+            });
+        }
+
+        // Mirrors Subject Details exactly: every field cycles normal, reverse and
+        // original order, while the toggle clears the active sort in one action.
+        function configureSorting(scope) {
+            var roots = Array.prototype.slice.call((scope || document).querySelectorAll('[data-ad-detail-sort-root]'));
+            if (!roots.length) {
+                return;
+            }
+
+            function datasetKey(field) {
+                return 'sort' + field.charAt(0).toUpperCase() + field.slice(1);
+            }
+
+            function oppositeDirection(direction) {
+                return direction === 'asc' ? 'desc' : 'asc';
+            }
+
+            roots.forEach(function (sortRoot) {
+                if (sortRoot.dataset.adDetailSortInitialized === 'true') {
+                    return;
+                }
+
+                var lists = Array.prototype.slice.call(sortRoot.querySelectorAll('[data-ad-detail-sort-list]'));
+                var sortOptions = Array.prototype.slice.call(sortRoot.querySelectorAll('[data-ad-detail-sort-option]'));
+                var sortToggle = sortRoot.querySelector('[data-ad-detail-sort-toggle]');
+                if (!lists.length || !sortOptions.length) {
+                    return;
+                }
+                sortRoot.dataset.adDetailSortInitialized = 'true';
+
+                var listGroups = lists.map(function (list) {
+                    var rows = Array.prototype.slice.call(list.children).filter(function (child) {
+                        return child.hasAttribute('data-ad-detail-sort-row');
+                    });
+                    return {
+                        list: list,
+                        rows: rows.map(function (row, index) {
+                            if (!row.dataset.sortIndex) {
+                                row.dataset.sortIndex = String(index);
+                            }
+                            return { row: row, index: index };
+                        })
+                    };
+                });
+                var collator = new Intl.Collator(document.documentElement.lang || undefined, {
+                    numeric: true,
+                    sensitivity: 'base'
+                });
+                var activeField = null;
+                var activeDirection = null;
+
+                function originalIndex(group) {
+                    return Number(group.row.dataset.sortIndex || group.index || '0');
+                }
+
+                function sortValue(group, field) {
+                    return group.row.dataset[datasetKey(field)] || '';
+                }
+
+                function compareGroups(first, second) {
+                    if (!activeField || !activeDirection) {
+                        return originalIndex(first) - originalIndex(second);
+                    }
+                    var firstValue = sortValue(first, activeField);
+                    var secondValue = sortValue(second, activeField);
+                    var result = activeField === 'date'
+                        ? Number(firstValue || '0') - Number(secondValue || '0')
+                        : collator.compare(firstValue, secondValue);
+                    if (result === 0) {
+                        result = originalIndex(first) - originalIndex(second);
+                    }
+                    return activeDirection === 'desc' ? -result : result;
+                }
+
+                function renderRows() {
+                    listGroups.forEach(function (listGroup) {
+                        var sorted = listGroup.rows.slice().sort(compareGroups);
+                        listGroup.rows.forEach(function (group) {
+                            group.row.remove();
+                        });
+                        sorted.forEach(function (group) {
+                            listGroup.list.appendChild(group.row);
+                        });
+                    });
+                }
+
+                function updateOptionStates() {
+                    sortOptions.forEach(function (option) {
+                        var field = option.dataset.sortField;
+                        var normalDirection = option.dataset.sortNormal;
+                        var state = 'none';
+                        if (activeField === field) {
+                            state = activeDirection === normalDirection ? 'normal' : 'reverse';
+                        }
+                        option.dataset.sortState = state;
+                        option.classList.toggle('is-active', state !== 'none');
+                        option.setAttribute('aria-pressed', String(state !== 'none'));
+                    });
+                    if (sortToggle) {
+                        sortToggle.classList.toggle('is-active', activeField !== null);
+                    }
+                }
+
+                function closeDropdown() {
+                    if (sortToggle && window.bootstrap && window.bootstrap.Dropdown) {
+                        window.bootstrap.Dropdown.getOrCreateInstance(sortToggle).hide();
+                    }
+                }
+
+                if (sortToggle) {
+                    sortToggle.addEventListener('click', function (event) {
+                        if (!activeField) {
+                            return;
+                        }
+                        event.preventDefault();
+                        event.stopPropagation();
+                        activeField = null;
+                        activeDirection = null;
+                        updateOptionStates();
+                        renderRows();
+                        closeDropdown();
+                    });
+                }
+
+                sortOptions.forEach(function (option) {
+                    option.addEventListener('click', function () {
+                        var field = option.dataset.sortField;
+                        var normalDirection = option.dataset.sortNormal;
+                        var currentState = option.dataset.sortState;
+                        if (activeField !== field || currentState === 'none') {
+                            activeField = field;
+                            activeDirection = normalDirection;
+                        } else if (currentState === 'normal') {
+                            activeDirection = oppositeDirection(normalDirection);
+                        } else {
+                            activeField = null;
+                            activeDirection = null;
+                        }
+                        updateOptionStates();
+                        renderRows();
+                    });
+                });
+
+                updateOptionStates();
+            });
+        }
+
+        async function loadLazyPanel(name) {
+            if (name === 'builder') {
+                return true;
+            }
+            var host = root();
+            var panel = host && host.querySelector('[data-assessment-lazy-panel="' + name + '"]');
+            if (!panel || panel.dataset.assessmentLazyLoaded === 'true') {
+                return true;
+            }
+            if (panel.dataset.assessmentLazyLoading === 'true') {
+                return false;
+            }
+            var url = panel.dataset.assessmentLazyUrl;
+            if (!url) { return false; }
+            panel.dataset.assessmentLazyLoading = 'true';
+            panel.setAttribute('aria-busy', 'true');
+            setTabLoading(name, true);
+            panel.innerHTML = '<div class="ad-surface px-22 py-22 text-center text-14 text-neutral-500">Loading&hellip;</div>';
+            try {
+                var response = await fetch(withCurrentSession(url), {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'text/html', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (!response.ok) { throw new Error('The section could not be loaded.'); }
+                var html = await response.text();
+                var parsed = new DOMParser().parseFromString(html, 'text/html');
+                var incoming = parsed.querySelector('[data-assessment-lazy-panel="' + name + '"]');
+                if (!incoming) { throw new Error('The section could not be loaded.'); }
+                panel.innerHTML = incoming.innerHTML;
+                panel.dataset.assessmentLazyLoaded = 'true';
+                if (name === 'attempts') { appendCorrectionModals(parsed); }
+                configureSorting(panel); initializeSelects(panel); syncEnrollmentTab(currentEnrollmentTab(), panel); syncAttemptTab(currentAttemptTab(), panel);
+                return true;
+            } catch (error) {
+                panel.innerHTML = '<div class="ad-surface px-22 py-22 text-center text-14 text-danger-600">Unable to load this section. Please try again.</div>';
+                return false;
+            } finally {
+                delete panel.dataset.assessmentLazyLoading;
+                panel.setAttribute('aria-busy', 'false');
+                setTabLoading(name, false);
+            }
+        }
+
+        // Keep the card and its current panel in place until the requested panel
+        // has been fully fetched and initialized.  This is the same sequencing
+        // used by Class Group Details: selection is the final step, never the
+        // loading indicator.
+        async function activatePanel(name, updateHash) {
+            var target = name || activePanel();
+            var loaded = await loadLazyPanel(target);
+            if (loaded) {
+                revealPanel(target);
+                configureSorting(root());
+                if (updateHash && window.history && window.history.replaceState) {
+                    window.history.replaceState(null, '', window.location.pathname + window.location.search + '#' + target);
+                }
+            }
+            return loaded;
+        }
+
+        function syncSidebarEventBadge(parsedDocument) {
+            var incoming = parsedDocument.querySelector('[data-sidebar-event-badge]');
+            var count = incoming ? Number(incoming.textContent.trim()) || 0 : 0;
+            document.querySelectorAll('[data-sidebar-event-badge]').forEach(function (badge) {
+                badge.textContent = String(count);
+                badge.classList.toggle('d-none', count <= 0);
+            });
+        }
+
+        function clearModalBackdrops() {
+            document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) { backdrop.remove(); });
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('padding-right');
+        }
+
+        async function replaceRoot(html, requestedEnrollmentTab) {
+            var parsed = new DOMParser().parseFromString(html, 'text/html');
+            var incoming = parsed.querySelector('[data-assessment-detail-live-root]');
+            var current = root();
+            if (!incoming || !current) { throw new Error('Updated assessment details could not be loaded.'); }
+            var panel = activePanel();
+            var nestedTab = requestedEnrollmentTab || currentEnrollmentTab();
+            var nestedAttemptTab = currentAttemptTab();
+            syncSidebarEventBadge(parsed);
+            document.querySelectorAll('[data-assessment-correction-modal]').forEach(function (modal) {
+                modal.remove();
+            });
+            current.innerHTML = incoming.innerHTML;
+            clearModalBackdrops();
+            await activatePanel(panel);
+            syncEnrollmentTab(nestedTab);
+            syncAttemptTab(nestedAttemptTab);
+        }
+
+        function closeModal(modal) {
+            if (!modal) { return; }
+            if (window.bootstrap && window.bootstrap.Modal) { window.bootstrap.Modal.getOrCreateInstance(modal).hide(); }
+        }
+
+        function lockModalGeometry(modal) {
+            if (!modal || !modal.matches('[data-assessment-rigid-modal], #assessmentSetupModal, #addQuestionModal')) { return; }
+            var dialog = modal.querySelector('.modal-dialog');
+            if (!dialog || modal.dataset.assessmentGeometryLocked === 'true') { return; }
+            modal.dataset.assessmentGeometryLocked = 'true';
+            modal.classList.add('gape-assessment-modal-root'); dialog.classList.add('gape-assessment-modal-dialog');
+        }
+
+        function unlockModalGeometry(modal) {
+            if (!modal || modal.dataset.assessmentGeometryLocked !== 'true') { return; }
+            var dialog = modal.querySelector('.modal-dialog');
+            var content = modal.querySelector('.modal-content');
+            if (content) { content.style.removeProperty('--gape-assessment-modal-open-height'); }
+            if (dialog) { dialog.classList.remove('gape-assessment-modal-dialog'); }
+            modal.classList.remove('gape-assessment-modal-root'); delete modal.dataset.assessmentGeometryLocked;
+        }
+
+        function withCurrentSession(url) {
+            var target = new URL(url, window.location.href);
+            var match = window.location.pathname.match(/^(\/[^/]+)(;jsessionid=[^/]+)/i);
+            if (match && target.origin === window.location.origin
+                    && target.pathname.indexOf(match[2]) === -1
+                    && target.pathname.indexOf(match[1] + '/') === 0) {
+                target.pathname = match[1] + match[2] + target.pathname.substring(match[1].length);
+            }
+            return target.toString();
+        }
+
+        function correctionInputs(form) {
+            return Array.prototype.slice.call(document.querySelectorAll('[data-ad-response-score-input]')).filter(function (input) {
+                return input.form === form;
+            });
+        }
+
+        function validateCorrectionScore(input, touched) {
+            var raw = (input.value || '').trim();
+            var normalized = raw.replace(',', '.');
+            var message = '';
+            if (!/^\d+(?:\.\d+)?$/.test(normalized)) {
+                message = 'Use a non-negative number, for example 5, 3,545 or 1.76.';
+            } else if (Number(normalized) > Number(input.dataset.adScoreMax || Number.POSITIVE_INFINITY)) {
+                message = 'Manual score cannot exceed ' + (input.dataset.adScoreMax || 'the question score') + '.';
+            }
+            input.setCustomValidity(message);
+            if (touched) {
+                input.dataset.adTouched = 'true';
+            }
+            var error = document.querySelector('[data-ad-response-score-error="' + input.dataset.adResponseScoreInput + '"]');
+            if (error) {
+                error.textContent = input.dataset.adTouched === 'true' ? message : '';
+            }
+            input.classList.toggle('is-invalid', input.dataset.adTouched === 'true' && Boolean(message));
+            return !message;
+        }
+
+        function validateCorrectionForm(form, focusInvalid) {
+            var firstInvalid = null;
+            correctionInputs(form).forEach(function (input) {
+                if (!validateCorrectionScore(input, true) && !firstInvalid) {
+                    firstInvalid = input;
+                }
+            });
+            if (firstInvalid && focusInvalid) {
+                var card = firstInvalid.closest('.ad-correction-question-card') || firstInvalid;
+                card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                window.setTimeout(function () { firstInvalid.focus({ preventScroll: true }); }, 120);
+            }
+            return !firstInvalid && (!form.reportValidity || form.reportValidity());
+        }
+
+        function correctionSubmitButton(form, event) {
+            if (event && event.submitter) {
+                return event.submitter;
+            }
+            var external = form.id
+                    ? document.querySelector('[form="' + form.id + '"][data-ad-correction-submit-button]')
+                    : null;
+            return external || form.querySelector('[data-ad-auto-correct-button], [type="submit"]');
+        }
+
+        function applyCorrectionPayload(payload) {
+            if (!payload || !payload.attemptId) {
+                return;
+            }
+            var tones = ['bg-main-50', 'text-main-600', 'bg-warning-30', 'text-warning-600', 'bg-success-50', 'text-success-600', 'bg-neutral-30', 'text-neutral-600', 'bg-danger-50', 'text-danger-600'];
+            document.querySelectorAll('[data-ad-attempt-score="' + payload.attemptId + '"]').forEach(function (target) {
+                target.textContent = payload.scoreOverMax || 'Not assigned yet';
+            });
+            document.querySelectorAll('[data-ad-attempt-state="' + payload.attemptId + '"]').forEach(function (target) {
+                target.textContent = payload.state || target.textContent;
+                tones.forEach(function (tone) { target.classList.remove(tone); });
+                (payload.stateBadgeClass || '').split(/\s+/).filter(Boolean).forEach(function (tone) { target.classList.add(tone); });
+            });
+            (payload.responses || []).forEach(function (item) {
+                var input = document.querySelector('[data-ad-response-score-input="' + item.id + '"]');
+                if (input) {
+                    input.value = item.score || '';
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                var label = document.querySelector('[data-ad-response-score-label="' + item.id + '"]');
+                if (label) {
+                    label.textContent = item.scoreLabel || 'Not assigned yet';
+                    label.classList.toggle('text-success-600', item.score !== '');
+                    label.classList.toggle('text-warning-600', item.score === '');
+                }
+            });
+            var feedback = document.querySelector('[data-ad-correction-feedback="' + payload.attemptId + '"]');
+            if (feedback) {
+                var corrected = payload.automaticallyCorrectedResponses || 0;
+                feedback.textContent = corrected + ' eligible response' + (corrected === 1 ? '' : 's') + ' corrected.';
+                feedback.classList.add('is-success');
+                feedback.classList.remove('is-error');
+            }
+        }
+
+        function bindCorrectionInteractions() {
+            document.addEventListener('click', function (event) {
+                var toggle = event.target.closest('[data-ad-expected-toggle]');
+                if (!toggle || !toggle.closest('[data-assessment-correction-modal]')) {
+                    return;
+                }
+                var expected = document.getElementById(toggle.getAttribute('aria-controls') || '');
+                if (!expected) {
+                    return;
+                }
+                var visible = expected.hidden;
+                expected.hidden = !visible;
+                toggle.setAttribute('aria-expanded', visible ? 'true' : 'false');
+                var label = toggle.querySelector('[data-ad-expected-toggle-label]');
+                var icon = toggle.querySelector('[data-ad-expected-toggle-icon]');
+                if (label) { label.textContent = visible ? 'Hide expected answer' : 'Show expected answer'; }
+                if (icon) { icon.className = visible ? 'ph ph-eye-slash me-8' : 'ph ph-eye me-8'; }
+            });
+
+            document.addEventListener('input', function (event) {
+                var input = event.target.closest('[data-ad-response-score-input]');
+                if (input && input.closest('[data-assessment-correction-modal]')) {
+                    validateCorrectionScore(input, true);
+                }
+            });
+
+            document.addEventListener('blur', function (event) {
+                var input = event.target.closest('[data-ad-response-score-input]');
+                if (input && input.closest('[data-assessment-correction-modal]')) {
+                    validateCorrectionScore(input, true);
+                }
+            }, true);
+
+            document.addEventListener('submit', async function (event) {
+                var form = event.target.closest('[data-assessment-live-correction-form]');
+                if (!form) {
+                    return;
+                }
+                event.preventDefault();
+                if (form.dataset.assessmentCorrectionSubmitting === 'true') {
+                    return;
+                }
+                if (!validateCorrectionForm(form, true)) {
+                    return;
+                }
+                form.dataset.assessmentCorrectionSubmitting = 'true';
+                var button = correctionSubmitButton(form, event);
+                setControlLoading(button, true);
+                try {
+                    var response = await fetch(withCurrentSession(form.action), {
+                        method: (form.method || 'POST').toUpperCase(),
+                        body: new FormData(form),
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json, text/html', 'X-Requested-With': 'XMLHttpRequest' }
+                    });
+                    if (!response.ok) {
+                        throw new Error('The correction could not be completed.');
+                    }
+                    var contentType = response.headers.get('content-type') || '';
+                    if (contentType.indexOf('application/json') !== -1) {
+                        applyCorrectionPayload(await response.json());
+                    } else {
+                        await replaceRoot(await response.text());
+                    }
+                } catch (error) {
+                    window.alert(error.message || 'The correction could not be completed.');
+                } finally {
+                    delete form.dataset.assessmentCorrectionSubmitting;
+                    setControlLoading(button, false);
+                }
+            });
+        }
+
+        ready(function () {
+            configureSorting(document); initializeSelects(document);
+            activatePanel(panelFromHash(window.location.hash));
+            bindCorrectionInteractions();
+
+            document.addEventListener('click', function (event) {
+                var enrollmentTab = event.target.closest('[data-ad-enrollment-tab]');
+                if (enrollmentTab && root() && root().contains(enrollmentTab)) {
+                    syncEnrollmentTab(enrollmentTab.getAttribute('data-ad-enrollment-tab'));
+                    return;
+                }
+                var attemptTab = event.target.closest('[data-ad-attempt-tab]');
+                if (attemptTab && root() && root().contains(attemptTab)) {
+                    syncAttemptTab(attemptTab.getAttribute('data-ad-attempt-tab'));
+                    return;
+                }
+                var tab = event.target.closest('[data-ad-tab]');
+                if (tab && root() && root().contains(tab)) {
+                    activatePanel(tab.getAttribute('data-ad-tab'), true);
+                }
+            });
+            window.addEventListener('hashchange', function () { activatePanel(panelFromHash(window.location.hash)); });
+            document.addEventListener('shown.bs.modal', function (event) { lockModalGeometry(event.target); });
+            document.addEventListener('hidden.bs.modal', function (event) { unlockModalGeometry(event.target); });
+            document.addEventListener('submit', async function (event) {
+                var form = event.target.closest('[data-assessment-live-form]');
+                if (!form) { return; }
+                event.preventDefault();
+                if (!form.reportValidity()) { return; }
+                var button = form.querySelector('[data-assessment-live-submit]');
+                var modal = form.closest('.modal');
+                var requested = form.hasAttribute('data-assessment-live-enrollment-request-action') ? 'requests' : null;
+                setControlLoading(button, true);
+                try {
+                    // These enrollment controls do not upload files.  Submit them as a regular
+                    // form body so the CSRF filter can validate the token before the servlet
+                    // handles the live request (the assessment servlet is intentionally not a
+                    // multipart endpoint).
+                    var response = await fetch(withCurrentSession(form.action), {
+                        method: form.method || 'POST',
+                        body: new URLSearchParams(new FormData(form)).toString(),
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    var html = await response.text();
+                    if (!response.ok) { throw new Error('The enrollment action could not be completed.'); }
+                    closeModal(modal);
+                    await replaceRoot(html, requested);
+                } catch (error) {
+                    window.alert(error.message || 'The enrollment action could not be completed.');
+                } finally {
+                    setControlLoading(button, false);
+                }
+            });
         });
     })();
 </script>

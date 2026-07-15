@@ -102,7 +102,7 @@ public final class SubjectView {
     public String getStateBadgeClass() {
         return switch (state) {
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
         };
     }
 
@@ -110,7 +110,7 @@ public final class SubjectView {
         return state == SubjectState.ACTIVE;
     }
 
-    public boolean isArchived() {
+    public boolean isInactive() {
         return state == SubjectState.INACTIVE;
     }
 

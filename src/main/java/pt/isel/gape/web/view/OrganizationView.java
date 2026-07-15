@@ -2,6 +2,7 @@ package pt.isel.gape.web.view;
 
 import java.util.List;
 
+import pt.isel.gape.common.validation.MediaPathValidator;
 import pt.isel.gape.structure.model.Organization;
 import pt.isel.gape.structure.model.OrganizationState;
 import pt.isel.gape.structure.model.OrganizationType;
@@ -21,7 +22,7 @@ public final class OrganizationView {
         this.id = organization.id();
         this.name = organization.name();
         this.acronym = organization.acronym();
-        this.photo = organization.photo();
+        this.photo = MediaPathValidator.safeRelativePath(organization.photo()).orElse(null);
         this.type = organization.type();
         this.state = organization.state();
         this.organicUnits = List.copyOf(organicUnits);
@@ -87,7 +88,7 @@ public final class OrganizationView {
     public String getStateBadgeClass() {
         return switch (state) {
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
         };
     }
 
@@ -96,10 +97,6 @@ public final class OrganizationView {
     }
 
     public boolean isInactive() {
-        return state == OrganizationState.INACTIVE;
-    }
-
-    public boolean isArchived() {
         return state == OrganizationState.INACTIVE;
     }
 

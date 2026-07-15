@@ -2,6 +2,7 @@ package pt.isel.gape.web.view;
 
 import java.time.LocalDate;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupModality;
 import pt.isel.gape.learning.model.ClassGroupShift;
@@ -26,6 +27,16 @@ public final class ClassGroupView {
     private final int activeEnrollmentCount;
     private final int blockCount;
     private final int teacherCount;
+    private final long courseOccurrenceId;
+    private final long courseOccurrencePeriodId;
+    private final String occurrenceLabel;
+    private final String occurrenceDateRangeLabel;
+    private final String occurrenceStateLabel;
+    private final String occurrenceStateBadgeClass;
+    private final String occurrencePeriodLabel;
+    private final String occurrencePeriodDateRangeLabel;
+    private final String occurrencePeriodStateLabel;
+    private final String occurrencePeriodStateBadgeClass;
 
     private ClassGroupView(
             ClassGroup classGroup,
@@ -33,7 +44,15 @@ public final class ClassGroupView {
             SubjectView subject,
             int activeEnrollmentCount,
             int blockCount,
-            int teacherCount
+            int teacherCount,
+            String occurrenceLabel,
+            String occurrenceDateRangeLabel,
+            String occurrenceStateLabel,
+            String occurrenceStateBadgeClass,
+            String occurrencePeriodLabel,
+            String occurrencePeriodDateRangeLabel,
+            String occurrencePeriodStateLabel,
+            String occurrencePeriodStateBadgeClass
     ) {
         this.id = classGroup.id();
         this.courseId = classGroup.courseId();
@@ -52,6 +71,16 @@ public final class ClassGroupView {
         this.activeEnrollmentCount = activeEnrollmentCount;
         this.blockCount = blockCount;
         this.teacherCount = teacherCount;
+        this.courseOccurrenceId = classGroup.courseOccurrenceId();
+        this.courseOccurrencePeriodId = classGroup.courseOccurrencePeriodId();
+        this.occurrenceLabel = occurrenceLabel;
+        this.occurrenceDateRangeLabel = occurrenceDateRangeLabel;
+        this.occurrenceStateLabel = occurrenceStateLabel;
+        this.occurrenceStateBadgeClass = occurrenceStateBadgeClass;
+        this.occurrencePeriodLabel = occurrencePeriodLabel;
+        this.occurrencePeriodDateRangeLabel = occurrencePeriodDateRangeLabel;
+        this.occurrencePeriodStateLabel = occurrencePeriodStateLabel;
+        this.occurrencePeriodStateBadgeClass = occurrencePeriodStateBadgeClass;
     }
 
     public static ClassGroupView from(
@@ -60,9 +89,32 @@ public final class ClassGroupView {
             SubjectView subject,
             int activeEnrollmentCount,
             int blockCount,
-            int teacherCount
+            int teacherCount,
+            String occurrenceLabel,
+            String occurrenceDateRangeLabel,
+            String occurrenceStateLabel,
+            String occurrenceStateBadgeClass,
+            String occurrencePeriodLabel,
+            String occurrencePeriodDateRangeLabel,
+            String occurrencePeriodStateLabel,
+            String occurrencePeriodStateBadgeClass
     ) {
-        return new ClassGroupView(classGroup, course, subject, activeEnrollmentCount, blockCount, teacherCount);
+        return new ClassGroupView(
+                classGroup,
+                course,
+                subject,
+                activeEnrollmentCount,
+                blockCount,
+                teacherCount,
+                occurrenceLabel,
+                occurrenceDateRangeLabel,
+                occurrenceStateLabel,
+                occurrenceStateBadgeClass,
+                occurrencePeriodLabel,
+                occurrencePeriodDateRangeLabel,
+                occurrencePeriodStateLabel,
+                occurrencePeriodStateBadgeClass
+        );
     }
 
     public long getId() {
@@ -119,10 +171,6 @@ public final class ClassGroupView {
         return state == ClassGroupState.ACTIVE;
     }
 
-    public boolean isArchived() {
-        return state == ClassGroupState.COMPLETED;
-    }
-
     public boolean isCompleted() {
         return state == ClassGroupState.COMPLETED;
     }
@@ -165,7 +213,9 @@ public final class ClassGroupView {
         if (startsAt == null && endsAt == null) {
             return "-";
         }
-        return (startsAt == null ? "-" : startsAt.toString()) + " to " + (endsAt == null ? "-" : endsAt.toString());
+        return (startsAt == null ? "-" : ApplicationDateTimeFormat.date(startsAt))
+                + " to "
+                + (endsAt == null ? "-" : ApplicationDateTimeFormat.date(endsAt));
     }
 
     public String getShift() {
@@ -244,6 +294,62 @@ public final class ClassGroupView {
 
     public String getContextGroupTitle() {
         return subject.getName() + " | " + course.getSubjectManagementContextTitle();
+    }
+
+    public long getCourseOccurrenceId() {
+        return courseOccurrenceId;
+    }
+
+    public long getCourseOccurrencePeriodId() {
+        return courseOccurrencePeriodId;
+    }
+
+    public String getOccurrenceLabel() {
+        return occurrenceLabel == null || occurrenceLabel.isBlank() ? "Occurrence " + courseOccurrenceId : occurrenceLabel;
+    }
+
+    public String getOccurrenceDateRangeLabel() {
+        return occurrenceDateRangeLabel == null || occurrenceDateRangeLabel.isBlank()
+                ? "-"
+                : occurrenceDateRangeLabel;
+    }
+
+    public String getOccurrenceStateLabel() {
+        return occurrenceStateLabel == null || occurrenceStateLabel.isBlank() ? "-" : occurrenceStateLabel;
+    }
+
+    public String getOccurrenceStateBadgeClass() {
+        return occurrenceStateBadgeClass == null || occurrenceStateBadgeClass.isBlank()
+                ? "bg-neutral-30 text-neutral-600"
+                : occurrenceStateBadgeClass;
+    }
+
+    public String getOccurrencePeriodLabel() {
+        return occurrencePeriodLabel == null || occurrencePeriodLabel.isBlank() ? "-" : occurrencePeriodLabel;
+    }
+
+    public String getOccurrencePeriodDateRangeLabel() {
+        return occurrencePeriodDateRangeLabel == null || occurrencePeriodDateRangeLabel.isBlank()
+                ? "-"
+                : occurrencePeriodDateRangeLabel;
+    }
+
+    /**
+     * A class group takes place in one concrete period.  This state is kept
+     * separately from the annual course-occurrence state so an ended semester
+     * is never rendered as active merely because another semester remains
+     * active in the same occurrence.
+     */
+    public String getOccurrencePeriodStateLabel() {
+        return occurrencePeriodStateLabel == null || occurrencePeriodStateLabel.isBlank()
+                ? "-"
+                : occurrencePeriodStateLabel;
+    }
+
+    public String getOccurrencePeriodStateBadgeClass() {
+        return occurrencePeriodStateBadgeClass == null || occurrencePeriodStateBadgeClass.isBlank()
+                ? "bg-neutral-30 text-neutral-600"
+                : occurrencePeriodStateBadgeClass;
     }
 
     private static String contextPartHtml(String acronym, String name) {

@@ -19,6 +19,10 @@ import pt.isel.gape.web.navigation.DashboardNavigation;
 @WebServlet(name = "loginServlet", urlPatterns = "/auth/login")
 public final class LoginServlet extends HttpServlet {
 
+    private static final String GENERIC_AUTHENTICATION_ERROR = "Invalid credentials or account unavailable.";
+    private static final String RATE_LIMIT_RETRY_AFTER_SECONDS = "900";
+    private static final int TOO_MANY_REQUESTS_STATUS = 429;
+
     private final AuthService authService;
     private final SessionManager sessionManager;
 
@@ -36,6 +40,7 @@ public final class LoginServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        sessionManager.ensureCsrfToken(request);
         response.sendRedirect(request.getContextPath() + "/login.jsp");
     }
 
@@ -54,8 +59,14 @@ public final class LoginServlet extends HttpServlet {
             );
             response.sendRedirect(request.getContextPath() + resolveLandingPage(authenticatedSession.sessionUser()));
         } catch (AuthenticationException exception) {
-            request.getSession(true).setAttribute("authError", mapFailure(exception.reason()));
-            response.sendRedirect(request.getContextPath() + "/login.jsp?error=" + exception.reason().name().toLowerCase());
+            request.getSession(true).setAttribute("authError", GENERIC_AUTHENTICATION_ERROR);
+            if (exception.reason() == AuthenticationFailureReason.TOO_MANY_ATTEMPTS) {
+                response.setStatus(TOO_MANY_REQUESTS_STATUS);
+                response.setHeader("Retry-After", RATE_LIMIT_RETRY_AFTER_SECONDS);
+                request.getRequestDispatcher("/login.jsp").forward(request, response);
+                return;
+            }
+            response.sendRedirect(request.getContextPath() + "/login.jsp?error=invalid_credentials");
         }
     }
 
@@ -63,12 +74,4 @@ public final class LoginServlet extends HttpServlet {
         return DashboardNavigation.landingPageFor(sessionUser).orElse("/login.jsp?auth=required");
     }
 
-    private static String mapFailure(AuthenticationFailureReason reason) {
-        return switch (reason) {
-            case INVALID_CREDENTIALS -> "Invalid credentials.";
-            case USER_INACTIVE -> "The account is inactive.";
-            case USER_BLOCKED -> "The account is blocked.";
-            case USER_WITHOUT_PROFILE -> "The account has no access profile assigned.";
-        };
-    }
 }

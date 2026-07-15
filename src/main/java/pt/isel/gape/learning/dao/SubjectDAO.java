@@ -17,7 +17,7 @@ import pt.isel.gape.learning.model.SubjectState;
 import pt.isel.gape.learning.model.SubjectUpdateCommand;
 import pt.isel.gape.security.authorization.AuthorizationPolicy;
 
-public final class SubjectDAO {
+public final class SubjectDAO implements pt.isel.gape.transversal.service.ApplicationReadService.Subjects {
 
     private final ConnectionProvider connectionProvider;
 
@@ -28,21 +28,23 @@ public final class SubjectDAO {
     public long create(Connection connection, SubjectCreateCommand command) throws SQLException {
         String sql = """
                 INSERT INTO subject (
-                    id_organization, name, acronym, photo, description, ects, final_grade_max, workload_hours, state
+                    id_organization, id_organic_unit, name, acronym, photo, description,
+                    ects, final_grade_max, workload_hours, state
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setLong(1, command.organizationId());
-            statement.setString(2, command.name().trim());
-            setNullableString(statement, 3, command.acronym());
-            setNullableString(statement, 4, command.photo());
-            setNullableString(statement, 5, command.description());
-            statement.setBigDecimal(6, command.ects());
-            statement.setBigDecimal(7, command.finalGradeMax());
-            setNullableInteger(statement, 8, command.workloadHours());
-            statement.setString(9, command.state().toDatabaseValue());
+            setNullableLong(statement, 2, command.organicUnitId());
+            statement.setString(3, command.name().trim());
+            setNullableString(statement, 4, command.acronym());
+            setNullableString(statement, 5, command.photo());
+            setNullableString(statement, 6, command.description());
+            statement.setBigDecimal(7, command.ects());
+            statement.setBigDecimal(8, command.finalGradeMax());
+            setNullableInteger(statement, 9, command.workloadHours());
+            statement.setString(10, command.state().toDatabaseValue());
             statement.executeUpdate();
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (!generatedKeys.next()) {
@@ -61,7 +63,7 @@ public final class SubjectDAO {
 
     public Optional<Subject> findById(Connection connection, long subjectId) throws SQLException {
         String sql = """
-                SELECT id_subject, id_organization, name, acronym, photo, description,
+                SELECT id_subject, id_organization, id_organic_unit, name, acronym, photo, description,
                        ects, final_grade_max, workload_hours, state
                 FROM subject
                 WHERE id_subject = ?
@@ -80,7 +82,7 @@ public final class SubjectDAO {
 
     public List<Subject> findAll() throws SQLException {
         String sql = """
-                SELECT id_subject, id_organization, name, acronym, photo, description,
+                SELECT id_subject, id_organization, id_organic_unit, name, acronym, photo, description,
                        ects, final_grade_max, workload_hours, state
                 FROM subject
                 ORDER BY name, id_subject
@@ -99,7 +101,7 @@ public final class SubjectDAO {
 
     public List<Subject> findByOrganization(long organizationId) throws SQLException {
         String sql = """
-                SELECT id_subject, id_organization, name, acronym, photo, description,
+                SELECT id_subject, id_organization, id_organic_unit, name, acronym, photo, description,
                        ects, final_grade_max, workload_hours, state
                 FROM subject
                 WHERE id_organization = ?
@@ -121,7 +123,7 @@ public final class SubjectDAO {
 
     public List<Subject> findActiveByOrganization(long organizationId) throws SQLException {
         String sql = """
-                SELECT id_subject, id_organization, name, acronym, photo, description,
+                SELECT id_subject, id_organization, id_organic_unit, name, acronym, photo, description,
                        ects, final_grade_max, workload_hours, state
                 FROM subject
                 WHERE id_organization = ?
@@ -144,7 +146,7 @@ public final class SubjectDAO {
 
     public List<Subject> findByCoordinator(long coordinatorUserId) throws SQLException {
         String sql = """
-                SELECT s.id_subject, s.id_organization, s.name, s.acronym, s.photo, s.description,
+                SELECT s.id_subject, s.id_organization, s.id_organic_unit, s.name, s.acronym, s.photo, s.description,
                        s.ects, s.final_grade_max, s.workload_hours, s.state
                 FROM subject s
                 JOIN coordinate_subject cs ON cs.id_subject = s.id_subject
@@ -153,8 +155,6 @@ public final class SubjectDAO {
                   AND cs.state = 'active'
                   AND u.state = 'active'
                   AND s.state = 'active'
-                  AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
-                  AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 ORDER BY s.id_subject
                 """;
 
@@ -173,7 +173,7 @@ public final class SubjectDAO {
 
     public List<Subject> findByTeacher(long teacherUserId) throws SQLException {
         String sql = """
-                SELECT DISTINCT s.id_subject, s.id_organization, s.name, s.acronym, s.photo, s.description,
+                SELECT DISTINCT s.id_subject, s.id_organization, s.id_organic_unit, s.name, s.acronym, s.photo, s.description,
                        s.ects, s.final_grade_max, s.workload_hours, s.state
                 FROM subject s
                 JOIN class_group cg ON cg.id_subject = s.id_subject
@@ -252,21 +252,22 @@ public final class SubjectDAO {
     public void update(Connection connection, long subjectId, SubjectUpdateCommand command) throws SQLException {
         String sql = """
                 UPDATE subject
-                SET name = ?, acronym = ?, photo = ?, description = ?,
+                SET id_organic_unit = ?, name = ?, acronym = ?, photo = ?, description = ?,
                     ects = ?, final_grade_max = ?, workload_hours = ?, state = ?
                 WHERE id_subject = ?
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, command.name().trim());
-            setNullableString(statement, 2, command.acronym());
-            setNullableString(statement, 3, command.photo());
-            setNullableString(statement, 4, command.description());
-            statement.setBigDecimal(5, command.ects());
-            statement.setBigDecimal(6, command.finalGradeMax());
-            setNullableInteger(statement, 7, command.workloadHours());
-            statement.setString(8, command.state().toDatabaseValue());
-            statement.setLong(9, subjectId);
+            setNullableLong(statement, 1, command.organicUnitId());
+            statement.setString(2, command.name().trim());
+            setNullableString(statement, 3, command.acronym());
+            setNullableString(statement, 4, command.photo());
+            setNullableString(statement, 5, command.description());
+            statement.setBigDecimal(6, command.ects());
+            statement.setBigDecimal(7, command.finalGradeMax());
+            setNullableInteger(statement, 8, command.workloadHours());
+            statement.setString(9, command.state().toDatabaseValue());
+            statement.setLong(10, subjectId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Subject not found: " + subjectId);
             }
@@ -300,7 +301,6 @@ public final class SubjectDAO {
                 SELECT
                     (SELECT COUNT(*) FROM integrate_subject WHERE id_subject = ?)
                   + (SELECT COUNT(*) FROM coordinate_subject WHERE id_subject = ?)
-                  + (SELECT COUNT(*) FROM enroll_subject WHERE id_subject = ?)
                   + (SELECT COUNT(*) FROM class_group WHERE id_subject = ?)
                   + (SELECT COUNT(*) FROM assessment WHERE id_subject = ?)
                   + (SELECT COUNT(*) FROM associate_subject_content WHERE id_subject = ?)
@@ -315,7 +315,6 @@ public final class SubjectDAO {
             statement.setLong(4, subjectId);
             statement.setLong(5, subjectId);
             statement.setLong(6, subjectId);
-            statement.setLong(7, subjectId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 return resultSet.getLong("dependency_count") > 0;
@@ -336,9 +335,12 @@ public final class SubjectDAO {
     private static Subject mapSubject(ResultSet resultSet) throws SQLException {
         int workloadHours = resultSet.getInt("workload_hours");
         boolean workloadWasNull = resultSet.wasNull();
+        long organicUnitId = resultSet.getLong("id_organic_unit");
+        boolean organicUnitWasNull = resultSet.wasNull();
         return new Subject(
                 resultSet.getLong("id_subject"),
                 resultSet.getLong("id_organization"),
+                organicUnitWasNull ? null : organicUnitId,
                 resultSet.getString("name"),
                 resultSet.getString("acronym"),
                 resultSet.getString("photo"),
@@ -358,21 +360,20 @@ public final class SubjectDAO {
         }
     }
 
-    private static void setNullableBigDecimal(PreparedStatement statement, int index, BigDecimal value)
-            throws SQLException {
-        if (value == null) {
-            statement.setNull(index, java.sql.Types.DECIMAL);
-        } else {
-            statement.setBigDecimal(index, value);
-        }
-    }
-
     private static void setNullableInteger(PreparedStatement statement, int index, Integer value)
             throws SQLException {
         if (value == null) {
             statement.setNull(index, java.sql.Types.INTEGER);
         } else {
             statement.setInt(index, value);
+        }
+    }
+
+    private static void setNullableLong(PreparedStatement statement, int index, Long value) throws SQLException {
+        if (value == null) {
+            statement.setNull(index, java.sql.Types.BIGINT);
+        } else {
+            statement.setLong(index, value);
         }
     }
 }

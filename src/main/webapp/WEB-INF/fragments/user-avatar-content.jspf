@@ -1,7 +1,9 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <c:choose>
     <c:when test="${not empty sessionScope['gape.auth.userPhoto']}">
-        <img class="gape-user-avatar-img" src="${pageContext.request.contextPath}/media/${sessionScope['gape.auth.userPhoto']}" alt="${sessionScope['gape.auth.userName']}" onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
+        <c:url var="gapeUserAvatarUrl" value="/media/${sessionScope['gape.auth.userPhoto']}"/>
+        <img class="gape-user-avatar-img" src="${fn:escapeXml(gapeUserAvatarUrl)}" alt="${fn:escapeXml(sessionScope['gape.auth.userName'])}" onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
         <i class="ph ph-user-circle d-none"></i>
     </c:when>
     <c:otherwise>

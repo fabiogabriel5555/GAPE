@@ -20,19 +20,9 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
-import pt.isel.gape.access.dao.UserDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
-import pt.isel.gape.learning.dao.AssessmentDAO;
-import pt.isel.gape.learning.dao.AssessmentEnrollmentDAO;
-import pt.isel.gape.learning.dao.AttemptDAO;
-import pt.isel.gape.learning.dao.ClassGroupDAO;
-import pt.isel.gape.learning.dao.ContentBlockDAO;
-import pt.isel.gape.learning.dao.QuestionDAO;
-import pt.isel.gape.learning.dao.QuestionOptionDAO;
-import pt.isel.gape.learning.dao.ResponseDAO;
-import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.Assessment;
 import pt.isel.gape.learning.model.AssessmentEnrollment;
 import pt.isel.gape.learning.model.AssessmentEnrollmentCommand;
@@ -48,6 +38,7 @@ import pt.isel.gape.learning.service.AttemptService;
 import pt.isel.gape.learning.service.PdfUploadService;
 import pt.isel.gape.learning.service.ResponseService;
 import pt.isel.gape.security.session.SessionUser;
+import pt.isel.gape.transversal.service.ApplicationReadService;
 import pt.isel.gape.web.view.AssessmentView;
 import pt.isel.gape.web.view.AttemptView;
 import pt.isel.gape.web.view.QuestionOptionView;
@@ -73,10 +64,10 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
     private final AssessmentEnrollmentService assessmentEnrollmentService;
     private final ResponseService responseService;
     private final PdfUploadService pdfUploadService;
-    private final AssessmentDAO assessmentDAO;
-    private final AssessmentEnrollmentDAO assessmentEnrollmentDAO;
-    private final AttemptDAO attemptDAO;
-    private final ResponseDAO responseDAO;
+    private final ApplicationReadService.Assessments assessmentDAO;
+    private final ApplicationReadService.AssessmentEnrollments assessmentEnrollmentDAO;
+    private final ApplicationReadService.Attempts attemptDAO;
+    private final ApplicationReadService.Responses responseDAO;
     private final AssessmentViewFactory viewFactory;
 
     public StudentAssessmentServlet() {
@@ -85,68 +76,40 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
 
     private StudentAssessmentServlet(ConnectionProvider connectionProvider, Clock clock) {
         this(
+                new ApplicationReadService(connectionProvider),
                 new AttemptService(connectionProvider, clock),
                 new AssessmentEnrollmentService(connectionProvider, clock),
                 new ResponseService(connectionProvider, clock),
-                new PdfUploadService(),
-                new AssessmentDAO(connectionProvider),
-                new AssessmentEnrollmentDAO(connectionProvider),
-                new AttemptDAO(connectionProvider),
-                new ResponseDAO(connectionProvider),
-                new AssessmentViewFactory(
-                        new AssessmentDAO(connectionProvider),
-                        new QuestionDAO(connectionProvider),
-                        new QuestionOptionDAO(connectionProvider),
-                        new AttemptDAO(connectionProvider),
-                        new ResponseDAO(connectionProvider),
-                        new SubjectDAO(connectionProvider),
-                        new ContentBlockDAO(connectionProvider),
-                        new ClassGroupDAO(connectionProvider),
-                        new UserDAO(connectionProvider)
-                )
+                new PdfUploadService()
         );
     }
 
     StudentAssessmentServlet(
-            AttemptService attemptService,
-            ResponseService responseService,
-            AssessmentDAO assessmentDAO,
-            AttemptDAO attemptDAO,
-            AssessmentViewFactory viewFactory
-    ) {
-        this(
-                attemptService,
-                new AssessmentEnrollmentService(ConnectionProvider.defaultProvider(), ApplicationClock.system()),
-                responseService,
-                new PdfUploadService(),
-                assessmentDAO,
-                new AssessmentEnrollmentDAO(ConnectionProvider.defaultProvider()),
-                attemptDAO,
-                new ResponseDAO(ConnectionProvider.defaultProvider()),
-                viewFactory
-        );
-    }
-
-    StudentAssessmentServlet(
+            ApplicationReadService readService,
             AttemptService attemptService,
             AssessmentEnrollmentService assessmentEnrollmentService,
             ResponseService responseService,
-            PdfUploadService pdfUploadService,
-            AssessmentDAO assessmentDAO,
-            AssessmentEnrollmentDAO assessmentEnrollmentDAO,
-            AttemptDAO attemptDAO,
-            ResponseDAO responseDAO,
-            AssessmentViewFactory viewFactory
+            PdfUploadService pdfUploadService
     ) {
         this.attemptService = attemptService;
         this.assessmentEnrollmentService = assessmentEnrollmentService;
         this.responseService = responseService;
         this.pdfUploadService = pdfUploadService;
-        this.assessmentDAO = assessmentDAO;
-        this.assessmentEnrollmentDAO = assessmentEnrollmentDAO;
-        this.attemptDAO = attemptDAO;
-        this.responseDAO = responseDAO;
-        this.viewFactory = viewFactory;
+        this.assessmentDAO = readService.assessments();
+        this.assessmentEnrollmentDAO = readService.assessmentEnrollments();
+        this.attemptDAO = readService.attempts();
+        this.responseDAO = readService.responses();
+        this.viewFactory = new AssessmentViewFactory(
+                readService.assessments(),
+                readService.questions(),
+                readService.questionOptions(),
+                readService.attempts(),
+                readService.responses(),
+                readService.subjects(),
+                readService.contentBlocks(),
+                readService.classGroups(),
+                readService.users()
+        );
     }
 
     @Override
@@ -243,6 +206,7 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
                     ),
                     request.getRemoteAddr()
             );
+            refreshLearningEvents();
             flashSuccess(request, "Assessment enrollment requested.");
         } catch (RuntimeException exception) {
             flashError(request, messageForRuntime(exception));
@@ -383,6 +347,7 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
                         attemptId,
                         request.getRemoteAddr()
                 );
+                refreshLearningEvents();
                 flashSuccess(request, "Attempt submitted.");
                 redirect(request, response, "/student/assessments/attempts/" + attemptId + "/result");
                 return;

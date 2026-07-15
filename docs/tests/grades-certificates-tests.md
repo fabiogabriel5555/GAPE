@@ -18,13 +18,13 @@ Full regression run:
 mvn test
 ```
 
-Latest execution in this workspace: 2026-07-01, full `mvn test` and `mvn -DskipTests package`, 556 tests, 0 failures, 0 errors, 0 skipped.
+Historical execution recorded on 01-07-2026: full `mvn test` and `mvn -DskipTests package`, 556 tests, 0 failures, 0 errors, 0 skipped. See `docs/tests/README.md` for current validation rules.
 
 Covered cases:
 
-- automatic draft certificate and subject grade sheet creation on active course enrollment;
-- automatic draft subject grade sheet creation on active subject enrollment;
-- automatic draft class grade sheet creation on active class group enrollment;
+- one automatic final source grade sheet for every class group, created with that class group;
+- one automatic consolidated subject-occurrence sheet, created only when the first real class group exists in that exact subject/course-occurrence context;
+- independent grade-sheet, assessment, student and certificate contexts when the same subject is associated with courses that have different occurrence calendars;
 - valid grade sheet creation for service-level fixtures in a managed class group;
 - coordinator and administrator grade sheet creation in service-level context;
 - assessment creation rejects final-grade weights outside the 0 to 100 range;
@@ -33,7 +33,9 @@ Covered cases:
 - class grade sheet weights can be edited in any grade sheet state;
 - ended class group periods redistribute non-100 assessment weights equally before publication;
 - grade sheet automatic publication with `released_at` when all required assessment scores and weights exist;
-- stale published grade sheets with displayed `-` grades are synchronized back to Draft on read;
+- automatic publication of every grade sheet in a completed, non-cancelled course-occurrence period, even when displayed grades remain `-`;
+- persistent publication explanations for pending weights, assessment grades, final grades or subject-sheet consolidation;
+- published sheets with displayed `-` grades remain Published and do not become artificially zero-valued;
 - direct grade changes remain blocked after publication, while class assessment weights remain editable;
 - student direct consultation of grade sheet definitions blocked;
 - grade sheet creation denied outside the teacher context;
@@ -41,8 +43,8 @@ Covered cases:
 - automatic grade records generated only from corrected assessment scores and assessment weights;
 - active grade records inserted by SQL must use the automatic code pattern (`AUTO-...` or compact `A-...`);
 - automatic grade record code and value recalculated when weights change;
-- missing assessment scores keep the grade sheet in Draft and leave the final grade as `-`;
-- full seed includes draft grade sheet `1015` with one student fully graded and another enrolled student still showing missing assessment grades;
+- missing assessment scores keep an active-period grade sheet in Draft and leave the final grade as `-`;
+- full-seed conformance publishes completed-period grade sheets such as `1015` with the required pending-grade explanation;
 - calculated approved and failed results from the automatic final grade;
 - student blocked from grade management;
 - student consultation limited to own published grade records;
@@ -53,12 +55,10 @@ Covered cases:
 - administrator certificate synchronization in context;
 - certificate publication rejected without course eligibility;
 - certificate publication rejected without an approved grade record;
-- public validation code generated automatically and uniquely;
+- certificate publication creates a unique public validation code scoped to its course occurrence;
 - certificate publication rejected unless every calculated grade sheet is eligible;
 - certificate final grade calculated from every active course subject, not from the submitted subset;
-- published certificate revocation;
-- certificate revocation rejected for students and partial/unrelated managers;
-- revoked certificate rejected by public validation;
+- public validation accepts an issued certificate code and rejects blank, malformed or unknown codes;
 - student blocked from certificate publication;
 - student consultation limited to own certificates;
 - student consultation of another student's certificate blocked;
@@ -66,27 +66,27 @@ Covered cases:
 ## Codex Corrections Applied
 
 - Class assessment weights remain configurable through `GradeSheetService.updateGradeSheet` in every grade sheet state; the manager JSP shows the Edit weights action for every class grade sheet and only disables saving when there are no assessment columns.
-- Grade sheets are created as `Draft` from active course/subject/class-group enrollments and are not created from the manager JSP.
-- Grade sheets are published automatically only when no displayed grade is `-`; ended class periods no longer convert missing grades to zero.
-- Certificates are created as `Draft` from course enrollment and are published automatically only after every required grade sheet is complete.
-- Certificates now have persisted state and revocation timestamp.
-- Public validation accepts only certificates in the persisted `issued` state, shown to users as Published.
+- Grade sheets are not created from a generic course-subject association or course enrollment. A new class group creates its final source sheet, and that first real class group creates the single derived subject-occurrence sheet. Source and consolidated sheets are always resolved through the concrete class-group occurrence.
+- Grade sheets are published automatically when complete and, at the end of a non-cancelled course-occurrence period, are also published with the missing values shown as `-`. `publication_explanation` records the concrete pending reason; missing values are never replaced with artificial zeroes.
+- Certificates are created as `Draft` from course enrollment and are published automatically only after every required grade sheet is academically complete; `Published` alone is not sufficient.
+- Certificates now persist their state, occurrence and unique validation code.
+- Public certificate verification is available at `/certificates/validate` without exposing student data.
 - Certificate reads no longer issue, downgrade or otherwise mutate certificate data before authorization.
 - Grade records now persist state and enforce one active record per sheet/student.
-- Certificates now enforce one non-revoked certificate per course/student.
+- Certificates now enforce one certificate per course/student.
 - Certificate publication now requires every active course subject to have an approved published grade.
-- Revoked certificates are blocked from public validation, student access and direct downloads.
+- Certificate validation codes remain stable after issuance.
 - SQL used by the phase services/policy was moved behind DAOs/read services.
 - Management option lists are scoped to the manager context and student select labels no longer expose email addresses.
-- Management JSPs expose draft weight configuration and revoke certificate forms with CSRF tokens; record-grade, create, publish and issue manual forms were removed.
+- Management JSPs expose draft weight configuration with CSRF tokens; manual record-grade, create, publish and issue forms were removed.
 - Grade-sheet/class-group and certificate/grade-sheet database association rules now validate both inserts and updates.
-- Public validation and weight inputs now have labels/ARIA labels.
+- The `full` seed includes realistic Computer Networks cohorts: completed groups with a mix of corrected and pending grades, active groups with current students and assessments, and active associations to Information Systems Master and Mathematics 1. Those courses use distinct occurrence-period calendars; groups, assessments and aggregate sheets must remain isolated by their concrete course occurrence.
+- Weight inputs now have labels/ARIA labels.
 - Local database credentials are stored directly in `src/main/resources/config/db.properties` for this workspace.
 
 ## Manual Review Notes
 
 - `grade_sheet.max_grade` and `grade_sheet.passing_grade` define the scale used by grade record validation.
-- Public certificate validation returns only minimal certificate data and never exposes student identity or final grade.
-- Service methods audit revocation and public validation operations; grade sheet/certificate publication is lifecycle-driven.
+- Service methods audit certificate publication lifecycle operations; grade sheet/certificate publication is lifecycle-driven.
 - `src/main/resources/config/db.properties` currently stores the local MySQL credentials used by the IDE and Maven runs.
 - `db.bootstrap.mode` is currently versioned as `full`; it recreates and reseeds the database on web application startup.

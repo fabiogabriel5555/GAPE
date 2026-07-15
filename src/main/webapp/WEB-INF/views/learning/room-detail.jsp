@@ -97,7 +97,7 @@
                                             </span>
                                             <div>
                                                 <a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}" class="text-14 fw-semibold text-neutral-700 hover-text-main-600"><c:out value="${lesson.title}"/></a>
-                                                <span class="d-block text-12 text-neutral-500"><c:out value="${lesson.dateRangeLabel}"/></span>
+                                                <span class="d-block text-12 text-neutral-500" data-gape-datetime-display><c:out value="${lesson.dateRangeLabel}"/></span>
                                             </div>
                                         </div>
                                         <span class="${lesson.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12"><c:out value="${lesson.stateLabel}"/></span>

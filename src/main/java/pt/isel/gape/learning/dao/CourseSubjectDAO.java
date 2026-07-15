@@ -1,9 +1,11 @@
 package pt.isel.gape.learning.dao;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -11,10 +13,10 @@ import java.util.Optional;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.CourseSubjectAssociationCommand;
-import pt.isel.gape.learning.model.CourseSubjectState;
+import pt.isel.gape.learning.model.CourseSubjectAssociationState;
 import pt.isel.gape.learning.model.CurricularTerm;
 
-public final class CourseSubjectDAO {
+public final class CourseSubjectDAO implements pt.isel.gape.transversal.service.ApplicationReadService.CourseSubjects {
 
     private final ConnectionProvider connectionProvider;
 
@@ -25,8 +27,8 @@ public final class CourseSubjectDAO {
     public void create(Connection connection, CourseSubjectAssociationCommand command) throws SQLException {
         String sql = """
                 INSERT INTO integrate_subject (
-                    id_course, id_subject, curricular_year, term, mandatory, state
-                ) VALUES (?, ?, ?, ?, ?, ?)
+                    id_course, id_subject, curricular_year, term, mandatory, state, ended_at
+                ) VALUES (?, ?, ?, ?, ?, 'active', NULL)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -35,7 +37,6 @@ public final class CourseSubjectDAO {
             setNullableInteger(statement, 3, command.curricularYear());
             setNullableTerm(statement, 4, command.term());
             statement.setBoolean(5, command.mandatory());
-            statement.setString(6, command.state().toDatabaseValue());
             statement.executeUpdate();
         }
     }
@@ -55,10 +56,11 @@ public final class CourseSubjectDAO {
             long subjectId
     ) throws SQLException {
         String sql = """
-                SELECT id_course, id_subject, curricular_year, term, mandatory, state
+                SELECT id_course, id_subject, curricular_year, term, mandatory, state, ended_at
                 FROM integrate_subject
                 WHERE id_course = ?
                   AND id_subject = ?
+                  AND state = 'active'
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -73,30 +75,29 @@ public final class CourseSubjectDAO {
         }
     }
 
-    public List<CourseSubjectAssociation> findByCourse(long courseId) throws SQLException {
+    public Optional<CourseSubjectAssociation> findAnyByCourseAndSubject(
+            Connection connection,
+            long courseId,
+            long subjectId
+    ) throws SQLException {
         String sql = """
-                SELECT id_course, id_subject, curricular_year, term, mandatory, state
+                SELECT id_course, id_subject, curricular_year, term, mandatory, state, ended_at
                 FROM integrate_subject
                 WHERE id_course = ?
-                ORDER BY curricular_year, term, id_subject
+                  AND id_subject = ?
                 """;
-
-        try (Connection connection = connectionProvider.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, courseId);
+            statement.setLong(2, subjectId);
             try (ResultSet resultSet = statement.executeQuery()) {
-                List<CourseSubjectAssociation> associations = new ArrayList<>();
-                while (resultSet.next()) {
-                    associations.add(mapAssociation(resultSet));
-                }
-                return associations;
+                return resultSet.next() ? Optional.of(mapAssociation(resultSet)) : Optional.empty();
             }
         }
     }
 
-    public List<CourseSubjectAssociation> findActiveByCourse(long courseId) throws SQLException {
+    public List<CourseSubjectAssociation> findByCourse(long courseId) throws SQLException {
         String sql = """
-                SELECT id_course, id_subject, curricular_year, term, mandatory, state
+                SELECT id_course, id_subject, curricular_year, term, mandatory, state, ended_at
                 FROM integrate_subject
                 WHERE id_course = ?
                   AND state = 'active'
@@ -117,15 +118,21 @@ public final class CourseSubjectDAO {
     }
 
     public List<CourseSubjectAssociation> findBySubject(long subjectId) throws SQLException {
+        try (Connection connection = connectionProvider.getConnection()) {
+            return findBySubject(connection, subjectId);
+        }
+    }
+
+    public List<CourseSubjectAssociation> findBySubject(Connection connection, long subjectId) throws SQLException {
         String sql = """
-                SELECT id_course, id_subject, curricular_year, term, mandatory, state
+                SELECT id_course, id_subject, curricular_year, term, mandatory, state, ended_at
                 FROM integrate_subject
                 WHERE id_subject = ?
-                ORDER BY state, curricular_year, term, id_course
+                  AND state = 'active'
+                ORDER BY curricular_year, term, id_course
                 """;
 
-        try (Connection connection = connectionProvider.getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, subjectId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<CourseSubjectAssociation> associations = new ArrayList<>();
@@ -137,41 +144,7 @@ public final class CourseSubjectDAO {
         }
     }
 
-    public boolean exists(Connection connection, long courseId, long subjectId) throws SQLException {
-        String sql = """
-                SELECT COUNT(*)
-                FROM integrate_subject
-                WHERE id_course = ?
-                  AND id_subject = ?
-                """;
-
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, courseId);
-            statement.setLong(2, subjectId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                resultSet.next();
-                return resultSet.getInt(1) > 0;
-            }
-        }
-    }
-
     public long countBySubject(Connection connection, long subjectId) throws SQLException {
-        String sql = """
-                SELECT COUNT(*)
-                FROM integrate_subject
-                WHERE id_subject = ?
-                """;
-
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, subjectId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                resultSet.next();
-                return resultSet.getLong(1);
-            }
-        }
-    }
-
-    public long countActiveBySubject(Connection connection, long subjectId) throws SQLException {
         String sql = """
                 SELECT COUNT(*)
                 FROM integrate_subject
@@ -188,10 +161,29 @@ public final class CourseSubjectDAO {
         }
     }
 
+    public boolean exists(Connection connection, long courseId, long subjectId) throws SQLException {
+        String sql = """
+                SELECT COUNT(*)
+                FROM integrate_subject
+                WHERE id_course = ?
+                  AND id_subject = ?
+                  AND state = 'active'
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, courseId);
+            statement.setLong(2, subjectId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1) > 0;
+            }
+        }
+    }
+
     public void update(Connection connection, CourseSubjectAssociationCommand command) throws SQLException {
         String sql = """
                 UPDATE integrate_subject
-                SET curricular_year = ?, term = ?, mandatory = ?, state = ?
+                SET curricular_year = ?, term = ?, mandatory = ?
                 WHERE id_course = ?
                   AND id_subject = ?
                 """;
@@ -200,34 +192,30 @@ public final class CourseSubjectDAO {
             setNullableInteger(statement, 1, command.curricularYear());
             setNullableTerm(statement, 2, command.term());
             statement.setBoolean(3, command.mandatory());
-            statement.setString(4, command.state().toDatabaseValue());
-            statement.setLong(5, command.courseId());
-            statement.setLong(6, command.subjectId());
+            statement.setLong(4, command.courseId());
+            statement.setLong(5, command.subjectId());
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Course-subject association not found");
             }
         }
     }
 
-    public void updateState(
-            Connection connection,
-            long courseId,
-            long subjectId,
-            CourseSubjectState state
-    ) throws SQLException {
+    public void reactivate(Connection connection, CourseSubjectAssociationCommand command) throws SQLException {
         String sql = """
                 UPDATE integrate_subject
-                SET state = ?
+                SET curricular_year = ?, term = ?, mandatory = ?, state = 'active', ended_at = NULL
                 WHERE id_course = ?
                   AND id_subject = ?
+                  AND state = 'historical'
                 """;
-
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, state.toDatabaseValue());
-            statement.setLong(2, courseId);
-            statement.setLong(3, subjectId);
+            setNullableInteger(statement, 1, command.curricularYear());
+            setNullableTerm(statement, 2, command.term());
+            statement.setBoolean(3, command.mandatory());
+            statement.setLong(4, command.courseId());
+            statement.setLong(5, command.subjectId());
             if (statement.executeUpdate() == 0) {
-                throw new SQLException("Course-subject association not found");
+                throw new SQLException("Historical course-subject association not found");
             }
         }
     }
@@ -235,16 +223,13 @@ public final class CourseSubjectDAO {
     public boolean hasDomainDependencies(Connection connection, long courseId, long subjectId) throws SQLException {
         String sql = """
                 SELECT
-                    (SELECT COUNT(*) FROM enroll_subject WHERE id_course = ? AND id_subject = ?)
-                  + (SELECT COUNT(*) FROM class_group WHERE id_course = ? AND id_subject = ?)
+                    (SELECT COUNT(*) FROM class_group WHERE id_course = ? AND id_subject = ?)
                   AS dependency_count
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, courseId);
             statement.setLong(2, subjectId);
-            statement.setLong(3, courseId);
-            statement.setLong(4, subjectId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 return resultSet.getLong("dependency_count") > 0;
@@ -268,17 +253,37 @@ public final class CourseSubjectDAO {
         }
     }
 
+    public void close(Connection connection, long courseId, long subjectId, LocalDate endedAt) throws SQLException {
+        String sql = """
+                UPDATE integrate_subject
+                SET state = 'historical', ended_at = ?
+                WHERE id_course = ?
+                  AND id_subject = ?
+                  AND state = 'active'
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setDate(1, Date.valueOf(endedAt));
+            statement.setLong(2, courseId);
+            statement.setLong(3, subjectId);
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Active course-subject association not found");
+            }
+        }
+    }
+
     private static CourseSubjectAssociation mapAssociation(ResultSet resultSet) throws SQLException {
         int year = resultSet.getInt("curricular_year");
         boolean yearWasNull = resultSet.wasNull();
         String term = resultSet.getString("term");
+        Date endedAt = resultSet.getDate("ended_at");
         return new CourseSubjectAssociation(
                 resultSet.getLong("id_course"),
                 resultSet.getLong("id_subject"),
                 yearWasNull ? null : year,
                 term == null ? null : CurricularTerm.fromDatabaseValue(term),
                 resultSet.getBoolean("mandatory"),
-                CourseSubjectState.fromDatabaseValue(resultSet.getString("state"))
+                CourseSubjectAssociationState.fromDatabaseValue(resultSet.getString("state")),
+                endedAt == null ? null : endedAt.toLocalDate()
         );
     }
 

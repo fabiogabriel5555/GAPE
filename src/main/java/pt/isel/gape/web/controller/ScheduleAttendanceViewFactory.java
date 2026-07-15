@@ -7,15 +7,13 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import pt.isel.gape.access.dao.UserDAO;
 import pt.isel.gape.access.model.User;
-import pt.isel.gape.learning.dao.ClassGroupDAO;
-import pt.isel.gape.learning.dao.LessonDAO;
 import pt.isel.gape.learning.model.AbsenceJustification;
 import pt.isel.gape.learning.model.AttendanceRecord;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.Lesson;
 import pt.isel.gape.learning.model.ScheduleEvent;
+import pt.isel.gape.transversal.service.ApplicationReadService;
 import pt.isel.gape.web.view.AbsenceJustificationView;
 import pt.isel.gape.web.view.AttendanceRecordView;
 import pt.isel.gape.web.view.ClassGroupView;
@@ -24,15 +22,15 @@ import pt.isel.gape.web.view.ScheduleEventView;
 
 final class ScheduleAttendanceViewFactory {
 
-    private final ClassGroupDAO classGroupDAO;
-    private final LessonDAO lessonDAO;
-    private final UserDAO userDAO;
+    private final ApplicationReadService.ClassGroups classGroupDAO;
+    private final ApplicationReadService.Lessons lessonDAO;
+    private final ApplicationReadService.Users userDAO;
     private final LearningViewFactory learningViewFactory;
 
     ScheduleAttendanceViewFactory(
-            ClassGroupDAO classGroupDAO,
-            LessonDAO lessonDAO,
-            UserDAO userDAO,
+            ApplicationReadService.ClassGroups classGroupDAO,
+            ApplicationReadService.Lessons lessonDAO,
+            ApplicationReadService.Users userDAO,
             LearningViewFactory learningViewFactory
     ) {
         this.classGroupDAO = classGroupDAO;
@@ -60,6 +58,10 @@ final class ScheduleAttendanceViewFactory {
         return records.stream()
                 .map(record -> attendanceRecordView(record, justifiedAttendanceRecordIds.contains(record.id())))
                 .toList();
+    }
+
+    List<ClassGroupView> classGroupViews(List<ClassGroup> classGroups) {
+        return learningViewFactory.classGroupViews(classGroups);
     }
 
     AttendanceRecordView attendanceRecordView(AttendanceRecord record, boolean hasJustification) {

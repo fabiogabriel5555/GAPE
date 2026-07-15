@@ -20,7 +20,7 @@ import pt.isel.gape.learning.model.ContentItemCreateCommand;
 import pt.isel.gape.learning.model.ContentItemState;
 import pt.isel.gape.learning.model.ContentItemUpdateCommand;
 
-public final class ContentItemDAO {
+public final class ContentItemDAO implements pt.isel.gape.transversal.service.ApplicationReadService.ContentItems {
 
     private final ConnectionProvider connectionProvider;
 
@@ -275,10 +275,8 @@ public final class ContentItemDAO {
         String sql = """
                 SELECT COUNT(*)
                 FROM associate_block_content abc
-                JOIN content_block cb ON cb.id_content_block = abc.id_content_block
                 WHERE abc.id_content_item = ?
                   AND abc.mandatory = TRUE
-                  AND cb.state = 'active'
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {

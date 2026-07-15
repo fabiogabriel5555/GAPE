@@ -5,7 +5,6 @@ public record CourseSubjectAssociationCommand(
         long subjectId,
         Integer curricularYear,
         CurricularTerm term,
-        boolean mandatory,
-        CourseSubjectState state
+        boolean mandatory
 ) {
 }

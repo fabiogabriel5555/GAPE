@@ -6,7 +6,7 @@ public enum GradeRecordState {
     DRAFT("draft"),
     PUBLISHED("published"),
     CORRECTED("corrected"),
-    ARCHIVED("archived");
+    INACTIVE("inactive");
 
     private final String databaseValue;
 

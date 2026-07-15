@@ -3,6 +3,7 @@ package pt.isel.gape.web.controller;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -14,26 +15,15 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import pt.isel.gape.access.dao.UserDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
-import pt.isel.gape.learning.dao.ClassGroupDAO;
-import pt.isel.gape.learning.dao.ClassGroupEnrollmentDAO;
-import pt.isel.gape.learning.dao.ContentBlockDAO;
-import pt.isel.gape.learning.dao.CourseDAO;
-import pt.isel.gape.learning.dao.CourseSubjectDAO;
-import pt.isel.gape.learning.dao.EnrollmentDAO;
-import pt.isel.gape.learning.dao.LessonDAO;
-import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.ContentBlock;
 import pt.isel.gape.learning.model.Lesson;
 import pt.isel.gape.learning.service.LessonService;
 import pt.isel.gape.learning.service.ScheduleEventService;
 import pt.isel.gape.security.session.SessionUser;
-import pt.isel.gape.structure.dao.OrganicUnitDAO;
-import pt.isel.gape.structure.dao.OrganizationDAO;
-import pt.isel.gape.structure.dao.TeachClassGroupDAO;
+import pt.isel.gape.transversal.service.ApplicationReadService;
 import pt.isel.gape.web.view.ClassGroupView;
 import pt.isel.gape.web.view.ContentBlockView;
 import pt.isel.gape.web.view.LessonView;
@@ -43,7 +33,8 @@ import pt.isel.gape.web.view.ScheduleEventView;
         "/student/lessons",
         "/student/lessons/*",
         "/student/calendar",
-        "/student/events"
+        "/student/events",
+        "/student/events/*"
 })
 public final class StudentLessonServlet extends DashboardServletSupport {
 
@@ -52,8 +43,9 @@ public final class StudentLessonServlet extends DashboardServletSupport {
 
     private final LessonService lessonService;
     private final ScheduleEventService scheduleEventService;
-    private final ClassGroupDAO classGroupDAO;
-    private final ContentBlockDAO contentBlockDAO;
+    private final ApplicationReadService.LearningEvents learningEvents;
+    private final ApplicationReadService.ClassGroups classGroupDAO;
+    private final ApplicationReadService.ContentBlocks contentBlockDAO;
     private final LearningViewFactory viewFactory;
     private final ScheduleAttendanceViewFactory scheduleViewFactory;
 
@@ -63,58 +55,42 @@ public final class StudentLessonServlet extends DashboardServletSupport {
 
     private StudentLessonServlet(ConnectionProvider connectionProvider, Clock clock) {
         this(
+                new ApplicationReadService(connectionProvider),
                 new LessonService(connectionProvider, clock),
-                new ScheduleEventService(connectionProvider, clock),
-                new ClassGroupDAO(connectionProvider),
-                new ContentBlockDAO(connectionProvider),
-                new LearningViewFactory(
-                        new OrganizationDAO(connectionProvider),
-                        new OrganicUnitDAO(connectionProvider),
-                        new CourseDAO(connectionProvider),
-                        new SubjectDAO(connectionProvider),
-                        new CourseSubjectDAO(connectionProvider),
-                        new EnrollmentDAO(connectionProvider),
-                        new ClassGroupDAO(connectionProvider),
-                        new ClassGroupEnrollmentDAO(connectionProvider),
-                        new ContentBlockDAO(connectionProvider),
-                        new UserDAO(connectionProvider),
-                        new TeachClassGroupDAO(connectionProvider)
-                ),
-                new ScheduleAttendanceViewFactory(
-                        new ClassGroupDAO(connectionProvider),
-                        new LessonDAO(connectionProvider),
-                        new UserDAO(connectionProvider),
-                        new LearningViewFactory(
-                                new OrganizationDAO(connectionProvider),
-                                new OrganicUnitDAO(connectionProvider),
-                                new CourseDAO(connectionProvider),
-                                new SubjectDAO(connectionProvider),
-                                new CourseSubjectDAO(connectionProvider),
-                                new EnrollmentDAO(connectionProvider),
-                                new ClassGroupDAO(connectionProvider),
-                                new ClassGroupEnrollmentDAO(connectionProvider),
-                                new ContentBlockDAO(connectionProvider),
-                                new UserDAO(connectionProvider),
-                                new TeachClassGroupDAO(connectionProvider)
-                        )
-                )
+                new ScheduleEventService(connectionProvider, clock)
         );
     }
 
     StudentLessonServlet(
+            ApplicationReadService readService,
             LessonService lessonService,
-            ScheduleEventService scheduleEventService,
-            ClassGroupDAO classGroupDAO,
-            ContentBlockDAO contentBlockDAO,
-            LearningViewFactory viewFactory,
-            ScheduleAttendanceViewFactory scheduleViewFactory
+            ScheduleEventService scheduleEventService
     ) {
         this.lessonService = lessonService;
         this.scheduleEventService = scheduleEventService;
-        this.classGroupDAO = classGroupDAO;
-        this.contentBlockDAO = contentBlockDAO;
-        this.viewFactory = viewFactory;
-        this.scheduleViewFactory = scheduleViewFactory;
+        this.learningEvents = readService.learningEvents();
+        this.classGroupDAO = readService.classGroups();
+        this.contentBlockDAO = readService.contentBlocks();
+        this.viewFactory = new LearningViewFactory(
+                readService.organizations(),
+                readService.organicUnits(),
+                readService.courses(),
+                readService.courseOccurrences(),
+                readService.subjects(),
+                readService.courseSubjects(),
+                readService.enrollments(),
+                readService.classGroups(),
+                readService.classGroupEnrollments(),
+                readService.contentBlocks(),
+                readService.users(),
+                readService.teachClassGroups()
+        );
+        this.scheduleViewFactory = new ScheduleAttendanceViewFactory(
+                readService.classGroups(),
+                readService.lessons(),
+                readService.users(),
+                viewFactory
+        );
     }
 
     @Override
@@ -141,6 +117,39 @@ public final class StudentLessonServlet extends DashboardServletSupport {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
         } catch (NumberFormatException exception) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        String[] segments = pathSegments(request.getPathInfo());
+        if (isCalendarRequest(request) && segments.length == 1 && "read-by-href".equals(segments[0])) {
+            markEventReadByHref(request, response);
+            return;
+        }
+        response.sendError(HttpServletResponse.SC_NOT_FOUND);
+    }
+
+    private void markEventReadByHref(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        String href = text(request, "href");
+        if (!isSafeReturnPath(href)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        try {
+            learningEvents.markReadByHref(
+                    actor.userId(),
+                    href,
+                    false,
+                    LocalDateTime.now(ApplicationClock.system())
+            );
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"success\":true}");
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to mark student learning event as read", exception);
         }
     }
 

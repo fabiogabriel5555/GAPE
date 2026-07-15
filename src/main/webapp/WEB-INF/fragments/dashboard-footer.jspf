@@ -1,3 +1,4 @@
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <div class="bg-neutral-20 border-neutral-40 border-top px-24 py-16 mt-auto">
     <div class="d-flex align-items-center gap-24 justify-content-between flex-wrap">
         <p class="fw-medium text-14 text-neutral-500">
@@ -10,3 +11,47 @@
         </div>
     </div>
 </div>
+<script>
+    (function () {
+        var csrfToken = '<c:out value="${sessionScope['gape.auth.csrfToken']}"/>';
+        if (!window.fetch || !csrfToken) {
+            return;
+        }
+        var contextPath = '${pageContext.request.contextPath}';
+        var lastMarkedHref = null;
+        var currentInternalPath = function () {
+            var path = window.location.pathname || '/';
+            if (contextPath && path.indexOf(contextPath) === 0) {
+                path = path.substring(contextPath.length) || '/';
+            }
+            return path;
+        };
+        var readEndpoint = function (path) {
+            return (path.indexOf('/student/') === 0 ? '/student/events/read-by-href' : '/learning/events/read-by-href');
+        };
+        var markCurrentHashEventRead = function () {
+            var hash = window.location.hash || '';
+            if (!hash || hash === '#') {
+                return;
+            }
+            var path = currentInternalPath();
+            var href = path + hash;
+            if (href === lastMarkedHref) {
+                return;
+            }
+            lastMarkedHref = href;
+            var body = new URLSearchParams();
+            body.set('csrfToken', csrfToken);
+            body.set('href', href);
+            fetch(contextPath + readEndpoint(path), {
+                method: 'POST',
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                body: body
+            }).catch(function () {
+                lastMarkedHref = null;
+            });
+        };
+        markCurrentHashEventRead();
+        window.addEventListener('hashchange', markCurrentHashEventRead);
+    }());
+</script>

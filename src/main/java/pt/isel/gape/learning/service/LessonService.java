@@ -3,6 +3,7 @@ package pt.isel.gape.learning.service;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.Objects;
 import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.common.time.ApplicationClock;
 import pt.isel.gape.common.validation.AcademicTextValidator;
 import pt.isel.gape.integration.videoconference.StoredVideoConferenceAdapter;
 import pt.isel.gape.integration.videoconference.VideoConferenceAccess;
@@ -22,7 +24,6 @@ import pt.isel.gape.learning.dao.PhysicalRoomDAO;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupState;
 import pt.isel.gape.learning.model.ContentBlock;
-import pt.isel.gape.learning.model.ContentBlockState;
 import pt.isel.gape.learning.model.Lesson;
 import pt.isel.gape.learning.model.LessonCreateCommand;
 import pt.isel.gape.learning.model.LessonState;
@@ -79,7 +80,7 @@ public final class LessonService {
                 permissionChecker,
                 videoConferenceAdapter,
                 auditService,
-                Clock.systemDefaultZone()
+                ApplicationClock.system()
         );
     }
 
@@ -170,7 +171,7 @@ public final class LessonService {
                 permissionDAO,
                 videoConferenceAdapter,
                 auditService,
-                Clock.systemDefaultZone()
+                ApplicationClock.system()
         );
     }
 
@@ -194,6 +195,11 @@ public final class LessonService {
                     ContentBlock contentBlock = requireContentBlock(connection, effectiveCommand.contentBlockId());
                     requireLessonManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
                     requireActiveContext(classGroup, contentBlock);
+                    requireLessonWithinClassGroupDates(
+                            effectiveCommand.startsAt(),
+                            effectiveCommand.endsAt(),
+                            classGroup
+                    );
                     LessonCreateCommand normalizedCommand = normalizeCreateCommand(
                             connection,
                             effectiveCommand,
@@ -233,7 +239,11 @@ public final class LessonService {
                 synchronizeTemporalStates(connection, currentMinute());
                 Lesson lesson = requireLesson(connection, lessonId);
                 ClassGroup classGroup = requireClassGroup(connection, lesson.classGroupId());
+                ContentBlock contentBlock = requireContentBlock(connection, lesson.contentBlockId());
                 requireLessonReadAccess(connection, actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
+                if (actorProfileType == AccessProfileType.STUDENT && contentBlock.isInactive()) {
+                    throw new SecurityException("Lesson is not visible to students");
+                }
                 if (actorProfileType == AccessProfileType.STUDENT && !isStudentVisible(lesson)) {
                     throw new SecurityException("Lesson is not visible to students");
                 }
@@ -282,6 +292,9 @@ public final class LessonService {
                 ContentBlock block = requireContentBlock(connection, contentBlockId);
                 ClassGroup classGroup = requireClassGroup(connection, block.classGroupId());
                 requireLessonReadAccess(connection, actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
+                if (actorProfileType == AccessProfileType.STUDENT && block.isInactive()) {
+                    return List.of();
+                }
             }
             return lessonDAO.findByContentBlock(contentBlockId);
         } catch (RuntimeException | SQLException exception) {
@@ -352,6 +365,11 @@ public final class LessonService {
                     ContentBlock contentBlock = requireContentBlock(connection, effectiveCommand.contentBlockId());
                     requireLessonManager(actorUserId, sessionId, actorProfileType, classGroup, sourceIp);
                     requireActiveContext(classGroup, contentBlock);
+                    requireLessonWithinClassGroupDates(
+                            effectiveCommand.startsAt(),
+                            effectiveCommand.endsAt(),
+                            classGroup
+                    );
                     LessonUpdateCommand normalizedCommand = normalizeUpdateCommand(
                             connection,
                             effectiveCommand,
@@ -666,11 +684,38 @@ public final class LessonService {
         if (classGroup.state() != ClassGroupState.ACTIVE && classGroup.state() != ClassGroupState.SCHEDULED) {
             throw new IllegalStateException("Lessons require an active or scheduled class group");
         }
-        if (contentBlock.state() == ContentBlockState.INACTIVE) {
-            throw new IllegalStateException("Inactive content blocks cannot receive lessons");
-        }
         if (contentBlock.classGroupId() != classGroup.id()) {
             throw new IllegalArgumentException("Lesson content block must belong to the same class group");
+        }
+    }
+
+    private static void requireLessonWithinClassGroupDates(
+            LocalDateTime startsAt,
+            LocalDateTime endsAt,
+            ClassGroup classGroup
+    ) {
+        LocalDate classGroupStart = classGroup.startsAt();
+        LocalDate classGroupEnd = classGroup.endsAt();
+        if (startsAt != null) {
+            requireLessonInstantWithinClassGroup(startsAt, classGroupStart, classGroupEnd, "Lesson start date");
+        }
+        if (endsAt != null) {
+            requireLessonInstantWithinClassGroup(endsAt, classGroupStart, classGroupEnd, "Lesson end date");
+        }
+    }
+
+    private static void requireLessonInstantWithinClassGroup(
+            LocalDateTime value,
+            LocalDate classGroupStart,
+            LocalDate classGroupEnd,
+            String label
+    ) {
+        LocalDate date = value.toLocalDate();
+        if (classGroupStart != null && date.isBefore(classGroupStart)) {
+            throw new IllegalArgumentException(label + " cannot be before the class group start date");
+        }
+        if (classGroupEnd != null && date.isAfter(classGroupEnd)) {
+            throw new IllegalArgumentException(label + " cannot be after the class group end date");
         }
     }
 
@@ -912,16 +957,19 @@ public final class LessonService {
 
     private static void requireValidDates(LocalDateTime startsAt, LocalDateTime endsAt, LocalDateTime now) {
         Objects.requireNonNull(now, "now is required");
-        if (endsAt != null && startsAt == null) {
-            throw new IllegalArgumentException("Lesson end date requires a start date");
+        if (startsAt == null) {
+            throw new IllegalArgumentException("Lesson start date is required");
         }
-        if (startsAt != null && startsAt.isBefore(now)) {
+        if (endsAt == null) {
+            throw new IllegalArgumentException("Lesson end date is required");
+        }
+        if (startsAt.isBefore(now)) {
             throw new IllegalArgumentException("Lesson start date cannot be in the past");
         }
-        if (endsAt != null && endsAt.isBefore(now)) {
+        if (endsAt.isBefore(now)) {
             throw new IllegalArgumentException("Lesson end date cannot be in the past");
         }
-        if (startsAt != null && endsAt != null && !endsAt.isAfter(startsAt)) {
+        if (!endsAt.isAfter(startsAt)) {
             throw new IllegalArgumentException("Lesson end date must be after start date");
         }
     }

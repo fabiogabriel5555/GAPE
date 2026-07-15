@@ -38,15 +38,15 @@ public final class GradeDocumentView {
             List<ColumnView> columns,
             List<RowView> rows
     ) {
-        this.title = emptyLabel(title, "Pauta");
-        this.entityLabel = emptyLabel(entityLabel, "Contexto");
+        this.title = emptyLabel(title, "Grade sheet");
+        this.entityLabel = emptyLabel(entityLabel, "Context");
         this.entityName = emptyLabel(entityName, "-");
         this.contextHtml = emptyLabel(contextHtml, GradeSheetView.escapeHtml(this.entityName));
         this.contextTitle = emptyLabel(contextTitle, this.entityName);
-        this.periodLabel = emptyLabel(periodLabel, "__.__.____ - __.__.____");
+        this.periodLabel = emptyLabel(periodLabel, "__-__-____ - __-__-____");
         this.imagePath = imagePath == null || imagePath.isBlank() ? null : imagePath;
         this.fallbackIconClass = emptyLabel(fallbackIconClass, "ph ph-image");
-        this.emptyMessage = emptyLabel(emptyMessage, "Sem registos de nota.");
+        this.emptyMessage = emptyLabel(emptyMessage, "No grade records.");
         this.alert = alert == null ? "" : alert;
         this.columns = columns == null ? List.of() : List.copyOf(columns);
         this.rows = rows == null ? List.of() : List.copyOf(rows);

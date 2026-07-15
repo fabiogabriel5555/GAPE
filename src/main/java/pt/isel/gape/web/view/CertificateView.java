@@ -42,7 +42,7 @@ public final class CertificateView {
         this.courseCertificateMaxGradeLabel = courseCertificateMaxGradeLabel == null || courseCertificateMaxGradeLabel.isBlank()
                 ? "20"
                 : courseCertificateMaxGradeLabel;
-        this.courseDurationLabel = courseDurationLabel == null || courseDurationLabel.isBlank() ? "-" : courseDurationLabel;
+        this.courseDurationLabel = durationHoursLabel(courseDurationLabel);
         this.studentName = studentName == null || studentName.isBlank()
                 ? "Student " + certificate.studentUserId()
                 : studentName;
@@ -134,17 +134,15 @@ public final class CertificateView {
     }
 
     public String getValidationCode() {
-        return certificate.validationCode() == null || certificate.validationCode().isBlank()
-                ? "-"
-                : certificate.validationCode();
+        return certificate.validationCode() == null ? "" : certificate.validationCode();
     }
 
     public String getIssuedAt() {
         return GradeSheetView.format(certificate.issuedAt());
     }
 
-    public String getRevokedAt() {
-        return GradeSheetView.format(certificate.revokedAt());
+    public String getIssuedAtSort() {
+        return certificate.issuedAt() == null ? "" : certificate.issuedAt().toString();
     }
 
     public String getStateValue() {
@@ -179,6 +177,20 @@ public final class CertificateView {
         return courseDurationLabel;
     }
 
+    private static String durationHoursLabel(String value) {
+        if (value == null || value.isBlank()) {
+            return "-";
+        }
+        String normalized = value.trim();
+        String lower = normalized.toLowerCase();
+        if (lower.contains("hora")
+                || lower.contains("hour")
+                || lower.matches(".*\\d\\s*h$")) {
+            return normalized;
+        }
+        return normalized + " hours";
+    }
+
     public String getStudentName() {
         return studentName;
     }
@@ -195,6 +207,18 @@ public final class CertificateView {
         return subjectRows;
     }
 
+    public int getSubjectCount() {
+        return subjectRows.size();
+    }
+
+    public String getSubjectCountLabel() {
+        int count = subjectRows.size();
+        if (count == 1) {
+            return "1 subject";
+        }
+        return count + " subjects";
+    }
+
     public boolean isCompleted() {
         return certificate.state() == CertificateState.ISSUED
                 && certificate.validationCode() != null
@@ -203,14 +227,9 @@ public final class CertificateView {
                 && certificate.finalGrade() != null;
     }
 
-    public boolean isRevoked() {
-        return certificate.state() == CertificateState.REVOKED;
-    }
-
     public String getStatusLabel() {
         return switch (certificate.state()) {
             case ISSUED -> "Published";
-            case REVOKED -> "Revoked";
             case ACTIVE -> "Active";
             case DRAFT -> "Draft";
         };
@@ -219,7 +238,6 @@ public final class CertificateView {
     public String getStatusBadgeClass() {
         return switch (certificate.state()) {
             case ISSUED -> "bg-success-50 text-success-600";
-            case REVOKED -> "bg-danger-50 text-danger-600";
             case ACTIVE -> "bg-info-50 text-info-600";
             case DRAFT -> "bg-warning-50 text-warning-600";
         };

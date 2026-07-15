@@ -20,6 +20,7 @@ import pt.isel.gape.learning.model.GradeAssessmentWeight;
 import pt.isel.gape.learning.model.GradeSheet;
 import pt.isel.gape.learning.model.GradeSheetCreateCommand;
 import pt.isel.gape.learning.model.GradeSheetState;
+import pt.isel.gape.learning.model.GradeSheetType;
 import pt.isel.gape.learning.model.GradeSheetUpdateCommand;
 import pt.isel.gape.security.authorization.PermissionChecker;
 import pt.isel.gape.transversal.dao.ActivityLogDAO;
@@ -85,6 +86,12 @@ public final class GradeSheetService {
                     );
                     validateRepositoryConsistency(connection, command.subjectId(), command.classGroupIds(),
                             normalizedWeights.assessmentWeights());
+                    validateFinalSourceTopology(
+                            connection,
+                            command.type(),
+                            command.classGroupIds(),
+                            null
+                    );
                     accessPolicy.requireGradeSheetManager(connection, actorUserId, sessionId, actorProfileType,
                             transientSheet(command, normalizedWeights.assessmentWeights(), normalizedWeights.alert()), sourceIp);
                     long gradeSheetId = gradeSheetDAO.create(connection, command);
@@ -126,6 +133,11 @@ public final class GradeSheetService {
                 try {
                     GradeSheet existing = gradeSheetDAO.lockById(connection, gradeSheetId)
                             .orElseThrow(() -> new IllegalArgumentException("Grade sheet not found: " + gradeSheetId));
+                    if (existing.classGroupIds().isEmpty()) {
+                        throw new IllegalStateException(
+                                "Subject-occurrence grade sheets are consolidated automatically and cannot be edited directly"
+                        );
+                    }
                     accessPolicy.requireGradeSheetManager(
                             connection,
                             actorUserId,
@@ -142,6 +154,12 @@ public final class GradeSheetService {
                     );
                     validateRepositoryConsistency(connection, command.subjectId(), command.classGroupIds(),
                             normalizedWeights.assessmentWeights());
+                    validateFinalSourceTopology(
+                            connection,
+                            command.type(),
+                            command.classGroupIds(),
+                            gradeSheetId
+                    );
                     accessPolicy.requireGradeSheetManager(connection, actorUserId, sessionId, actorProfileType,
                             transientSheet(command, normalizedWeights.assessmentWeights(), normalizedWeights.alert()), sourceIp);
                     gradeSheetDAO.update(connection, gradeSheetId, command);
@@ -223,6 +241,48 @@ public final class GradeSheetService {
         }
     }
 
+    /**
+     * Applies the completed-period publication rule.  This method deliberately
+     * has no actor because it is a temporal data-conformance operation invoked
+     * at startup and by the lifecycle scheduler.
+     */
+    public void synchronizeCompletedPeriodPublications() {
+        try (Connection connection = connectionProvider.getConnection()) {
+            boolean originalAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+            try {
+                synchronizeCompletedPeriodPublications(connection);
+                connection.commit();
+            } catch (RuntimeException | SQLException exception) {
+                connection.rollback();
+                throw exception;
+            } finally {
+                connection.setAutoCommit(originalAutoCommit);
+            }
+        } catch (RuntimeException | SQLException exception) {
+            throw wrap(exception, "Failed to publish grade sheets for completed periods");
+        }
+    }
+
+    /**
+     * Connection-scoped variant used by bootstrap and migration conformance
+     * passes, so seeded and migrated data cannot remain outside the rule.
+     */
+    public void synchronizeCompletedPeriodPublications(Connection connection) throws SQLException {
+        gradeLifecycleService.synchronizeCompletedPeriodPublications(connection);
+    }
+
+    /**
+     * Full data-conformance pass used after a seed reset or schema migration.
+     * Complete sheets are normally published first; incomplete sheets in an
+     * ended period are then published with their mandatory explanation.
+     */
+    public void synchronizeGradeSheetConformance(Connection connection) throws SQLException {
+        gradeLifecycleService.synchronizeGradeSheetTopology(connection);
+        gradeLifecycleService.synchronizeAllGradeSheetStates(connection);
+        gradeLifecycleService.synchronizeCompletedPeriodPublications(connection);
+    }
+
     public GradeSheet getGradeSheet(
             long actorUserId,
             Long sessionId,
@@ -231,34 +291,25 @@ public final class GradeSheetService {
             String sourceIp
     ) {
         try (Connection connection = connectionProvider.getConnection()) {
-            boolean originalAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            try {
-                GradeSheet gradeSheet = requireGradeSheet(connection, gradeSheetId);
-                if (actorProfileType == AccessProfileType.STUDENT) {
-                    accessPolicy.requireStudentProfile(actorUserId, sessionId, actorProfileType, sourceIp);
-                    throw new SecurityException("Students cannot access grade sheet definitions directly");
-                }
-                accessPolicy.requireGradeSheetManager(
-                        connection,
-                        actorUserId,
-                        sessionId,
-                        actorProfileType,
-                        gradeSheet,
-                        sourceIp
-                );
-                GradeSheet synchronizedSheet = gradeLifecycleService.synchronizeGradeSheetAndCertificates(
-                        connection,
-                        gradeSheetId
-                );
-                connection.commit();
-                return synchronizedSheet;
-            } catch (RuntimeException | SQLException exception) {
-                connection.rollback();
-                throw exception;
-            } finally {
-                connection.setAutoCommit(originalAutoCommit);
+            GradeSheet gradeSheet = requireGradeSheet(connection, gradeSheetId);
+            if (actorProfileType == AccessProfileType.STUDENT) {
+                accessPolicy.requireStudentProfile(actorUserId, sessionId, actorProfileType, sourceIp);
+                throw new SecurityException("Students cannot access grade sheet definitions directly");
             }
+            accessPolicy.requireGradeSheetManager(
+                    connection,
+                    actorUserId,
+                    sessionId,
+                    actorProfileType,
+                    gradeSheet,
+                    sourceIp
+            );
+            // Reading a page must never recalculate grades, issue certificates
+            // or write aggregate sheets.  Those lifecycle writes occur on the
+            // corresponding mutation paths and in the centralized temporal
+            // synchronizer, which prevents parallel page requests from
+            // deadlocking while rendering Subject Details.
+            return gradeSheet;
         } catch (SQLException exception) {
             throw wrap(exception, "Failed to read grade sheet");
         }
@@ -300,6 +351,7 @@ public final class GradeSheetService {
         List<Long> contextAssessmentIds = gradeSheetDAO.findAssessmentIdsForSheetContext(
                 connection,
                 gradeSheet.subjectId(),
+                gradeSheet.courseOccurrenceId(),
                 gradeSheet.classGroupIds()
         );
         if (!contextAssessmentIds.isEmpty()) {
@@ -325,17 +377,39 @@ public final class GradeSheetService {
         }
     }
 
+    private void validateFinalSourceTopology(
+            Connection connection,
+            GradeSheetType type,
+            List<Long> classGroupIds,
+            Long excludedGradeSheetId
+    ) throws SQLException {
+        if (type != GradeSheetType.FINAL) {
+            return;
+        }
+        List<Long> uniqueClassGroupIds = classGroupIds == null
+                ? List.of()
+                : new LinkedHashSet<>(classGroupIds).stream().toList();
+        if (uniqueClassGroupIds.size() != 1) {
+            throw new IllegalArgumentException("A final class-group grade sheet must belong to exactly one class group");
+        }
+        if (gradeSheetDAO.hasFinalClassGroupGradeSheet(connection, uniqueClassGroupIds, excludedGradeSheetId)) {
+            throw new IllegalStateException("The class group already has its final grade sheet");
+        }
+    }
+
     private static void validateCreateCommand(GradeSheetCreateCommand command) {
         Objects.requireNonNull(command, "command is required");
         if (command.state() != GradeSheetState.DRAFT) {
             throw new IllegalArgumentException("New grade sheets must start as draft");
         }
+        requireClassGroupScope(command.classGroupIds());
         validateCommon(command.subjectId(), command.title(), command.type(), command.maxGrade(),
                 command.passingGrade(), command.assessmentWeights());
     }
 
     private static void validateUpdateCommand(GradeSheetUpdateCommand command) {
         Objects.requireNonNull(command, "command is required");
+        requireClassGroupScope(command.classGroupIds());
         validateCommon(command.subjectId(), command.title(), command.type(), command.maxGrade(),
                 command.passingGrade(), command.assessmentWeights());
     }
@@ -360,6 +434,14 @@ public final class GradeSheetService {
         Objects.requireNonNull(type, "grade sheet type is required");
         validateScale(maxGrade, passingGrade);
         validateAssessmentIds(assessmentWeights);
+    }
+
+    private static void requireClassGroupScope(List<Long> classGroupIds) {
+        if (classGroupIds == null || classGroupIds.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Subject-occurrence grade sheets are created automatically with the first class group"
+            );
+        }
     }
 
     private static void validateScale(BigDecimal maxGrade, BigDecimal passingGrade) {

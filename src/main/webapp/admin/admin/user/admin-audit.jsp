@@ -52,7 +52,7 @@
                             <tbody>
                             <c:forEach var="log" items="${logs}">
                                 <tr class="hover-bg-neutral-20 border-bottom transition-03">
-                                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${log.occurredAt}"/></td>
+                                    <td class="py-20 px-20 text-14 text-neutral-500" data-gape-datetime-display><c:out value="${log.occurredAt}"/></td>
                                     <td class="py-20 px-20">
                                         <span class="fw-medium text-14 text-neutral-700"><c:out value="${log.operationType}"/></span>
                                         <span class="d-block text-12 text-neutral-500">Session: <c:out value="${empty log.sessionId ? '-' : log.sessionId}"/></span>

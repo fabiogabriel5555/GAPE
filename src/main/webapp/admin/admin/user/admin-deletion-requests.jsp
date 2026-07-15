@@ -57,8 +57,8 @@
                                         <a href="${pageContext.request.contextPath}/admin/users/${requestItem.submitterUserId}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">User ${requestItem.submitterUserId}</a>
                                         <span class="d-block text-12 text-neutral-500"><c:out value="${empty requestItem.reason ? 'No reason provided' : requestItem.reason}"/></span>
                                     </td>
-                                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${requestItem.submittedAt}"/></td>
-                                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${requestItem.processedAt}"/></td>
+                                    <td class="py-20 px-20 text-14 text-neutral-500" data-gape-datetime-display><c:out value="${requestItem.submittedAt}"/></td>
+                                    <td class="py-20 px-20 text-14 text-neutral-500" data-gape-datetime-display><c:out value="${requestItem.processedAt}"/></td>
                                     <td class="py-20 px-20">
                                         <span class="${requestItem.stateBadgeClass} px-16 py-8 border-neutral-30 border rounded-pill text-14">
                                             <c:out value="${requestItem.stateLabel}"/>

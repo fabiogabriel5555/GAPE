@@ -13,7 +13,7 @@
 <html lang="en">
 <head>
     <base href="${pageContext.request.contextPath}/">
-    <title>GAPE - Class Group</title>
+    <title>GAPE - <c:out value="${classGroupPageTitle}"/></title>
     <%@ include file="/WEB-INF/fragments/template-base-head.jspf" %>
     <style>
         .gape-class-group-wizard {
@@ -118,6 +118,15 @@
             color: #263238;
             font-size: 13px;
             font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        .gape-preview-period-context {
+            display: block;
+            color: var(--gape-wizard-muted);
+            font-size: 11px;
+            line-height: 1.35;
+            margin-top: 4px;
             overflow-wrap: anywhere;
         }
 
@@ -359,6 +368,31 @@
                 padding: 24px 20px !important;
             }
 
+            .gape-wizard-shell {
+                grid-template-columns: minmax(0, 1fr);
+                gap: 24px;
+                min-width: 0;
+                overflow: hidden;
+            }
+
+            .gape-class-preview,
+            .gape-wizard-panel {
+                max-width: 100%;
+                min-width: 0;
+                width: 100%;
+            }
+
+            .gape-step-panel .row {
+                --bs-gutter-x: 0;
+                margin-left: 0;
+                margin-right: 0;
+            }
+
+            .gape-step-panel .row > [class*="col"] {
+                padding-left: 0;
+                padding-right: 0;
+            }
+
             .gape-wizard-progress,
             .gape-choice-grid.gape-choice-grid--compact,
             .gape-preview-chip-grid,
@@ -394,21 +428,15 @@
             <%@ include file="/WEB-INF/fragments/dashboard-topbar.jspf" %>
             <div class="px-24 py-24 flex-grow-1">
                 <%@ include file="/WEB-INF/fragments/flash-messages.jspf" %>
-                <form action="${formAction}" method="post" class="gape-class-group-wizard bg-white rounded-10 px-40 py-40" data-class-group-wizard>
+                <form action="${formAction}" method="post" class="gape-class-group-wizard bg-white rounded-10 px-40 py-40" data-class-group-wizard data-class-group-context-form data-class-group-context-managed data-creating="${creating}" data-class-group-selected-year="<c:out value='${classGroupSelectedYear}'/>" data-class-group-selected-term="<c:out value='${classGroupSelectedTerm}'/>" data-class-group-subject-label="<c:out value='${subjectCreationContext.name}'/>">
                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                     <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap border-bottom-dashed pb-24 mb-32">
                         <div>
-                            <h2 class="text-18 fw-medium text-neutral-700 mb-4">${creating ? 'Create Class Group' : 'Edit Class Group'}</h2>
+                            <h2 class="text-18 fw-medium text-neutral-700 mb-4"><c:out value="${classGroupPageTitle}"/></h2>
                             <span class="text-14 text-neutral-500">Set the class group context, operating model and availability before saving.</span>
                         </div>
                         <a href="${classGroupBackHref}" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03">Back</a>
                     </div>
-
-                    <c:if test="${not empty errorMessage}">
-                        <div class="alert alert-danger mb-24" role="alert">
-                            <c:out value="${errorMessage}"/>
-                        </div>
-                    </c:if>
 
                     <div class="gape-wizard-shell">
                         <aside class="gape-class-preview bg-white rounded-10" aria-label="Class group preview">
@@ -433,8 +461,9 @@
                                         <strong data-preview-capacity>Not set</strong>
                                     </div>
                                     <div class="gape-preview-chip">
-                                        <span>Dates</span>
-                                        <strong data-preview-dates>Not set</strong>
+                                        <span>Period</span>
+                                        <strong data-preview-period>Not set</strong>
+                                        <small class="gape-preview-period-context" data-preview-period-context></small>
                                     </div>
                                 </div>
                             </div>
@@ -468,42 +497,137 @@
                                 <div class="row gy-4">
                                     <c:choose>
                                         <c:when test="${creating}">
-                                            <div class="col-lg-6 gape-select-field">
-                                                <label for="courseId" class="fw-medium text-base text-neutral-800 mb-12">Course</label>
-                                                <select id="courseId" name="courseId" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14">
-                                                    <option value="">Select course</option>
-                                                    <c:forEach var="course" items="${courseOptions}">
-                                                        <option value="${course.id}" ${form.courseId == course.id ? 'selected' : ''}>
-                                                            <c:out value="${course.name}"/>
-                                                        </option>
-                                                    </c:forEach>
-                                                </select>
-                                            </div>
-                                            <div class="col-lg-6 gape-select-field">
-                                                <label for="subjectId" class="fw-medium text-base text-neutral-800 mb-12">Subject</label>
-                                                <select id="subjectId" name="subjectId" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14">
-                                                    <option value="">Select subject</option>
-                                                    <c:forEach var="association" items="${courseSubjectOptions}">
-                                                        <option value="${association.subjectId}" data-parent-value="${association.courseId}" ${form.subjectId == association.subjectId and form.courseId == association.courseId ? 'selected' : ''}>
-                                                            <c:out value="${association.subjectName}"/> - <c:out value="${association.curricularPositionLabel}"/>
-                                                        </option>
-                                                    </c:forEach>
-                                                </select>
-                                            </div>
+                                            <c:choose>
+                                                <c:when test="${not empty subjectCreationContext}">
+                                                    <div class="col-lg-6 gape-select-field gape-class-group-context-field" data-class-group-course-context>
+                                                        <label for="courseId" class="fw-medium text-base text-neutral-800 mb-12">Course</label>
+                                                        <select id="courseId" name="courseId" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 gape-eduall-select" data-class-group-course>
+                                                            <option value="">Select course</option>
+                                                            <c:forEach var="course" items="${courseOptions}">
+                                                                <c:set var="subjectCourseAssociation" value="${subjectCreationAssociationByCourseId[course.id]}"/>
+                                                                <c:set var="subjectCourseSelectable" value="${course.active and subjectCreationCourseSelectableByCourseId[course.id]}"/>
+                                                                <c:set var="subjectCourseUnavailableReason" value="This subject is not associated with this course."/>
+                                                                <c:if test="${not course.active}"><c:set var="subjectCourseUnavailableReason" value="This course is inactive."/></c:if>
+                                                                <c:if test="${not empty subjectCourseAssociation and course.active and not subjectCourseSelectable}"><c:set var="subjectCourseUnavailableReason" value="You do not have permission to create a class group in this course."/></c:if>
+                                                                <option value="${course.id}"
+                                                                        title="<c:out value='${course.name}'/> | <c:out value='${course.courseManagementContextTitle}'/>"
+                                                                        data-organization-id="${course.organizationId}"
+                                                                        data-organic-unit-id="${course.organicUnitId}"
+                                                                        data-course-acronym="<c:out value='${course.acronym}'/>"
+                                                                        data-course-label="<c:out value='${course.name}'/>"
+                                                                        data-organization-acronym="<c:out value='${course.organizationAcronym}'/>"
+                                                                        data-organic-unit-acronym="<c:out value='${course.organicUnitAcronym}'/>"
+                                                                        data-subject-association-available="${not empty subjectCourseAssociation}"
+                                                                        data-subject-context-selectable="${subjectCourseSelectable}"
+                                                                        data-subject-curricular-year="<c:out value='${subjectCourseAssociation.curricularYear}'/>"
+                                                                        data-subject-term="<c:out value='${subjectCourseAssociation.term}'/>"
+                                                                        data-context-unavailable-reason="<c:out value='${subjectCourseUnavailableReason}'/>"
+                                                                        ${form.courseId == course.id and subjectCourseSelectable ? 'selected' : ''}>
+                                                                    <c:out value="${course.acronym}"/> - <c:out value="${course.name}"/> | <c:out value="${course.courseManagementContextLabel}"/>
+                                                                </option>
+                                                            </c:forEach>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-lg-6 gape-class-group-context-field" data-class-group-subject-context>
+                                                        <label for="subjectContext" class="fw-medium text-base text-neutral-800 mb-12">Subject</label>
+                                                        <div id="subjectContext" class="gape-class-group-readonly-value gape-class-group-readonly-value--locked-subject form-control fw-normal text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14" aria-readonly="true">
+                                                            <span class="gape-class-group-readonly-value-main"><c:out value="${subjectCreationContext.acronym}"/> - <c:out value="${subjectCreationContext.name}"/></span>
+                                                        </div>
+                                                        <input type="hidden" id="subjectId" name="subjectId" value="${subjectCreationContext.id}" data-class-group-subject data-class-group-locked-subject>
+                                                        <input type="hidden" name="subjectContextId" value="${subjectCreationContext.id}">
+                                                    </div>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <div class="col-lg-6 gape-select-field gape-class-group-context-field" data-class-group-course-context>
+                                                        <label for="courseId" class="fw-medium text-base text-neutral-800 mb-12">Course</label>
+                                                        <select id="courseId" name="courseId" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 gape-eduall-select" data-class-group-course>
+                                                            <option value="">Select course</option>
+                                                            <c:forEach var="course" items="${courseOptions}">
+                                                                <option value="${course.id}"
+                                                                        title="<c:out value='${course.name}'/> | <c:out value='${course.courseManagementContextTitle}'/>"
+                                                                        data-organization-id="${course.organizationId}"
+                                                                        data-organic-unit-id="${course.organicUnitId}"
+                                                                        data-course-acronym="<c:out value='${course.acronym}'/>"
+                                                                        data-course-label="<c:out value='${course.name}'/>"
+                                                                        data-organization-acronym="<c:out value='${course.organizationAcronym}'/>"
+                                                                        data-organic-unit-acronym="<c:out value='${course.organicUnitAcronym}'/>"
+                                                                        ${form.courseId == course.id ? 'selected' : ''}>
+                                                                    <c:out value="${course.acronym}"/> - <c:out value="${course.name}"/> | <c:out value="${course.courseManagementContextLabel}"/>
+                                                                </option>
+                                                            </c:forEach>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-lg-6 gape-select-field gape-class-group-context-field opacity-75 is-disabled" data-class-group-subject-context>
+                                                        <label for="subjectId" class="fw-medium text-base text-neutral-800 mb-12">Subject</label>
+                                                        <select id="subjectId" name="subjectId" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 gape-eduall-select" data-class-group-subject disabled>
+                                                            <option value="">Select subject</option>
+                                                            <c:forEach var="association" items="${courseSubjectOptions}">
+                                                                <option value="${association.subjectId}"
+                                                                        data-parent-value="${association.courseId}"
+                                                                        data-course-id="${association.courseId}"
+                                                                        data-subject-acronym="<c:out value='${association.subjectAcronym}'/>"
+                                                                        data-subject-label="<c:out value='${association.subjectName}'/>"
+                                                                        data-curricular-year="${association.curricularYear}"
+                                                                        data-term="${association.term}"
+                                                                        title="<c:out value='${association.curricularPositionLabel}'/>"
+                                                                        ${form.subjectId == association.subjectId and form.courseId == association.courseId ? 'selected' : ''}>
+                                                                    <c:out value="${association.subjectAcronym}"/> - <c:out value="${association.subjectName}"/>
+                                                                </option>
+                                                            </c:forEach>
+                                                        </select>
+                                                    </div>
+                                                </c:otherwise>
+                                            </c:choose>
                                         </c:when>
                                         <c:otherwise>
-                                            <div class="col-lg-6">
+                                            <div class="col-lg-6 gape-class-group-context-field" data-class-group-course-context>
                                                 <label for="courseContext" class="fw-medium text-base text-neutral-800 mb-12">Course</label>
-                                                <input id="courseContext" type="text" value="<c:out value='${classGroup.courseName}'/>" readonly class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14">
+                                                <div id="courseContext" class="gape-class-group-readonly-value form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14">
+                                                    <span class="gape-class-group-readonly-value-main"><c:out value="${classGroup.course.acronym}"/> - <c:out value="${classGroup.course.name}"/></span>
+                                                    <span class="gape-class-group-readonly-value-context"><c:out value="${classGroup.course.courseManagementContextLabel}"/></span>
+                                                </div>
                                                 <input type="hidden" name="courseId" value="${form.courseId}">
                                             </div>
-                                            <div class="col-lg-6">
+                                            <div class="col-lg-6 gape-class-group-context-field" data-class-group-subject-context>
                                                 <label for="subjectContext" class="fw-medium text-base text-neutral-800 mb-12">Subject</label>
-                                                <input id="subjectContext" type="text" value="<c:out value='${classGroup.subjectName}'/>" readonly class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14">
+                                                <div id="subjectContext" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14">
+                                                    <c:out value="${classGroup.subject.acronym}"/> - <c:out value="${classGroup.subject.name}"/>
+                                                </div>
                                                 <input type="hidden" name="subjectId" value="${form.subjectId}">
                                             </div>
                                         </c:otherwise>
                                     </c:choose>
+                                    <div class="col-12 gape-select-field gape-class-group-context-field opacity-75 is-disabled" data-class-group-period-context>
+                                        <input type="hidden" id="courseOccurrenceId" name="courseOccurrenceId" value="<c:out value='${form.courseOccurrenceId}'/>" data-class-group-occurrence>
+                                        <label for="courseOccurrencePeriodId" class="fw-medium text-base text-neutral-800 mb-12">Course Occurrence Period</label>
+                                        <select id="courseOccurrencePeriodId" name="courseOccurrencePeriodId" required disabled class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 gape-eduall-select" data-class-group-period>
+                                            <option value="">Select occurrence period</option>
+                                            <c:forEach var="occurrence" items="${courseOccurrenceOptions}">
+                                                <c:forEach var="period" items="${occurrence.periods}">
+                                                    <optgroup label="<c:out value='${occurrence.label}'/> - <c:out value='${period.label}'/>"
+                                                              data-class-group-period-group
+                                                              data-course-id="${occurrence.courseId}"
+                                                              data-occurrence-id="${occurrence.id}">
+                                                        <option value="${period.id}"
+                                                                data-course-id="${occurrence.courseId}"
+                                                                data-occurrence-id="${occurrence.id}"
+                                                                data-occurrence-label="<c:out value='${occurrence.label}'/>"
+                                                                data-period-label="<c:out value='${period.label}'/>"
+                                                                data-occurrence-period-label="<c:out value='${occurrence.label}'/> - <c:out value='${period.label}'/>"
+                                                                data-period-range="<c:out value='${period.dateRangeLabel}'/>"
+                                                                data-period-state="<c:out value='${period.stateLabel}'/>"
+                                                                data-curricular-year="${period.curricularYear}"
+                                                                data-term="${period.termValue}"
+                                                                data-start="${period.startsAtValue}"
+                                                                data-end="${period.endsAtValue}"
+                                                                ${form.courseOccurrencePeriodId == period.id ? 'selected' : ''}>
+                                                            <c:out value="${period.dateRangeLabel}"/>
+                                                        </option>
+                                                    </optgroup>
+                                                </c:forEach>
+                                            </c:forEach>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
@@ -560,7 +684,7 @@
                             <div class="gape-step-panel" data-step-panel="2">
                                 <span class="gape-step-eyebrow">Class group access</span>
                                 <h3 class="gape-step-title">Select class group access</h3>
-                                <p class="gape-step-copy">The class group state is calculated from the date window. Leave the start date empty to keep it as draft.</p>
+                                <p class="gape-step-copy">The class group state is calculated from the selected occurrence period.</p>
 
                                 <div class="mb-28">
                                     <label class="fw-medium text-base text-neutral-800 mb-12 d-block">State</label>
@@ -570,19 +694,22 @@
                                 <div class="row gy-4">
                                     <div class="col-lg-3 col-sm-6">
                                         <label for="minStudents" class="fw-medium text-base text-neutral-800 mb-12">Min Students</label>
-                                        <input id="minStudents" name="minStudents" type="number" min="0" step="1" value="<c:out value='${form.minStudents}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                                        <input id="minStudents" name="minStudents" type="number" min="1" step="1" required value="<c:out value='${form.minStudents}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                                     </div>
                                     <div class="col-lg-3 col-sm-6">
                                         <label for="maxStudents" class="fw-medium text-base text-neutral-800 mb-12">Max Students</label>
-                                        <input id="maxStudents" name="maxStudents" type="number" min="0" step="1" value="<c:out value='${form.maxStudents}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                                        <input id="maxStudents" name="maxStudents" type="number" min="2" step="1" required value="<c:out value='${form.maxStudents}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
                                     </div>
-                                    <div class="col-lg-3 col-sm-6">
-                                        <label for="startsAt" class="fw-medium text-base text-neutral-800 mb-12">Start Date</label>
-                                        <input id="startsAt" name="startsAt" type="date" value="<c:out value='${form.startsAt}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
-                                    </div>
-                                    <div class="col-lg-3 col-sm-6">
-                                        <label for="endsAt" class="fw-medium text-base text-neutral-800 mb-12">End Date</label>
-                                        <input id="endsAt" name="endsAt" type="date" value="<c:out value='${form.endsAt}'/>" class="form-control px-24 py-14 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-14 focus-visible-outline focus-border-main-600">
+                                    <div class="col-12">
+                                        <div class="gape-date-context" data-date-context>
+                                            <div class="gape-date-context__main">
+                                                <span class="gape-date-context__icon"><i class="ph ph-calendar-dots text-20"></i></span>
+                                                <span class="gape-date-context__text">
+                                                    <strong class="gape-date-context__title" data-date-context-title>Occurrence period</strong>
+                                                    <span class="gape-date-context__copy" data-date-context-copy>Select an occurrence period for this class group.</span>
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -600,7 +727,7 @@
                             <div class="gape-step-panel" data-step-panel="3">
                                 <span class="gape-step-eyebrow">Class group outline</span>
                                 <h3 class="gape-step-title">Review the class group setup</h3>
-                                <p class="gape-step-copy">Confirm the context, setup and access window before the class group is saved.</p>
+                                <p class="gape-step-copy">Confirm the context, setup and occurrence period before the class group is saved.</p>
 
                                 <div class="gape-review-outline">
                                     <div class="gape-review-block">
@@ -656,7 +783,7 @@
                                         <div>
                                             <div class="gape-review-heading">
                                                 <span class="gape-outline-icon"><i class="ph ph-calendar-dots"></i></span>
-                                                <h4>Capacity and dates</h4>
+                                                <h4>Capacity and period</h4>
                                             </div>
                                             <div class="gape-review-grid">
                                                 <div class="gape-review-item">
@@ -664,8 +791,8 @@
                                                     <strong data-review-capacity>Not set</strong>
                                                 </div>
                                                 <div class="gape-review-item">
-                                                    <span>Dates</span>
-                                                    <strong data-review-dates>Not set</strong>
+                                                    <span>Period</span>
+                                                    <strong data-review-period>Not set</strong>
                                                 </div>
                                                 <div class="gape-review-item">
                                                     <span>Content Preview</span>
@@ -686,18 +813,13 @@
                         </section>
                     </div>
                 </form>
-                <c:if test="${not creating}">
-                    <div class="mt-24">
-                        <%@ include file="/WEB-INF/fragments/class-group-enrollment-management.jspf" %>
-                        <%@ include file="/WEB-INF/fragments/class-group-teacher-management.jspf" %>
-                    </div>
-                </c:if>
             </div>
             <%@ include file="/WEB-INF/fragments/dashboard-footer.jspf" %>
         </div>
     </div>
 </div>
 <%@ include file="/WEB-INF/fragments/template-base-scripts.jspf" %>
+<script src="${pageContext.request.contextPath}/assets/js/gape-class-group-context.js?v=20260713-select-guidance-2"></script>
 <script>
     (function () {
         function ready(callback) {
@@ -725,7 +847,9 @@
         var submitButton = wizard.querySelector('[data-wizard-submit]');
         var courseSelect = wizard.querySelector('#courseId');
         var subjectSelect = wizard.querySelector('#subjectId');
-        var originalSubjectOptions = subjectSelect
+        var creating = wizard.getAttribute('data-creating') === 'true';
+        var contextManaged = wizard.hasAttribute('data-class-group-context-managed');
+        var originalSubjectOptions = !contextManaged && subjectSelect
                 ? Array.prototype.slice.call(subjectSelect.options).map(function (option) {
                     return {
                         value: option.value,
@@ -750,11 +874,21 @@
             if (control.tagName === 'INPUT') {
                 return textOrFallback(control.value, fallback);
             }
+            if (!control.options) {
+                return textOrFallback(control.textContent, fallback);
+            }
             var option = control.options[control.selectedIndex];
             if (!option || !option.value) {
                 return fallback;
             }
             return textOrFallback(option.textContent.replace(/\s+/g, ' '), fallback);
+        }
+
+        function selectedSubjectText(fallback) {
+            if (subjectSelect && subjectSelect.matches('[data-class-group-locked-subject]')) {
+                return textOrFallback(wizard.getAttribute('data-class-group-subject-label'), fallback);
+            }
+            return selectedText('#subjectId', fallback);
         }
 
         function checkedChoiceLabel(name, fallback) {
@@ -780,6 +914,9 @@
         }
 
         function rebuildSubjectOptions(preserveCurrentValue) {
+            if (contextManaged) {
+                return;
+            }
             if (!courseSelect || !subjectSelect) {
                 return;
             }
@@ -822,19 +959,30 @@
             return 'Not set';
         }
 
-        function dateLabel() {
-            var startsAt = fieldValue('#startsAt', '');
-            var endsAt = fieldValue('#endsAt', '');
-            if (startsAt && endsAt) {
-                return startsAt + ' - ' + endsAt;
+        function selectedPeriodOption() {
+            var period = wizard.querySelector('#courseOccurrencePeriodId');
+            return period && period.selectedIndex >= 0 ? period.options[period.selectedIndex] : null;
+        }
+
+        function selectedPeriodInfo() {
+            var option = selectedPeriodOption();
+            if (!option || !option.value) {
+                return {
+                    occurrence: '',
+                    label: 'Not set',
+                    range: '',
+                    review: 'Not set'
+                };
             }
-            if (startsAt) {
-                return 'Starts ' + startsAt;
-            }
-            if (endsAt) {
-                return 'Ends ' + endsAt;
-            }
-            return 'Not set';
+            var occurrence = option.dataset.occurrenceLabel || '';
+            var label = option.dataset.periodLabel || option.textContent.replace(/\s+/g, ' ').trim();
+            var range = (option.dataset.start || '-') + ' - ' + (option.dataset.end || '-');
+            return {
+                occurrence: occurrence,
+                label: label,
+                range: range,
+                review: [occurrence, label, range].filter(Boolean).join(' · ')
+            };
         }
 
         function todayValue() {
@@ -845,8 +993,9 @@
         }
 
         function computedStateLabel() {
-            var startsAt = fieldValue('#startsAt', '');
-            var endsAt = fieldValue('#endsAt', '');
+            var option = selectedPeriodOption();
+            var startsAt = option && option.value ? option.dataset.start || '' : '';
+            var endsAt = option && option.value ? option.dataset.end || '' : '';
             var today = todayValue();
             if (!startsAt) {
                 return 'Draft';
@@ -861,13 +1010,13 @@
             updateCrossFieldValidity();
             var code = fieldValue('#code', 'Class group code');
             var course = selectedText('#courseId', selectedText('#courseContext', 'Course not selected'));
-            var subject = selectedText('#subjectId', selectedText('#subjectContext', 'Subject not selected'));
+            var subject = selectedSubjectText(selectedText('#subjectContext', 'Subject not selected'));
             var context = course + ' - ' + subject;
             var modality = checkedChoiceLabel('modality', 'On-site');
             var state = computedStateLabel();
             var shift = selectedText('#shift', 'Not set');
             var capacity = capacityLabel();
-            var dates = dateLabel();
+            var period = selectedPeriodInfo();
             var thumbnailControl = wizard.querySelector('input[name="showContentThumbnails"]');
             var thumbnails = thumbnailControl && thumbnailControl.checked ? 'Thumbnails' : 'Icons';
 
@@ -877,7 +1026,9 @@
             setText('[data-preview-shift], [data-review-shift]', shift);
             setText('[data-preview-state], [data-review-state], [data-class-group-state-display]', state);
             setText('[data-preview-capacity], [data-review-capacity]', capacity);
-            setText('[data-preview-dates], [data-review-dates]', dates);
+            setText('[data-preview-period]', period.label);
+            setText('[data-preview-period-context]', period.occurrence);
+            setText('[data-review-period]', period.review);
             setText('[data-review-thumbnails]', thumbnails);
             setText('[data-review-course]', course);
             setText('[data-review-subject]', subject);
@@ -886,33 +1037,20 @@
         function updateCrossFieldValidity() {
             var minStudents = wizard.querySelector('#minStudents');
             var maxStudents = wizard.querySelector('#maxStudents');
-            var startsAt = wizard.querySelector('#startsAt');
-            var endsAt = wizard.querySelector('#endsAt');
 
             if (minStudents && maxStudents) {
+                minStudents.setCustomValidity('');
                 maxStudents.setCustomValidity('');
-                if (minStudents.value && maxStudents.value && Number(minStudents.value) > Number(maxStudents.value)) {
-                    maxStudents.setCustomValidity('Maximum students must be greater than or equal to minimum students.');
+                if (minStudents.value && Number(minStudents.value) <= 0) {
+                    minStudents.setCustomValidity('Minimum students must be greater than zero.');
                 }
-            }
-
-            if (startsAt && endsAt) {
-                var today = todayValue();
-                startsAt.min = today;
-                endsAt.min = startsAt.value || today;
-                startsAt.setCustomValidity('');
-                endsAt.setCustomValidity('');
-                if (endsAt.value && !startsAt.value) {
-                    startsAt.setCustomValidity('Start date is required when an end date is set.');
+                if (minStudents.value) {
+                    maxStudents.min = String(Number(minStudents.value) + 1);
+                } else {
+                    maxStudents.min = '2';
                 }
-                if (startsAt.value && startsAt.value < today) {
-                    startsAt.setCustomValidity('Start date cannot be in the past.');
-                }
-                if (endsAt.value && endsAt.value < today) {
-                    endsAt.setCustomValidity('End date cannot be in the past.');
-                }
-                if (startsAt.value && endsAt.value && startsAt.value > endsAt.value) {
-                    endsAt.setCustomValidity('End date cannot be before start date.');
+                if (minStudents.value && maxStudents.value && Number(maxStudents.value) <= Number(minStudents.value)) {
+                    maxStudents.setCustomValidity('Maximum students must be greater than minimum students.');
                 }
             }
         }
@@ -975,16 +1113,352 @@
             control.addEventListener('change', updatePreview);
         });
 
-        if (courseSelect && subjectSelect) {
+        if (courseSelect && subjectSelect && !contextManaged) {
             rebuildSubjectOptions(true);
             courseSelect.addEventListener('change', function () {
                 rebuildSubjectOptions(true);
                 updatePreview();
             });
         }
-
+        wizard.addEventListener('gape:class-group-context-sync', updatePreview);
         updatePreview();
         window.setInterval(updatePreview, 30000);
+        });
+    })();
+</script>
+<script>
+    (function () {
+        function ready(callback) {
+            if (window.jQuery) {
+                window.jQuery(callback);
+                return;
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', callback);
+                return;
+            }
+            callback();
+        }
+
+        ready(function () {
+            var form = document.querySelector('[data-class-group-context-form]');
+            if (!form) {
+                return;
+            }
+            var course = form.querySelector('[data-class-group-course], input[name="courseId"]');
+            var subject = form.querySelector('[data-class-group-subject], input[name="subjectId"]');
+            var period = form.querySelector('[data-class-group-period]');
+            var periodWrapper = form.querySelector('[data-class-group-period-context]');
+            var occurrence = form.querySelector('[data-class-group-occurrence]');
+            var title = form.querySelector('[data-date-context-title]');
+            var copy = form.querySelector('[data-date-context-copy]');
+            var reviewPeriod = form.querySelector('[data-review-period]');
+            if (!period || !occurrence) {
+                return;
+            }
+
+            function selectedSubjectOption() {
+                if (!subject || !subject.options) {
+                    return null;
+                }
+                return subject.options[subject.selectedIndex] || null;
+            }
+
+            function selectedCourseId() {
+                return course ? course.value : '';
+            }
+
+            function selectedCourseOption() {
+                if (!course || !course.options) {
+                    return null;
+                }
+                return course.options[course.selectedIndex] || null;
+            }
+
+            function normalizedCode(value) {
+                return (value || '').toUpperCase();
+            }
+
+            function selectedSubjectYear() {
+                var option = selectedSubjectOption();
+                if (option && option.dataset && option.dataset.curricularYear) {
+                    return option.dataset.curricularYear;
+                }
+                var courseOption = selectedCourseOption();
+                if (courseOption && courseOption.dataset && courseOption.dataset.subjectCurricularYear) {
+                    return courseOption.dataset.subjectCurricularYear;
+                }
+                return form ? form.getAttribute('data-class-group-selected-year') || '' : '';
+            }
+
+            function selectedSubjectTerm() {
+                var option = selectedSubjectOption();
+                if (option && option.dataset && option.dataset.term) {
+                    return option.dataset.term;
+                }
+                var courseOption = selectedCourseOption();
+                if (courseOption && courseOption.dataset && courseOption.dataset.subjectTerm) {
+                    return courseOption.dataset.subjectTerm;
+                }
+                return form ? form.getAttribute('data-class-group-selected-term') || '' : '';
+            }
+
+            function refreshSelect(select) {
+                if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
+                    window.jQuery(select).prop('disabled', select.disabled).trigger('change.select2');
+                }
+            }
+
+            function setPeriodFieldState(enabled) {
+                period.disabled = !enabled;
+                if (periodWrapper) {
+                    periodWrapper.classList.toggle('opacity-75', !enabled);
+                    periodWrapper.classList.toggle('is-disabled', !enabled);
+                }
+            }
+
+            function setPeriodUnavailableGuidance(message) {
+                if (!periodWrapper) {
+                    return;
+                }
+                var Tooltip = window.bootstrap && window.bootstrap.Tooltip;
+                var existingTooltip = Tooltip && Tooltip.getInstance
+                        ? Tooltip.getInstance(periodWrapper)
+                        : null;
+                if (existingTooltip) {
+                    existingTooltip.dispose();
+                }
+                if (!message) {
+                    delete periodWrapper.dataset.gapePeriodUnavailableReason;
+                    periodWrapper.removeAttribute('data-gape-period-unavailable');
+                    periodWrapper.removeAttribute('data-bs-toggle');
+                    periodWrapper.removeAttribute('data-bs-placement');
+                    periodWrapper.removeAttribute('data-bs-original-title');
+                    periodWrapper.removeAttribute('title');
+                    periodWrapper.removeAttribute('tabindex');
+                    return;
+                }
+                periodWrapper.dataset.gapePeriodUnavailableReason = message;
+                periodWrapper.setAttribute('data-gape-period-unavailable', 'true');
+                periodWrapper.setAttribute('title', message);
+                periodWrapper.setAttribute('tabindex', '0');
+                if (!Tooltip) {
+                    return;
+                }
+                periodWrapper.setAttribute('data-bs-toggle', 'tooltip');
+                periodWrapper.setAttribute('data-bs-placement', 'top');
+                new Tooltip(periodWrapper, {
+                    boundary: 'viewport',
+                    placement: 'top',
+                    trigger: 'hover focus'
+                });
+            }
+
+            function todayValue() {
+                var now = new Date();
+                return now.getFullYear() + '-'
+                    + String(now.getMonth() + 1).padStart(2, '0') + '-'
+                    + String(now.getDate()).padStart(2, '0');
+            }
+
+            function isPastPeriod(option) {
+                return !!(option && option.value && option.dataset.end && option.dataset.end < todayValue());
+            }
+
+            function syncPeriodGroups() {
+                Array.prototype.forEach.call(
+                        period.querySelectorAll('optgroup[data-class-group-period-group]'),
+                        function (group) {
+                            var hasVisibleOption = Array.prototype.some.call(group.querySelectorAll('option'), function (option) {
+                                return !!option.value && !option.hidden;
+                            });
+                            group.hidden = !hasVisibleOption;
+                        }
+                );
+            }
+
+            function periodSearchText(data) {
+                var option = data && data.element;
+                if (!option || !option.dataset) {
+                    return data && data.text ? data.text : '';
+                }
+                return [
+                    data.text,
+                    option.dataset.occurrencePeriodLabel,
+                    option.dataset.periodLabel,
+                    option.dataset.periodRange,
+                    option.dataset.periodState
+                ].filter(Boolean).join(' ');
+            }
+
+            function periodMatcher(params, data) {
+                if (!data) {
+                    return null;
+                }
+                if (data.children && data.children.length) {
+                    if (data.element && data.element.hidden) {
+                        return null;
+                    }
+                    var matchingGroup = window.jQuery.extend(true, {}, data);
+                    matchingGroup.children = data.children.map(function (child) {
+                        return periodMatcher(params, child);
+                    }).filter(Boolean);
+                    return matchingGroup.children.length ? matchingGroup : null;
+                }
+                if (data.element && data.element.hidden) {
+                    return null;
+                }
+                var term = params && params.term ? params.term.trim().toLowerCase() : '';
+                return !term || periodSearchText(data).toLowerCase().indexOf(term) >= 0 ? data : null;
+            }
+
+            function periodTemplate(data) {
+                if (data && data.children && data.children.length) {
+                    var group = document.createElement('span');
+                    group.className = 'gape-class-group-period-group-label';
+                    group.textContent = data.text || '';
+                    return group;
+                }
+                return data ? data.text : '';
+            }
+
+            function periodSelectionTemplate(data) {
+                var option = data && data.element;
+                if (!option || !option.value) {
+                    return data ? data.text : '';
+                }
+                var selection = document.createElement('span');
+                selection.className = 'gape-class-group-period-selection';
+                selection.textContent = option.dataset.occurrencePeriodLabel || data.text || '';
+                return selection;
+            }
+
+            function initializePeriodSelect() {
+                if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.select2) {
+                    return;
+                }
+                var selectUi = window.jQuery(period);
+                if (selectUi.data('select2')) {
+                    selectUi.select2('destroy');
+                }
+                selectUi.select2({
+                    width: '100%',
+                    selectionCssClass: 'gape-eduall-selection',
+                    dropdownCssClass: 'gape-eduall-select-dropdown gape-class-group-period-dropdown',
+                    matcher: periodMatcher,
+                    templateResult: periodTemplate,
+                    templateSelection: periodSelectionTemplate
+                });
+            }
+
+            function syncPeriodOptions() {
+                var courseId = selectedCourseId();
+                var year = selectedSubjectYear();
+                var term = normalizedCode(selectedSubjectTerm());
+                var previous = period.value;
+                var hasContext = !!(courseId && year && term);
+                var hasMatchingPeriod = false;
+                var hasAvailable = false;
+                Array.prototype.forEach.call(period.options, function (option) {
+                    if (!option.value) {
+                        option.hidden = false;
+                        option.disabled = false;
+                        option.dataset.unavailableReason = '';
+                        option.title = '';
+                        return;
+                    }
+                    var matches = hasContext
+                            && option.dataset.courseId === courseId
+                            && option.dataset.curricularYear === year
+                            && normalizedCode(option.dataset.term) === term;
+                    var unavailableReason = !matches
+                            ? 'This occurrence period does not match the selected course and subject.'
+                            : isPastPeriod(option)
+                                    ? 'This occurrence period ended on ' + option.dataset.end + ' and cannot receive a new class group.'
+                                    : '';
+                    option.hidden = !matches;
+                    option.disabled = !!unavailableReason;
+                    option.dataset.unavailableReason = unavailableReason;
+                    option.title = unavailableReason;
+                    hasMatchingPeriod = hasMatchingPeriod || matches;
+                    hasAvailable = hasAvailable || (matches && !option.disabled);
+                });
+                syncPeriodGroups();
+                if (previous && period.querySelector('option[value="' + CSS.escape(previous) + '"]:not([disabled])')) {
+                    period.value = previous;
+                } else {
+                    var first = Array.prototype.find.call(period.options, function (option) {
+                        return option.value && !option.disabled && !option.hidden;
+                    });
+                    period.value = first ? first.value : '';
+                }
+                // Once course and subject identify a real context, keep the
+                // selector usable even if every matching period is historical.
+                // Those rows stay visible as disabled options, instead of
+                // hiding the chronology behind a disabled field.
+                setPeriodFieldState(hasMatchingPeriod);
+                setPeriodUnavailableGuidance(
+                        hasContext && !hasAvailable
+                                ? 'The selected course and subject have no current or future occurrence period.'
+                                : ''
+                );
+                syncPeriodContext();
+                refreshSelect(period);
+            }
+
+            function syncPeriodContext() {
+                var option = period.options[period.selectedIndex];
+                if (!option || !option.value) {
+                    occurrence.value = '';
+                    if (title) {
+                        title.textContent = 'Occurrence period';
+                    }
+                    if (copy) {
+                        copy.textContent = 'Select an occurrence period for this class group.';
+                    }
+                    if (reviewPeriod) {
+                        reviewPeriod.textContent = 'Not set';
+                    }
+                    var hasAvailablePeriod = !!period.querySelector(
+                            'option[value]:not([hidden]):not([disabled])'
+                    );
+                    period.setCustomValidity(
+                            period.disabled || !hasAvailablePeriod
+                                    ? 'The selected course/subject has no current or future occurrence period.'
+                                    : ''
+                    );
+                    return;
+                }
+                occurrence.value = option.dataset.occurrenceId || '';
+                var range = (option.dataset.start || '-') + ' - ' + (option.dataset.end || '-');
+                if (title) {
+                    title.textContent = 'Occurrence period';
+                }
+                if (copy) {
+                    copy.textContent = option.textContent.replace(/\s+/g, ' ').trim();
+                }
+                if (reviewPeriod) {
+                    reviewPeriod.textContent = range;
+                }
+                period.setCustomValidity('');
+            }
+
+            ['change', 'input'].forEach(function (eventName) {
+                if (course) {
+                    course.addEventListener(eventName, syncPeriodOptions);
+                }
+                if (subject) {
+                    subject.addEventListener(eventName, syncPeriodOptions);
+                }
+                period.addEventListener(eventName, syncPeriodContext);
+            });
+            if (window.jQuery) {
+                window.jQuery(course).on('select2:select select2:clear change', syncPeriodOptions);
+                window.jQuery(subject).on('select2:select select2:clear change', syncPeriodOptions);
+                window.jQuery(period).on('select2:select select2:clear change', syncPeriodContext);
+            }
+            initializePeriodSelect();
+            syncPeriodOptions();
         });
     })();
 </script>

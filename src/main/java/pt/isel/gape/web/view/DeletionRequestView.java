@@ -1,14 +1,12 @@
 package pt.isel.gape.web.view;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.access.model.DeletionRequest;
 import pt.isel.gape.access.model.DeletionRequestState;
 
 public final class DeletionRequestView {
-
-    private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final DeletionRequest request;
 
@@ -91,6 +89,6 @@ public final class DeletionRequestView {
     }
 
     private static String format(LocalDateTime dateTime) {
-        return DATE_TIME.format(dateTime);
+        return ApplicationDateTimeFormat.dateTime(dateTime);
     }
 }

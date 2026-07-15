@@ -3,6 +3,8 @@ package pt.isel.gape.web.view;
 import java.time.LocalDate;
 
 import pt.isel.gape.access.model.UserState;
+import pt.isel.gape.common.time.ApplicationClock;
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.structure.model.OrganizationAdministratorAssignment;
 import pt.isel.gape.structure.model.RoleAssignmentState;
 
@@ -59,21 +61,21 @@ public final class OrganizationAdministratorView {
 
     public String getAssignmentBadgeClass() {
         if (userState != UserState.ACTIVE || assignmentState != RoleAssignmentState.ACTIVE) {
-            return "bg-warning-30 text-warning-600";
+            return "bg-danger-50 text-danger-600";
         }
         return "bg-success-50 text-success-600";
     }
 
     public String getStartDateLabel() {
-        return startDate == null ? "-" : startDate.toString();
+        return startDate == null ? "-" : ApplicationDateTimeFormat.date(startDate);
     }
 
     public String getEndDateLabel() {
-        return endDate == null ? "-" : endDate.toString();
+        return endDate == null ? "-" : ApplicationDateTimeFormat.date(endDate);
     }
 
     public boolean isCurrentlyActive() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ApplicationClock.system());
         return userState == UserState.ACTIVE
                 && assignmentState == RoleAssignmentState.ACTIVE
                 && (startDate == null || !startDate.isAfter(today))

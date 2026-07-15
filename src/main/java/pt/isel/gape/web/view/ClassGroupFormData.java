@@ -9,6 +9,8 @@ public final class ClassGroupFormData {
     private final Long id;
     private final String courseId;
     private final String subjectId;
+    private final String courseOccurrenceId;
+    private final String courseOccurrencePeriodId;
     private final String code;
     private final String modality;
     private final String state;
@@ -23,6 +25,8 @@ public final class ClassGroupFormData {
             Long id,
             String courseId,
             String subjectId,
+            String courseOccurrenceId,
+            String courseOccurrencePeriodId,
             String code,
             String modality,
             String state,
@@ -36,6 +40,8 @@ public final class ClassGroupFormData {
         this.id = id;
         this.courseId = courseId;
         this.subjectId = subjectId;
+        this.courseOccurrenceId = courseOccurrenceId;
+        this.courseOccurrencePeriodId = courseOccurrencePeriodId;
         this.code = code;
         this.modality = modality;
         this.state = state == null || state.isBlank() ? "DRAFT" : state;
@@ -53,6 +59,8 @@ public final class ClassGroupFormData {
                 stringValue(courseId),
                 stringValue(subjectId),
                 "",
+                "",
+                "",
                 "ONSITE",
                 "DRAFT",
                 "",
@@ -69,6 +77,8 @@ public final class ClassGroupFormData {
                 classGroup.id(),
                 Long.toString(classGroup.courseId()),
                 Long.toString(classGroup.subjectId()),
+                Long.toString(classGroup.courseOccurrenceId()),
+                Long.toString(classGroup.courseOccurrencePeriodId()),
                 classGroup.code(),
                 classGroup.modality().name(),
                 editableState(classGroup.state()).name(),
@@ -86,6 +96,8 @@ public final class ClassGroupFormData {
                 id,
                 text(request, "courseId"),
                 text(request, "subjectId"),
+                text(request, "courseOccurrenceId"),
+                text(request, "courseOccurrencePeriodId"),
                 text(request, "code"),
                 text(request, "modality"),
                 text(request, "state"),
@@ -108,6 +120,14 @@ public final class ClassGroupFormData {
 
     public String getSubjectId() {
         return subjectId;
+    }
+
+    public String getCourseOccurrenceId() {
+        return courseOccurrenceId;
+    }
+
+    public String getCourseOccurrencePeriodId() {
+        return courseOccurrencePeriodId;
     }
 
     public String getCode() {

@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -14,17 +13,11 @@ import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.validation.AcademicTextValidator;
 import pt.isel.gape.common.validation.MediaPathValidator;
-import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
-import pt.isel.gape.learning.model.Course;
-import pt.isel.gape.learning.model.CourseState;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
-import pt.isel.gape.learning.model.CourseSubjectAssociationCommand;
-import pt.isel.gape.learning.model.CourseSubjectState;
 import pt.isel.gape.learning.model.Subject;
 import pt.isel.gape.learning.model.SubjectCreateCommand;
-import pt.isel.gape.learning.model.SubjectInitialCourseAssignment;
 import pt.isel.gape.learning.model.SubjectState;
 import pt.isel.gape.learning.model.SubjectUpdateCommand;
 import pt.isel.gape.security.authorization.AccessContext;
@@ -34,8 +27,11 @@ import pt.isel.gape.security.authorization.AuthorizationPolicy;
 import pt.isel.gape.security.authorization.PermissionChecker;
 import pt.isel.gape.structure.dao.CoordinateSubjectDAO;
 import pt.isel.gape.structure.dao.ManageOrganizationDAO;
+import pt.isel.gape.structure.dao.OrganicUnitDAO;
 import pt.isel.gape.structure.dao.OrganizationDAO;
 import pt.isel.gape.structure.dao.TeachClassGroupDAO;
+import pt.isel.gape.structure.model.OrganicUnit;
+import pt.isel.gape.structure.model.OrganicUnitState;
 import pt.isel.gape.structure.model.Organization;
 import pt.isel.gape.structure.model.OrganizationState;
 import pt.isel.gape.structure.model.RoleAssignmentState;
@@ -46,9 +42,9 @@ public final class SubjectService {
 
     private final ConnectionProvider connectionProvider;
     private final SubjectDAO subjectDAO;
-    private final CourseDAO courseDAO;
     private final CourseSubjectDAO courseSubjectDAO;
     private final OrganizationDAO organizationDAO;
+    private final OrganicUnitDAO organicUnitDAO;
     private final CoordinateSubjectDAO coordinateSubjectDAO;
     private final PermissionChecker permissionChecker;
     private final AuditService auditService;
@@ -63,35 +59,11 @@ public final class SubjectService {
             AuditService auditService,
             Clock clock
     ) {
-        this(
-                connectionProvider,
-                subjectDAO,
-                new CourseDAO(connectionProvider),
-                new CourseSubjectDAO(connectionProvider),
-                organizationDAO,
-                coordinateSubjectDAO,
-                permissionChecker,
-                auditService,
-                clock
-        );
-    }
-
-    public SubjectService(
-            ConnectionProvider connectionProvider,
-            SubjectDAO subjectDAO,
-            CourseDAO courseDAO,
-            CourseSubjectDAO courseSubjectDAO,
-            OrganizationDAO organizationDAO,
-            CoordinateSubjectDAO coordinateSubjectDAO,
-            PermissionChecker permissionChecker,
-            AuditService auditService,
-            Clock clock
-    ) {
         this.connectionProvider = Objects.requireNonNull(connectionProvider, "connectionProvider is required");
         this.subjectDAO = Objects.requireNonNull(subjectDAO, "subjectDAO is required");
-        this.courseDAO = Objects.requireNonNull(courseDAO, "courseDAO is required");
-        this.courseSubjectDAO = Objects.requireNonNull(courseSubjectDAO, "courseSubjectDAO is required");
+        this.courseSubjectDAO = new CourseSubjectDAO(connectionProvider);
         this.organizationDAO = Objects.requireNonNull(organizationDAO, "organizationDAO is required");
+        this.organicUnitDAO = new OrganicUnitDAO(connectionProvider);
         this.coordinateSubjectDAO = Objects.requireNonNull(coordinateSubjectDAO, "coordinateSubjectDAO is required");
         this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
@@ -129,15 +101,8 @@ public final class SubjectService {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
                 try {
-                    validateOrganization(connection, command.organizationId());
-                    validateInitialCourses(connection, command);
+                    validateOrganizationAndUnit(connection, command.organizationId(), command.organicUnitId());
                     long subjectId = subjectDAO.create(connection, command);
-                    for (CourseSubjectAssociationCommand association : initialAssociationCommands(command, subjectId)) {
-                        courseSubjectDAO.create(connection, association);
-                    }
-                    for (long coordinatorUserId : safeCoordinators(command.coordinatorUserIds())) {
-                        assignCoordinatorInternal(connection, coordinatorUserId, subjectId, LocalDate.now(clock), null);
-                    }
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_CREATE",
                             "subject", Long.toString(subjectId), "success", sourceIp);
                     connection.commit();
@@ -184,7 +149,7 @@ public final class SubjectService {
                 return subjectDAO.findByOrganization(organizationId);
             }
             try (Connection connection = connectionProvider.getConnection()) {
-                validateOrganization(connection, organizationId);
+                validateOrganizationAndUnit(connection, organizationId, null);
             }
             return subjectDAO.findByOrganization(organizationId)
                     .stream()
@@ -239,7 +204,7 @@ public final class SubjectService {
                 try {
                     Subject current = requireSubject(connection, subjectId);
                     requireSubjectMutationManager(actorUserId, sessionId, actorProfileType, current, sourceIp);
-                    validateOrganization(connection, current.organizationId());
+                    validateOrganizationAndUnit(connection, current.organizationId(), command.organicUnitId());
                     MediaPathValidator.optionalEntityProfilePath(command.photo(), "subjects", subjectId, "Subject photo");
                     subjectDAO.update(connection, subjectId, command);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_UPDATE",
@@ -306,19 +271,19 @@ public final class SubjectService {
             AccessProfileType actorProfileType,
             long subjectId,
             long coordinatorUserId,
-            LocalDate startDate,
-            LocalDate endDate,
             String sourceIp
     ) {
         try {
-            requireValidDates(startDate, endDate);
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
                 try {
                     Subject subject = requireSubject(connection, subjectId);
                     requireSubjectAdministrator(actorUserId, sessionId, actorProfileType, subject.organizationId(), sourceIp);
-                    assignCoordinatorInternal(connection, coordinatorUserId, subjectId, startDate, endDate);
+                    if (subject.state() != SubjectState.ACTIVE) {
+                        throw new IllegalStateException("Inactive subjects cannot receive new coordinator assignments");
+                    }
+                    assignCoordinatorInternal(connection, coordinatorUserId, subjectId);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_ASSIGN_COORDINATOR",
                             "subject", subjectId + ":" + coordinatorUserId, "success", sourceIp);
                     connection.commit();
@@ -343,23 +308,24 @@ public final class SubjectService {
             long subjectId,
             long coordinatorUserId,
             RoleAssignmentState state,
-            LocalDate startDate,
-            LocalDate endDate,
             String sourceIp
     ) {
         Objects.requireNonNull(state, "state is required");
         try {
-            requireValidDates(startDate, endDate);
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
                 try {
                     Subject subject = requireSubject(connection, subjectId);
                     requireSubjectAdministrator(actorUserId, sessionId, actorProfileType, subject.organizationId(), sourceIp);
-                    if (!coordinateSubjectDAO.canAssign(connection, coordinatorUserId, subjectId)) {
+                    if (state == RoleAssignmentState.ACTIVE && subject.state() != SubjectState.ACTIVE) {
+                        throw new IllegalStateException("Inactive subjects cannot receive new coordinator assignments");
+                    }
+                    if (state == RoleAssignmentState.ACTIVE
+                            && !coordinateSubjectDAO.canAssign(connection, coordinatorUserId, subjectId)) {
                         throw new IllegalArgumentException("Subject assignment requires active coordinator and active subject");
                     }
-                    coordinateSubjectDAO.updateAssignment(connection, coordinatorUserId, subjectId, state, startDate, endDate);
+                    coordinateSubjectDAO.updateAssignment(connection, coordinatorUserId, subjectId, state);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_COORDINATOR_UPDATE",
                             "subject", subjectId + ":" + coordinatorUserId, "success", sourceIp);
                     connection.commit();
@@ -374,6 +340,39 @@ public final class SubjectService {
             auditFailure(actorUserId, sessionId, "SUBJECT_COORDINATOR_UPDATE",
                     subjectId + ":" + coordinatorUserId, sourceIp);
             throw wrap(exception, "Failed to update coordinator assignment");
+        }
+    }
+
+    public void removeCoordinatorAssignment(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long subjectId,
+            long coordinatorUserId,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Subject subject = requireSubject(connection, subjectId);
+                    requireSubjectAdministrator(actorUserId, sessionId, actorProfileType, subject.organizationId(), sourceIp);
+                    coordinateSubjectDAO.deleteAssignment(connection, coordinatorUserId, subjectId);
+                    auditService.record(connection, actorUserId, sessionId, "SUBJECT_COORDINATOR_REMOVE",
+                            "subject", subjectId + ":" + coordinatorUserId, "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "SUBJECT_COORDINATOR_REMOVE",
+                    subjectId + ":" + coordinatorUserId, sourceIp);
+            throw wrap(exception, "Failed to remove coordinator assignment");
         }
     }
 
@@ -405,6 +404,41 @@ public final class SubjectService {
         } catch (RuntimeException | SQLException exception) {
             auditFailure(actorUserId, sessionId, "SUBJECT_ARCHIVE", Long.toString(subjectId), sourceIp);
             throw wrap(exception, "Failed to archive subject");
+        }
+    }
+
+    public void unarchiveSubject(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long subjectId,
+            String sourceIp
+    ) {
+        try {
+            try (Connection connection = connectionProvider.getConnection()) {
+                boolean originalAutoCommit = connection.getAutoCommit();
+                connection.setAutoCommit(false);
+                try {
+                    Subject subject = requireSubject(connection, subjectId);
+                    requireSubjectMutationManager(actorUserId, sessionId, actorProfileType, subject, sourceIp);
+                    if (subject.state() != SubjectState.INACTIVE) {
+                        throw new IllegalStateException("Only inactive subjects can be activated");
+                    }
+                    validateOrganizationAndUnit(connection, subject.organizationId(), subject.organicUnitId());
+                    subjectDAO.updateState(connection, subjectId, SubjectState.ACTIVE);
+                    auditService.record(connection, actorUserId, sessionId, "SUBJECT_UNARCHIVE",
+                            "subject", Long.toString(subjectId), "success", sourceIp);
+                    connection.commit();
+                } catch (RuntimeException | SQLException exception) {
+                    connection.rollback();
+                    throw exception;
+                } finally {
+                    connection.setAutoCommit(originalAutoCommit);
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            auditFailure(actorUserId, sessionId, "SUBJECT_UNARCHIVE", Long.toString(subjectId), sourceIp);
+            throw wrap(exception, "Failed to unarchive subject");
         }
     }
 
@@ -460,35 +494,34 @@ public final class SubjectService {
     private void assignCoordinatorInternal(
             Connection connection,
             long coordinatorUserId,
-            long subjectId,
-            LocalDate startDate,
-            LocalDate endDate
+            long subjectId
     ) throws SQLException {
-        requireValidDates(startDate, endDate);
         if (!coordinateSubjectDAO.canAssign(connection, coordinatorUserId, subjectId)) {
             throw new IllegalArgumentException("Subject assignment requires active coordinator and active subject");
         }
-        coordinateSubjectDAO.assign(connection, coordinatorUserId, subjectId, startDate, endDate);
+        coordinateSubjectDAO.assign(connection, coordinatorUserId, subjectId);
     }
 
-    private void validateOrganization(Connection connection, long organizationId) throws SQLException {
+    private void validateOrganizationAndUnit(
+            Connection connection,
+            long organizationId,
+            Long organicUnitId
+    ) throws SQLException {
         Organization organization = organizationDAO.findById(connection, organizationId)
                 .orElseThrow(() -> new IllegalArgumentException("Subject organization not found: " + organizationId));
         if (organization.state() != OrganizationState.ACTIVE) {
             throw new IllegalStateException("Inactive organizations cannot receive subjects");
         }
-    }
-
-    private void validateInitialCourses(Connection connection, SubjectCreateCommand command) throws SQLException {
-        for (SubjectInitialCourseAssignment assignment : initialCourseAssignments(command)) {
-            Course course = courseDAO.findById(connection, assignment.courseId())
-                    .orElseThrow(() -> new IllegalArgumentException("Initial course not found: " + assignment.courseId()));
-            if (course.organizationId() != command.organizationId()) {
-                throw new IllegalArgumentException("Initial course must belong to the subject organization");
-            }
-            if (course.state() != CourseState.ACTIVE) {
-                throw new IllegalStateException("Inactive courses cannot receive subject associations");
-            }
+        if (organicUnitId == null) {
+            return;
+        }
+        OrganicUnit unit = organicUnitDAO.findById(connection, organicUnitId)
+                .orElseThrow(() -> new IllegalArgumentException("Subject organic unit not found: " + organicUnitId));
+        if (unit.organizationId() != organizationId) {
+            throw new IllegalArgumentException("Subject organic unit must belong to the same organization");
+        }
+        if (unit.state() != OrganicUnitState.ACTIVE) {
+            throw new IllegalStateException("Inactive organic units cannot receive subjects");
         }
     }
 
@@ -646,13 +679,10 @@ public final class SubjectService {
             String sourceIp
     ) {
         try {
-            boolean hasActiveAssociation = false;
-            AuthorizationDecision lastDeniedDecision = AuthorizationDecision.deny("no_active_subject_course_association");
+            boolean hasAssociation = false;
+            AuthorizationDecision lastDeniedDecision = AuthorizationDecision.deny("no_subject_course_association");
             for (CourseSubjectAssociation association : courseSubjectDAO.findBySubject(subjectId)) {
-                if (association.state() != CourseSubjectState.ACTIVE) {
-                    continue;
-                }
-                hasActiveAssociation = true;
+                hasAssociation = true;
                 AuthorizationDecision courseDecision = courseMutationContextDecision(
                         actorUserId,
                         sessionId,
@@ -665,9 +695,9 @@ public final class SubjectService {
                 }
                 lastDeniedDecision = courseDecision;
             }
-            return hasActiveAssociation
+            return hasAssociation
                     ? lastDeniedDecision
-                    : AuthorizationDecision.deny("no_active_subject_course_association");
+                    : AuthorizationDecision.deny("no_subject_course_association");
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to check subject course context", exception);
         }
@@ -758,32 +788,22 @@ public final class SubjectService {
         if (command.organizationId() <= 0) {
             throw new IllegalArgumentException("Subject organization is required");
         }
+        if (command.organicUnitId() != null && command.organicUnitId() <= 0) {
+            throw new IllegalArgumentException("Subject organic unit is invalid");
+        }
         AcademicTextValidator.requireName(command.name(), "Subject name is required");
         AcademicTextValidator.requireAcronym(command.acronym(), "Subject acronym is required");
         requireNoInitialPhoto(command.photo(), "Subject photo");
         Objects.requireNonNull(command.state(), "subject state is required");
         requirePositiveDecimal(command.ects(), "Subject ECTS is required");
         requirePositiveDecimal(command.finalGradeMax(), "Subject max final grade is required");
-        List<SubjectInitialCourseAssignment> assignments = initialCourseAssignments(command);
-        if (assignments.isEmpty()) {
-            throw new IllegalArgumentException("At least one initial course is required");
-        }
-        for (SubjectInitialCourseAssignment assignment : assignments) {
-            if (assignment.courseId() <= 0) {
-                throw new IllegalArgumentException("Initial course is required");
-            }
-            if ((assignment.curricularYear() == null) != (assignment.term() == null)) {
-                throw new IllegalArgumentException("Curricular year and term must be provided together");
-            }
-            if (assignment.curricularYear() != null && assignment.curricularYear() <= 0) {
-                throw new IllegalArgumentException("Curricular year must be positive");
-            }
-            Objects.requireNonNull(assignment.approvalMode(), "Initial enrollment approval mode is required");
-        }
     }
 
     private static void validateUpdateCommand(SubjectUpdateCommand command) {
         Objects.requireNonNull(command, "command is required");
+        if (command.organicUnitId() != null && command.organicUnitId() <= 0) {
+            throw new IllegalArgumentException("Subject organic unit is invalid");
+        }
         AcademicTextValidator.requireName(command.name(), "Subject name is required");
         AcademicTextValidator.requireAcronym(command.acronym(), "Subject acronym is required");
         MediaPathValidator.optionalSafeRelativePath(command.photo(), "Subject photo");
@@ -798,52 +818,9 @@ public final class SubjectService {
         }
     }
 
-    private static Set<Long> safeCoordinators(Set<Long> coordinatorUserIds) {
-        return coordinatorUserIds == null ? Set.of() : coordinatorUserIds;
-    }
-
-    private static List<CourseSubjectAssociationCommand> initialAssociationCommands(
-            SubjectCreateCommand command,
-            long subjectId
-    ) {
-        CourseSubjectState associationState = command.state() == SubjectState.ACTIVE
-                ? CourseSubjectState.ACTIVE
-                : CourseSubjectState.INACTIVE;
-        return initialCourseAssignments(command).stream()
-                .map(assignment -> new CourseSubjectAssociationCommand(
-                        assignment.courseId(),
-                        subjectId,
-                        assignment.curricularYear(),
-                        assignment.term(),
-                        assignment.mandatory(),
-                        associationState
-                ))
-                .toList();
-    }
-
-    private static List<SubjectInitialCourseAssignment> initialCourseAssignments(SubjectCreateCommand command) {
-        if (command.initialCourseAssignments() == null || command.initialCourseAssignments().isEmpty()) {
-            return List.of(new SubjectInitialCourseAssignment(
-                    command.initialCourseId(),
-                    command.initialCurricularYear(),
-                    command.initialTerm(),
-                    command.initialMandatory()
-            ));
-        }
-        return command.initialCourseAssignments().stream()
-                .filter(Objects::nonNull)
-                .toList();
-    }
-
     private static void requireNoInitialPhoto(String value, String fieldLabel) {
         if (value != null && !value.isBlank()) {
             throw new IllegalArgumentException(fieldLabel + " must be uploaded after the record is created");
-        }
-    }
-
-    private static void requireValidDates(LocalDate startDate, LocalDate endDate) {
-        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
-            throw new IllegalArgumentException("Assignment end date cannot be before start date");
         }
     }
 

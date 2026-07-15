@@ -309,7 +309,7 @@ public final class ContentAssociationDAO {
                     SELECT 'content_block' AS context_type, cb.id_content_block AS target_id,
                            c.id_organization, c.id_organic_unit, cg.id_course,
                            cg.id_subject, cg.id_class_group, cb.id_content_block,
-                           NULL AS id_assessment, cb.state
+                           NULL AS id_assessment, 'active' AS state
                     FROM content_block cb
                     JOIN class_group cg ON cg.id_class_group = cb.id_class_group
                     JOIN course c ON c.id_course = cg.id_course
@@ -371,12 +371,14 @@ public final class ContentAssociationDAO {
         if (context.courseId() != null && context.subjectId() != null) {
             return exists(connection, """
                     SELECT COUNT(*)
-                    FROM enroll_subject
-                    WHERE id_student_user = ?
-                      AND id_course = ?
-                      AND id_subject = ?
-                      AND state = 'active'
-                    """, userId, context.courseId(), context.subjectId());
+                    FROM enroll_course ec
+                    JOIN integrate_subject isub
+                      ON isub.id_course = ec.id_course
+                     AND isub.id_subject = ?
+                    WHERE ec.id_student_user = ?
+                      AND ec.id_course = ?
+                      AND ec.state = 'active'
+                    """, context.subjectId(), userId, context.courseId());
         }
         if (context.courseId() != null) {
             return exists(connection, """
@@ -390,11 +392,13 @@ public final class ContentAssociationDAO {
         if (context.subjectId() != null) {
             return exists(connection, """
                     SELECT COUNT(*)
-                    FROM enroll_subject
-                    WHERE id_student_user = ?
-                      AND id_subject = ?
-                      AND state = 'active'
-                    """, userId, context.subjectId());
+                    FROM enroll_course ec
+                    JOIN integrate_subject isub
+                      ON isub.id_course = ec.id_course
+                     AND isub.id_subject = ?
+                    WHERE ec.id_student_user = ?
+                      AND ec.state = 'active'
+                    """, context.subjectId(), userId);
         }
         return false;
     }
@@ -405,7 +409,6 @@ public final class ContentAssociationDAO {
                 FROM integrate_subject
                 WHERE id_course = ?
                   AND id_subject = ?
-                  AND state = 'active'
                 """, courseId, subjectId);
     }
 

@@ -212,7 +212,7 @@ class CourseServiceTest {
     }
 
     @Test
-    void archivedCourseCanBeUnarchivedByAdministrator() {
+    void inactiveCourseCanBeActivatedByAdministrator() {
         courseService.archiveCourse(1L, null, AccessProfileType.ADMINISTRATOR, 31L, "127.0.0.1");
         courseService.unarchiveCourse(1L, null, AccessProfileType.ADMINISTRATOR, 31L, "127.0.0.1");
 
@@ -222,7 +222,7 @@ class CourseServiceTest {
     }
 
     @Test
-    void archivedCourseBlocksFurtherOperations() {
+    void inactiveCourseBlocksFurtherOperations() {
         courseService.archiveCourse(1L, null, AccessProfileType.ADMINISTRATOR, 31L, "127.0.0.1");
 
         assertThrows(

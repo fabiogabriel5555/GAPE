@@ -17,40 +17,24 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import pt.isel.gape.access.dao.UserDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
-import pt.isel.gape.learning.dao.ClassGroupDAO;
-import pt.isel.gape.learning.dao.ClassGroupEnrollmentDAO;
-import pt.isel.gape.learning.dao.ContentBlockDAO;
-import pt.isel.gape.learning.dao.CourseDAO;
-import pt.isel.gape.learning.dao.CourseSubjectDAO;
-import pt.isel.gape.learning.dao.EnrollmentDAO;
-import pt.isel.gape.learning.dao.AssessmentDAO;
-import pt.isel.gape.learning.dao.AttemptDAO;
-import pt.isel.gape.learning.dao.QuestionDAO;
-import pt.isel.gape.learning.dao.QuestionOptionDAO;
-import pt.isel.gape.learning.dao.ResponseDAO;
-import pt.isel.gape.learning.dao.SubjectDAO;
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupEnrollment;
 import pt.isel.gape.learning.model.ClassGroupEnrollmentCommand;
+import pt.isel.gape.learning.model.ContentBlock;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseEnrollment;
-import pt.isel.gape.learning.model.CourseEnrollmentCommand;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.EnrollmentState;
-import pt.isel.gape.learning.model.SubjectEnrollment;
-import pt.isel.gape.learning.model.SubjectEnrollmentCommand;
 import pt.isel.gape.learning.service.ClassGroupEnrollmentService;
 import pt.isel.gape.learning.service.ContentAssociationService;
 import pt.isel.gape.learning.service.EnrollmentService;
 import pt.isel.gape.learning.service.LessonService;
 import pt.isel.gape.security.session.SessionUser;
-import pt.isel.gape.structure.dao.OrganicUnitDAO;
-import pt.isel.gape.structure.dao.OrganizationDAO;
-import pt.isel.gape.structure.dao.TeachClassGroupDAO;
+import pt.isel.gape.transversal.service.ApplicationReadService;
 import pt.isel.gape.web.view.ClassGroupEnrollmentView;
 import pt.isel.gape.web.view.ClassGroupView;
 import pt.isel.gape.web.view.AssessmentView;
@@ -63,6 +47,7 @@ import pt.isel.gape.web.view.EnrollmentView;
 import pt.isel.gape.web.view.StudentClassGroupCourseGroupView;
 import pt.isel.gape.web.view.StudentClassGroupCourseSubjectGroupView;
 import pt.isel.gape.web.view.StudentClassGroupView;
+import pt.isel.gape.web.view.StudentCurricularSubjectView;
 import pt.isel.gape.web.view.StudentSubjectCourseGroupView;
 
 @WebServlet(name = "studentEnrollmentServlet", urlPatterns = {
@@ -88,13 +73,13 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
     private final ClassGroupEnrollmentService classGroupEnrollmentService;
     private final ContentAssociationService contentAssociationService;
     private final LessonService lessonService;
-    private final CourseDAO courseDAO;
-    private final CourseSubjectDAO courseSubjectDAO;
-    private final EnrollmentDAO enrollmentDAO;
-    private final ClassGroupDAO classGroupDAO;
-    private final ClassGroupEnrollmentDAO classGroupEnrollmentDAO;
-    private final ContentBlockDAO contentBlockDAO;
-    private final AssessmentDAO assessmentDAO;
+    private final ApplicationReadService.Courses courseDAO;
+    private final ApplicationReadService.CourseSubjects courseSubjectDAO;
+    private final ApplicationReadService.Enrollments enrollmentDAO;
+    private final ApplicationReadService.ClassGroups classGroupDAO;
+    private final ApplicationReadService.ClassGroupEnrollments classGroupEnrollmentDAO;
+    private final ApplicationReadService.ContentBlocks contentBlockDAO;
+    private final ApplicationReadService.Assessments assessmentDAO;
     private final LearningViewFactory viewFactory;
     private final AssessmentViewFactory assessmentViewFactory;
     private final Clock clock;
@@ -105,74 +90,59 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
 
     private StudentEnrollmentServlet(ConnectionProvider connectionProvider, Clock clock) {
         this(
+                new ApplicationReadService(connectionProvider),
                 new EnrollmentService(connectionProvider, clock),
                 new ClassGroupEnrollmentService(connectionProvider, clock),
                 new ContentAssociationService(connectionProvider, clock),
                 new LessonService(connectionProvider, clock),
-                new CourseDAO(connectionProvider),
-                new CourseSubjectDAO(connectionProvider),
-                new EnrollmentDAO(connectionProvider),
-                new ClassGroupDAO(connectionProvider),
-                new ClassGroupEnrollmentDAO(connectionProvider),
-                new ContentBlockDAO(connectionProvider),
-                new AssessmentDAO(connectionProvider),
-                new LearningViewFactory(
-                        new OrganizationDAO(connectionProvider),
-                        new OrganicUnitDAO(connectionProvider),
-                        new CourseDAO(connectionProvider),
-                        new SubjectDAO(connectionProvider),
-                        new CourseSubjectDAO(connectionProvider),
-                        new EnrollmentDAO(connectionProvider),
-                        new ClassGroupDAO(connectionProvider),
-                        new ClassGroupEnrollmentDAO(connectionProvider),
-                        new ContentBlockDAO(connectionProvider),
-                        new UserDAO(connectionProvider),
-                        new TeachClassGroupDAO(connectionProvider)
-                ),
-                new AssessmentViewFactory(
-                        new AssessmentDAO(connectionProvider),
-                        new QuestionDAO(connectionProvider),
-                        new QuestionOptionDAO(connectionProvider),
-                        new AttemptDAO(connectionProvider),
-                        new ResponseDAO(connectionProvider),
-                        new SubjectDAO(connectionProvider),
-                        new ContentBlockDAO(connectionProvider),
-                        new ClassGroupDAO(connectionProvider),
-                        new UserDAO(connectionProvider)
-                ),
                 clock
         );
     }
 
     StudentEnrollmentServlet(
+            ApplicationReadService readService,
             EnrollmentService enrollmentService,
             ClassGroupEnrollmentService classGroupEnrollmentService,
             ContentAssociationService contentAssociationService,
             LessonService lessonService,
-            CourseDAO courseDAO,
-            CourseSubjectDAO courseSubjectDAO,
-            EnrollmentDAO enrollmentDAO,
-            ClassGroupDAO classGroupDAO,
-            ClassGroupEnrollmentDAO classGroupEnrollmentDAO,
-            ContentBlockDAO contentBlockDAO,
-            AssessmentDAO assessmentDAO,
-            LearningViewFactory viewFactory,
-            AssessmentViewFactory assessmentViewFactory,
             Clock clock
     ) {
         this.enrollmentService = enrollmentService;
         this.classGroupEnrollmentService = classGroupEnrollmentService;
         this.contentAssociationService = contentAssociationService;
         this.lessonService = lessonService;
-        this.courseDAO = courseDAO;
-        this.courseSubjectDAO = courseSubjectDAO;
-        this.enrollmentDAO = enrollmentDAO;
-        this.classGroupDAO = classGroupDAO;
-        this.classGroupEnrollmentDAO = classGroupEnrollmentDAO;
-        this.contentBlockDAO = contentBlockDAO;
-        this.assessmentDAO = assessmentDAO;
-        this.viewFactory = viewFactory;
-        this.assessmentViewFactory = assessmentViewFactory;
+        this.courseDAO = readService.courses();
+        this.courseSubjectDAO = readService.courseSubjects();
+        this.enrollmentDAO = readService.enrollments();
+        this.classGroupDAO = readService.classGroups();
+        this.classGroupEnrollmentDAO = readService.classGroupEnrollments();
+        this.contentBlockDAO = readService.contentBlocks();
+        this.assessmentDAO = readService.assessments();
+        this.viewFactory = new LearningViewFactory(
+                readService.organizations(),
+                readService.organicUnits(),
+                readService.courses(),
+                readService.courseOccurrences(),
+                readService.subjects(),
+                readService.courseSubjects(),
+                readService.enrollments(),
+                readService.classGroups(),
+                readService.classGroupEnrollments(),
+                readService.contentBlocks(),
+                readService.users(),
+                readService.teachClassGroups()
+        );
+        this.assessmentViewFactory = new AssessmentViewFactory(
+                readService.assessments(),
+                readService.questions(),
+                readService.questionOptions(),
+                readService.attempts(),
+                readService.responses(),
+                readService.subjects(),
+                readService.contentBlocks(),
+                readService.classGroups(),
+                readService.users()
+        );
         this.clock = clock;
     }
 
@@ -220,17 +190,6 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                 withdrawCourse(request, response, Long.parseLong(segments[1]));
                 return;
             }
-            if (segments.length == 4 && "courses".equals(segments[0]) && "subjects".equals(segments[2])) {
-                enrollSubject(request, response, Long.parseLong(segments[1]), Long.parseLong(segments[3]));
-                return;
-            }
-            if (segments.length == 5
-                    && "courses".equals(segments[0])
-                    && "subjects".equals(segments[2])
-                    && "withdraw".equals(segments[4])) {
-                withdrawSubject(request, response, Long.parseLong(segments[1]), Long.parseLong(segments[3]));
-                return;
-            }
             if (segments.length == 2 && "class-groups".equals(segments[0])) {
                 enrollClassGroup(request, response, Long.parseLong(segments[1]));
                 return;
@@ -251,72 +210,42 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             SessionUser actor = requireCurrentUser(request);
             long studentUserId = actor.userId();
 
+            List<CourseEnrollment> activeCourseEnrollments = enrollmentDAO
+                    .findCourseEnrollmentsByStudent(studentUserId)
+                    .stream()
+                    .filter(enrollment -> enrollment.state() == EnrollmentState.ACTIVE)
+                    .toList();
             List<EnrollmentView> courseEnrollments = new ArrayList<>();
-            for (CourseEnrollment enrollment : enrollmentDAO.findCourseEnrollmentsByStudent(studentUserId)) {
+            for (CourseEnrollment enrollment : activeCourseEnrollments) {
                 courseDAO.findById(enrollment.courseId())
                         .map(course -> viewFactory.courseView(course, enrollment))
                         .map(EnrollmentView::course)
                         .ifPresent(courseEnrollments::add);
             }
 
-            List<EnrollmentView> subjectEnrollments = new ArrayList<>();
-            List<EnrollmentView> availableSubjects = new ArrayList<>();
-            for (SubjectEnrollment enrollment : enrollmentDAO.findSubjectEnrollmentsByStudent(studentUserId)) {
-                Course course = courseDAO.findById(enrollment.courseId()).orElse(null);
-                CourseSubjectAssociation association = courseSubjectDAO
-                        .findByCourseAndSubject(enrollment.courseId(), enrollment.subjectId())
-                        .orElse(null);
-                if (course == null || association == null) {
-                    continue;
-                }
-                CourseView courseView = viewFactory.courseView(
-                        course,
-                        enrollmentDAO.findCourseEnrollment(studentUserId, course.id()).orElse(null)
-                );
-                CourseSubjectView subjectView = viewFactory.courseSubjectView(association, studentUserId);
-                subjectEnrollments.add(EnrollmentView.subject(courseView, subjectView));
-            }
-            for (CourseEnrollment courseEnrollment : enrollmentDAO.findCourseEnrollmentsByStudent(studentUserId)) {
-                if (courseEnrollment.state() != EnrollmentState.ACTIVE) {
-                    continue;
-                }
+            List<StudentCurricularSubjectView> curricularSubjects = new ArrayList<>();
+            for (CourseEnrollment courseEnrollment : activeCourseEnrollments) {
                 Course course = courseDAO.findById(courseEnrollment.courseId()).orElse(null);
                 if (course == null) {
                     continue;
                 }
                 CourseView courseView = viewFactory.courseView(course, courseEnrollment);
-                for (CourseSubjectAssociation association : courseSubjectDAO.findActiveByCourse(course.id())) {
+                for (CourseSubjectAssociation association : courseSubjectDAO.findByCourse(course.id())) {
                     CourseSubjectView subjectView = viewFactory.courseSubjectView(association, studentUserId);
-                    if (subjectView.isActiveEnrollment() || subjectView.isPendingEnrollment()) {
-                        continue;
-                    }
-                    availableSubjects.add(EnrollmentView.subject(courseView, subjectView));
+                    curricularSubjects.add(new StudentCurricularSubjectView(courseView, subjectView));
                 }
             }
 
             List<StudentClassGroupView> studentClassGroups = studentClassGroupViews(actor, request);
 
-            List<CourseView> availableCourses = new ArrayList<>();
-            for (Course course : courseDAO.findCatalogCourses(null, null, null)) {
-                availableCourses.add(viewFactory.courseView(
-                        course,
-                        enrollmentDAO.findCourseEnrollment(studentUserId, course.id()).orElse(null)
-                ));
-            }
-
             request.setAttribute("courseEnrollments", courseEnrollments);
-            request.setAttribute("subjectEnrollments", subjectEnrollments);
-            request.setAttribute("availableSubjects", availableSubjects);
-            request.setAttribute("subjectCourseGroups", subjectCourseGroups(
-                    courseEnrollments,
-                    subjectEnrollments,
-                    availableSubjects
-            ));
+            request.setAttribute("curricularSubjects", curricularSubjects);
+            request.setAttribute("curricularSubjectCount", curricularSubjects.size());
+            request.setAttribute("subjectCourseGroups", subjectCourseGroups(courseEnrollments, curricularSubjects));
             List<StudentClassGroupCourseSubjectGroupView> studentClassGroupGroups = studentClassGroupGroups(studentClassGroups);
             request.setAttribute("studentClassGroups", studentClassGroups);
             request.setAttribute("studentClassGroupGroups", studentClassGroupGroups);
             request.setAttribute("studentClassGroupCourseGroups", studentClassGroupCourseGroups(studentClassGroupGroups));
-            request.setAttribute("availableCourses", availableCourses);
             String servletPath = request.getServletPath();
             if ("/student/subjects".equals(servletPath)) {
                 prepareDashboard(request, "subjects", "Subjects");
@@ -337,11 +266,10 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
 
     private static List<StudentSubjectCourseGroupView> subjectCourseGroups(
             List<EnrollmentView> courseEnrollments,
-            List<EnrollmentView> subjectEnrollments,
-            List<EnrollmentView> availableSubjects
+            List<StudentCurricularSubjectView> curricularSubjects
     ) {
         Map<Long, CourseView> coursesById = new LinkedHashMap<>();
-        Map<Long, List<EnrollmentView>> subjectsByCourse = new LinkedHashMap<>();
+        Map<Long, List<StudentCurricularSubjectView>> subjectsByCourse = new LinkedHashMap<>();
         for (EnrollmentView courseEnrollment : courseEnrollments) {
             CourseView course = courseEnrollment.getCourse();
             coursesById.putIfAbsent(course.getId(), course);
@@ -349,15 +277,12 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
         }
 
         Set<String> seenSubjects = new HashSet<>();
-        for (EnrollmentView enrollment : subjectEnrollments) {
-            addSubjectGroupItem(coursesById, subjectsByCourse, seenSubjects, enrollment);
-        }
-        for (EnrollmentView enrollment : availableSubjects) {
-            addSubjectGroupItem(coursesById, subjectsByCourse, seenSubjects, enrollment);
+        for (StudentCurricularSubjectView curricularSubject : curricularSubjects) {
+            addSubjectGroupItem(coursesById, subjectsByCourse, seenSubjects, curricularSubject);
         }
 
         List<StudentSubjectCourseGroupView> groups = new ArrayList<>();
-        for (Map.Entry<Long, List<EnrollmentView>> entry : subjectsByCourse.entrySet()) {
+        for (Map.Entry<Long, List<StudentCurricularSubjectView>> entry : subjectsByCourse.entrySet()) {
             CourseView course = coursesById.get(entry.getKey());
             if (course != null && !entry.getValue().isEmpty()) {
                 groups.add(new StudentSubjectCourseGroupView(course, entry.getValue()));
@@ -368,12 +293,12 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
 
     private static void addSubjectGroupItem(
             Map<Long, CourseView> coursesById,
-            Map<Long, List<EnrollmentView>> subjectsByCourse,
+            Map<Long, List<StudentCurricularSubjectView>> subjectsByCourse,
             Set<String> seenSubjects,
-            EnrollmentView enrollment
+            StudentCurricularSubjectView curricularSubject
     ) {
-        CourseView course = enrollment.getCourse();
-        CourseSubjectView subject = enrollment.getSubject();
+        CourseView course = curricularSubject.getCourse();
+        CourseSubjectView subject = curricularSubject.getSubject();
         if (course == null || subject == null) {
             return;
         }
@@ -382,7 +307,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             return;
         }
         coursesById.putIfAbsent(course.getId(), course);
-        subjectsByCourse.computeIfAbsent(course.getId(), ignored -> new ArrayList<>()).add(enrollment);
+        subjectsByCourse.computeIfAbsent(course.getId(), ignored -> new ArrayList<>()).add(curricularSubject);
     }
 
     private void showSubjectDetail(HttpServletRequest request, HttpServletResponse response)
@@ -402,12 +327,19 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             CourseSubjectAssociation association = courseSubjectDAO
                     .findByCourseAndSubject(courseId, subjectId)
                     .orElseThrow(() -> new IllegalArgumentException("Subject is not associated with the course"));
+            CourseEnrollment courseEnrollment = enrollmentDAO
+                    .findCourseEnrollment(studentUserId, course.id())
+                    .filter(enrollment -> enrollment.state() == EnrollmentState.ACTIVE)
+                    .orElse(null);
+            if (courseEnrollment == null) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
             CourseView courseView = viewFactory.courseView(
                     course,
-                    enrollmentDAO.findCourseEnrollment(studentUserId, course.id()).orElse(null)
+                    courseEnrollment
             );
             CourseSubjectView subjectView = viewFactory.courseSubjectView(association, studentUserId);
-            EnrollmentView enrollment = EnrollmentView.subject(courseView, subjectView);
             List<StudentClassGroupView> subjectClassGroups = studentCourseClassGroups(
                     actor,
                     request,
@@ -415,7 +347,6 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             ).getOrDefault(subjectId, List.of());
 
             request.setAttribute("course", courseView);
-            request.setAttribute("subjectEnrollment", enrollment);
             request.setAttribute("subject", subjectView);
             request.setAttribute("subjectClassGroups", subjectClassGroups);
             request.setAttribute("studentSubjectContextCourseId", courseView.getId());
@@ -465,24 +396,20 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                 return;
             }
 
-            CourseView courseView = viewFactory.courseView(
-                    course,
-                    enrollmentDAO.findCourseEnrollment(studentUserId, course.id()).orElse(null)
-            );
+            CourseEnrollment courseEnrollment = enrollmentDAO
+                    .findCourseEnrollment(studentUserId, course.id())
+                    .orElse(null);
+            CourseView courseView = viewFactory.courseView(course, courseEnrollment);
             CourseSubjectView subjectView = viewFactory.courseSubjectView(association, studentUserId);
             ClassGroupEnrollment enrollment = classGroupEnrollmentDAO
                     .findEnrollment(studentUserId, classGroup.id())
                     .orElse(null);
-            Set<String> activeSubjectContexts = new HashSet<>();
-            for (SubjectEnrollment subjectEnrollment : enrollmentDAO.findActiveSubjectEnrollmentsByStudent(studentUserId)) {
-                activeSubjectContexts.add(subjectContextKey(subjectEnrollment.courseId(), subjectEnrollment.subjectId()));
-            }
             StudentClassGroupView classGroupItem = studentClassGroupView(
                     actor,
                     request,
                     classGroup,
                     enrollment,
-                    canEnrollInClassGroupContext(classGroup, activeSubjectContexts)
+                    canEnrollInClassGroupContext(classGroup, courseEnrollment)
             );
             List<pt.isel.gape.web.view.LessonView> lessons = classGroupItem.isActiveEnrollment()
                     ? lessonService.listLessonsByClassGroup(
@@ -549,21 +476,18 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             }
 
             CourseEnrollment courseEnrollment = enrollmentDAO.findCourseEnrollment(studentUserId, courseId).orElse(null);
-            if (courseEnrollment == null) {
+            if (courseEnrollment == null || courseEnrollment.state() != EnrollmentState.ACTIVE) {
                 response.sendError(HttpServletResponse.SC_FORBIDDEN);
                 return;
             }
 
             CourseView courseView = viewFactory.courseView(course, courseEnrollment);
-            List<CourseSubjectView> courseSubjects = viewFactory.courseSubjects(courseId, true, studentUserId);
+            List<CourseSubjectView> courseSubjects = viewFactory.courseSubjects(courseId, studentUserId);
             Map<Long, List<StudentClassGroupView>> classGroupsBySubject = studentCourseClassGroups(
                     actor,
                     request,
                     courseSubjects
             );
-            long activeSubjectCount = courseSubjects.stream()
-                    .filter(CourseSubjectView::isActiveEnrollment)
-                    .count();
             long classGroupCount = classGroupsBySubject.values().stream()
                     .mapToLong(List::size)
                     .sum();
@@ -575,7 +499,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             request.setAttribute("course", courseView);
             request.setAttribute("courseSubjects", courseSubjects);
             request.setAttribute("classGroupsBySubject", classGroupsBySubject);
-            request.setAttribute("activeSubjectCount", activeSubjectCount);
+            request.setAttribute("curricularSubjectCount", courseSubjects.size());
             request.setAttribute("classGroupCount", classGroupCount);
             request.setAttribute("activeClassGroupCount", activeClassGroupCount);
             request.setAttribute("returnTo", "/student/courses/" + courseId);
@@ -624,7 +548,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                     AccessProfileType.STUDENT,
                     actor.userId(),
                     courseId,
-                    optionalDate(request, "endDate"),
+                    longParameter(request, "courseOccurrenceId"),
                     request.getRemoteAddr()
             );
             String message = "You left this course.";
@@ -649,74 +573,6 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
         redirectToReturnPath(request, response, "/student/enrollments");
     }
 
-    private void enrollSubject(HttpServletRequest request, HttpServletResponse response, long courseId, long subjectId)
-            throws IOException {
-        SessionUser actor = requireCurrentUser(request);
-        try {
-            enrollmentService.requestStudentInSubject(
-                    actor.userId(),
-                    currentSessionId(request),
-                    new SubjectEnrollmentCommand(actor.userId(), subjectId, courseId, optionalDate(request, "startDate"), optionalDate(request, "endDate")),
-                    request.getRemoteAddr()
-            );
-            String message = "Subject enrollment request submitted.";
-            if (wantsStudentEnrollmentJson(request)) {
-                writeStudentEnrollmentResponse(
-                        request,
-                        response,
-                        true,
-                        message,
-                        subjectEnrollmentUpdates(actor, request, courseId, subjectId)
-                );
-                return;
-            }
-            flashSuccess(request, message);
-        } catch (RuntimeException | SQLException exception) {
-            if (wantsStudentEnrollmentJson(request)) {
-                writeStudentEnrollmentResponse(request, response, false, messageForEnrollmentException(exception), List.of());
-                return;
-            }
-            flashError(request, messageForEnrollmentException(exception));
-        }
-        redirectToReturnPath(request, response, "/student/enrollments");
-    }
-
-    private void withdrawSubject(HttpServletRequest request, HttpServletResponse response, long courseId, long subjectId)
-            throws IOException {
-        SessionUser actor = requireCurrentUser(request);
-        try {
-            enrollmentService.withdrawStudentFromSubject(
-                    actor.userId(),
-                    currentSessionId(request),
-                    AccessProfileType.STUDENT,
-                    actor.userId(),
-                    courseId,
-                    subjectId,
-                    optionalDate(request, "endDate"),
-                    request.getRemoteAddr()
-            );
-            String message = "You left this subject.";
-            if (wantsStudentEnrollmentJson(request)) {
-                writeStudentEnrollmentResponse(
-                        request,
-                        response,
-                        true,
-                        message,
-                        subjectEnrollmentUpdates(actor, request, courseId, subjectId)
-                );
-                return;
-            }
-            flashSuccess(request, message);
-        } catch (RuntimeException | SQLException exception) {
-            if (wantsStudentEnrollmentJson(request)) {
-                writeStudentEnrollmentResponse(request, response, false, messageForEnrollmentException(exception), List.of());
-                return;
-            }
-            flashError(request, messageForEnrollmentException(exception));
-        }
-        redirectToReturnPath(request, response, "/student/enrollments");
-    }
-
     private void enrollClassGroup(HttpServletRequest request, HttpServletResponse response, long classGroupId)
             throws IOException {
         SessionUser actor = requireCurrentUser(request);
@@ -727,11 +583,12 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                     new ClassGroupEnrollmentCommand(
                             actor.userId(),
                             classGroupId,
-                            optionalDate(request, "startDate"),
-                            optionalDate(request, "endDate")
+                            null,
+                            null
                     ),
                     request.getRemoteAddr()
             );
+            refreshLearningEvents();
             String message = "Class group enrollment request submitted.";
             if (wantsStudentEnrollmentJson(request)) {
                 writeStudentEnrollmentResponse(
@@ -764,7 +621,6 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                     AccessProfileType.STUDENT,
                     actor.userId(),
                     classGroupId,
-                    optionalDate(request, "endDate"),
                     request.getRemoteAddr()
             );
             String message = "You left this class group.";
@@ -795,34 +651,9 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             long courseId
     ) throws SQLException {
         List<StudentEnrollmentUpdate> updates = new ArrayList<>();
-        for (CourseSubjectAssociation association : courseSubjectDAO.findActiveByCourse(courseId)) {
-            updates.addAll(subjectEnrollmentUpdates(actor, request, courseId, association.subjectId()));
-        }
-        return updates;
-    }
-
-    private List<StudentEnrollmentUpdate> subjectEnrollmentUpdates(
-            SessionUser actor,
-            HttpServletRequest request,
-            long courseId,
-            long subjectId
-    ) throws SQLException {
-        long studentUserId = actor.userId();
-        Course course = courseDAO.findById(courseId)
-                .orElseThrow(() -> new IllegalArgumentException("Course not found"));
-        CourseSubjectAssociation association = courseSubjectDAO
-                .findByCourseAndSubject(courseId, subjectId)
-                .orElseThrow(() -> new IllegalArgumentException("Subject is not associated with the course"));
-        CourseView courseView = viewFactory.courseView(
-                course,
-                enrollmentDAO.findCourseEnrollment(studentUserId, courseId).orElse(null)
-        );
-        CourseSubjectView subjectView = viewFactory.courseSubjectView(association, studentUserId);
-        List<StudentEnrollmentUpdate> updates = new ArrayList<>();
-        updates.add(subjectUpdate(request, courseView, subjectView));
-        studentCourseClassGroups(actor, request, List.of(subjectView))
-                .getOrDefault(subjectId, List.of())
-                .stream()
+        List<CourseSubjectView> subjects = viewFactory.courseSubjects(courseId, actor.userId());
+        studentCourseClassGroups(actor, request, subjects).values().stream()
+                .flatMap(List::stream)
                 .map(item -> classGroupUpdate(request, item))
                 .forEach(updates::add);
         return updates;
@@ -869,26 +700,6 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             Set<String> emittedTargets
     ) throws SQLException {
         if (target == null || target.isBlank()) {
-            return;
-        }
-        if (target.startsWith("subject-")) {
-            String[] parts = target.substring("subject-".length()).split("-", -1);
-            if (parts.length != 2) {
-                return;
-            }
-            long courseId;
-            long subjectId;
-            try {
-                courseId = Long.parseLong(parts[0]);
-                subjectId = Long.parseLong(parts[1]);
-            } catch (NumberFormatException exception) {
-                return;
-            }
-            addUniqueEnrollmentUpdates(
-                    updates,
-                    emittedTargets,
-                    subjectEnrollmentUpdates(actor, request, courseId, subjectId)
-            );
             return;
         }
         if (target.startsWith("class-group-")) {
@@ -981,23 +792,6 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
         return courseGroups;
     }
 
-    private StudentEnrollmentUpdate subjectUpdate(
-            HttpServletRequest request,
-            CourseView course,
-            CourseSubjectView subject
-    ) {
-        Map<String, String> actions = new LinkedHashMap<>();
-        actions.put("subject-open", subjectOpenActionsHtml(request, course, subject, "px-16 py-9 text-14"));
-        actions.put("subject-open-compact", subjectOpenActionsHtml(request, course, subject, "px-12 py-7 text-12"));
-        actions.put("subject-leave", subjectLeaveActionsHtml(request, course, subject));
-        return new StudentEnrollmentUpdate(
-                "subject-" + course.getId() + "-" + subject.getSubjectId(),
-                subject.getEnrollmentStateLabel(),
-                subject.getEnrollmentBadgeClass(),
-                actions
-        );
-    }
-
     private StudentEnrollmentUpdate classGroupUpdate(HttpServletRequest request, StudentClassGroupView item) {
         Map<String, String> actions = new LinkedHashMap<>();
         actions.put("class-group-detail", classGroupDetailActionsHtml(request, item));
@@ -1009,40 +803,6 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                 item.getEnrollmentBadgeClass(),
                 actions
         );
-    }
-
-    private String subjectOpenActionsHtml(
-            HttpServletRequest request,
-            CourseView course,
-            CourseSubjectView subject,
-            String sizeClass
-    ) {
-        if (subject.isActiveEnrollment()) {
-            return linkHtml(
-                    request.getContextPath() + "/student/subjects/" + course.getId() + "/" + subject.getSubjectId(),
-                    "gape-student-card-icon-button",
-                    "Open subject",
-                    "ph ph-eye"
-            );
-        }
-        if (course.isActiveEnrollment() && !subject.isPendingEnrollment()) {
-            return subjectRequestFormHtml(request, course.getId(), subject.getSubjectId(), sizeClass);
-        }
-        return "";
-    }
-
-    private String subjectLeaveActionsHtml(
-            HttpServletRequest request,
-            CourseView course,
-            CourseSubjectView subject
-    ) {
-        if (subject.isActiveEnrollment()) {
-            return subjectLeaveFormHtml(request, course.getId(), subject.getSubjectId(), "px-16 py-9 text-14");
-        }
-        if (course.isActiveEnrollment() && !subject.isPendingEnrollment()) {
-            return subjectRequestFormHtml(request, course.getId(), subject.getSubjectId(), "px-16 py-9 text-14");
-        }
-        return "";
     }
 
     private String classGroupDetailActionsHtml(HttpServletRequest request, StudentClassGroupView item) {
@@ -1088,26 +848,6 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             return classGroupRequestFormHtml(request, item.getClassGroup().getId(), "px-14 py-8 text-13");
         }
         return classGroupUnavailableActionHtml(item, "px-14 py-8 text-13");
-    }
-
-    private String subjectRequestFormHtml(HttpServletRequest request, long courseId, long subjectId, String sizeClass) {
-        return formHtml(
-                request,
-                "/student/enrollments/courses/" + courseId + "/subjects/" + subjectId,
-                "gape-student-card-icon-button gape-student-card-icon-button--request",
-                "Request enrollment",
-                "ph ph-user-plus"
-        );
-    }
-
-    private String subjectLeaveFormHtml(HttpServletRequest request, long courseId, long subjectId, String sizeClass) {
-        return formHtml(
-                request,
-                "/student/enrollments/courses/" + courseId + "/subjects/" + subjectId + "/withdraw",
-                "gape-student-card-icon-button gape-student-card-icon-button--danger",
-                "Leave subject",
-                "ph ph-sign-out"
-        );
     }
 
     private String classGroupRequestFormHtml(HttpServletRequest request, long classGroupId, String sizeClass) {
@@ -1284,15 +1024,22 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             enrollmentsByClassGroup.put(enrollment.classGroupId(), enrollment);
         }
 
-        Set<String> activeSubjectContexts = new HashSet<>();
+        Map<String, CourseEnrollment> activeCourseContexts = new HashMap<>();
         Map<Long, ClassGroup> classGroupsById = new HashMap<>();
-        for (SubjectEnrollment enrollment : enrollmentDAO.findActiveSubjectEnrollmentsByStudent(studentUserId)) {
-            activeSubjectContexts.add(subjectContextKey(enrollment.courseId(), enrollment.subjectId()));
-            for (ClassGroup classGroup : classGroupDAO.findByCourseAndSubject(
-                    enrollment.courseId(),
-                    enrollment.subjectId()
-            )) {
-                classGroupsById.put(classGroup.id(), classGroup);
+        for (CourseEnrollment enrollment : enrollmentDAO.findCourseEnrollmentsByStudent(studentUserId)) {
+            if (enrollment.state() != EnrollmentState.ACTIVE) {
+                continue;
+            }
+            activeCourseContexts.put(courseOccurrenceContextKey(enrollment.courseId(), enrollment.courseOccurrenceId()), enrollment);
+            for (CourseSubjectAssociation association : courseSubjectDAO.findByCourse(enrollment.courseId())) {
+                for (ClassGroup classGroup : classGroupDAO.findByCourseAndSubject(
+                        enrollment.courseId(),
+                        association.subjectId()
+                )) {
+                    if (classGroup.courseOccurrenceId() == enrollment.courseOccurrenceId()) {
+                        classGroupsById.put(classGroup.id(), classGroup);
+                    }
+                }
             }
         }
 
@@ -1313,7 +1060,7 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
                         request,
                         classGroup,
                         enrollmentsByClassGroup.get(classGroup.id()),
-                        canEnrollInClassGroupContext(classGroup, activeSubjectContexts)
+                        canEnrollInClassGroupContext(classGroup, activeCourseContexts)
                 ))
                 .toList();
     }
@@ -1329,9 +1076,14 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             enrollmentsByClassGroup.put(enrollment.classGroupId(), enrollment);
         }
 
-        Set<String> activeSubjectContexts = new HashSet<>();
-        for (SubjectEnrollment enrollment : enrollmentDAO.findActiveSubjectEnrollmentsByStudent(studentUserId)) {
-            activeSubjectContexts.add(subjectContextKey(enrollment.courseId(), enrollment.subjectId()));
+        Map<String, CourseEnrollment> activeCourseContexts = new HashMap<>();
+        for (CourseEnrollment enrollment : enrollmentDAO.findCourseEnrollmentsByStudent(studentUserId)) {
+            if (enrollment.state() == EnrollmentState.ACTIVE) {
+                activeCourseContexts.put(
+                        courseOccurrenceContextKey(enrollment.courseId(), enrollment.courseOccurrenceId()),
+                        enrollment
+                );
+            }
         }
 
         Map<Long, List<StudentClassGroupView>> classGroupsBySubject = new LinkedHashMap<>();
@@ -1339,13 +1091,18 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
             List<StudentClassGroupView> classGroups = classGroupDAO
                     .findByCourseAndSubject(subject.getCourseId(), subject.getSubjectId())
                     .stream()
+                    .filter(classGroup -> enrollmentsByClassGroup.containsKey(classGroup.id())
+                            || activeCourseContexts.containsKey(courseOccurrenceContextKey(
+                                    classGroup.courseId(),
+                                    classGroup.courseOccurrenceId()
+                            )))
                     .sorted(Comparator.comparing(ClassGroup::code))
                     .map(classGroup -> studentClassGroupView(
                             actor,
                             request,
                             classGroup,
                             enrollmentsByClassGroup.get(classGroup.id()),
-                            canEnrollInClassGroupContext(classGroup, activeSubjectContexts)
+                            canEnrollInClassGroupContext(classGroup, activeCourseContexts)
                     ))
                     .toList();
             classGroupsBySubject.put(subject.getSubjectId(), classGroups);
@@ -1452,16 +1209,22 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
     ) {
         Map<Long, List<pt.isel.gape.web.view.LessonView>> result = new LinkedHashMap<>();
         for (ContentBlockView block : contentBlocks) {
-            List<pt.isel.gape.web.view.LessonView> lessons = lessonService.listLessonsByContentBlock(
-                            actor.userId(),
-                            currentSessionId(request),
-                            AccessProfileType.STUDENT,
-                            block.getId(),
-                            request.getRemoteAddr()
-                    )
-                    .stream()
-                    .map(viewFactory::lessonView)
-                    .toList();
+            List<pt.isel.gape.web.view.LessonView> lessons;
+            try {
+                lessons = lessonService.listLessonsByContentBlock(
+                                actor.userId(),
+                                currentSessionId(request),
+                                AccessProfileType.STUDENT,
+                                block.getId(),
+                                request.getRemoteAddr()
+                        )
+                        .stream()
+                        .map(viewFactory::lessonView)
+                        .toList();
+            } catch (SecurityException exception) {
+                // A summary card must not expose or fail over inaccessible lesson content.
+                lessons = List.of();
+            }
             result.put(block.getId(), lessons);
         }
         return result;
@@ -1494,8 +1257,8 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
         try {
             return contentBlockDAO.findByClassGroup(classGroupId)
                     .stream()
+                    .filter(ContentBlock::isActive)
                     .map(viewFactory::contentBlockView)
-                    .filter(ContentBlockView::isActive)
                     .toList();
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load class group content blocks", exception);
@@ -1506,16 +1269,32 @@ public final class StudentEnrollmentServlet extends DashboardServletSupport {
         return courseId + ":" + subjectId;
     }
 
+    private static String courseOccurrenceContextKey(long courseId, long courseOccurrenceId) {
+        return courseId + ":" + courseOccurrenceId;
+    }
+
     private static boolean canEnrollInClassGroupContext(
             ClassGroup classGroup,
-            Set<String> activeSubjectContexts
+            CourseEnrollment courseEnrollment
     ) {
-        String key = subjectContextKey(classGroup.courseId(), classGroup.subjectId());
-        return activeSubjectContexts.contains(key);
+        return courseEnrollment != null
+                && courseEnrollment.state() == EnrollmentState.ACTIVE
+                && courseEnrollment.courseId() == classGroup.courseId()
+                && courseEnrollment.courseOccurrenceId() == classGroup.courseOccurrenceId();
+    }
+
+    private static boolean canEnrollInClassGroupContext(
+            ClassGroup classGroup,
+            Map<String, CourseEnrollment> activeCourseContexts
+    ) {
+        return activeCourseContexts.containsKey(courseOccurrenceContextKey(
+                classGroup.courseId(),
+                classGroup.courseOccurrenceId()
+        ));
     }
 
     private static LocalDate optionalDate(HttpServletRequest request, String name) {
         String value = text(request, name);
-        return value == null ? null : LocalDate.parse(value);
+        return value == null ? null : ApplicationDateTimeFormat.parseUserDate(value);
     }
 }

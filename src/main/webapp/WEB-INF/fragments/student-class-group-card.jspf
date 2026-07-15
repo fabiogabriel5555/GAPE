@@ -23,7 +23,7 @@
             <span>Modality: <c:out value="${item.classGroup.modalityLabel}"/></span>
             <span>Shift: <c:out value="${item.classGroup.shift}"/></span>
             <span>Occup: <c:out value="${item.classGroup.occupancyLabel}"/></span>
-            <span>Dates: <c:out value="${item.classGroup.dateRangeLabel}"/></span>
+            <span data-gape-datetime-display>Dates: <c:out value="${item.classGroup.dateRangeLabel}"/></span>
         </div>
         <div class="gape-student-class-group-card__actions"
              data-gape-enrollment-actions

@@ -14,21 +14,29 @@
 <c:set var="dashboardHref" value="${isAdminDashboard ? '/admin/admin-dashbord.jsp' : (isStudentOnlyDashboard ? '/student/student/dashboard/student-dashboard.jsp' : '/dashboard')}" />
 <c:set var="siteHomeHref" value="/index.jsp" />
 <c:set var="profileHref" value="${isAdminDashboard ? '/admin/admin-my-profile.jsp' : (isStudentOnlyDashboard ? '/student/student/profile/student-profile.jsp' : '/profile')}" />
-<c:set var="messageHref" value="/admin/admin-message.jsp" />
+<c:set var="messageHref" value="/messages" />
 <c:set var="calendarHref" value="/learning/events" />
+<c:set var="calendarLabel" value="Events" />
+<c:set var="calendarIcon" value="ph ph-calendar-dots" />
+<c:set var="sidebarEventUnreadCount" value="${empty eventUnreadCount ? 0 : eventUnreadCount}" />
+<c:set var="sidebarMessageUnreadCount" value="${empty messageUnreadCount ? 0 : messageUnreadCount}" />
+<c:set var="sidebarClassGroupEventCount" value="${empty classGroupEventCount ? 0 : classGroupEventCount}" />
+<c:set var="sidebarLearningPendingWorkCount" value="${empty learningPendingWorkCount ? 0 : learningPendingWorkCount}" />
 <c:set var="attendanceHref" value="/learning/attendance" />
 <c:set var="quizAttemptsHref" value="/learning/assessments" />
 <c:if test="${isStudentOnlyDashboard}">
-    <c:set var="messageHref" value="/student/student/message/student-message.jsp" />
+    <c:set var="messageHref" value="/messages" />
     <c:set var="calendarHref" value="/student/events" />
+    <c:set var="calendarLabel" value="Events" />
+    <c:set var="calendarIcon" value="ph ph-calendar-dots" />
     <c:set var="attendanceHref" value="/student/attendance" />
 </c:if>
 <c:if test="${not sessionScope['gape.auth.hasAdministratorProfile'] and isCoordinatorDashboard}">
-    <c:set var="messageHref" value="/coordinator/coordinator-message.jsp" />
+    <c:set var="messageHref" value="/messages" />
     <c:set var="quizAttemptsHref" value="/learning/assessments" />
 </c:if>
 <c:if test="${not sessionScope['gape.auth.hasAdministratorProfile'] and not isCoordinatorDashboard and isTeacherDashboard}">
-    <c:set var="messageHref" value="/instructor/instructor-message.jsp" />
+    <c:set var="messageHref" value="/messages" />
     <c:set var="quizAttemptsHref" value="/learning/assessments" />
 </c:if>
 <c:set var="coursesHref" value="/courses" />
@@ -73,6 +81,7 @@
         or fn:startsWith(currentServletPath, '/student/class-groups')
         or fn:contains(includedServletPath, '/class-group/')}" />
 <c:set var="isLessonsActive" value="${activeMenu == 'lessons'
+        or activeMenu == 'assessments'
         or fn:contains(currentRequestUri, '/learning/lessons')
         or fn:contains(currentRequestUri, '/learning/assessments')
         or fn:contains(currentRequestUri, '/student/lessons')
@@ -148,16 +157,22 @@
                     </a>
                 </li>
                 <li class="mb-8 ${activeMenu == 'message' ? 'activePage' : ''}">
-                    <a href="${pageContext.request.contextPath}${messageHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                    <a href="${pageContext.request.contextPath}${messageHref}" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                         <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-chat-dots"></i></span>
-                        Message
+                        Messages
+                        <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarMessageUnreadCount > 0 ? '' : ' d-none'}" data-sidebar-message-badge>
+                            ${sidebarMessageUnreadCount}
+                        </span>
                     </a>
                 </li>
                 <c:if test="${isAdminDashboard or isCoordinatorDashboard or isTeacherDashboard or sessionScope['gape.auth.hasStudentProfile']}">
                     <li class="mb-8 ${isCalendarActive ? 'activePage' : ''}">
-                        <a href="${pageContext.request.contextPath}${calendarHref}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-dots"></i></span>
-                            Events
+                        <a href="${pageContext.request.contextPath}${calendarHref}" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="${calendarIcon}"></i></span>
+                            ${calendarLabel}
+                            <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarEventUnreadCount > 0 ? '' : ' d-none'}" data-sidebar-event-badge>
+                                ${sidebarEventUnreadCount}
+                            </span>
                         </a>
                     </li>
                 </c:if>
@@ -187,9 +202,12 @@
                         </a>
                     </li>
                     <li class="mb-8 ${isClassGroupsActive ? 'activePage' : ''}">
-                        <a href="${pageContext.request.contextPath}/student/class-groups" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <a href="${pageContext.request.contextPath}/student/class-groups" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                             <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-users-three"></i></span>
                             Class Groups
+                            <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarClassGroupEventCount > 0 ? '' : ' d-none'}" data-sidebar-class-group-pending-badge>
+                                ${sidebarClassGroupEventCount}
+                            </span>
                         </a>
                     </li>
                     <li class="mb-8 ${isLessonsActive ? 'activePage' : ''}">
@@ -222,12 +240,32 @@
                             <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-books"></i></span>
                             Courses
                         </a>
+                        <c:if test="${adminCourseActiveChild == 'new'}">
+                            <ul class="mt-8 ps-24">
+                                <li class="mb-6 activePage">
+                                    <a href="${pageContext.request.contextPath}/coordinator/courses/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                        <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-plus-circle"></i></span>
+                                        Create
+                                    </a>
+                                </li>
+                            </ul>
+                        </c:if>
                     </li>
                     <li class="mb-8 ${isSubjectsActive ? 'activePage' : ''}">
                         <a href="${pageContext.request.contextPath}/coordinator/subjects" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                             <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-book-open-text"></i></span>
                             Subjects
                         </a>
+                        <c:if test="${coordinatorSubjectActiveChild == 'new'}">
+                            <ul class="mt-8 ps-24">
+                                <li class="mb-6 activePage">
+                                    <a href="${pageContext.request.contextPath}/coordinator/subjects/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                        <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-plus-circle"></i></span>
+                                        Create
+                                    </a>
+                                </li>
+                            </ul>
+                        </c:if>
                         <c:if test="${not empty coordinatorSubjectContextId}">
                             <ul class="mt-8 ps-24">
                                 <li class="mb-6 ${coordinatorSubjectActiveChild == 'detail' ? 'activePage' : ''}">
@@ -257,10 +295,23 @@
                     </li>
                     <c:if test="${canOpenClassGroups}">
                         <li class="mb-8 ${isClassGroupsActive ? 'activePage' : ''}">
-                            <a href="${pageContext.request.contextPath}/learning/class-groups" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <a href="${pageContext.request.contextPath}/learning/class-groups" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                                 <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-chalkboard-teacher"></i></span>
                                 Class Groups
+                                <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarClassGroupEventCount > 0 ? '' : ' d-none'}" data-sidebar-class-group-pending-badge>
+                                    ${sidebarClassGroupEventCount}
+                                </span>
                             </a>
+                            <c:if test="${learningClassGroupActiveChild == 'new'}">
+                                <ul class="mt-8 ps-24">
+                                    <li class="mb-6 activePage">
+                                        <a href="${pageContext.request.contextPath}/learning/class-groups/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-plus-circle"></i></span>
+                                            Create
+                                        </a>
+                                    </li>
+                                </ul>
+                            </c:if>
                             <c:if test="${not empty learningClassGroupContextId}">
                                 <ul class="mt-8 ps-24">
                                     <li class="mb-6 ${learningClassGroupActiveChild == 'detail' ? 'activePage' : ''}">
@@ -283,9 +334,12 @@
                     </c:if>
                     <c:if test="${canOpenLessons}">
                         <li class="mb-8 ${isLessonsActive ? 'activePage' : ''}">
-                            <a href="${pageContext.request.contextPath}/learning/lessons" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                            <a href="${pageContext.request.contextPath}/learning/lessons" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                                 <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-check"></i></span>
                                 Lessons &amp; Assessments
+                                <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarLearningPendingWorkCount > 0 ? '' : ' d-none'}" data-sidebar-learning-pending-badge title="${sidebarLearningPendingWorkCount} pending assessment action(s)">
+                                    ${sidebarLearningPendingWorkCount}
+                                </span>
                             </a>
                             <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
                             <%@ include file="/WEB-INF/fragments/dashboard-learning-assessment-context.jspf" %>
@@ -313,10 +367,23 @@
                         </c:if>
                     </li>
                     <li class="mb-8 ${isClassGroupsActive ? 'activePage' : ''}">
-                        <a href="${pageContext.request.contextPath}/learning/class-groups" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <a href="${pageContext.request.contextPath}/learning/class-groups" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                             <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-chalkboard-teacher"></i></span>
                             Class Groups
+                            <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarClassGroupEventCount > 0 ? '' : ' d-none'}" data-sidebar-class-group-pending-badge>
+                                ${sidebarClassGroupEventCount}
+                            </span>
                         </a>
+                        <c:if test="${learningClassGroupActiveChild == 'new'}">
+                            <ul class="mt-8 ps-24">
+                                <li class="mb-6 activePage">
+                                    <a href="${pageContext.request.contextPath}/learning/class-groups/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                        <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-plus-circle"></i></span>
+                                        Create
+                                    </a>
+                                </li>
+                            </ul>
+                        </c:if>
                         <c:if test="${not empty learningClassGroupContextId}">
                             <ul class="mt-8 ps-24">
                                 <li class="mb-6 ${learningClassGroupActiveChild == 'detail' ? 'activePage' : ''}">
@@ -338,9 +405,12 @@
                     </li>
                     <c:if test="${canOpenLessons}">
                         <li class="mb-8 ${isLessonsActive ? 'activePage' : ''}">
-                            <a href="${pageContext.request.contextPath}/learning/lessons" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <a href="${pageContext.request.contextPath}/learning/lessons" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                                 <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-check"></i></span>
                                 Lessons &amp; Assessments
+                                <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarLearningPendingWorkCount > 0 ? '' : ' d-none'}" data-sidebar-learning-pending-badge title="${sidebarLearningPendingWorkCount} pending assessment action(s)">
+                                    ${sidebarLearningPendingWorkCount}
+                                </span>
                             </a>
                             <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
                             <%@ include file="/WEB-INF/fragments/dashboard-learning-assessment-context.jspf" %>
@@ -357,6 +427,16 @@
                                 <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-users-three"></i></span>
                                 Users
                             </a>
+                            <c:if test="${adminUserActiveChild == 'new'}">
+                                <ul class="mt-8 ps-24">
+                                    <li class="mb-6 activePage">
+                                        <a href="${pageContext.request.contextPath}/admin/users/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-plus-circle"></i></span>
+                                            Create
+                                        </a>
+                                    </li>
+                                </ul>
+                            </c:if>
                             <c:if test="${not empty adminUserContextId}">
                                 <ul class="mt-8 ps-24">
                                     <li class="mb-6 ${adminUserActiveChild == 'detail' ? 'activePage' : ''}">
@@ -397,6 +477,16 @@
                                 <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-buildings"></i></span>
                                 Organizations
                             </a>
+                            <c:if test="${adminOrganizationActiveChild == 'new'}">
+                                <ul class="mt-8 ps-24">
+                                    <li class="mb-6 activePage">
+                                        <a href="${pageContext.request.contextPath}/admin/organizations/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-plus-circle"></i></span>
+                                            Create Organization
+                                        </a>
+                                    </li>
+                                </ul>
+                            </c:if>
                             <c:if test="${not empty adminOrganizationContextId}">
                                 <ul class="mt-8 ps-24">
                                     <li class="mb-6 ${adminOrganizationActiveChild == 'detail' ? 'activePage' : ''}">
@@ -415,7 +505,7 @@
                                     </c:if>
                                     <c:if test="${canCreateOrganicUnits}">
                                         <li class="mb-6 ${adminOrganizationActiveChild == 'unit-new' ? 'activePage' : ''}">
-                                            <a href="${pageContext.request.contextPath}/admin/organizations/${adminOrganizationContextId}/units/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <a href="${pageContext.request.contextPath}/admin/organizations/${adminOrganizationContextId}?unitModal=create" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
                                                 <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-tree-structure"></i></span>
                                                 New Unit
                                             </a>
@@ -431,6 +521,16 @@
                                 <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-books"></i></span>
                                 Courses
                             </a>
+                            <c:if test="${adminCourseActiveChild == 'new'}">
+                                <ul class="mt-8 ps-24">
+                                    <li class="mb-6 activePage">
+                                        <a href="${pageContext.request.contextPath}/admin/courses/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-plus-circle"></i></span>
+                                            Create
+                                        </a>
+                                    </li>
+                                </ul>
+                            </c:if>
                             <c:if test="${not empty adminCourseContextId}">
                                 <ul class="mt-8 ps-24">
                                     <li class="mb-6 ${adminCourseActiveChild == 'detail' ? 'activePage' : ''}">
@@ -447,14 +547,6 @@
                                             </a>
                                         </li>
                                     </c:if>
-                                    <c:if test="${canManageCourseChildren}">
-                                        <li class="mb-6 ${adminCourseActiveChild == 'subject-new' ? 'activePage' : ''}">
-                                            <a href="${pageContext.request.contextPath}/admin/courses/${adminCourseContextId}/subjects/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
-                                                <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-link-simple"></i></span>
-                                                Associate
-                                            </a>
-                                        </li>
-                                    </c:if>
                                 </ul>
                             </c:if>
                         </li>
@@ -465,6 +557,16 @@
                                 <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-book-open-text"></i></span>
                                 Subjects
                             </a>
+                            <c:if test="${adminSubjectActiveChild == 'new'}">
+                                <ul class="mt-8 ps-24">
+                                    <li class="mb-6 activePage">
+                                        <a href="${pageContext.request.contextPath}/admin/subjects/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-plus-circle"></i></span>
+                                            Create
+                                        </a>
+                                    </li>
+                                </ul>
+                            </c:if>
                             <c:if test="${not empty adminSubjectContextId}">
                                 <ul class="mt-8 ps-24">
                                     <li class="mb-6 ${adminSubjectActiveChild == 'detail' ? 'activePage' : ''}">
@@ -487,10 +589,23 @@
                     </c:if>
                     <c:if test="${canOpenClassGroups}">
                         <li class="mb-8 ${isClassGroupsActive ? 'activePage' : ''}">
-                            <a href="${pageContext.request.contextPath}/learning/class-groups" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <a href="${pageContext.request.contextPath}/learning/class-groups" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                                 <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-chalkboard-teacher"></i></span>
                                 Class Groups
+                                <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarClassGroupEventCount > 0 ? '' : ' d-none'}" data-sidebar-class-group-pending-badge>
+                                    ${sidebarClassGroupEventCount}
+                                </span>
                             </a>
+                            <c:if test="${learningClassGroupActiveChild == 'new'}">
+                                <ul class="mt-8 ps-24">
+                                    <li class="mb-6 activePage">
+                                        <a href="${pageContext.request.contextPath}/learning/class-groups/new" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-plus-circle"></i></span>
+                                            Create
+                                        </a>
+                                    </li>
+                                </ul>
+                            </c:if>
                             <c:if test="${not empty learningClassGroupContextId}">
                                 <ul class="mt-8 ps-24">
                                     <li class="mb-6 ${learningClassGroupActiveChild == 'detail' ? 'activePage' : ''}">
@@ -513,9 +628,12 @@
                     </c:if>
                     <c:if test="${canOpenLessons}">
                         <li class="mb-8 ${isLessonsActive ? 'activePage' : ''}">
-                            <a href="${pageContext.request.contextPath}/learning/lessons" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <a href="${pageContext.request.contextPath}/learning/lessons" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                                 <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-check"></i></span>
                                 Lessons &amp; Assessments
+                                <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarLearningPendingWorkCount > 0 ? '' : ' d-none'}" data-sidebar-learning-pending-badge title="${sidebarLearningPendingWorkCount} pending assessment action(s)">
+                                    ${sidebarLearningPendingWorkCount}
+                                </span>
                             </a>
                             <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
                             <%@ include file="/WEB-INF/fragments/dashboard-learning-assessment-context.jspf" %>

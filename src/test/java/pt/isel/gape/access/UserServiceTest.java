@@ -2,6 +2,7 @@ package pt.isel.gape.access;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -168,7 +169,7 @@ class UserServiceTest {
     }
 
     @Test
-    void manageAllAdministratorCanAssignAnotherAdministratorToAnyNonArchivedOrganization() throws Exception {
+    void manageAllAdministratorCanAssignAnotherAdministratorToAnyNonInactiveOrganization() throws Exception {
         User created = userService.createUser(
                 1L,
                 null,
@@ -284,7 +285,7 @@ class UserServiceTest {
     }
 
     @Test
-    void sameUserCannotCoordinateAndTeachSameSubjectContext() {
+    void subjectCoordinatorAssignmentsCanOnlyBeManagedFromSubjectDetails() {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> userService.createUser(
@@ -325,7 +326,29 @@ class UserServiceTest {
                 )
         );
 
-        assertTrue(exception.getMessage().contains("multiple access profiles"));
+        assertTrue(exception.getMessage().contains("managed exclusively from Subject Details"));
+    }
+
+    @Test
+    void studentProfileContextOnlyAcceptsCourses() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> new AccessProfileContextAssignment(
+                        AccessProfileType.STUDENT,
+                        AccessEntityType.SUBJECT,
+                        40L,
+                        30L
+                )
+        );
+
+        assertEquals("Student context must be a course", exception.getMessage());
+        AccessProfileContextAssignment courseContext = new AccessProfileContextAssignment(
+                AccessProfileType.STUDENT,
+                AccessEntityType.COURSE,
+                30L,
+                99L
+        );
+        assertNull(courseContext.parentContextId());
     }
 
     @Test

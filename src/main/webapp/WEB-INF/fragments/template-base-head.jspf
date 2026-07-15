@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/animate.css">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/dataTables.dataTables.min.css">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/aos.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/main.css?v=20260612-ui-polish">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/main.css?v=20260715-sidebar-corner-3">
 <style>
     .gape-acronym-token {
         border-bottom: 1px dotted currentColor;

@@ -198,7 +198,7 @@
                         <div class="col-lg-6">
                             <div class="border border-neutral-30 rounded-12 px-20 py-18 h-100">
                                 <span class="text-14 text-neutral-500">Created At</span>
-                                <p class="text-15 text-neutral-700 mb-0 mt-8"><c:out value="${user.createdAt}"/></p>
+                                <p class="text-15 text-neutral-700 mb-0 mt-8" data-gape-datetime-display><c:out value="${user.createdAt}"/></p>
                             </div>
                         </div>
                         <div class="col-lg-6">

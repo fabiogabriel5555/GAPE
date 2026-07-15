@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public record Subject(
         long id,
         long organizationId,
+        Long organicUnitId,
         String name,
         String acronym,
         String photo,

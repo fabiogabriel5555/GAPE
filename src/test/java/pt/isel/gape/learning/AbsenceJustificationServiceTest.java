@@ -160,6 +160,70 @@ class AbsenceJustificationServiceTest {
     }
 
     @Test
+    void processedJustificationCanChangeBetweenFinalDecisions() {
+        justificationService.processJustification(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                160L,
+                new AbsenceJustificationProcessCommand(
+                        AbsenceJustificationState.APPROVED,
+                        NOW.plusDays(3),
+                        "Accepted"
+                ),
+                IP
+        );
+
+        AbsenceJustification rejected = justificationService.processJustification(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                160L,
+                new AbsenceJustificationProcessCommand(
+                        AbsenceJustificationState.REJECTED,
+                        NOW.plusDays(3),
+                        "Rejected after review"
+                ),
+                IP
+        );
+        AttendanceRecord rejectedAttendance = attendanceRecordService.getAttendanceRecord(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                150L,
+                IP
+        );
+
+        assertEquals(AbsenceJustificationState.REJECTED, rejected.state());
+        assertEquals(AttendanceStatus.ABSENT, rejectedAttendance.status());
+        assertEquals(AttendanceState.CORRECTED, rejectedAttendance.state());
+
+        AbsenceJustification approvedAgain = justificationService.processJustification(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                160L,
+                new AbsenceJustificationProcessCommand(
+                        AbsenceJustificationState.APPROVED,
+                        NOW.plusDays(3),
+                        "Accepted after review"
+                ),
+                IP
+        );
+        AttendanceRecord approvedAttendance = attendanceRecordService.getAttendanceRecord(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                150L,
+                IP
+        );
+
+        assertEquals(AbsenceJustificationState.APPROVED, approvedAgain.state());
+        assertEquals(AttendanceStatus.JUSTIFIED, approvedAttendance.status());
+        assertEquals(AttendanceState.CORRECTED, approvedAttendance.state());
+    }
+
+    @Test
     void processingDateBeforeSubmissionIsRejected() throws Exception {
         AttendanceRecord record = createAttendance(AttendanceStatus.PARTIAL);
         long justificationId = insertSubmittedJustification(record.id(), LocalDateTime.of(2026, 2, 15, 10, 0));

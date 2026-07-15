@@ -15,6 +15,7 @@
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Versoes de dependencias -->
         <!-- Jakarta Servlet 6.0 / JSP 3.1 / JSTL 3.0 => compativel com Tomcat 10.1.
@@ -24,12 +25,28 @@
         <jakarta.jstl.api.version>3.0.0</jakarta.jstl.api.version>
         <glassfish.jstl.version>3.0.1</glassfish.jstl.version>
         <mysql.connector.version>9.1.0</mysql.connector.version>
-        <webp.imageio.version>0.1.6</webp.imageio.version>
+        <hikaricp.version>5.1.0</hikaricp.version>
+        <gape.webp.imageio.version>0.1.6-gape</gape.webp.imageio.version>
         <jave.version>3.5.0</jave.version>
         <pdfbox.version>3.0.7</pdfbox.version>
-        <slf4j.version>1.7.36</slf4j.version>
+        <slf4j.version>2.0.16</slf4j.version>
         <junit.version>5.11.3</junit.version>
     </properties>
+
+    <repositories>
+        <!-- Dependencia WebP corrigida, distribuida com o projeto. -->
+        <repository>
+            <id>gape-local-dependencies</id>
+            <url>file://${project.basedir}/src/dependencies/maven-repository</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <dependencies>
         <!-- API de Servlets (fornecida pelo Tomcat em runtime) -->
@@ -67,17 +84,23 @@
             <version>${mysql.connector.version}</version>
         </dependency>
 
-        <!-- Escrita/leitura de WebP para uploads de imagens -->
         <dependency>
-            <groupId>org.sejda.imageio</groupId>
-            <artifactId>webp-imageio</artifactId>
-            <version>${webp.imageio.version}</version>
+            <groupId>com.zaxxer</groupId>
+            <artifactId>HikariCP</artifactId>
+            <version>${hikaricp.version}</version>
         </dependency>
 
-        <!-- Processamento portavel de audio/video com binarios nativos empacotados -->
+        <!-- Escrita/leitura de WebP para uploads de imagens -->
+        <dependency>
+            <groupId>pt.isel.gape</groupId>
+            <artifactId>webp-imageio-gape</artifactId>
+            <version>${gape.webp.imageio.version}</version>
+        </dependency>
+
+        <!-- API de processamento de audio/video; o binario nativo e escolhido por perfil de SO. -->
         <dependency>
             <groupId>ws.schild</groupId>
-            <artifactId>jave-all-deps</artifactId>
+            <artifactId>jave-core</artifactId>
             <version>${jave.version}</version>
         </dependency>
 
@@ -90,7 +113,13 @@
 
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-nop</artifactId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
 
@@ -107,20 +136,35 @@
         <finalName>gape</finalName>
         <plugins>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.0</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
                 <executions>
                     <execution>
-                        <id>add-third-party-overrides</id>
-                        <phase>generate-sources</phase>
+                        <id>remove-stale-compiled-output</id>
+                        <phase>initialize</phase>
                         <goals>
-                            <goal>add-source</goal>
+                            <goal>run</goal>
                         </goals>
                         <configuration>
-                            <sources>
-                                <source>src/main/third-party-overrides</source>
-                            </sources>
+                            <target>
+                                <delete dir="${project.build.outputDirectory}" quiet="true"/>
+                                <delete dir="${project.build.testOutputDirectory}" quiet="true"/>
+                                <delete dir="${project.build.directory}/surefire-reports" quiet="true"/>
+                                <delete dir="${project.build.directory}/failsafe-reports" quiet="true"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>remove-stale-exploded-webapp</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <delete dir="${project.build.directory}/${project.build.finalName}" quiet="true"/>
+                            </target>
                         </configuration>
                     </execution>
                 </executions>
@@ -139,8 +183,103 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
+                <configuration>
+                    <argLine>--enable-native-access=ALL-UNNAMED</argLine>
+                    <systemPropertyVariables>
+                        <user.timezone>Europe/Lisbon</user.timezone>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.5.0</version>
+                <configuration>
+                    <mainClass>pt.isel.gape.dev.DevDatabaseCrudConsoleApp</mainClass>
+                </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>jave-windows-x64</id>
+            <activation>
+                <os><family>Windows</family><arch>amd64</arch></os>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-win64</artifactId>
+                    <version>${jave.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>jave-linux-x64</id>
+            <activation>
+                <os><name>Linux</name><arch>amd64</arch></os>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-linux64</artifactId>
+                    <version>${jave.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>jave-linux-arm64</id>
+            <activation>
+                <os><name>Linux</name><arch>aarch64</arch></os>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-linux-arm64</artifactId>
+                    <version>${jave.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>jave-macos-x64</id>
+            <activation>
+                <os><family>mac</family><arch>x86_64</arch></os>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-osx64</artifactId>
+                    <version>${jave.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>jave-macos-arm64</id>
+            <activation>
+                <os><family>mac</family><arch>aarch64</arch></os>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-osxm1</artifactId>
+                    <version>${jave.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>portable-media</id>
+            <activation>
+                <property><name>gape.media.portable</name><value>true</value></property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-all-deps</artifactId>
+                    <version>${jave.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
 </project>

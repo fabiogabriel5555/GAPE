@@ -3,6 +3,7 @@ package pt.isel.gape.learning.service;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.Objects;
 
 import pt.isel.gape.access.dao.PermissionDAO;
@@ -15,7 +16,6 @@ import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseState;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.CourseSubjectAssociationCommand;
-import pt.isel.gape.learning.model.CourseSubjectState;
 import pt.isel.gape.learning.model.Subject;
 import pt.isel.gape.learning.model.SubjectState;
 import pt.isel.gape.security.authorization.AccessContext;
@@ -88,10 +88,18 @@ public final class CourseSubjectService {
                     requireCourseSubjectManager(actorUserId, sessionId, actorProfileType,
                             course.id(), subject.id(), sourceIp);
                     validateActiveContext(course, subject);
-                    if (courseSubjectDAO.exists(connection, command.courseId(), command.subjectId())) {
+                    validateCurricularYearWithinCourse(command, course);
+                    CourseSubjectAssociation existing = courseSubjectDAO
+                            .findAnyByCourseAndSubject(connection, command.courseId(), command.subjectId())
+                            .orElse(null);
+                    if (existing != null && existing.isActive()) {
                         throw new IllegalArgumentException("Course-subject association already exists");
                     }
-                    courseSubjectDAO.create(connection, command);
+                    if (existing != null) {
+                        courseSubjectDAO.reactivate(connection, command);
+                    } else {
+                        courseSubjectDAO.create(connection, command);
+                    }
                     auditService.record(connection, actorUserId, sessionId, "COURSE_SUBJECT_ASSOCIATE",
                             "course_subject", identifier(command.courseId(), command.subjectId()), "success", sourceIp);
                     connection.commit();
@@ -126,10 +134,11 @@ public final class CourseSubjectService {
                 try {
                     Course course = requireCourse(connection, command.courseId());
                     Subject subject = requireSubject(connection, command.subjectId());
-                    CourseSubjectAssociation current = requireAssociation(connection, command.courseId(), command.subjectId());
+                    requireAssociation(connection, command.courseId(), command.subjectId());
                     requireCourseSubjectManager(actorUserId, sessionId, actorProfileType,
                             course.id(), subject.id(), sourceIp);
                     validateActiveContext(course, subject);
+                    validateCurricularYearWithinCourse(command, course);
                     courseSubjectDAO.update(connection, command);
                     auditService.record(connection, actorUserId, sessionId, "COURSE_SUBJECT_UPDATE",
                             "course_subject", identifier(command.courseId(), command.subjectId()), "success", sourceIp);
@@ -150,41 +159,6 @@ public final class CourseSubjectService {
         }
     }
 
-    public void archiveAssociation(
-            long actorUserId,
-            Long sessionId,
-            AccessProfileType actorProfileType,
-            long courseId,
-            long subjectId,
-            String sourceIp
-    ) {
-        try {
-            try (Connection connection = connectionProvider.getConnection()) {
-                boolean originalAutoCommit = connection.getAutoCommit();
-                connection.setAutoCommit(false);
-                try {
-                    Course course = requireCourse(connection, courseId);
-                    CourseSubjectAssociation current = requireAssociation(connection, courseId, subjectId);
-                    requireCourseSubjectManager(actorUserId, sessionId, actorProfileType,
-                            course.id(), current.subjectId(), sourceIp);
-                    requireSubjectKeepsActiveAssociation(connection, subjectId);
-                    courseSubjectDAO.updateState(connection, courseId, subjectId, CourseSubjectState.INACTIVE);
-                    auditService.record(connection, actorUserId, sessionId, "COURSE_SUBJECT_ARCHIVE",
-                            "course_subject", identifier(courseId, subjectId), "success", sourceIp);
-                    connection.commit();
-                } catch (RuntimeException | SQLException exception) {
-                    connection.rollback();
-                    throw exception;
-                } finally {
-                    connection.setAutoCommit(originalAutoCommit);
-                }
-            }
-        } catch (RuntimeException | SQLException exception) {
-            auditFailure(actorUserId, sessionId, "COURSE_SUBJECT_ARCHIVE", identifier(courseId, subjectId), sourceIp);
-            throw wrap(exception, "Failed to archive course-subject association");
-        }
-    }
-
     public void deleteAssociation(
             long actorUserId,
             Long sessionId,
@@ -199,14 +173,11 @@ public final class CourseSubjectService {
                 connection.setAutoCommit(false);
                 try {
                     Course course = requireCourse(connection, courseId);
-                    CourseSubjectAssociation current = requireAssociation(connection, courseId, subjectId);
+                    requireSubject(connection, subjectId);
+                    requireAssociation(connection, courseId, subjectId);
                     requireCourseSubjectManager(actorUserId, sessionId, actorProfileType,
-                            course.id(), current.subjectId(), sourceIp);
-                    requireSubjectKeepsAssociation(connection, current);
-                    if (courseSubjectDAO.hasDomainDependencies(connection, courseId, subjectId)) {
-                        throw new IllegalStateException("Course-subject association with dependencies cannot be deleted");
-                    }
-                    courseSubjectDAO.delete(connection, courseId, subjectId);
+                            course.id(), subjectId, sourceIp);
+                    courseSubjectDAO.close(connection, courseId, subjectId, LocalDate.now());
                     auditService.record(connection, actorUserId, sessionId, "COURSE_SUBJECT_DELETE",
                             "course_subject", identifier(courseId, subjectId), "success", sourceIp);
                     connection.commit();
@@ -258,9 +229,6 @@ public final class CourseSubjectService {
     }
 
     private void validateActiveContext(Course course, Subject subject) {
-        if (course.organizationId() != subject.organizationId()) {
-            throw new IllegalArgumentException("Course and subject must belong to the same organization");
-        }
         if (course.state() != CourseState.ACTIVE) {
             throw new IllegalStateException("Inactive courses cannot receive subject associations");
         }
@@ -430,30 +398,42 @@ public final class CourseSubjectService {
         if (command.subjectId() <= 0) {
             throw new IllegalArgumentException("Association subject is required");
         }
-        Objects.requireNonNull(command.state(), "association state is required");
-        if ((command.curricularYear() == null) != (command.term() == null)) {
-            throw new IllegalArgumentException("Curricular year and term must be provided together");
+        if (command.curricularYear() == null) {
+            throw new IllegalArgumentException("Curricular year is required");
         }
-        if (command.curricularYear() != null && command.curricularYear() <= 0) {
+        if (command.curricularYear() <= 0) {
             throw new IllegalArgumentException("Curricular year must be positive");
         }
-    }
-
-    private void requireSubjectKeepsActiveAssociation(Connection connection, long subjectId) throws SQLException {
-        if (courseSubjectDAO.countActiveBySubject(connection, subjectId) <= 1) {
-            throw new IllegalStateException("Subject must remain associated with at least one active course");
+        if (command.term() == null) {
+            throw new IllegalArgumentException("Curricular term is required");
         }
     }
 
-    private void requireSubjectKeepsAssociation(
-            Connection connection,
-            CourseSubjectAssociation association
-    ) throws SQLException {
-        if (courseSubjectDAO.countBySubject(connection, association.subjectId()) <= 1) {
-            throw new IllegalStateException("Subject must remain associated with at least one course");
+    private static void validateCurricularYearWithinCourse(
+            CourseSubjectAssociationCommand command,
+            Course course
+    ) {
+        int durationYears = durationYears(course);
+        if (durationYears <= 0) {
+            throw new IllegalArgumentException("Course duration must be configured before associating subjects");
         }
-        if (association.state() == CourseSubjectState.ACTIVE) {
-            requireSubjectKeepsActiveAssociation(connection, association.subjectId());
+        if (command.curricularYear() > durationYears) {
+            throw new IllegalArgumentException("Curricular year cannot be greater than course duration");
+        }
+        if (!command.term().belongsTo(course.frequency())) {
+            throw new IllegalArgumentException("Curricular term must match the course frequency");
+        }
+    }
+
+    private static int durationYears(Course course) {
+        String duration = course.duration();
+        if (duration == null || duration.isBlank() || !duration.trim().matches("\\d+")) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(duration.trim());
+        } catch (NumberFormatException exception) {
+            return 0;
         }
     }
 

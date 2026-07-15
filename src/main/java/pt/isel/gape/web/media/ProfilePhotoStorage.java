@@ -110,7 +110,7 @@ public final class ProfilePhotoStorage {
     }
 
     private static void configureImageIoForUploadRoot(Path uploadRoot) throws IOException {
-        Path nativeDirectory = resolveWebpNativeDirectory(uploadRoot);
+        Path nativeDirectory = resolveWebpNativeDirectory();
         Files.createDirectories(nativeDirectory);
 
         synchronized (IMAGE_IO_CONFIGURATION_LOCK) {
@@ -123,7 +123,7 @@ public final class ProfilePhotoStorage {
         }
     }
 
-    private static Path resolveWebpNativeDirectory(Path uploadRoot) {
+    private static Path resolveWebpNativeDirectory() {
         String configuredDirectory = System.getProperty(WEBP_NATIVE_DIR_PROPERTY);
         if (configuredDirectory == null || configuredDirectory.isBlank()) {
             configuredDirectory = DatabaseConfig.getProperty(WEBP_NATIVE_DIR_PROPERTY, "");
@@ -132,10 +132,9 @@ public final class ProfilePhotoStorage {
             return Path.of(configuredDirectory).toAbsolutePath().normalize();
         }
 
-        Path normalizedUploadRoot = uploadRoot.toAbsolutePath().normalize();
-        Path parentDirectory = normalizedUploadRoot.getParent();
-        Path baseDirectory = parentDirectory == null ? normalizedUploadRoot : parentDirectory;
-        return baseDirectory.resolve(".gape-webp-native").normalize();
+        return Path.of(System.getProperty("user.home", "."), ".gape", "webp-native")
+                .toAbsolutePath()
+                .normalize();
     }
 
     private static BufferedImage readUploadedImage(Part imagePart) throws IOException {

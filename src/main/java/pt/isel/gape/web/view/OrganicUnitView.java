@@ -104,11 +104,11 @@ public final class OrganicUnitView {
     public String getStateBadgeClass() {
         return switch (state) {
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
         };
     }
 
-    public boolean isArchived() {
+    public boolean isInactive() {
         return state == OrganicUnitState.INACTIVE;
     }
 

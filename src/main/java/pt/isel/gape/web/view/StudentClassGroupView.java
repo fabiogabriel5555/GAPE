@@ -114,7 +114,7 @@ public final class StudentClassGroupView {
             return "Closed";
         }
         if (!eligibleForEnrollment) {
-            return "Subject enrollment required";
+            return "Active course enrollment required";
         }
         return "No action available";
     }

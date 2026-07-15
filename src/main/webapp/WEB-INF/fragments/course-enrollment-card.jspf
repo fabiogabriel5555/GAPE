@@ -1,0 +1,151 @@
+<article class="gape-structure-node border border-neutral-30 rounded-8 px-18 py-16 bg-white"
+         data-course-detail-sort-row
+         data-sort-name="<c:out value='${enrollment.studentName}'/>"
+         data-sort-date="${fn:replace(enrollment.startDateValue, '-', '')}"
+         data-sort-status="<c:out value='${enrollment.stateLabel}'/>">
+    <div class="gape-structure-row gape-enrollment-row">
+        <div class="d-flex align-items-center gap-12 min-w-0">
+            <span class="bg-info-50 text-info-600 cd-mode-icon text-20 line-height-1"><i class="ph ph-student" aria-hidden="true"></i></span>
+            <div class="min-w-0">
+                <span class="fw-medium text-14 text-neutral-700 d-block"><c:out value="${enrollment.studentName}"/></span>
+                <span class="gape-node-meta text-12"><span><c:out value="${enrollment.studentEmail}"/></span></span>
+            </div>
+        </div>
+        <div class="min-w-0">
+            <span class="fw-medium text-14 text-neutral-700 d-block"><c:out value="${enrollment.courseOccurrenceCode}"/></span>
+            <span class="gape-node-meta text-12" data-gape-datetime-display><span><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></span></span>
+        </div>
+        <div>
+            <span class="${enrollment.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
+                <c:out value="${enrollment.stateLabel}"/>
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-10 flex-wrap justify-content-end">
+            <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Detail" aria-label="View enrollment details" data-bs-toggle="modal" data-bs-target="#courseEnrollmentDetail${course.id}_${enrollment.studentUserId}_${enrollment.courseOccurrenceId}">
+                <i class="ph ph-eye"></i>
+            </button>
+            <c:if test="${not course.inactive and canManageCourseEnrollments}">
+                <c:if test="${enrollment.stateValue ne 'completed'}">
+                    <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Edit" aria-label="Edit enrollment" data-bs-toggle="modal" data-bs-target="#editCourseEnrollment${course.id}_${enrollment.studentUserId}_${enrollment.courseOccurrenceId}">
+                        <i class="ph ph-pencil-simple-line"></i>
+                    </button>
+                </c:if>
+                <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" aria-label="Delete enrollment" data-bs-toggle="modal" data-bs-target="#deleteCourseEnrollment${course.id}_${enrollment.studentUserId}_${enrollment.courseOccurrenceId}">
+                    <i class="ph ph-trash"></i>
+                </button>
+            </c:if>
+        </div>
+    </div>
+</article>
+
+<div class="modal fade" id="courseEnrollmentDetail${course.id}_${enrollment.studentUserId}_${enrollment.courseOccurrenceId}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-12 border-0 text-start">
+            <div class="modal-header border-neutral-30">
+                <h5 class="modal-title text-18 fw-semibold">Enrollment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <span class="text-12 text-neutral-500 d-block mb-6">Student</span>
+                        <span class="fw-medium text-14 text-neutral-700">#<c:out value="${enrollment.studentUserId}"/> &middot; <c:out value="${enrollment.studentName}"/></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-12 text-neutral-500 d-block mb-6">Email</span>
+                        <span class="fw-medium text-14 text-neutral-700"><c:out value="${enrollment.studentEmail}"/></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-12 text-neutral-500 d-block mb-6">Course</span>
+                        <span class="fw-medium text-14 text-neutral-700">#<c:out value="${course.id}"/> &middot; <c:out value="${course.name}"/></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-12 text-neutral-500 d-block mb-6">Academic year</span>
+                        <span class="fw-medium text-14 text-neutral-700"><c:out value="${enrollment.courseOccurrenceCode}"/></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-12 text-neutral-500 d-block mb-6">Enrollment period</span>
+                        <span class="fw-medium text-14 text-neutral-700" data-gape-datetime-display><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></span>
+                    </div>
+                    <div class="col-sm-6">
+                        <span class="text-12 text-neutral-500 d-block mb-6">State</span>
+                        <span class="${enrollment.stateBadgeClass} px-12 py-5 border-neutral-30 border rounded-pill text-12"><c:out value="${enrollment.stateLabel}"/></span>
+                    </div>
+                    <div class="col-12">
+                        <span class="text-12 text-neutral-500 d-block mb-6">Occurrence ID</span>
+                        <span class="fw-medium text-14 text-neutral-700">#<c:out value="${enrollment.courseOccurrenceId}"/></span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-neutral-30">
+                <button type="button" class="cd-outline-button" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<c:if test="${not course.inactive and canManageCourseEnrollments}">
+    <c:if test="${enrollment.stateValue ne 'completed'}">
+    <div class="modal fade" id="editCourseEnrollment${course.id}_${enrollment.studentUserId}_${enrollment.courseOccurrenceId}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-12 border-0 text-start">
+                <div class="modal-header border-neutral-30">
+                    <h5 class="modal-title text-18 fw-semibold">Edit Enrollment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/enrollments/${enrollment.studentUserId}/update" method="post" data-course-live-form data-course-live-panel="enrollments">
+                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                    <input type="hidden" name="returnTo" value="${currentReturnTo}#course-students">
+                    <input type="hidden" name="courseOccurrenceId" value="${enrollment.courseOccurrenceId}">
+                    <div class="modal-body">
+                        <p class="text-14 text-neutral-600 mb-20">
+                            <strong><c:out value="${enrollment.studentName}"/></strong>
+                            <span class="d-block text-12 text-neutral-500"><c:out value="${enrollment.studentEmail}"/></span>
+                        </p>
+                        <div class="row gy-3">
+                            <div class="col-12">
+                                <span class="text-13 text-neutral-500 d-block mb-10">Occurrence: <c:out value="${enrollment.courseOccurrenceCode}"/> &middot; <c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></span>
+                            </div>
+                            <div class="col-12 gape-select-field">
+                                <label for="courseEnrollmentState${course.id}_${enrollment.studentUserId}_${enrollment.courseOccurrenceId}" class="fw-medium text-base text-neutral-800 mb-12">State</label>
+                                <select id="courseEnrollmentState${course.id}_${enrollment.studentUserId}_${enrollment.courseOccurrenceId}" name="state" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                    <option value="active" ${enrollment.stateValue == 'active' ? 'selected' : ''}>Active</option>
+                                    <option value="inactive" ${enrollment.stateValue == 'inactive' ? 'selected' : ''}>Inactive</option>
+                                    <option value="withdrawn" ${enrollment.stateValue == 'withdrawn' ? 'selected' : ''}>Left</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-neutral-30">
+                        <button type="button" class="cd-outline-button" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="cd-primary-button border-0">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    </c:if>
+
+    <div class="modal fade" id="deleteCourseEnrollment${course.id}_${enrollment.studentUserId}_${enrollment.courseOccurrenceId}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-12 border-0 text-start">
+                <div class="modal-header border-neutral-30">
+                    <h5 class="modal-title text-18 fw-semibold">Delete Enrollment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-14 text-neutral-600 mb-0">This action removes the course enrollment for <strong><c:out value="${enrollment.studentName}"/></strong>.</p>
+                </div>
+                <div class="modal-footer border-neutral-30">
+                    <button type="button" class="cd-outline-button" data-bs-dismiss="modal">Cancel</button>
+                    <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/enrollments/${enrollment.studentUserId}/delete" method="post" class="m-0" data-course-live-form data-course-live-panel="enrollments">
+                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                        <input type="hidden" name="returnTo" value="${currentReturnTo}#course-students">
+                        <input type="hidden" name="courseOccurrenceId" value="${enrollment.courseOccurrenceId}">
+                        <button type="submit" class="cd-danger-button">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</c:if>

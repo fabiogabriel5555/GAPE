@@ -73,7 +73,7 @@
                         <span>Grade: <c:out value="${assessment.maxGrade}"/></span>
                         <span>Attempts: <c:out value="${assessment.attemptsLimitLabel}"/></span>
                         <span><c:out value="${assessment.enrollmentModeLabel}"/></span>
-                        <span><c:out value="${assessment.availabilityLabel}"/></span>
+                        <span data-gape-datetime-display><c:out value="${assessment.availabilityLabel}"/></span>
                     </div>
 
                     <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap">

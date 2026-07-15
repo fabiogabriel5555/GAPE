@@ -1,6 +1,5 @@
 package pt.isel.gape.web.view;
 
-import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -10,10 +9,9 @@ import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.access.model.User;
 import pt.isel.gape.access.model.UserState;
 import pt.isel.gape.common.config.SupportedDocumentTypeCatalog;
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 
 public final class UserView {
-
-    private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private final long id;
     private final String name;
@@ -22,6 +20,7 @@ public final class UserView {
     private final String language;
     private final String photo;
     private final String createdAt;
+    private final String createdAtSort;
     private final String documentType;
     private final String documentNumber;
     private final Map<AccessProfileType, String> profileCodes;
@@ -33,7 +32,8 @@ public final class UserView {
         this.state = user.state();
         this.language = user.language();
         this.photo = user.photo();
-        this.createdAt = DATE_TIME.format(user.createdAt());
+        this.createdAt = ApplicationDateTimeFormat.dateTime(user.createdAt());
+        this.createdAtSort = user.createdAt().toString();
         this.documentType = user.documentType();
         this.documentNumber = user.documentNumber();
         this.profileCodes = new LinkedHashMap<>();
@@ -81,7 +81,7 @@ public final class UserView {
     public String getStateBadgeClass() {
         return switch (state) {
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
             case BLOCKED -> "bg-danger-50 text-danger-600";
         };
     }
@@ -112,6 +112,10 @@ public final class UserView {
 
     public String getCreatedAt() {
         return createdAt;
+    }
+
+    public String getCreatedAtSort() {
+        return createdAtSort;
     }
 
     public String getDocumentType() {

@@ -63,7 +63,7 @@ class GradeSheetViewTest {
     }
 
     @Test
-    void publishedSheetWithMissingDisplayedGradeIsRenderedAsDraft() {
+    void publishedSheetWithMissingDisplayedGradeRemainsPublished() {
         GradeSheetView view = GradeSheetView.from(
                 new GradeSheet(
                         10L,
@@ -112,7 +112,7 @@ class GradeSheetViewTest {
                 ))
         );
 
-        assertEquals("Draft", view.getStateLabel());
+        assertEquals("Published", view.getStateLabel());
     }
 
     @Test
@@ -135,8 +135,8 @@ class GradeSheetViewTest {
 
     private static GradeDocumentView documentWithColumns(List<GradeDocumentView.ColumnView> columns) {
         return new GradeDocumentView(
-                "Pauta",
-                "Turma",
+                "Grade sheet",
+                "Class group",
                 "Class A",
                 "Class A",
                 "Class A",

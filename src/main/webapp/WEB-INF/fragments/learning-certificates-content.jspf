@@ -1,10 +1,5 @@
-﻿                <section id="certificates-list">
-                    <div class="d-flex justify-content-end mb-18">
-                        <a href="${pageContext.request.contextPath}/certificates/validate" class="border border-main-600 text-main-600 px-20 py-10 rounded-8 fw-semibold hover-bg-main-600 hover-text-white transition-03 d-inline-flex align-items-center" style="min-height: 44px;">
-                            <i class="ph ph-certificate me-8"></i>Validate Certificate
-                        </a>
-                    </div>
-
+﻿                <section id="certificates-list-${certificateManagementScope eq 'published' ? 'published_' : 'active_'}">
+                    <c:set var="certificateManagementIdPrefix" value="${certificateManagementScope eq 'published' ? 'published_' : 'active_'}"/>
                     <div class="gape-desktop-table">
                         <table class="table mb-0 aac-certificate-table">
                             <thead>
@@ -16,9 +11,18 @@
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
                             </tr>
                             </thead>
-                            <tbody>
-                            <c:forEach var="group" items="${certificateGroups}">
-                                <tr class="aac-certificate-summary-row hover-bg-neutral-20 border-bottom transition-03">
+                            <tbody data-gape-sort-list>
+                            <c:forEach var="group" items="${certificateGroups}" varStatus="certificateLoop">
+                                <tr class="aac-certificate-summary-row hover-bg-neutral-20 border-bottom transition-03"
+                                    data-gape-sort-row
+                                    data-gape-detail-id="certificateGroup${certificateManagementIdPrefix}${group.studentUserId}"
+                                    data-gape-mobile-id="certificateMobileRow${certificateManagementIdPrefix}${group.studentUserId}"
+                                    data-sort-index="${certificateLoop.index}"
+                                    data-sort-name="${fn:escapeXml(group.studentLabel)}"
+                                    data-sort-email="${fn:escapeXml(group.studentEmail)}"
+                                    data-sort-date="${fn:escapeXml(group.primaryCertificate.issuedAtSort)}"
+                                    data-sort-count="${group.certificateCount}"
+                                    data-sort-status="${fn:escapeXml(group.primaryCertificate.statusLabel)}">
                                     <td class="py-20 px-20 text-14 text-neutral-500">
                                         <span class="fw-medium text-neutral-700"><c:out value="${group.studentLabel}"/></span>
                                     </td>
@@ -39,12 +43,12 @@
                                         </div>
                                     </td>
                                     <td class="py-20 px-20 text-end">
-                                        <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show all certificates" data-bs-toggle="collapse" data-bs-target="#certificateGroup${group.studentUserId}" aria-expanded="false" aria-controls="certificateGroup${group.studentUserId}">
+                                    <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show all certificates" data-bs-toggle="collapse" data-bs-target="#certificateGroup${certificateManagementIdPrefix}${group.studentUserId}" aria-expanded="false" aria-controls="certificateGroup${certificateManagementIdPrefix}${group.studentUserId}">
                                             <i class="ph ph-caret-down"></i>
                                         </button>
                                     </td>
                                 </tr>
-                                <tr class="collapse" id="certificateGroup${group.studentUserId}">
+                                <tr class="collapse" id="certificateGroup${certificateManagementIdPrefix}${group.studentUserId}">
                                     <td colspan="5" class="aac-expanded-cell">
                                         <div class="aac-expanded-panel">
                                             <div class="aac-expanded-panel__header">
@@ -61,14 +65,14 @@
                                                                 <span class="aac-tree-icon bg-info-50 text-info-600"><i class="ph ph-certificate"></i></span>
                                                                 <div class="min-w-0">
                                                                     <span class="aac-tree-title"><c:out value="${item.title}"/></span>
-                                                                    <span class="aac-tree-meta"><c:out value="${item.courseLabel}"/> | <c:out value="${item.issuedAt}"/> | Grade: <c:out value="${item.finalGrade}"/></span>
+                                                                    <span class="aac-tree-meta" data-gape-datetime-display><c:out value="${item.courseLabel}"/> | <c:out value="${item.issuedAt}"/> | Grade: <c:out value="${item.finalGrade}"/></span>
                                                                 </div>
                                                             </div>
                                                             <div class="aac-tree-actions">
                                                                 <span class="${item.statusBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
                                                                     <c:out value="${item.statusLabel}"/>
                                                                 </span>
-                                                                 <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View certificate" data-bs-toggle="modal" data-bs-target="#certificateDetail${item.id}">
+                                                                 <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View certificate" data-bs-toggle="modal" data-bs-target="#certificateDetail${certificateManagementIdPrefix}${item.id}">
                                                                      <i class="ph ph-eye"></i>
                                                                  </button>
                                                                  <c:if test="${item.completed or (certificateDraftDownloadsAllowed and item.stateValue eq 'draft')}">
@@ -82,14 +86,6 @@
                                                                          </ul>
                                                                      </div>
                                                                  </c:if>
-                                                                 <c:if test="${item.completed}">
-                                                                     <form action="${pageContext.request.contextPath}/learning/grades/certificates/${item.id}/revoke" method="post" class="m-0">
-                                                                         <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                                         <button type="submit" class="aac-icon-button bg-danger-50 text-danger-600" title="Revoke" aria-label="Revoke certificate">
-                                                                             <i class="ph ph-prohibit"></i>
-                                                                        </button>
-                                                                    </form>
-                                                                </c:if>
                                                             </div>
                                                         </div>
                                                     </article>
@@ -108,9 +104,12 @@
                         </table>
                     </div>
 
-                    <div class="gape-mobile-list">
+                    <div class="gape-mobile-list" data-gape-mobile-list>
                         <c:forEach var="group" items="${certificateGroups}">
-                            <article class="gape-mobile-row aac-certificate-summary-row">
+                            <article class="gape-mobile-row aac-certificate-summary-row"
+                                     data-gape-mobile-row
+                                     data-gape-mobile-row-id="certificateMobileRow${certificateManagementIdPrefix}${group.studentUserId}"
+                                     data-gape-mobile-detail-id="certificateMobileGroup${certificateManagementIdPrefix}${group.studentUserId}">
                                 <div class="gape-mobile-row__header">
                                     <div>
                                         <div class="gape-mobile-title"><c:out value="${group.studentLabel}"/></div>
@@ -130,12 +129,12 @@
                                     </span>
                                 </div>
                                 <div class="gape-mobile-actions">
-                                    <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show all certificates" data-bs-toggle="collapse" data-bs-target="#certificateMobileGroup${group.studentUserId}" aria-expanded="false" aria-controls="certificateMobileGroup${group.studentUserId}">
+                                    <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show all certificates" data-bs-toggle="collapse" data-bs-target="#certificateMobileGroup${certificateManagementIdPrefix}${group.studentUserId}" aria-expanded="false" aria-controls="certificateMobileGroup${certificateManagementIdPrefix}${group.studentUserId}">
                                         <i class="ph ph-caret-down"></i>
                                     </button>
                                 </div>
                             </article>
-                            <div class="collapse" id="certificateMobileGroup${group.studentUserId}">
+                            <div class="collapse" id="certificateMobileGroup${certificateManagementIdPrefix}${group.studentUserId}">
                                 <div class="aac-expanded-panel mt-12 mb-12">
                                     <div class="aac-expanded-panel__header">
                                         <div>
@@ -151,14 +150,14 @@
                                                         <span class="aac-tree-icon bg-info-50 text-info-600"><i class="ph ph-certificate"></i></span>
                                                         <div class="min-w-0">
                                                             <span class="aac-tree-title"><c:out value="${item.title}"/></span>
-                                                            <span class="aac-tree-meta"><c:out value="${item.courseLabel}"/> | <c:out value="${item.issuedAt}"/> | Grade: <c:out value="${item.finalGrade}"/></span>
+                                                            <span class="aac-tree-meta" data-gape-datetime-display><c:out value="${item.courseLabel}"/> | <c:out value="${item.issuedAt}"/> | Grade: <c:out value="${item.finalGrade}"/></span>
                                                         </div>
                                                     </div>
                                                     <div class="aac-tree-actions">
                                                         <span class="${item.statusBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
                                                             <c:out value="${item.statusLabel}"/>
                                                         </span>
-                                                        <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View certificate" data-bs-toggle="modal" data-bs-target="#certificateDetail${item.id}">
+                                                        <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View certificate" data-bs-toggle="modal" data-bs-target="#certificateDetail${certificateManagementIdPrefix}${item.id}">
                                                             <i class="ph ph-eye"></i>
                                                         </button>
                                                         <c:if test="${item.completed or (certificateDraftDownloadsAllowed and item.stateValue eq 'draft')}">
@@ -171,14 +170,6 @@
                                                                     <li><a class="dropdown-item" href="${pageContext.request.contextPath}/learning/grades/certificates/${item.id}/download?format=excel"><i class="ph ph-file-xls"></i>Excel</a></li>
                                                                 </ul>
                                                             </div>
-                                                        </c:if>
-                                                        <c:if test="${item.completed}">
-                                                            <form action="${pageContext.request.contextPath}/learning/grades/certificates/${item.id}/revoke" method="post" class="m-0">
-                                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                                <button type="submit" class="aac-icon-button bg-danger-50 text-danger-600" title="Revoke" aria-label="Revoke certificate">
-                                                                    <i class="ph ph-prohibit"></i>
-                                                                </button>
-                                                            </form>
                                                         </c:if>
                                                     </div>
                                                 </div>
@@ -195,8 +186,8 @@
 
                     <c:forEach var="group" items="${certificateGroups}">
                         <c:forEach var="certificate" items="${group.certificates}">
-                            <div class="modal fade" id="certificateDetail${certificate.id}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                            <div class="modal fade" id="certificateDetail${certificateManagementIdPrefix}${certificate.id}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-xl modal-dialog-centered">
                                     <div class="modal-content rounded-8 border-0">
                                         <div class="modal-header border-neutral-30">
                                             <div>
@@ -211,40 +202,14 @@
                                                     <span></span>
                                                     <span></span>
                                                     <span></span>
-                                                    <span></span>
                                                 </div>
                                                 <div class="aac-certificate-doc__body">
-                                                    <h3>Certificado de Conclus&atilde;o do Curso de <c:out value="${certificate.courseName}"/></h3>
+                                                    <h3>Course Completion Certificate for <c:out value="${certificate.courseName}"/></h3>
                                                     <div class="aac-certificate-doc__identity">
                                                         <div>
-                                                            <span>Certifica-se que</span>
+                                                            <span>This is to certify that</span>
                                                             <strong><c:out value="${certificate.studentName}"/></strong>
-                                                            <small>Identifica&ccedil;&atilde;o Civil (CC/BI): <c:out value="${certificate.studentEmail}"/></small>
-                                                        </div>
-                                                        <div>
-                                                            <span>natural de</span>
-                                                            <strong>Localidade</strong>
-                                                        </div>
-                                                        <div>
-                                                            <span>nascido em</span>
-                                                            <strong>DD/MM/AAAA</strong>
-                                                        </div>
-                                                        <div>
-                                                            <span>concluiu com</span>
-                                                            <small>aproveitamento o curso de</small>
-                                                            <strong><c:out value="${certificate.courseName}"/></strong>
-                                                        </div>
-                                                        <div>
-                                                            <span>com a dura&ccedil;&atilde;o de</span>
-                                                            <strong><c:out value="${certificate.courseDurationLabel}"/></strong>
-                                                        </div>
-                                                        <div>
-                                                            <span>v&aacute;lido at&eacute;</span>
-                                                            <strong>DD/MM/AAAA</strong>
-                                                        </div>
-                                                        <div>
-                                                            <span>Total ECTS</span>
-                                                            <strong><c:out value="${certificate.courseEctsLabel}"/></strong>
+                                                            <small>Civil identification (CC/BI): <c:out value="${certificate.studentEmail}"/></small>
                                                         </div>
                                                     </div>
                                                     <table class="aac-certificate-doc__table">
@@ -255,9 +220,9 @@
                                                         </colgroup>
                                                         <thead>
                                                         <tr>
-                                                            <th>Unidades de Forma&ccedil;&atilde;o/M&oacute;dulos/Outras Designa&ccedil;&otilde;es</th>
+                                                            <th>Subjects</th>
                                                             <th>ECTS</th>
-                                                            <th>Classifica&ccedil;&atilde;o<br>0..<c:out value="${certificate.courseCertificateMaxGradeLabel}"/></th>
+                                                            <th>Grade<br>0 - <c:out value="${certificate.courseCertificateMaxGradeLabel}"/></th>
                                                         </tr>
                                                         </thead>
                                                         <tbody>
@@ -269,31 +234,31 @@
                                                             </tr>
                                                         </c:forEach>
                                                         <tr class="aac-certificate-doc__final">
-                                                            <td colspan="2">Nota Final</td>
-                                                            <td><c:out value="${certificate.finalGrade}"/> valores</td>
+                                                            <td colspan="2">Final grade</td>
+                                                            <td><c:out value="${certificate.finalGrade}"/> points</td>
                                                         </tr>
                                                         </tbody>
                                                     </table>
-                                                    <p class="aac-certificate-doc__statement">O presente certificado comprova a conclus&atilde;o, com aproveitamento, do curso <strong><c:out value="${certificate.courseName}"/></strong>, com dura&ccedil;&atilde;o total de <strong><c:out value="${certificate.courseDurationLabel}"/></strong>, <strong><c:out value="${certificate.courseEctsLabel}"/> ECTS</strong> e disciplinas/unidades curriculares, de acordo com os requisitos acad&eacute;micos definidos para esta forma&ccedil;&atilde;o.</p>
-                                                    <div class="aac-certificate-doc__date">Lisboa, <c:out value="${certificate.issuedAt}"/></div>
+                                                    <p class="aac-certificate-doc__statement">This certificate confirms successful completion of the course <strong><c:out value="${certificate.courseName}"/></strong>, with a total duration of <strong><c:out value="${certificate.courseDurationLabel}"/>, <c:out value="${certificate.courseEctsLabel}"/> ECTS and <c:out value="${certificate.subjectCountLabel}"/></strong>.</p>
                                                     <div class="aac-certificate-doc__signatures">
                                                         <div>
-                                                            <span>O(A) Respons&aacute;vel pelo(a)</span>
-                                                            <div class="aac-certificate-doc__line">Assinatura e selo branco ou carimbo</div>
+                                                            <span>Responsible person</span>
+                                                            <div class="aac-certificate-doc__line">Signature and official seal or stamp</div>
                                                         </div>
                                                         <div>
-                                                            <span>Entidade Formadora, Lda.</span>
-                                                            <div class="aac-certificate-doc__line">Assinatura</div>
+                                                            <span>Training entity, Ltd.</span>
+                                                            <div class="aac-certificate-doc__line">&nbsp;</div>
                                                         </div>
                                                     </div>
-                                                    <div class="aac-certificate-doc__legal">
-                                                        <strong>Certificado n.&ordm;</strong>
-                                                        <span><c:out value="${certificate.validationCode}"/></span>
-                                                        <span>De acordo com o modelo publicado na Portaria n.&ordm; 474/2010</span>
-                                                    </div>
-                                                    <div class="aac-certificate-doc__page">
-                                                        N.&ordm; de Identifica&ccedil;&atilde;o Civil (CC/BI): <c:out value="${certificate.studentEmail}"/> - P&aacute;gina 1 de 1
-                                                    </div>
+                                                    <c:if test="${certificate.completed}">
+                                                        <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mt-24 pt-16 border-top border-neutral-30 text-13">
+                                                            <span><strong>Validation code:</strong> <c:out value="${certificate.validationCode}"/></span>
+                                                            <c:url var="certificateValidationUrl" value="/certificates/validate">
+                                                                <c:param name="code" value="${certificate.validationCode}"/>
+                                                            </c:url>
+                                                            <a href="${certificateValidationUrl}" target="_blank" rel="noopener" class="text-main-600 fw-semibold">Verify certificate</a>
+                                                        </div>
+                                                    </c:if>
                                                 </div>
                                             </div>
                                         </div>

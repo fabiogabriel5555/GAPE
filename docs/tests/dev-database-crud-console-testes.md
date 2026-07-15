@@ -16,7 +16,11 @@ Localização (em `src/main/java/pt/isel/gape/dev/`):
 
 1. Confirmar MySQL ligado e `src/main/resources/config/db.properties`.
 2. `mvn test` (garante schema + dados, opcional).
-3. Executar o `main` de `DevDatabaseCrudConsoleApp` pela IDE (IntelliJ) ou pela linha de comandos.
+3. Executar pela IDE ou, de forma reproduzivel, a partir da raiz do repositorio:
+
+```powershell
+mvn -q -DskipTests compile exec:java
+```
 
 Menu:
 
@@ -66,7 +70,7 @@ Apagar
 
 ## Tradução de erros (SqlErrorTranslator)
 
-Mapeia, entre outros: 1062 (UNIQUE), 1452/1451 (FOREIGN KEY), 1048 (NOT NULL), 3819 (CHECK), 1366/1292 (tipo/data inválidos), e reconhece constraints nomeadas (ex.: `uq_user_account_email`, `ck_class_group_students_range`, `ck_content_block_availability`) para dar uma explicação específica.
+Mapeia, entre outros: 1062 (UNIQUE), 1452/1451 (FOREIGN KEY), 1048 (NOT NULL), 3819 (CHECK), 1366/1292 (tipo/data inválidos), e reconhece constraints nomeadas (ex.: `uq_user_account_email`, `ck_class_group_students_range`, `ck_content_block_state`) para dar uma explicação específica.
 
 ## Resultado
 

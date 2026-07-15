@@ -16,7 +16,7 @@ import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.structure.model.OrganizationAdministratorAssignment;
 import pt.isel.gape.structure.model.RoleAssignmentState;
 
-public final class ManageOrganizationDAO {
+public final class ManageOrganizationDAO implements pt.isel.gape.transversal.service.ApplicationReadService.ManageOrganizations {
 
     private final ConnectionProvider connectionProvider;
 

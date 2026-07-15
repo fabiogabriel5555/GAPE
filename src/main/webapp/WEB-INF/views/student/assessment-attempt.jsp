@@ -283,7 +283,7 @@
         </div>
 
         <div class="d-flex align-items-center justify-content-between gap-14 flex-wrap border-top-dashed pt-24 mt-28">
-            <div class="text-13 text-neutral-500">
+            <div class="text-13 text-neutral-500" data-gape-datetime-display>
                 Started at <c:out value="${attempt.startedAt}"/>
             </div>
             <div class="d-flex align-items-center gap-10 flex-wrap">

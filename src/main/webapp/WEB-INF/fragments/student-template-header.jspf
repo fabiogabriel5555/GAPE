@@ -56,7 +56,7 @@
                             <ul class="nav-submenu scroll-sm">
                                 <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/student/dashboard/student-dashboard.jsp" class="nav-submenu__link hover-bg-neutral-30">Dashboard</a></li>
                                 <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/student/profile/student-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a></li>
-                                <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/student/message/student-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Message</a></li>
+                                <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/messages" class="nav-submenu__link hover-bg-neutral-30">Messages</a></li>
                                 <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/courses" class="nav-submenu__link hover-bg-neutral-30">Courses</a></li>
                                 <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/subjects" class="nav-submenu__link hover-bg-neutral-30">Subjects</a></li>
                                 <li class="nav-submenu__item"><a href="${pageContext.request.contextPath}/student/class-groups" class="nav-submenu__link hover-bg-neutral-30">Class Groups</a></li>

@@ -2,18 +2,14 @@ package pt.isel.gape.web.view;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.ScheduleEvent;
 import pt.isel.gape.learning.model.ScheduleEventState;
 import pt.isel.gape.learning.model.ScheduleEventType;
 
 public final class ScheduleEventView {
-
-    private static final DateTimeFormatter DISPLAY_DATE_TIME =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("pt-PT"));
 
     private final ScheduleEvent event;
     private final List<String> classGroupLabels;
@@ -101,7 +97,7 @@ public final class ScheduleEventView {
         return switch (event.state()) {
             case DRAFT -> "bg-neutral-30 text-neutral-600";
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-50 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
             case CANCELLED -> "bg-danger-50 text-danger-600";
             case COMPLETED -> "bg-info-50 text-info-600";
         };
@@ -116,11 +112,11 @@ public final class ScheduleEventView {
     }
 
     public String getStartsAt() {
-        return DISPLAY_DATE_TIME.format(event.startsAt());
+        return ApplicationDateTimeFormat.dateTime(event.startsAt());
     }
 
     public String getEndsAt() {
-        return DISPLAY_DATE_TIME.format(event.endsAt());
+        return ApplicationDateTimeFormat.dateTime(event.endsAt());
     }
 
     public String getDateRangeLabel() {

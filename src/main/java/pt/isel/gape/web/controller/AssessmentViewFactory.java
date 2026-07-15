@@ -3,16 +3,7 @@ package pt.isel.gape.web.controller;
 import java.sql.SQLException;
 import java.util.List;
 
-import pt.isel.gape.access.dao.UserDAO;
 import pt.isel.gape.access.model.User;
-import pt.isel.gape.learning.dao.AssessmentDAO;
-import pt.isel.gape.learning.dao.AttemptDAO;
-import pt.isel.gape.learning.dao.ClassGroupDAO;
-import pt.isel.gape.learning.dao.ContentBlockDAO;
-import pt.isel.gape.learning.dao.QuestionDAO;
-import pt.isel.gape.learning.dao.QuestionOptionDAO;
-import pt.isel.gape.learning.dao.ResponseDAO;
-import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.Assessment;
 import pt.isel.gape.learning.model.Attempt;
 import pt.isel.gape.learning.model.ClassGroup;
@@ -21,6 +12,7 @@ import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionOption;
 import pt.isel.gape.learning.model.Response;
 import pt.isel.gape.learning.model.Subject;
+import pt.isel.gape.transversal.service.ApplicationReadService;
 import pt.isel.gape.web.view.AssessmentView;
 import pt.isel.gape.web.view.AttemptView;
 import pt.isel.gape.web.view.QuestionOptionView;
@@ -29,26 +21,26 @@ import pt.isel.gape.web.view.ResponseView;
 
 final class AssessmentViewFactory {
 
-    private final AssessmentDAO assessmentDAO;
-    private final QuestionDAO questionDAO;
-    private final QuestionOptionDAO optionDAO;
-    private final AttemptDAO attemptDAO;
-    private final ResponseDAO responseDAO;
-    private final SubjectDAO subjectDAO;
-    private final ContentBlockDAO contentBlockDAO;
-    private final ClassGroupDAO classGroupDAO;
-    private final UserDAO userDAO;
+    private final ApplicationReadService.Assessments assessmentDAO;
+    private final ApplicationReadService.Questions questionDAO;
+    private final ApplicationReadService.QuestionOptions optionDAO;
+    private final ApplicationReadService.Attempts attemptDAO;
+    private final ApplicationReadService.Responses responseDAO;
+    private final ApplicationReadService.Subjects subjectDAO;
+    private final ApplicationReadService.ContentBlocks contentBlockDAO;
+    private final ApplicationReadService.ClassGroups classGroupDAO;
+    private final ApplicationReadService.Users userDAO;
 
     AssessmentViewFactory(
-            AssessmentDAO assessmentDAO,
-            QuestionDAO questionDAO,
-            QuestionOptionDAO optionDAO,
-            AttemptDAO attemptDAO,
-            ResponseDAO responseDAO,
-            SubjectDAO subjectDAO,
-            ContentBlockDAO contentBlockDAO,
-            ClassGroupDAO classGroupDAO,
-            UserDAO userDAO
+            ApplicationReadService.Assessments assessmentDAO,
+            ApplicationReadService.Questions questionDAO,
+            ApplicationReadService.QuestionOptions optionDAO,
+            ApplicationReadService.Attempts attemptDAO,
+            ApplicationReadService.Responses responseDAO,
+            ApplicationReadService.Subjects subjectDAO,
+            ApplicationReadService.ContentBlocks contentBlockDAO,
+            ApplicationReadService.ClassGroups classGroupDAO,
+            ApplicationReadService.Users userDAO
     ) {
         this.assessmentDAO = assessmentDAO;
         this.questionDAO = questionDAO;

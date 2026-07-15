@@ -85,9 +85,9 @@ Depois da revisao visual das capturas em `docs/fotos-exemplos`, a intervencao co
 
 Foram usadas como referencia principal as capturas LearnWorlds:
 
-- `Captura de ecra 2026-06-16 132322.png`: wizard inicial com preview lateral, barras de progresso e formulario principal;
-- `Captura de ecra 2026-06-16 132406.png`: passo de acesso com escolhas tipo radio e botoes `Back` / `Continue`;
-- `Captura de ecra 2026-06-16 132513.png`: outline/revisao com secoes numeradas e conteudo estruturado.
+- `Captura de ecra 16-06-2026 13-23-22.png`: wizard inicial com preview lateral, barras de progresso e formulario principal;
+- `Captura de ecra 16-06-2026 13-24-06.png`: passo de acesso com escolhas tipo radio e botoes `Back` / `Continue`;
+- `Captura de ecra 16-06-2026 13-25-13.png`: outline/revisao com secoes numeradas e conteudo estruturado.
 
 ### Decisao De UX Do Wizard
 

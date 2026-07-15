@@ -7,6 +7,17 @@
     <base href="${pageContext.request.contextPath}/">
     <title>GAPE - Lesson Detail</title>
     <%@ include file="/WEB-INF/fragments/template-base-head.jspf" %>
+    <c:if test="${lessonModal}">
+    <style>
+        html, body { background: #fff; min-height: 0; }
+        .preloader, .overlay, .side-overlay, .sidebar, .dashboard-sidebar, .dashbord-header, .dashboard-header,
+        .gape-dashboard-mobile-menu-slot, .gape-dashboard-page-heading,
+        .dashbord-body > .dashboard-footer, .dashbord-body > footer,
+        .dashbord-body > .bg-neutral-20.border-top { display: none !important; }
+        .dashbord, .dashbord > .d-flex, .dashbord-body { background: #fff !important; display: block !important; min-height: 0 !important; }
+        .dashbord-body > .px-24.py-24 { padding: 0 !important; }
+    </style>
+    </c:if>
 </head>
 <body>
 <div class="preloader">
@@ -50,9 +61,10 @@
                             </div>
                         </div>
                         <div class="d-flex align-items-center gap-10 flex-wrap">
-                            <a href="${fn:escapeXml(lessonBackHref)}" class="border-main-600 border px-20 py-10 fw-semibold rounded-8 hover-bg-main-50 transition-03">
-                                <i class="ph ph-arrow-left me-8"></i>Back
-                            </a>
+                            <c:choose>
+                                <c:when test="${lessonModal}"><button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-8 hover-bg-main-50 transition-03 bg-white" data-gape-lesson-modal-close><i class="ph ph-arrow-left me-8"></i>Back</button></c:when>
+                                <c:otherwise><a href="${fn:escapeXml(lessonBackHref)}" class="border-main-600 border px-20 py-10 fw-semibold rounded-8 hover-bg-main-50 transition-03"><i class="ph ph-arrow-left me-8"></i>Back</a></c:otherwise>
+                            </c:choose>
                             <c:if test="${canManageLesson}">
                                 <a href="${lessonEditHref}" class="border-main-600 border px-20 py-10 fw-semibold rounded-8 hover-bg-main-50 transition-03">
                                     <i class="ph ph-pencil-simple-line me-8"></i>Edit
@@ -71,13 +83,13 @@
                                 <div class="col-md-6">
                                     <div class="bg-neutral-20 rounded-8 px-16 py-14 h-100">
                                         <span class="text-12 text-neutral-500 d-block mb-6">Starts</span>
-                                        <strong class="text-14 text-neutral-700"><c:out value="${lesson.startsAt}"/></strong>
+                                        <strong class="text-14 text-neutral-700" data-gape-datetime-display><c:out value="${lesson.startsAt}"/></strong>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="bg-neutral-20 rounded-8 px-16 py-14 h-100">
                                         <span class="text-12 text-neutral-500 d-block mb-6">Ends</span>
-                                        <strong class="text-14 text-neutral-700"><c:out value="${lesson.endsAt}"/></strong>
+                                        <strong class="text-14 text-neutral-700" data-gape-datetime-display><c:out value="${lesson.endsAt}"/></strong>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -125,6 +137,7 @@
                                 <div class="d-flex flex-column gap-10">
                                     <form action="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/complete" method="post" class="m-0">
                                         <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                        <c:if test="${lessonModal}"><input type="hidden" name="modal" value="1"></c:if>
                                         <c:if test="${not empty returnTo}"><input type="hidden" name="returnTo" value="<c:out value='${returnTo}'/>"></c:if>
                                         <button type="submit" class="border-main-600 border px-20 py-10 fw-semibold rounded-8 hover-bg-main-50 transition-03 w-100 text-start">
                                             <i class="ph ph-check-circle me-8"></i>Complete
@@ -132,6 +145,7 @@
                                     </form>
                                     <form action="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/cancel" method="post" class="m-0">
                                         <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                        <c:if test="${lessonModal}"><input type="hidden" name="modal" value="1"></c:if>
                                         <c:if test="${not empty returnTo}"><input type="hidden" name="returnTo" value="<c:out value='${returnTo}'/>"></c:if>
                                         <button type="submit" class="border-warning-600 border px-20 py-10 fw-semibold rounded-8 text-warning-600 hover-bg-warning-50 transition-03 w-100 text-start">
                                             <i class="ph ph-prohibit me-8"></i>Cancel
@@ -139,6 +153,7 @@
                                     </form>
                                     <form action="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/delete" method="post" class="m-0">
                                         <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                        <c:if test="${lessonModal}"><input type="hidden" name="modal" value="1"></c:if>
                                         <c:if test="${not empty returnTo}"><input type="hidden" name="returnTo" value="<c:out value='${returnTo}'/>"></c:if>
                                         <button type="submit" class="bg-danger-600 px-20 py-10 fw-semibold rounded-8 text-white transition-03 w-100 text-start">
                                             <i class="ph ph-trash me-8"></i>Delete

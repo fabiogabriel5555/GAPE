@@ -16,7 +16,7 @@ import pt.isel.gape.structure.model.OrganicUnitState;
 import pt.isel.gape.structure.model.OrganicUnitType;
 import pt.isel.gape.structure.model.OrganicUnitUpdateCommand;
 
-public final class OrganicUnitDAO {
+public final class OrganicUnitDAO implements pt.isel.gape.transversal.service.ApplicationReadService.OrganicUnits {
 
     private final ConnectionProvider connectionProvider;
 
@@ -159,6 +159,7 @@ public final class OrganicUnitDAO {
                 SELECT
                     (SELECT COUNT(*) FROM organic_unit WHERE parent_organic_unit_id = ?)
                   + (SELECT COUNT(*) FROM course WHERE id_organic_unit = ?)
+                  + (SELECT COUNT(*) FROM subject WHERE id_organic_unit = ?)
                   + (SELECT COUNT(*) FROM physical_room WHERE id_organic_unit = ?)
                   + (SELECT COUNT(*) FROM associate_organic_unit_content WHERE id_organic_unit = ?)
                   AS dependency_count
@@ -169,6 +170,7 @@ public final class OrganicUnitDAO {
             statement.setLong(2, organicUnitId);
             statement.setLong(3, organicUnitId);
             statement.setLong(4, organicUnitId);
+            statement.setLong(5, organicUnitId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 return resultSet.getLong("dependency_count") > 0;

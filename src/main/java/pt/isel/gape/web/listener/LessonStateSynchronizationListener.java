@@ -9,9 +9,7 @@ import jakarta.servlet.ServletContextListener;
 import jakarta.servlet.annotation.WebListener;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
-import pt.isel.gape.learning.service.AssessmentService;
-import pt.isel.gape.learning.service.ClassGroupService;
-import pt.isel.gape.learning.service.LessonService;
+import pt.isel.gape.learning.service.AcademicLifecycleSynchronizationService;
 
 @WebListener
 public final class LessonStateSynchronizationListener implements ServletContextListener {
@@ -22,16 +20,15 @@ public final class LessonStateSynchronizationListener implements ServletContextL
     public void contextInitialized(ServletContextEvent event) {
         ConnectionProvider connectionProvider = ConnectionProvider.defaultProvider();
         java.time.Clock clock = ApplicationClock.system();
-        ClassGroupService classGroupService = new ClassGroupService(connectionProvider, clock);
-        LessonService lessonService = new LessonService(connectionProvider, clock);
-        AssessmentService assessmentService = new AssessmentService(connectionProvider, clock);
+        AcademicLifecycleSynchronizationService lifecycleService =
+                new AcademicLifecycleSynchronizationService(connectionProvider, clock);
         executor = Executors.newSingleThreadScheduledExecutor(task -> {
             Thread thread = new Thread(task, "gape-temporal-state-sync");
             thread.setDaemon(true);
             return thread;
         });
         executor.scheduleWithFixedDelay(
-                () -> synchronize(classGroupService, lessonService, assessmentService, event),
+                () -> synchronize(lifecycleService, event),
                 30,
                 60,
                 TimeUnit.SECONDS
@@ -46,17 +43,17 @@ public final class LessonStateSynchronizationListener implements ServletContextL
     }
 
     private static void synchronize(
-            ClassGroupService classGroupService,
-            LessonService lessonService,
-            AssessmentService assessmentService,
+            AcademicLifecycleSynchronizationService lifecycleService,
             ServletContextEvent event
     ) {
+        runSafely("academic lifecycle data", lifecycleService::synchronize, event);
+    }
+
+    static void runSafely(String target, Runnable synchronization, ServletContextEvent event) {
         try {
-            classGroupService.synchronizeTemporalStates();
-            lessonService.synchronizeTemporalStates();
-            assessmentService.synchronizeTemporalStates();
+            synchronization.run();
         } catch (RuntimeException exception) {
-            event.getServletContext().log("Failed to synchronize temporal states", exception);
+            event.getServletContext().log("Failed to synchronize temporal states for " + target, exception);
         }
     }
 }

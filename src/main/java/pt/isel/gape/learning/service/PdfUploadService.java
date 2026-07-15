@@ -813,7 +813,7 @@ public final class PdfUploadService {
     }
 
     private static void configureImageIoForUploadRoot(Path uploadRoot) throws IOException {
-        Path nativeDirectory = resolveWebpNativeDirectory(uploadRoot);
+        Path nativeDirectory = resolveWebpNativeDirectory();
         Files.createDirectories(nativeDirectory);
         synchronized (IMAGE_IO_CONFIGURATION_LOCK) {
             System.setProperty(WEBP_NATIVE_DIR_PROPERTY, nativeDirectory.toAbsolutePath().toString());
@@ -825,7 +825,7 @@ public final class PdfUploadService {
         }
     }
 
-    private static Path resolveWebpNativeDirectory(Path uploadRoot) {
+    private static Path resolveWebpNativeDirectory() {
         String configuredDirectory = System.getProperty(WEBP_NATIVE_DIR_PROPERTY);
         if (configuredDirectory == null || configuredDirectory.isBlank()) {
             configuredDirectory = DatabaseConfig.getProperty(WEBP_NATIVE_DIR_PROPERTY, "");
@@ -834,10 +834,9 @@ public final class PdfUploadService {
             return Path.of(configuredDirectory).toAbsolutePath().normalize();
         }
 
-        Path normalizedUploadRoot = uploadRoot.toAbsolutePath().normalize();
-        Path parentDirectory = normalizedUploadRoot.getParent();
-        Path baseDirectory = parentDirectory == null ? normalizedUploadRoot : parentDirectory;
-        return baseDirectory.resolve(".gape-webp-native").normalize();
+        return Path.of(System.getProperty("user.home", "."), ".gape", "webp-native")
+                .toAbsolutePath()
+                .normalize();
     }
 
     private static void requirePdfMagic(Path file) throws IOException {
@@ -926,11 +925,11 @@ public final class PdfUploadService {
     }
 
     private static boolean configuredStrictProcessing() {
-        return Boolean.parseBoolean(DatabaseConfig.getProperty(STRICT_PROCESSING_PROPERTY, "true"));
+        return DatabaseConfig.getBooleanProperty(STRICT_PROCESSING_PROPERTY, true);
     }
 
     private static boolean configuredStrictMediaProcessing() {
-        return Boolean.parseBoolean(DatabaseConfig.getProperty(STRICT_MEDIA_PROCESSING_PROPERTY, "true"));
+        return DatabaseConfig.getBooleanProperty(STRICT_MEDIA_PROCESSING_PROPERTY, true);
     }
 
     private static ServiceConfiguration defaultConfiguration() {

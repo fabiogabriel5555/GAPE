@@ -4,9 +4,6 @@
             <h6 class="text-20 fw-semibold text-neutral-800 mb-4">Grades</h6>
             <span class="text-14 text-neutral-500">Published grades, final results and published certificates.</span>
         </div>
-        <a href="${pageContext.request.contextPath}/certificates/validate" class="gape-student-card-icon-button" aria-label="Validate certificate" title="Validate certificate">
-            <i class="ph ph-certificate"></i>
-        </a>
     </div>
 
     <div class="row gy-4 mb-24">
@@ -54,7 +51,7 @@
                                 <c:out value="${record.resultLabel}"/>
                             </span>
                         </td>
-                        <td class="py-18 px-16 text-14 text-neutral-500"><c:out value="${record.recordedAt}"/></td>
+                        <td class="py-18 px-16 text-14 text-neutral-500" data-gape-datetime-display><c:out value="${record.recordedAt}"/></td>
                     </tr>
                 </c:forEach>
                 <c:if test="${empty gradeRecords}">
@@ -71,7 +68,7 @@
         <h6 class="text-17 fw-semibold text-neutral-800 mb-14">Certificates</h6>
         <div class="row gy-4">
             <c:forEach var="certificate" items="${certificates}">
-                <c:url var="certificateValidationHref" value="/certificates/validate">
+                <c:url var="certificateValidationUrl" value="/certificates/validate">
                     <c:param name="code" value="${certificate.validationCode}"/>
                 </c:url>
                 <div class="col-xl-6">
@@ -90,12 +87,12 @@
                         <div class="gape-student-class-group-card__meta gape-student-class-group-card__meta--wide mb-16">
                             <span><c:out value="${certificate.typeLabel}"/></span>
                             <span>Grade: <c:out value="${certificate.finalGrade}"/></span>
-                            <span>Published: <c:out value="${certificate.issuedAt}"/></span>
+                            <span data-gape-datetime-display>Published: <c:out value="${certificate.issuedAt}"/></span>
                             <span>Code: <c:out value="${certificate.validationCode}"/></span>
                         </div>
                         <div class="d-flex align-items-center justify-content-end gap-10">
-                            <a href="${certificateValidationHref}" class="gape-student-card-icon-button" aria-label="Validate certificate" title="Validate certificate">
-                                <i class="ph ph-arrow-square-out"></i>
+                            <a href="${certificateValidationUrl}" target="_blank" rel="noopener" class="gape-student-card-icon-button" aria-label="Verify certificate" title="Verify certificate">
+                                <i class="ph ph-seal-check"></i>
                             </a>
                             <div class="dropdown">
                                 <button type="button" class="gape-student-card-icon-button" aria-label="Download certificate" title="Download certificate" data-bs-toggle="dropdown" aria-expanded="false">

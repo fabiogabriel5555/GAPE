@@ -15,7 +15,7 @@ import pt.isel.gape.learning.model.PhysicalRoomState;
 import pt.isel.gape.learning.model.PhysicalRoomUpdateCommand;
 import pt.isel.gape.security.authorization.AuthorizationPolicy;
 
-public final class PhysicalRoomDAO {
+public final class PhysicalRoomDAO implements pt.isel.gape.transversal.service.ApplicationReadService.PhysicalRooms {
 
     private final ConnectionProvider connectionProvider;
 
@@ -163,13 +163,20 @@ public final class PhysicalRoomDAO {
 
     public boolean hasDomainDependencies(Connection connection, String code) throws SQLException {
         String sql = """
-                SELECT COUNT(*)
-                FROM lesson
-                WHERE cod_physical_room = ?
+                SELECT (
+                    SELECT COUNT(*)
+                    FROM lesson
+                    WHERE cod_physical_room = ?
+                ) + (
+                    SELECT COUNT(*)
+                    FROM assessment
+                    WHERE cod_physical_room = ?
+                )
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, code);
+            statement.setString(2, code);
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 return resultSet.getLong(1) > 0;
@@ -279,8 +286,6 @@ public final class PhysicalRoomDAO {
                   AND u.state = 'active'
                   AND gc.cod_permission = ?
                   AND p.state = 'active'
-                  AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
-                  AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 """, coordinatorUserId, organizationId, AuthorizationPolicy.MANAGE_LEARNING);
     }
 

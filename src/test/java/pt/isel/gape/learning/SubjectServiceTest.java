@@ -13,7 +13,6 @@ import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
@@ -26,10 +25,8 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
-import pt.isel.gape.learning.model.CurricularTerm;
 import pt.isel.gape.learning.model.Subject;
 import pt.isel.gape.learning.model.SubjectCreateCommand;
-import pt.isel.gape.learning.model.SubjectInitialCourseAssignment;
 import pt.isel.gape.learning.model.SubjectState;
 import pt.isel.gape.learning.model.SubjectUpdateCommand;
 import pt.isel.gape.learning.service.SubjectService;
@@ -61,7 +58,7 @@ class SubjectServiceTest {
     }
 
     @Test
-    void administratorCanCreateSubjectAndAssignCoordinator() throws Exception {
+    void administratorCreatesSubjectBeforeAssigningItsCoordinator() throws Exception {
         Subject subject = subjectService.createSubject(
                 1L,
                 null,
@@ -74,52 +71,135 @@ class SubjectServiceTest {
                         "Subject de arquitetura",
                         BigDecimal.valueOf(6),
                         70,
-                        SubjectState.ACTIVE,
-                        30L,
-                        3,
-                        CurricularTerm.ANNUAL,
-                        true,
-                        Set.of(2L)
+                        SubjectState.ACTIVE
                 ),
                 "127.0.0.1"
         );
 
         assertTrue(subject.id() > 0);
         assertEquals(10L, subject.organizationId());
-        assertTrue(hasCourseSubject(30L, subject.id()));
+        assertFalse(hasAnyCourseSubject(subject.id()));
+        assertFalse(hasActiveCoordinator(2L, subject.id()));
+
+        subjectService.assignCoordinator(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                subject.id(),
+                2L,
+                "127.0.0.1"
+        );
+
         assertTrue(hasActiveCoordinator(2L, subject.id()));
     }
 
     @Test
-    void administratorCanCreateSubjectAssociatedWithMultipleCourses() throws Exception {
+    void subjectCanBeCreatedAndUpdatedWithAnOrganicUnitFromItsOrganization() {
+        Subject created = subjectService.createSubject(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new SubjectCreateCommand(
+                        10L,
+                        20L,
+                        "Organic Unit Subject",
+                        "OUS",
+                        null,
+                        "Subject scoped to a department",
+                        BigDecimal.valueOf(6),
+                        BigDecimal.valueOf(20),
+                        70,
+                        SubjectState.ACTIVE
+                ),
+                "127.0.0.1"
+        );
+
+        assertEquals(20L, created.organicUnitId());
+
+        Subject updated = subjectService.updateSubject(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                created.id(),
+                new SubjectUpdateCommand(
+                        22L,
+                        "Organic Unit Subject",
+                        "OUS",
+                        null,
+                        "Subject scoped to the project center",
+                        BigDecimal.valueOf(6),
+                        BigDecimal.valueOf(20),
+                        70,
+                        SubjectState.ACTIVE
+                ),
+                "127.0.0.1"
+        );
+
+        assertEquals(22L, updated.organicUnitId());
+    }
+
+    @Test
+    void subjectRejectsAnOrganicUnitFromAnotherOrganization() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> subjectService.createSubject(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        new SubjectCreateCommand(
+                                10L,
+                                21L,
+                                "Invalid Organic Unit Subject",
+                                "IOUS",
+                                null,
+                                "Invalid organization and organic unit combination",
+                                BigDecimal.valueOf(6),
+                                BigDecimal.valueOf(20),
+                                70,
+                                SubjectState.ACTIVE
+                        ),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void administratorCanDeleteCoordinatorAssignment() throws Exception {
         Subject subject = subjectService.createSubject(
                 1L,
                 null,
                 AccessProfileType.ADMINISTRATOR,
                 new SubjectCreateCommand(
                         10L,
-                        "Sistemas Distribuidos",
-                        "SD",
+                        "Coordinator Removal Subject",
+                        "CRS",
                         null,
-                        "Subject associated with several courses",
+                        "Coordinator assignment removal",
                         BigDecimal.valueOf(6),
-                        70,
-                        SubjectState.ACTIVE,
-                        30L,
-                        2,
-                        CurricularTerm.SEMESTER_1,
-                        true,
-                        Set.of(),
-                        List.of(
-                                new SubjectInitialCourseAssignment(30L, 2, CurricularTerm.SEMESTER_1, true),
-                                new SubjectInitialCourseAssignment(31L, 1, CurricularTerm.SEMESTER_1, true)
-                        )
+                        60,
+                        SubjectState.ACTIVE
                 ),
                 "127.0.0.1"
         );
+        subjectService.assignCoordinator(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                subject.id(),
+                2L,
+                "127.0.0.1"
+        );
 
-        assertTrue(hasCourseSubject(30L, subject.id()));
-        assertTrue(hasCourseSubject(31L, subject.id()));
+        subjectService.removeCoordinatorAssignment(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                subject.id(),
+                2L,
+                "127.0.0.1"
+        );
+
+        assertFalse(hasAnyCoordinatorAssignment(2L, subject.id()));
     }
 
     @Test
@@ -136,12 +216,7 @@ class SubjectServiceTest {
                         "Subject with its own image",
                         BigDecimal.valueOf(6),
                         70,
-                        SubjectState.ACTIVE,
-                        30L,
-                        null,
-                        null,
-                        true,
-                        Set.of()
+                        SubjectState.ACTIVE
                 ),
                 "127.0.0.1"
         );
@@ -175,12 +250,7 @@ class SubjectServiceTest {
                         "Subject for image test",
                         BigDecimal.valueOf(6),
                         70,
-                        SubjectState.ACTIVE,
-                        30L,
-                        null,
-                        null,
-                        true,
-                        Set.of()
+                        SubjectState.ACTIVE
                 ),
                 "127.0.0.1"
         );
@@ -199,7 +269,7 @@ class SubjectServiceTest {
     }
 
     @Test
-    void administratorCanCreateInactiveSubjectWithInitialCourse() throws Exception {
+    void administratorCanCreateInactiveSubjectWithoutCourseAssociation() throws Exception {
         Subject subject = subjectService.createSubject(
                 1L,
                 null,
@@ -209,21 +279,16 @@ class SubjectServiceTest {
                         "Subject Inativa",
                         "DIN",
                         null,
-                        "Created inactive but associated with course",
+                        "Created inactive before curricular placement",
                         BigDecimal.valueOf(6),
                         70,
-                        SubjectState.INACTIVE,
-                        30L,
-                        null,
-                        null,
-                        true,
-                        Set.of()
+                        SubjectState.INACTIVE
                 ),
                 "127.0.0.1"
         );
 
         assertEquals(SubjectState.INACTIVE, subject.state());
-        assertEquals("inactive", courseSubjectState(30L, subject.id()));
+        assertFalse(hasAnyCourseSubject(subject.id()));
     }
 
     @Test
@@ -242,12 +307,7 @@ class SubjectServiceTest {
                                 null,
                                 BigDecimal.valueOf(6),
                                 30,
-                                SubjectState.ACTIVE,
-                                30L,
-                                null,
-                                null,
-                                true,
-                                Set.of()
+                                SubjectState.ACTIVE
                         ),
                         "127.0.0.1"
                 )
@@ -255,31 +315,25 @@ class SubjectServiceTest {
     }
 
     @Test
-    void subjectRequiresInitialCourse() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> subjectService.createSubject(
-                        1L,
+    void subjectCanBeCreatedWithoutCourseAssociation() throws Exception {
+        Subject subject = subjectService.createSubject(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new SubjectCreateCommand(
+                        10L,
+                        "Subject Without Course",
+                        "DSC",
                         null,
-                        AccessProfileType.ADMINISTRATOR,
-                        new SubjectCreateCommand(
-                                10L,
-                                "Subject Without Course",
-                                "DSC",
-                                null,
-                                null,
-                                BigDecimal.valueOf(6),
-                                30,
-                                SubjectState.ACTIVE,
-                                0L,
-                                null,
-                                null,
-                                true,
-                                Set.of()
-                        ),
-                        "127.0.0.1"
-                )
+                        null,
+                        BigDecimal.valueOf(6),
+                        30,
+                        SubjectState.ACTIVE
+                ),
+                "127.0.0.1"
         );
+
+        assertFalse(hasAnyCourseSubject(subject.id()));
     }
 
     @Test
@@ -313,12 +367,76 @@ class SubjectServiceTest {
     }
 
     @Test
-    void coordinatorLosesMutationContextAfterArchivingAssignedSubject() {
+    void subjectWithActiveCourseAssociationCanBeSetInactiveAndRetainsIt() throws Exception {
+        subjectService.archiveSubject(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                40L,
+                "127.0.0.1"
+        );
+
+        assertEquals(
+                SubjectState.INACTIVE,
+                subjectService.getSubject(1L, null, AccessProfileType.ADMINISTRATOR, 40L, "127.0.0.1").state()
+        );
+        assertTrue(hasActiveCourseSubject(40L));
+        assertThrows(
+                IllegalStateException.class,
+                () -> subjectService.assignCoordinator(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        40L,
+                        2L,
+                        "127.0.0.1"
+                )
+        );
+
+        subjectService.unarchiveSubject(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                40L,
+                "127.0.0.1"
+        );
+        assertEquals(
+                SubjectState.ACTIVE,
+                subjectService.getSubject(1L, null, AccessProfileType.ADMINISTRATOR, 40L, "127.0.0.1").state()
+        );
+    }
+
+    @Test
+    void coordinatorLosesMutationContextAfterDeactivatingUnassociatedSubject() {
+        Subject subject = subjectService.createSubject(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new SubjectCreateCommand(
+                        10L,
+                        "Coordinator Archive Subject",
+                        "CAS",
+                        null,
+                        null,
+                        BigDecimal.valueOf(6),
+                        30,
+                        SubjectState.ACTIVE
+                ),
+                "127.0.0.1"
+        );
+        subjectService.assignCoordinator(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                subject.id(),
+                2L,
+                "127.0.0.1"
+        );
         subjectService.archiveSubject(
                 2L,
                 null,
                 AccessProfileType.COORDINATOR,
-                40L,
+                subject.id(),
                 "127.0.0.1"
         );
 
@@ -328,7 +446,7 @@ class SubjectServiceTest {
                         2L,
                         null,
                         AccessProfileType.COORDINATOR,
-                        40L,
+                        subject.id(),
                         "127.0.0.1"
                 )
         );
@@ -350,12 +468,7 @@ class SubjectServiceTest {
                                 null,
                                 BigDecimal.valueOf(6),
                                 30,
-                                SubjectState.ACTIVE,
-                                30L,
-                                null,
-                                null,
-                                true,
-                                Set.of()
+                                SubjectState.ACTIVE
                         ),
                         "127.0.0.1"
                 )
@@ -486,16 +599,15 @@ class SubjectServiceTest {
         }
     }
 
-    private static boolean hasCourseSubject(long courseId, long subjectId) throws Exception {
+    private static boolean hasAnyCoordinatorAssignment(long coordinatorUserId, long subjectId) throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement("""
                      SELECT COUNT(*)
-                     FROM integrate_subject
-                     WHERE id_course = ?
+                     FROM coordinate_subject
+                     WHERE id_coordinator_user = ?
                        AND id_subject = ?
-                       AND state = 'active'
                      """)) {
-            statement.setLong(1, courseId);
+            statement.setLong(1, coordinatorUserId);
             statement.setLong(2, subjectId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
@@ -504,21 +616,33 @@ class SubjectServiceTest {
         }
     }
 
-    private static String courseSubjectState(long courseId, long subjectId) throws Exception {
+    private static boolean hasAnyCourseSubject(long subjectId) throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement("""
-                     SELECT state
-                     FROM integrate_subject
-                     WHERE id_course = ?
-                       AND id_subject = ?
-                     """)) {
-            statement.setLong(1, courseId);
-            statement.setLong(2, subjectId);
+                SELECT COUNT(*)
+                FROM integrate_subject
+                WHERE id_subject = ?
+                """)) {
+            statement.setLong(1, subjectId);
             try (ResultSet resultSet = statement.executeQuery()) {
-                if (!resultSet.next()) {
-                    throw new AssertionError("Course-subject association not found");
-                }
-                return resultSet.getString("state");
+                resultSet.next();
+                return resultSet.getInt(1) > 0;
+            }
+        }
+    }
+
+    private static boolean hasActiveCourseSubject(long subjectId) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                SELECT COUNT(*)
+                FROM integrate_subject
+                WHERE id_subject = ?
+                  AND state = 'active'
+                """)) {
+            statement.setLong(1, subjectId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1) > 0;
             }
         }
     }

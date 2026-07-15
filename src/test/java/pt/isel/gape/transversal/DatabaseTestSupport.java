@@ -382,7 +382,39 @@ public final class DatabaseTestSupport {
 
     private static void dropCurrentSchemaObjectsWithoutInvalidting(Connection connection) throws SQLException {
         dropCurrentSchemaTriggers(connection);
+        dropCurrentSchemaRoutines(connection);
         dropCurrentSchemaTables(connection);
+    }
+
+    private static void dropCurrentSchemaRoutines(Connection connection) throws SQLException {
+        List<String> procedures = new ArrayList<>();
+        List<String> functions = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT routine_name, routine_type
+                FROM information_schema.routines
+                WHERE routine_schema = ?
+                """)) {
+            statement.setString(1, currentSchema(connection));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    String routineName = quoteIdentifier(resultSet.getString("routine_name"));
+                    if ("FUNCTION".equalsIgnoreCase(resultSet.getString("routine_type"))) {
+                        functions.add(routineName);
+                    } else {
+                        procedures.add(routineName);
+                    }
+                }
+            }
+        }
+
+        try (Statement statement = connection.createStatement()) {
+            for (String procedure : procedures) {
+                statement.execute("DROP PROCEDURE IF EXISTS " + procedure);
+            }
+            for (String function : functions) {
+                statement.execute("DROP FUNCTION IF EXISTS " + function);
+            }
+        }
     }
 
     private static Set<String> currentBaseTableNames(Connection connection) throws SQLException {
@@ -440,7 +472,6 @@ public final class DatabaseTestSupport {
 
         private final Connection connection;
         private Savepoint serviceSavepoint;
-        private boolean serviceTransactionStarted;
 
         private TestTransactionConnectionHandler(Connection connection) {
             this.connection = connection;
@@ -457,9 +488,8 @@ public final class DatabaseTestSupport {
             }
             if (methodName.equals("setAutoCommit") && method.getParameterCount() == 1) {
                 boolean autoCommit = (Boolean) args[0];
-                if (!autoCommit && !serviceTransactionStarted) {
+                if (!autoCommit && serviceSavepoint == null) {
                     serviceSavepoint = connection.setSavepoint();
-                    serviceTransactionStarted = true;
                 }
                 return null;
             }
@@ -471,8 +501,8 @@ public final class DatabaseTestSupport {
                 if (serviceSavepoint != null) {
                     connection.rollback(serviceSavepoint);
                     releaseServiceSavepoint();
-                    return null;
                 }
+                return null;
             }
 
             try {

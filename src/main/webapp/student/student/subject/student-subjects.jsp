@@ -3,7 +3,7 @@
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
     request.setAttribute("activeMenu", "subjects");
-    request.setAttribute("pageTitle", "Subject Enrollments");
+    request.setAttribute("pageTitle", "Subjects");
     request.setAttribute("studentPageTitle", "My Subjects");
     request.setAttribute("studentPageDescription", "See the subjects attached to your active course enrollments and their academic context.");
 %>
@@ -12,8 +12,8 @@
 <section class="gape-student-panel bg-white rounded-10 px-24 py-24 border border-neutral-30">
     <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-24">
         <div>
-            <h6 class="text-20 fw-semibold text-neutral-800 mb-4">Subject enrollments</h6>
-            <span class="text-14 text-neutral-500">Subjects are grouped by course, with enrollment state and next action.</span>
+            <h6 class="text-20 fw-semibold text-neutral-800 mb-4">Curricular subjects</h6>
+            <span class="text-14 text-neutral-500">Subjects are grouped by the active course occurrence that grants access to them.</span>
         </div>
         <span class="bg-success-50 text-success-600 px-14 py-8 rounded-pill text-13 fw-semibold">
             ${fn:length(subjectCourseGroups)} courses
@@ -42,16 +42,15 @@
                 </div>
 
                 <div class="row gy-4">
-                    <c:forEach var="enrollment" items="${group.subjects}">
-                        <c:set var="subject" value="${enrollment.subject}"/>
+                    <c:forEach var="curricularSubject" items="${group.subjects}">
+                        <c:set var="subject" value="${curricularSubject.subject}"/>
                         <c:set var="subjectPhotoUrl" value=""/>
                         <c:if test="${subject.subject.hasPhoto}">
                             <c:set var="subjectPhotoUrl" value="${pageContext.request.contextPath}/media/${subject.subject.photo}?v=${mediaCacheVersion}"/>
                         </c:if>
                         <div class="col-xl-4 col-md-6">
                             <article id="subject-${course.id}-${subject.subjectId}"
-                                     class="gape-student-card gape-student-card--actionable h-100 overflow-hidden"
-                                     data-gape-enrollment-target="subject-${course.id}-${subject.subjectId}">
+                                     class="gape-student-card gape-student-card--actionable h-100 overflow-hidden">
                                 <div class="gape-student-course-thumb gape-student-course-thumb--visual m-12 mb-0">
                                     <c:choose>
                                         <c:when test="${subject.subject.hasPhoto}">
@@ -70,11 +69,7 @@
                                 <div class="gape-student-card__body px-20 py-20">
                                     <div class="d-flex align-items-start justify-content-between gap-12 mb-16">
                                         <span class="gape-student-icon gape-student-soft-green text-24"><i class="ph ph-book-open-text"></i></span>
-                                        <span class="${enrollment.badgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12"
-                                              data-gape-enrollment-badge
-                                              data-gape-enrollment-badge-fixed="px-12 py-7 border-neutral-30 border rounded-pill text-12">
-                                            <c:out value="${enrollment.stateLabel}"/>
-                                        </span>
+                                        <span class="bg-neutral-20 text-neutral-600 px-12 py-7 border-neutral-30 border rounded-pill text-12"><c:out value="${subject.mandatoryLabel}"/></span>
                                     </div>
                                     <h4 class="text-18 fw-semibold text-neutral-800 mb-8"><c:out value="${subject.subjectName}"/></h4>
                                     <p class="text-14 text-neutral-500 mb-16"><c:out value="${subject.subject.description}"/></p>
@@ -84,25 +79,10 @@
                                         <span class="bg-neutral-20 text-neutral-600 px-10 py-6 rounded-8 text-12"><c:out value="${subject.curricularPositionLabel}"/></span>
                                         <span class="bg-neutral-20 text-neutral-600 px-10 py-6 rounded-8 text-12"><c:out value="${subject.mandatoryLabel}"/></span>
                                     </div>
-                                    <div class="gape-student-card-actions"
-                                         data-gape-enrollment-actions
-                                         data-gape-enrollment-actions-kind="subject-open">
-                                        <c:choose>
-                                            <c:when test="${enrollment.activeEnrollment}">
-                                                <a href="${pageContext.request.contextPath}/student/subjects/${course.id}/${subject.subjectId}" class="gape-student-card-icon-button" aria-label="Open subject" title="Open subject">
-                                                    <i class="ph ph-eye"></i>
-                                                </a>
-                                            </c:when>
-                                            <c:when test="${course.activeEnrollment and not subject.pendingEnrollment}">
-                                                <form action="${pageContext.request.contextPath}/student/enrollments/courses/${course.id}/subjects/${subject.subjectId}" method="post" class="m-0">
-                                                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                    <input type="hidden" name="returnTo" value="/student/subjects">
-                                                    <button type="submit" class="gape-student-card-icon-button gape-student-card-icon-button--request" aria-label="Request enrollment" title="Request enrollment">
-                                                        <i class="ph ph-user-plus"></i>
-                                                    </button>
-                                                </form>
-                                            </c:when>
-                                        </c:choose>
+                                    <div class="gape-student-card-actions">
+                                        <a href="${pageContext.request.contextPath}/student/subjects/${course.id}/${subject.subjectId}" class="gape-student-card-icon-button" aria-label="Open subject" title="Open subject">
+                                            <i class="ph ph-eye"></i>
+                                        </a>
                                     </div>
                                 </div>
                             </article>
@@ -117,7 +97,7 @@
         <div class="gape-student-empty text-center px-24 py-40">
             <span class="gape-student-icon gape-student-soft-green text-28 mb-16"><i class="ph ph-book-open-text"></i></span>
             <h4 class="text-18 fw-semibold text-neutral-800 mb-8">No subjects yet</h4>
-            <p class="text-14 text-neutral-500 mb-0">Course enrollment is managed by authorized profiles. Subject requests appear after you have an active course.</p>
+            <p class="text-14 text-neutral-500 mb-0">Subjects appear when an authorized profile activates a course occurrence for your student account.</p>
         </div>
     </c:if>
 </section>

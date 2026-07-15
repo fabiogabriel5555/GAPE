@@ -5,9 +5,9 @@ import java.util.List;
 public final class StudentSubjectCourseGroupView {
 
     private final CourseView course;
-    private final List<EnrollmentView> subjects;
+    private final List<StudentCurricularSubjectView> subjects;
 
-    public StudentSubjectCourseGroupView(CourseView course, List<EnrollmentView> subjects) {
+    public StudentSubjectCourseGroupView(CourseView course, List<StudentCurricularSubjectView> subjects) {
         this.course = course;
         this.subjects = List.copyOf(subjects);
     }
@@ -16,7 +16,7 @@ public final class StudentSubjectCourseGroupView {
         return course;
     }
 
-    public List<EnrollmentView> getSubjects() {
+    public List<StudentCurricularSubjectView> getSubjects() {
         return subjects;
     }
 }

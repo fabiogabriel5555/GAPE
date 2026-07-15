@@ -164,8 +164,6 @@ public final class AbsenceJustificationDAO {
                       AND p.state = 'active'
                       AND u.state = 'active'
                       AND cg.state = 'active'
-                      AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
-                      AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 )
                 ORDER BY aj.submitted_at DESC, aj.id_absence_justification DESC
                 """;

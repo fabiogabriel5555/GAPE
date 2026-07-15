@@ -2804,7 +2804,7 @@ git commit -m "Implementa organizacoes e unidades organicas"
 
 ## Objetivo da fase
 
-Implementar cursos, disciplinas, associações curriculares, atribuição de coordenadores e inscrição e desistência de alunos em cursos e disciplinas. Cobre os RF06A, RF06B, RF06C, RF07A, RF07B e RF07C, e os UC06 e UC07.
+Implementar cursos, disciplinas, associações curriculares, atribuição de coordenadores e inscrição e desistência de alunos em ocorrências de cursos. Cobre os RF06A, RF06B, RF06C, RF07A, RF07B e RF07C, e os UC06 e UC07.
 
 ## Resultado esperado
 
@@ -2812,7 +2812,7 @@ Implementar cursos, disciplinas, associações curriculares, atribuição de coo
 * Models, DAOs e Services de disciplinas;
 * associação disciplina-curso;
 * atribuição de coordenadores às disciplinas;
-* inscrição e desistência em cursos e disciplinas;
+* inscrição e desistência em ocorrências de cursos;
 * front-end EduAll;
 * testes e correções.
 
@@ -2823,8 +2823,8 @@ Implementar cursos, disciplinas, associações curriculares, atribuição de coo
 * coerência entre organização e unidade do curso;
 * associação disciplina-curso sem duplicação;
 * posição curricular com ano e período em conjunto;
-* inscrição de aluno em disciplina apenas se integrada num curso onde está inscrito ou autorizado;
-* sem inscrições ativas sobrepostas no tempo;
+* inscrição de aluno apenas numa ocorrência ativa de um curso elegível;
+* sem inscrições ativas sobrepostas na mesma ocorrência;
 * permissões aplicadas.
 
 ---
@@ -2842,7 +2842,7 @@ Antes de implementar, analisa:
 * `7. Relatorio - 49862 - 7`;
 * `0. GAPE - ALL - V3`.
 
-Cria, no mínimo, Models, DAOs e Services de cursos, de disciplinas, da associação disciplina-curso e das inscrições.
+Cria, no mínimo, Models, DAOs e Services de cursos, de disciplinas, da associação disciplina-curso, das ocorrências e das respetivas inscrições.
 
 Tens liberdade para criar mais Models, DAOs, Services ou validadores se o modelo exigir. Não te limites à lista acima.
 
@@ -2856,9 +2856,9 @@ Implementa:
 * coerência entre o curso e a unidade orgânica, que devem pertencer à mesma organização;
 * rejeição de associação disciplina-curso duplicada;
 * exigência de ano e período em conjunto na posição curricular;
-* inscrição e desistência de alunos em cursos e disciplinas;
-* inscrição de aluno numa disciplina apenas se integrada num curso onde está inscrito ou autorizado;
-* bloqueio de inscrições ativas sobrepostas no tempo;
+* inscrição e desistência de alunos em ocorrências de cursos;
+* inscrição de aluno apenas numa ocorrência ativa de um curso elegível;
+* bloqueio de inscrições ativas duplicadas na mesma ocorrência;
 * bloqueio de operações sobre entidades arquivadas;
 * permissões, com gestão de cursos pelo administrador e gestão de disciplinas pelo administrador e pelo coordenador;
 * registo de auditoria das operações.
@@ -2888,7 +2888,7 @@ mvn test -Dtest=CourseSubjectServiceTest
 mvn test -Dtest=EnrollmentServiceTest
 ```
 
-Testa curso válido, curso sem organização, unidade de outra organização, disciplina válida, associação duplicada, posição curricular incompleta, inscrição válida em curso e disciplina, inscrição em disciplina não integrada no curso, inscrições sobrepostas, desistência e operação sem permissão.
+Testa curso válido, curso sem organização, unidade de outra organização, disciplina válida, associação duplicada, posição curricular incompleta, inscrição válida numa ocorrência de curso, ocorrência inativa ou incompatível, inscrição duplicada, desistência e operação sem permissão.
 
 Corrige e repete.
 
@@ -2927,7 +2927,7 @@ Cria ou adapta:
 * listagem de disciplinas;
 * criação e edição de disciplinas;
 * associação disciplina-curso;
-* inscrição e desistência do aluno em cursos e disciplinas;
+* inscrição e desistência do aluno em ocorrências de cursos;
 * mensagens de erro/sucesso;
 * menus e links relacionados.
 
@@ -2955,8 +2955,8 @@ Depois:
 3. Criar disciplina.
 4. Associar disciplina.
 5. Tentar duplicar associação.
-6. Inscrever aluno em curso e disciplina.
-7. Tentar inscrição sobreposta.
+6. Inscrever aluno numa ocorrência de curso.
+7. Tentar inscrição duplicada na mesma ocorrência.
 8. Desistir.
 9. Testar permissões.
 
@@ -3078,7 +3078,7 @@ Implementa:
 * coerência das datas de início e fim;
 * inscrição e desistência de alunos;
 * atribuição de formadores às turmas, usando o mecanismo da Fase 4;
-* inscrição de aluno apenas em turma de uma disciplina onde está inscrito;
+* inscrição de aluno apenas numa turma cuja ocorrência de curso esteja coberta por uma inscrição ativa;
 * bloqueio de inscrições ativas sobrepostas;
 * lotação que não excede o número máximo de alunos;
 * blocos pedagógicos com código único na turma;
@@ -4147,7 +4147,6 @@ Implementar pautas, classificações com pesos, cálculo e publicação, e certi
 * publicar pauta e bloquear alteração direta de pauta publicada;
 * resultado calculado;
 * certificado válido emitido apenas com elegibilidade e com código de validação único;
-* certificado revogado não é válido;
 * permissões aplicadas.
 
 ---
@@ -4180,10 +4179,9 @@ Implementa:
 * publicação da pauta e bloqueio de alterações diretas a pautas publicadas;
 * certificados associados ao curso, com código de validação único e data de emissão quando emitidos;
 * emissão de certificado apenas quando o aluno cumpre as condições definidas;
-* certificado revogado não apresentado como válido;
 * validação pública de certificado por código;
 * permissões, com gestão por administrador, coordenador e formador e consulta pelo aluno apenas das suas classificações e certificados;
-* registo de auditoria das operações de lançamento, publicação, emissão e revogação.
+* registo de auditoria das operações de lançamento, publicação e emissão.
 
 Executa testes e corrige erros.
 
@@ -4208,7 +4206,7 @@ mvn test -Dtest=GradeRecordServiceTest
 mvn test -Dtest=CertificateServiceTest
 ```
 
-Testa pauta válida, peso superior a 100%, nota negativa, nota acima da escala, publicar pauta, alterar pauta publicada, resultado calculado, certificado válido, certificado sem elegibilidade, código de validação duplicado, certificado revogado não validado e consulta ou gestão sem permissão.
+Testa pauta válida, peso superior a 100%, nota negativa, nota acima da escala, publicar pauta, alterar pauta publicada, resultado calculado, certificado válido, certificado sem elegibilidade, código de validação duplicado e consulta ou gestão sem permissão.
 
 Corrige e repete.
 
@@ -4319,7 +4317,6 @@ Verifica:
 * bloqueio de pauta publicada;
 * resultado calculado;
 * emissão de certificados com elegibilidade e código único;
-* certificado revogado não válido;
 * validação pública;
 * permissões;
 * se o front-end analisou o template completo;
@@ -4345,14 +4342,14 @@ git commit -m "Implementa pautas classificacoes e certificados"
 
 ## Objetivo da fase
 
-Implementar a comunicação entre utilizadores através de mensagens, fóruns e comentários, mais os canais, a participação, as respostas, o agendamento e as notificações e alertas internos e por email. Cobre os RF20 e RF21, e os UC20 e UC21.
+Implementar a comunicação interna entre utilizadores através de mensagens, fóruns e comentários, mais os canais, a participação, as respostas, o agendamento e as notificações e alertas na aplicação. Cobre os RF20 e RF21, e os UC20 e UC21.
 
 ## Resultado esperado
 
 * Models, DAOs e Services de canais e mensagens;
 * participação e receção de mensagens;
 * notificações com agendamento;
-* adaptador de email no pacote de integração;
+* comunicação exclusivamente interna na aplicação;
 * front-end EduAll;
 * testes e correções.
 
@@ -4364,7 +4361,7 @@ Implementar a comunicação entre utilizadores através de mensagens, fóruns e 
 * mensagem apenas por participante, exceto quando gerada pelo sistema;
 * agendamento respeitado;
 * anexos coerentes;
-* notificações por email apenas com email válido;
+* notificações entregues aos destinatários na aplicação;
 * canais coerentes com o contexto estrutural;
 * moderação por perfil;
 * permissões aplicadas.
@@ -4384,7 +4381,7 @@ Antes de implementar, analisa:
 * `7. Relatorio - 49862 - 7`;
 * `0. GAPE - ALL - V3`.
 
-Cria, no mínimo, Models, DAOs e Services de canais, de mensagens, de participação e de receção de mensagens, mais o serviço de notificações e um adaptador de email no pacote de integração.
+Cria, no mínimo, Models, DAOs e Services de canais, de mensagens, de participação e de receção de mensagens, mais o serviço de notificações internas.
 
 Tens liberdade para criar mais Models, DAOs, Services ou validadores se o modelo de comunicação exigir. Não te limites à lista acima.
 
@@ -4397,12 +4394,12 @@ Implementa:
 * agendamento de mensagens e envio efetivo a partir da data agendada;
 * coerência das datas de criação, atualização e envio;
 * exigência de anexo quando o tipo de mensagem é anexo;
-* notificações e alertas internos e por email, com envio por email apenas para destinatários com email válido e ativo;
+* notificações e alertas internos, entregues apenas na aplicação;
 * coerência da data de leitura em relação à data de entrega;
 * mensagens originadas por eventos de horário a respeitar o período e os destinatários do evento;
 * canais associados a turmas, blocos ou avaliações a respeitar o encadeamento estrutural;
 * moderação por perfil, com o formador a moderar canais das turmas que leciona, o coordenador das disciplinas que coordena e o administrador das organizações que administra;
-* adaptador de email isolado no pacote de integração;
+* inexistência de canais de comunicação externos;
 * registo de auditoria das operações relevantes.
 
 Executa testes e corrige erros.
@@ -4430,7 +4427,7 @@ mvn test -Dtest=ChannelParticipationServiceTest
 mvn test -Dtest=NotificationServiceTest
 ```
 
-Testa notificação, mensagem, mensagem gerada pelo sistema sem remetente, mensagem por não-participante, resposta a si própria ou fora do canal, segunda participação ativa, agendamento respeitado, mensagem de anexo sem anexo, email sem endereço válido, canal incoerente com o contexto e moderação sem permissão.
+Testa notificação interna, mensagem, mensagem gerada pelo sistema sem remetente, mensagem por não-participante, resposta a si própria ou fora do canal, segunda participação ativa, agendamento respeitado, mensagem de anexo sem anexo, canal incoerente com o contexto e moderação sem permissão.
 
 Corrige e repete.
 
@@ -4442,8 +4439,7 @@ Usa o agente `Codex Frontend/JSP Agent`.
 
 Antes de alterar, analisa o template EduAll completo.
 
-Deves identificar autonomamente todas as páginas e componentes relacionados com:
-
+Deves identificar autonomamente todas as páginas e componentes relacionados cotatus
 * notificações;
 * alertas;
 * mensagens;
@@ -4524,7 +4520,7 @@ Antes de rever, analisa:
 * Models, DAOs e Services de mensagens;
 * Models, DAOs e Services de participação e receção;
 * serviço de notificações;
-* adaptador de email;
+* ausência de integrações de comunicação externa;
 * JSPs da fase;
 * `docs/docs/analysis/eduall-notifications-messages-integration.md`;
 * `ChannelServiceTest.java`;
@@ -4540,10 +4536,10 @@ Verifica:
 * resposta no mesmo canal;
 * agendamento;
 * anexos;
-* email válido;
+* entrega interna de notificações;
 * canal coerente com o contexto;
 * moderação por perfil;
-* email isolado no pacote de integração;
+* ausência de canais de comunicação externos;
 * se o front-end analisou o template completo;
 * se todas as páginas necessárias foram alteradas;
 * testes;

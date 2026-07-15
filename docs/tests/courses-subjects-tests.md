@@ -1,6 +1,6 @@
 # Testes de Cursos, Disciplinas e Inscricoes
 
-Data: 2026-06-12
+Data: 13-07-2026
 
 ## Cobertura automatica
 
@@ -17,10 +17,13 @@ Data: 2026-06-12
   - bloqueio de apagar curso com dependencias.
 
 - `SubjectServiceTest`
-  - criacao de disciplina valida;
+  - criacao de disciplina valida, inclusive sem qualquer associacao a curso;
+  - inativacao permitida mesmo com associacoes de curso ativas, preservando-as;
+  - reativacao da disciplina inativa no respetivo contexto organizacional;
   - persistencia e recarregamento da foto WebP da disciplina;
   - rejeicao de caminhos de foto inseguros;
-  - atribuicao de coordenador via mecanismo contextual da Fase 4;
+  - atribuicao de coordenador apenas depois da criacao, pelo mecanismo contextual da pagina Subject Details;
+  - rejeicao de nova atribuicao de coordenador numa disciplina inativa;
   - rejeicao de disciplina sem organizacao;
   - permissao do coordenador para gerir disciplina atribuida;
   - rejeicao de criacao por utilizador sem permissao;
@@ -32,21 +35,22 @@ Data: 2026-06-12
   - exigencia de ano e periodo curricular em conjunto;
   - rejeicao de disciplina de outra organizacao;
   - rejeicao de associacao por utilizador sem permissao;
-  - bloqueio de remocao/arquivo da ultima associacao da disciplina.
+  - rejeicao de associacao nova ou reativada para disciplina inativa;
+  - encerramento historico da ultima associacao, deixando a disciplina sem curso ativo;
+  - preservacao dos registos historicos ao encerrar uma associacao.
 
 - `EnrollmentServiceTest`
-  - inscricao de aluno em curso;
-  - inscricao de aluno em disciplina integrada num curso onde esta inscrito;
-  - rejeicao de disciplina nao integrada no curso;
-  - rejeicao de inscricao em disciplina sem inscricao ativa no curso;
-  - rejeicao de inscricao em disciplina fora do periodo completo da inscricao no curso;
-  - rejeicao de inscricao ativa na mesma disciplina em cursos diferentes;
+  - inscricao de aluno numa ocorrencia concreta de curso;
+  - persistencia do identificador da ocorrencia na inscricao do curso;
   - bloqueio de inscricao ativa sobreposta no tempo;
-  - desistencias de curso e retirada automatica das disciplinas ativas do curso;
+  - atualizacao e eliminacao da inscricao no curso;
+  - desistencias de curso e retirada automatica das inscricoes ativas em turmas desse curso;
+  - confirmacao de que o fluxo de inscricao usa apenas ocorrencias de curso e turmas elegiveis;
   - rejeicao de operacao por utilizador sem permissao.
 
 - `UserServiceTest`
   - bloqueio de apagar, inativar ou retirar a permissao do unico administrador ativo com `MANAGE_ALL`.
+  - rejeicao de tentativas de gerir coordenacoes de disciplinas pelo formulario de utilizador; essas atribuicoes pertencem exclusivamente a `Subject Details`.
 
 - `ProfilePhotoStorageTest`
   - conversao de imagem de utilizador para WebP;
@@ -66,7 +70,7 @@ mvn test -Dtest=ProfilePhotoStorageTest
 mvn test -Dtest=UserServiceTest
 ```
 
-## Execucao de 2026-06-12
+## Execucao de 12-06-2026
 
 - `mvn -q -DskipTests test-compile`: sucesso.
 - `mvn test "-Dtest=CourseServiceTest,SubjectServiceTest,CourseSubjectServiceTest,EnrollmentServiceTest,UserServiceTest,ApplicationConstraintTest,DatabaseRestrictionCoverageTest,ValidDataInsertTest"`: sucesso, 65 testes.

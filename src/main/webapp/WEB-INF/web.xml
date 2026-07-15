@@ -7,6 +7,14 @@
 
     <display-name>GAPE</display-name>
 
+    <listener>
+        <listener-class>pt.isel.gape.web.listener.SecurityConfigurationListener</listener-class>
+    </listener>
+
+    <listener>
+        <listener-class>pt.isel.gape.web.listener.DatabaseMigrationListener</listener-class>
+    </listener>
+
     <!-- Pagina inicial da aplicacao -->
     <welcome-file-list>
         <welcome-file>index.jsp</welcome-file>
@@ -68,6 +76,16 @@
     </servlet-mapping>
 
     <filter>
+        <filter-name>securityHeadersFilter</filter-name>
+        <filter-class>pt.isel.gape.web.filter.SecurityHeadersFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>securityHeadersFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
         <filter-name>authenticationFilter</filter-name>
         <filter-class>pt.isel.gape.web.filter.AuthenticationFilter</filter-class>
     </filter>
@@ -94,6 +112,16 @@
 
     <filter-mapping>
         <filter-name>csrfFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>dashboardEventUnreadFilter</filter-name>
+        <filter-class>pt.isel.gape.web.filter.DashboardEventUnreadFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>dashboardEventUnreadFilter</filter-name>
         <url-pattern>/*</url-pattern>
     </filter-mapping>
 

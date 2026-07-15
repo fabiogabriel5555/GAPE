@@ -6,10 +6,8 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -25,6 +23,7 @@ import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import pt.isel.gape.access.dao.UserDAO;
 import pt.isel.gape.access.model.User;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.dao.AssessmentDAO;
 import pt.isel.gape.learning.dao.AttemptDAO;
 import pt.isel.gape.learning.dao.ClassGroupDAO;
@@ -46,9 +45,6 @@ import pt.isel.gape.learning.model.Response;
 import pt.isel.gape.learning.model.Subject;
 
 public final class AssessmentPdfService {
-
-    private static final DateTimeFormatter DISPLAY_DATE_TIME =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("pt-PT"));
 
     private final ConnectionProvider connectionProvider;
     private final AssessmentDAO assessmentDAO;
@@ -242,7 +238,7 @@ public final class AssessmentPdfService {
     }
 
     private static String formatDateTime(LocalDateTime value) {
-        return value == null ? "Not defined" : DISPLAY_DATE_TIME.format(value);
+        return value == null ? "Not defined" : ApplicationDateTimeFormat.dateTime(value);
     }
 
     private static String assessmentTypeLabel(Assessment assessment) {

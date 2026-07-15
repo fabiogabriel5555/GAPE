@@ -1,5 +1,7 @@
 package pt.isel.gape.security.session;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.Base64;
@@ -116,6 +118,20 @@ public final class SessionManager {
         return isValidCsrfToken(request, submittedToken);
     }
 
+    public String ensureCsrfToken(HttpServletRequest request) {
+        Objects.requireNonNull(request, "request is required");
+        HttpSession session = request.getSession(true);
+        synchronized (session) {
+            Object existing = session.getAttribute(CSRF_TOKEN_ATTRIBUTE);
+            if (existing instanceof String token && !token.isBlank()) {
+                return token;
+            }
+            String token = generateCsrfToken();
+            session.setAttribute(CSRF_TOKEN_ATTRIBUTE, token);
+            return token;
+        }
+    }
+
     public boolean isValidCsrfToken(HttpServletRequest request, String submittedToken) {
         if (submittedToken == null || submittedToken.isBlank()) {
             return false;
@@ -130,7 +146,13 @@ public final class SessionManager {
         if (!(attribute instanceof String)) {
             attribute = session.getAttribute(LOGOUT_CSRF_TOKEN_ATTRIBUTE);
         }
-        return attribute instanceof String expectedToken && expectedToken.equals(submittedToken);
+        if (!(attribute instanceof String expectedToken)) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+                expectedToken.getBytes(StandardCharsets.UTF_8),
+                submittedToken.getBytes(StandardCharsets.UTF_8)
+        );
     }
 
     public void clearSession(HttpServletRequest request) {

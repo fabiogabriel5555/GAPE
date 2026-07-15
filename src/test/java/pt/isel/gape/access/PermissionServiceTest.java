@@ -62,7 +62,7 @@ class PermissionServiceTest {
 
     @Test
     void inactivePermissionCannotBeGrantedAndIsAudited() throws Exception {
-        insertPermission("ARCHIVED_PERMISSION", "Archived Permission", "inactive");
+        insertPermission("INACTIVE_PERMISSION", "Inactive Permission", "inactive");
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -71,7 +71,7 @@ class PermissionServiceTest {
                         null,
                         AccessProfileType.STUDENT,
                         4L,
-                        "ARCHIVED_PERMISSION",
+                        "INACTIVE_PERMISSION",
                         "127.0.0.1"
                 )
         );

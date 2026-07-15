@@ -1,12 +1,9 @@
 package pt.isel.gape.web.view;
 
-import java.time.format.DateTimeFormatter;
-
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.transversal.model.ActivityLog;
 
 public final class ActivityLogView {
-
-    private static final DateTimeFormatter DATE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private final ActivityLog log;
 
@@ -43,7 +40,7 @@ public final class ActivityLogView {
     }
 
     public String getOccurredAt() {
-        return DATE_TIME.format(log.occurredAt());
+        return ApplicationDateTimeFormat.dateTime(log.occurredAt());
     }
 
     public String getOutcome() {

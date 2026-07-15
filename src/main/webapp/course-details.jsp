@@ -99,29 +99,6 @@
                                         <h3 class="text-16 fw-semibold text-neutral-700 mb-4"><c:out value="${association.subjectName}"/></h3>
                                         <span class="text-13 text-neutral-500"><c:out value="${association.curricularPositionLabel}"/> | <c:out value="${association.mandatoryLabel}"/></span>
                                     </div>
-                                    <div class="d-flex align-items-center gap-12 flex-wrap">
-                                        <span class="${association.enrollmentBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13">
-                                            <c:out value="${association.enrollmentStateLabel}"/>
-                                        </span>
-                                        <c:if test="${canUseStudentActions and course.activeEnrollment}">
-                                            <c:choose>
-                                                <c:when test="${association.activeEnrollment}">
-                                                    <form action="${pageContext.request.contextPath}/student/enrollments/courses/${course.id}/subjects/${association.subjectId}/withdraw" method="post" class="m-0">
-                                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                        <input type="hidden" name="returnTo" value="${returnTo}">
-                                                        <button type="submit" class="border-main-600 border px-18 py-9 rounded-12 fw-semibold text-main-600 hover-bg-main-50 transition-03">Leave</button>
-                                                    </form>
-                                                </c:when>
-                                                <c:otherwise>
-                                                    <form action="${pageContext.request.contextPath}/student/enrollments/courses/${course.id}/subjects/${association.subjectId}" method="post" class="m-0">
-                                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                        <input type="hidden" name="returnTo" value="${returnTo}">
-                                                        <button type="submit" class="bg-main-600 px-18 py-9 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">Enroll</button>
-                                                    </form>
-                                                </c:otherwise>
-                                            </c:choose>
-                                        </c:if>
-                                    </div>
                                 </div>
                             </div>
                         </c:forEach>

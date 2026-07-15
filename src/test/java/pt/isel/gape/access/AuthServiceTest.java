@@ -137,7 +137,7 @@ class AuthServiceTest {
                 () -> authService.authenticate("noprofile@gape.local", "Password#2026", "127.0.0.1")
         );
 
-        assertEquals(AuthenticationFailureReason.USER_WITHOUT_PROFILE, exception.reason());
+        assertEquals(AuthenticationFailureReason.INVALID_CREDENTIALS, exception.reason());
 
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement(
@@ -187,8 +187,8 @@ class AuthServiceTest {
                 () -> authService.authenticate("blocked@gape.local", "Password#2026", "127.0.0.1")
         );
 
-        assertEquals(AuthenticationFailureReason.USER_INACTIVE, inactive.reason());
-        assertEquals(AuthenticationFailureReason.USER_BLOCKED, blocked.reason());
+        assertEquals(AuthenticationFailureReason.INVALID_CREDENTIALS, inactive.reason());
+        assertEquals(AuthenticationFailureReason.INVALID_CREDENTIALS, blocked.reason());
     }
 
     @Test
@@ -219,7 +219,7 @@ class AuthServiceTest {
                 AuthenticationException.class,
                 () -> authService.authenticate("inactive@gape.local", "Password#2026", "127.0.0.1")
         );
-        assertEquals(AuthenticationFailureReason.USER_INACTIVE, inactive.reason());
+        assertEquals(AuthenticationFailureReason.INVALID_CREDENTIALS, inactive.reason());
     }
 
     private void insertUserWithPassword(long userId, String name, String email, String state, String password) throws Exception {

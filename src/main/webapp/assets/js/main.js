@@ -1488,16 +1488,26 @@ if ($('.nav-menu').length) {
         $input.attr('aria-invalid', inputValid ? 'false' : 'true');
       });
 
-      var totalValid = Math.abs(total - 100) < 0.001;
+      var totalValid = valid && Math.abs(total - 100) < 0.005;
+      var blocked = !valid || !totalValid;
+      var message = valid
+        ? 'The total must be exactly 100%. Current total: ' + formatAssessmentWeightTotal(total) + '.'
+        : 'Enter weights between 0 and 100 using up to two decimal places.';
 
       $total.text(formatAssessmentWeightTotal(total));
-      $total.toggleClass('text-success-600', valid && totalValid);
-      $total.toggleClass('text-warning-600', valid && !totalValid);
+      $total.toggleClass('text-success-600', !blocked);
+      $total.toggleClass('text-warning-600', valid && blocked);
       $total.toggleClass('text-danger-600', !valid);
-      $error.toggleClass('d-none', !valid || totalValid);
-      $submit.prop('disabled', !valid);
+      $error.text(blocked ? message : '');
+      $error.toggleClass('d-none', !blocked);
+      $submit
+        .prop('disabled', blocked)
+        .attr('aria-disabled', blocked ? 'true' : 'false')
+        .attr('title', blocked ? message : 'Save weights')
+        .toggleClass('opacity-50', blocked)
+        .css('cursor', blocked ? 'not-allowed' : '');
 
-      return valid;
+      return !blocked;
     }
 
     $('[data-aac-weight-form]').each(function () {
@@ -1550,3 +1560,977 @@ if ($('.nav-menu').length) {
     // ========================= Header Sticky Js End===================
 
 })(jQuery);
+
+(function () {
+  'use strict';
+
+  function ready(callback) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', callback);
+    } else {
+      callback();
+    }
+  }
+
+  function toArray(value) {
+    return Array.prototype.slice.call(value || []);
+  }
+
+  function dataKey(prefix, field) {
+    if (!field) {
+      return prefix;
+    }
+    return prefix + field.charAt(0).toUpperCase() + field.slice(1);
+  }
+
+  function opposite(direction) {
+    return direction === 'asc' ? 'desc' : 'asc';
+  }
+
+  function directionForState(normalDirection, state) {
+    if (state === 'normal') {
+      return normalDirection || 'asc';
+    }
+    if (state === 'reverse') {
+      return opposite(normalDirection || 'asc');
+    }
+    return null;
+  }
+
+  function stateForDirection(normalDirection, direction) {
+    if (!direction) {
+      return 'none';
+    }
+    return direction === (normalDirection || 'asc') ? 'normal' : 'reverse';
+  }
+
+  function parseComparable(value, type) {
+    var text = String(value || '').trim();
+    if (type === 'number') {
+      var number = Number(text.replace(',', '.'));
+      return Number.isFinite(number) ? number : 0;
+    }
+    if (type === 'date') {
+      if (!text) {
+        return 0;
+      }
+      if (/^-?\d+(\.\d+)?$/.test(text)) {
+        return Number(text);
+      }
+      var parsed = Date.parse(text);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    }
+    return text;
+  }
+
+  function countLabel(count, singular) {
+    var base = singular || 'item';
+    return count === 1 ? '1 ' + base : count + ' ' + base + 's';
+  }
+
+  function fieldLabel(field) {
+    var labels = {
+      classGroup: 'Class Groups',
+      course: 'Courses',
+      organicUnit: 'Organic Unit',
+      organization: 'Organization',
+      subject: 'Subjects'
+    };
+    if (labels[field]) {
+      return labels[field];
+    }
+    return String(field || 'group')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/^./, function (value) {
+        return value.toUpperCase();
+      });
+  }
+
+  function groupIcon(field) {
+    var icons = {
+      category: 'ph ph-tag',
+      classGroup: 'ph ph-users-three',
+      context: 'ph ph-path',
+      course: 'ph ph-graduation-cap',
+      organicUnit: 'ph ph-tree-structure',
+      organization: 'ph ph-buildings',
+      status: 'ph ph-circle-half',
+      state: 'ph ph-circle-half',
+      subject: 'ph ph-book-open',
+      type: 'ph ph-tag'
+    };
+    return icons[field] || 'ph ph-stack';
+  }
+
+  function initSortGroup(root) {
+    if (root.dataset.gapeSortGroupReady === 'true') {
+      return;
+    }
+
+    var list = root.querySelector('[data-gape-sort-list]');
+    if (!list) {
+      return;
+    }
+
+    var sortOptions = toArray(root.querySelectorAll('[data-gape-sort-option]'));
+    var groupOptions = toArray(root.querySelectorAll('[data-gape-group-option]'));
+    if (!sortOptions.length && !groupOptions.length) {
+      return;
+    }
+    root.dataset.gapeSortGroupReady = 'true';
+
+    var isTable = list.tagName.toLowerCase() === 'tbody';
+    var groupHiddenElements = toArray(root.querySelectorAll('[data-gape-group-hide-when-grouped]'));
+    var rows = toArray(list.children).filter(function (child) {
+      return child.hasAttribute('data-gape-sort-row');
+    });
+    var rowGroups = rows.map(function (row, index) {
+      if (!row.dataset.sortIndex) {
+        row.dataset.sortIndex = String(index);
+      }
+      return {
+        row: row,
+        detail: row.dataset.gapeDetailId ? document.getElementById(row.dataset.gapeDetailId) : null,
+        index: index
+      };
+    });
+    var hasGroupedOnlyRows = rowGroups.some(function (group) {
+      return group.row.hasAttribute('data-gape-grouped-only');
+    });
+    var mobileList = root.querySelector('[data-gape-mobile-list]');
+    var mobileGroupsById = new Map();
+    if (mobileList) {
+      toArray(mobileList.children)
+        .filter(function (child) {
+          return child.hasAttribute('data-gape-mobile-row');
+        })
+        .forEach(function (row) {
+          var id = row.dataset.gapeMobileRowId;
+          if (!id) {
+            return;
+          }
+          mobileGroupsById.set(id, {
+            row: row,
+            detail: row.dataset.gapeMobileDetailId ? document.getElementById(row.dataset.gapeMobileDetailId) : null
+          });
+        });
+    }
+
+    var collator = new Intl.Collator(document.documentElement.lang || undefined, {
+      numeric: true,
+      sensitivity: 'base'
+    });
+    var activeSortField = null;
+    var activeSortDirection = null;
+    var activeSortType = null;
+    var activeGroupField = null;
+    var activeGroupDirection = null;
+    var collapsedGroups = new Set();
+
+    function originalIndex(group) {
+      return Number(group.row.dataset.sortIndex || group.index || '0');
+    }
+
+    function sortValue(group, field) {
+      return group.row.dataset[dataKey('sort', field)] || '';
+    }
+
+    function compareGroups(first, second) {
+      if (!activeSortField || !activeSortDirection) {
+        return originalIndex(first) - originalIndex(second);
+      }
+
+      var firstValue = sortValue(first, activeSortField);
+      var secondValue = sortValue(second, activeSortField);
+      var result;
+      if (activeSortType === 'number' || activeSortType === 'date') {
+        result = parseComparable(firstValue, activeSortType) - parseComparable(secondValue, activeSortType);
+      } else {
+        result = collator.compare(firstValue, secondValue);
+      }
+      if (result === 0) {
+        result = originalIndex(first) - originalIndex(second);
+      }
+      return activeSortDirection === 'desc' ? -result : result;
+    }
+
+    function sortedGroups() {
+      return currentRowGroups().slice().sort(compareGroups);
+    }
+
+    function currentRowGroups() {
+      if (activeGroupField && activeGroupDirection && hasGroupedOnlyRows) {
+        return rowGroups.filter(function (group) {
+          return group.row.hasAttribute('data-gape-grouped-only');
+        });
+      }
+      return rowGroups.filter(function (group) {
+        return !group.row.hasAttribute('data-gape-grouped-only');
+      });
+    }
+
+    function groupValue(group, field) {
+      return group.row.dataset[dataKey('group', field)] || sortValue(group, field) || 'No ' + fieldLabel(field);
+    }
+
+    function groupKey(group, field) {
+      return group.row.dataset[dataKey('group', field + 'Id')]
+        || group.row.dataset[dataKey('group', field)]
+        || groupValue(group, field);
+    }
+
+    function isContextGroupField(field) {
+      return field === 'organization'
+        || field === 'organicUnit'
+        || field === 'course'
+        || field === 'subject'
+        || field === 'classGroup';
+    }
+
+    function contextFallback(field) {
+      var fallbacks = {
+        classGroup: 'No class group',
+        course: 'No course',
+        organicUnit: 'No organic unit',
+        organization: 'Unknown organization',
+        subject: 'No subject'
+      };
+      return fallbacks[field] || ('No ' + fieldLabel(field));
+    }
+
+    function contextValue(group, field) {
+      return group.row.dataset[dataKey('group', field)] || sortValue(group, field) || contextFallback(field);
+    }
+
+    function contextKey(group, field) {
+      return group.row.dataset[dataKey('group', field + 'Id')]
+        || group.row.dataset[dataKey('group', field)]
+        || contextValue(group, field);
+    }
+
+    function hasContextData(sorted, field) {
+      return sorted.some(function (group) {
+        return Boolean(
+          group.row.dataset[dataKey('group', field + 'Id')]
+          || group.row.dataset[dataKey('group', field)]
+        );
+      });
+    }
+
+    function hasContextValue(group, field) {
+      return Boolean(
+        group.row.dataset[dataKey('group', field + 'Id')]
+        || group.row.dataset[dataKey('group', field)]
+      );
+    }
+
+    function contextHierarchy(sorted) {
+      var fieldsByGroup = {
+        classGroup: ['classGroup'],
+        course: ['course', 'subject', 'classGroup'],
+        organicUnit: ['organicUnit', 'course', 'subject', 'classGroup'],
+        organization: ['organization', 'organicUnit', 'course', 'subject', 'classGroup'],
+        subject: ['subject', 'classGroup']
+      };
+      return (fieldsByGroup[activeGroupField] || [activeGroupField]).filter(function (field, index) {
+        return index === 0 || hasContextData(sorted, field);
+      });
+    }
+
+    function cssKind(field) {
+      if (field === 'organicUnit') {
+        return 'unit';
+      }
+      return String(field || 'group').replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+    }
+
+    function compareGroupLabels(first, second) {
+      var result = collator.compare(first.label, second.label);
+      if (result === 0) {
+        result = collator.compare(first.key, second.key);
+      }
+      return activeGroupDirection === 'desc' ? -result : result;
+    }
+
+    function appendBucketChild(parent, bucket) {
+      parent.children.push(bucket);
+      parent.childByKey.set(bucket.key, bucket);
+      return bucket;
+    }
+
+    function ensureContextBucket(parent, field, group) {
+      var key = field + '::' + contextKey(group, field);
+      if (parent.childByKey.has(key)) {
+        return parent.childByKey.get(key);
+      }
+      return appendBucketChild(parent, {
+        childByKey: new Map(),
+        children: [],
+        field: field,
+        itemCount: 0,
+        items: [],
+        key: key,
+        label: contextValue(group, field)
+      });
+    }
+
+    function addContextGroup(parent, fields, level, group) {
+      var bucket = ensureContextBucket(parent, fields[level], group);
+      bucket.itemCount += 1;
+      if (level >= fields.length - 1 || !hasContextValue(group, fields[level + 1])) {
+        bucket.items.push(group);
+        return;
+      }
+      addContextGroup(bucket, fields, level + 1, group);
+    }
+
+    function contextBuckets(sorted) {
+      var rootBucket = {
+        childByKey: new Map(),
+        children: []
+      };
+      var fields = contextHierarchy(sorted);
+      sorted.forEach(function (group) {
+        addContextGroup(rootBucket, fields, 0, group);
+      });
+      return {
+        buckets: rootBucket.children,
+        fields: fields
+      };
+    }
+
+    function visibleColumnCount() {
+      if (!isTable) {
+        return 1;
+      }
+      var table = list.closest('table');
+      if (!table) {
+        return 1;
+      }
+      return toArray(table.querySelectorAll('thead th')).filter(function (column) {
+        return !column.hidden;
+      }).length || 1;
+    }
+
+    function removeHeaders() {
+      toArray(list.querySelectorAll('[data-gape-dynamic-group-row]')).forEach(function (header) {
+        header.remove();
+      });
+    }
+
+    function detachGroups() {
+      rowGroups.forEach(function (group) {
+        group.row.remove();
+        if (group.detail) {
+          group.detail.remove();
+        }
+      });
+    }
+
+    function appendGroup(group, contextLevel) {
+      if (contextLevel) {
+        group.row.setAttribute('data-gape-dynamic-row-level', cssKind(contextLevel));
+      } else {
+        group.row.removeAttribute('data-gape-dynamic-row-level');
+      }
+      list.appendChild(group.row);
+      if (group.detail) {
+        var cell = group.detail.querySelector('td[colspan]');
+        if (cell && isTable) {
+          cell.colSpan = visibleColumnCount();
+        }
+        list.appendChild(group.detail);
+      }
+    }
+
+    function appendMobile(sorted) {
+      if (!mobileList || !mobileGroupsById.size) {
+        return;
+      }
+      mobileGroupsById.forEach(function (mobileGroup) {
+        mobileGroup.row.remove();
+        if (mobileGroup.detail) {
+          mobileGroup.detail.remove();
+        }
+      });
+      sorted.forEach(function (group) {
+        var mobileId = group.row.dataset.gapeMobileId;
+        var mobileGroup = mobileId ? mobileGroupsById.get(mobileId) : null;
+        if (!mobileGroup) {
+          return;
+        }
+        mobileList.appendChild(mobileGroup.row);
+        if (mobileGroup.detail) {
+          mobileList.appendChild(mobileGroup.detail);
+        }
+      });
+    }
+
+    function createHeader(bucket) {
+      var header = document.createElement(isTable ? 'tr' : 'div');
+      header.className = 'gape-dynamic-group-row';
+      header.setAttribute('data-gape-dynamic-group-row', '');
+
+      var container = isTable ? document.createElement('td') : header;
+      if (isTable) {
+        container.colSpan = visibleColumnCount();
+        container.className = 'px-20 py-12';
+      }
+
+      var heading = document.createElement('div');
+      heading.className = 'gape-dynamic-group-heading';
+
+      var title = document.createElement('div');
+      title.className = 'gape-dynamic-group-title';
+
+      var icon = document.createElement('i');
+      icon.className = groupIcon(activeGroupField) + ' text-main-600 text-18';
+      icon.setAttribute('aria-hidden', 'true');
+      title.appendChild(icon);
+
+      var text = document.createElement('span');
+      text.className = 'gape-dynamic-group-title__text';
+      text.textContent = bucket.label;
+      title.appendChild(text);
+
+      var chip = document.createElement('span');
+      chip.className = 'gape-dynamic-group-chip';
+      chip.textContent = fieldLabel(activeGroupField);
+      title.appendChild(chip);
+
+      var actions = document.createElement('div');
+      actions.className = 'd-flex align-items-center gap-10 flex-shrink-0';
+
+      var count = document.createElement('span');
+      count.className = 'text-12 text-neutral-500';
+      count.textContent = countLabel(bucket.items.length, root.dataset.gapeGroupItemLabel);
+      actions.appendChild(count);
+
+      var collapsedKey = activeGroupField + '::' + bucket.key;
+      var expanded = !collapsedGroups.has(collapsedKey);
+      var toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'gape-dynamic-group-toggle';
+      toggle.setAttribute('aria-expanded', String(expanded));
+      toggle.setAttribute('aria-label', expanded ? 'Hide group items' : 'Show group items');
+      toggle.setAttribute('title', expanded ? 'Hide group items' : 'Show group items');
+      var toggleIcon = document.createElement('i');
+      toggleIcon.className = expanded ? 'ph ph-caret-up' : 'ph ph-caret-down';
+      toggleIcon.setAttribute('aria-hidden', 'true');
+      toggle.appendChild(toggleIcon);
+      toggle.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (collapsedGroups.has(collapsedKey)) {
+          collapsedGroups.delete(collapsedKey);
+        } else {
+          collapsedGroups.add(collapsedKey);
+        }
+        render();
+      });
+      actions.appendChild(toggle);
+
+      heading.appendChild(title);
+      heading.appendChild(actions);
+      container.appendChild(heading);
+      if (isTable) {
+        header.appendChild(container);
+      }
+      return header;
+    }
+
+    function createContextHeader(bucket, nestedMode) {
+      var kind = cssKind(bucket.field);
+      var header = document.createElement(isTable ? 'tr' : 'div');
+      header.className = 'gape-dynamic-group-row gape-dynamic-group-row--' + kind;
+      header.setAttribute('data-gape-dynamic-group-row', '');
+
+      var container = isTable ? document.createElement('td') : header;
+      if (isTable) {
+        container.colSpan = visibleColumnCount();
+        container.className = 'px-20 py-12';
+      }
+
+      var heading = document.createElement('div');
+      heading.className = 'gape-dynamic-group-heading gape-dynamic-group-heading--' + kind;
+      if (nestedMode && nestedMode !== bucket.field) {
+        heading.classList.add('is-nested-under-' + cssKind(nestedMode));
+      }
+
+      var title = document.createElement('div');
+      title.className = 'gape-dynamic-group-title gape-dynamic-group-title--' + kind;
+
+      if (bucket.field === 'organization') {
+        var icon = document.createElement('i');
+        icon.className = groupIcon(bucket.field) + ' text-main-600 text-18';
+        icon.setAttribute('aria-hidden', 'true');
+        title.appendChild(icon);
+      } else {
+        var marker = document.createElement('span');
+        marker.className = 'gape-dynamic-group-marker gape-dynamic-group-marker--' + kind;
+        marker.setAttribute('aria-hidden', 'true');
+        title.appendChild(marker);
+      }
+
+      var text = document.createElement('span');
+      text.className = 'gape-dynamic-group-title__text';
+      text.textContent = bucket.label;
+      title.appendChild(text);
+
+      if (bucket.field === 'organization' && bucket.children.length) {
+        var childField = bucket.children[0].field;
+        if (childField === 'organicUnit') {
+          var unitCount = document.createElement('span');
+          unitCount.className = 'gape-dynamic-group-chip';
+          unitCount.textContent = countLabel(bucket.children.length, 'department');
+          title.appendChild(unitCount);
+        }
+      }
+
+      var actions = document.createElement('div');
+      actions.className = 'd-flex align-items-center gap-10 flex-shrink-0';
+
+      var count = document.createElement('span');
+      count.className = 'text-12 text-neutral-500';
+      count.textContent = countLabel(bucket.itemCount, root.dataset.gapeGroupItemLabel);
+      actions.appendChild(count);
+
+      var collapsedKey = bucket.key;
+      var expanded = !collapsedGroups.has(collapsedKey);
+      var toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'gape-dynamic-group-toggle';
+      toggle.setAttribute('aria-expanded', String(expanded));
+      toggle.setAttribute('aria-label', expanded ? 'Hide group items' : 'Show group items');
+      toggle.setAttribute('title', expanded ? 'Hide group items' : 'Show group items');
+      var toggleIcon = document.createElement('i');
+      toggleIcon.className = expanded ? 'ph ph-caret-up' : 'ph ph-caret-down';
+      toggleIcon.setAttribute('aria-hidden', 'true');
+      toggle.appendChild(toggleIcon);
+      toggle.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (collapsedGroups.has(collapsedKey)) {
+          collapsedGroups.delete(collapsedKey);
+        } else {
+          collapsedGroups.add(collapsedKey);
+        }
+        render();
+      });
+      actions.appendChild(toggle);
+
+      heading.appendChild(title);
+      heading.appendChild(actions);
+      container.appendChild(heading);
+      if (isTable) {
+        header.appendChild(container);
+      }
+      return header;
+    }
+
+    function groupedBuckets(sorted) {
+      var buckets = [];
+      var byKey = new Map();
+      sorted.forEach(function (group) {
+        var key = groupKey(group, activeGroupField);
+        if (!byKey.has(key)) {
+          byKey.set(key, {
+            key: key,
+            label: groupValue(group, activeGroupField),
+            items: []
+          });
+          buckets.push(byKey.get(key));
+        }
+        byKey.get(key).items.push(group);
+      });
+      buckets.sort(function (first, second) {
+        var result = collator.compare(first.label, second.label);
+        if (result === 0) {
+          result = collator.compare(first.key, second.key);
+        }
+        return activeGroupDirection === 'desc' ? -result : result;
+      });
+      return buckets;
+    }
+
+    function renderContextBucket(bucket, nestedMode) {
+      bucket.children.sort(compareGroupLabels);
+      list.appendChild(createContextHeader(bucket, nestedMode));
+      if (collapsedGroups.has(bucket.key)) {
+        return;
+      }
+      bucket.items.forEach(function (group) {
+        appendGroup(group, bucket.field);
+      });
+      if (bucket.children.length) {
+        bucket.children.forEach(function (child) {
+          renderContextBucket(child, activeGroupField);
+        });
+      }
+    }
+
+    function renderContextGroups(sorted) {
+      var grouped = contextBuckets(sorted);
+      grouped.buckets.sort(compareGroupLabels);
+      grouped.buckets.forEach(function (bucket) {
+        renderContextBucket(bucket, null);
+      });
+    }
+
+    function updateSortOptions() {
+      sortOptions.forEach(function (option) {
+        var field = option.dataset.sortField;
+        var normal = option.dataset.sortNormal || 'asc';
+        var state = field === activeSortField
+          ? stateForDirection(normal, activeSortDirection)
+          : 'none';
+        option.dataset.sortState = state;
+        option.classList.toggle('is-active', state !== 'none');
+        option.setAttribute('aria-pressed', state !== 'none' ? 'true' : 'false');
+      });
+      toArray(root.querySelectorAll('[data-gape-sort-toggle]')).forEach(function (toggle) {
+        toggle.classList.toggle('is-active', Boolean(activeSortField));
+      });
+    }
+
+    function updateGroupOptions() {
+      groupOptions.forEach(function (option) {
+        var field = option.dataset.groupField;
+        var normal = option.dataset.groupNormal || 'asc';
+        var state = field === activeGroupField
+          ? stateForDirection(normal, activeGroupDirection)
+          : 'none';
+        option.dataset.groupState = state;
+        option.classList.toggle('is-active', state !== 'none');
+        option.setAttribute('aria-pressed', state !== 'none' ? 'true' : 'false');
+      });
+      toArray(root.querySelectorAll('[data-gape-group-toggle]')).forEach(function (toggle) {
+        toggle.classList.toggle('is-active', Boolean(activeGroupField));
+      });
+    }
+
+    function updateGroupedClasses() {
+      var fields = ['organization', 'organicUnit', 'course', 'subject', 'classGroup'];
+      var grouped = Boolean(activeGroupField);
+      root.classList.toggle('gape-dynamic-grouped', grouped);
+      fields.forEach(function (field) {
+        root.classList.toggle('gape-dynamic-grouped-by-' + cssKind(field), activeGroupField === field);
+      });
+      groupHiddenElements.forEach(function (element) {
+        element.hidden = grouped;
+      });
+    }
+
+    function closeDropdown(toggle) {
+      if (!toggle) {
+        return;
+      }
+      if (window.bootstrap && window.bootstrap.Dropdown) {
+        window.bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
+      }
+    }
+
+    function render() {
+      var sorted = sortedGroups();
+      removeHeaders();
+      detachGroups();
+      updateGroupedClasses();
+      if (activeGroupField && activeGroupDirection) {
+        if (isContextGroupField(activeGroupField)) {
+          renderContextGroups(sorted);
+        } else {
+          groupedBuckets(sorted).forEach(function (bucket) {
+            list.appendChild(createHeader(bucket));
+            if (!collapsedGroups.has(activeGroupField + '::' + bucket.key)) {
+              bucket.items.forEach(appendGroup);
+            }
+          });
+        }
+      } else {
+        sorted.forEach(appendGroup);
+      }
+      appendMobile(sorted);
+      updateSortOptions();
+      updateGroupOptions();
+    }
+
+    sortOptions.forEach(function (option) {
+      option.addEventListener('click', function (event) {
+        event.preventDefault();
+        var field = option.dataset.sortField;
+        var normal = option.dataset.sortNormal || 'asc';
+        var currentState = field === activeSortField
+          ? stateForDirection(normal, activeSortDirection)
+          : 'none';
+        var nextState = currentState === 'none' ? 'normal' : currentState === 'normal' ? 'reverse' : 'none';
+        activeSortField = nextState === 'none' ? null : field;
+        activeSortDirection = directionForState(normal, nextState);
+        activeSortType = nextState === 'none' ? null : (option.dataset.sortType || null);
+        render();
+      });
+    });
+
+    toArray(root.querySelectorAll('[data-gape-sort-toggle]')).forEach(function (toggle) {
+      toggle.addEventListener('click', function (event) {
+        if (!activeSortField) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        activeSortField = null;
+        activeSortDirection = null;
+        activeSortType = null;
+        render();
+        closeDropdown(toggle);
+      });
+    });
+
+    toArray(root.querySelectorAll('[data-gape-group-toggle]')).forEach(function (toggle) {
+      toggle.addEventListener('click', function (event) {
+        if (!activeGroupField) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        activeGroupField = null;
+        activeGroupDirection = null;
+        collapsedGroups.clear();
+        render();
+        closeDropdown(toggle);
+      });
+    });
+
+    groupOptions.forEach(function (option) {
+      option.addEventListener('click', function (event) {
+        event.preventDefault();
+        var field = option.dataset.groupField;
+        var normal = option.dataset.groupNormal || 'asc';
+        var currentState = field === activeGroupField
+          ? stateForDirection(normal, activeGroupDirection)
+          : 'none';
+        var nextState = currentState === 'none' ? 'normal' : currentState === 'normal' ? 'reverse' : 'none';
+        if (activeGroupField !== field || nextState === 'none') {
+          collapsedGroups.clear();
+        }
+        activeGroupField = nextState === 'none' ? null : field;
+        activeGroupDirection = directionForState(normal, nextState);
+        render();
+      });
+    });
+
+    render();
+  }
+
+  function initAllSortGroups() {
+    toArray(document.querySelectorAll('[data-gape-sort-root]')).forEach(initSortGroup);
+  }
+
+  window.GapeSortGroupControls = {
+    initAll: initAllSortGroups
+  };
+
+  ready(function () {
+    initAllSortGroups();
+  });
+
+  window.addEventListener('pageshow', function () {
+    initAllSortGroups();
+  });
+}());
+
+(function () {
+  'use strict';
+
+  var DISPLAY_SELECTOR = '[data-gape-datetime-display]';
+  var LISBON_TIME_ZONE = 'Europe/Lisbon';
+  var dateTimeFormatter = typeof Intl !== 'undefined' && Intl.DateTimeFormat
+    ? new Intl.DateTimeFormat('pt-PT', {
+      timeZone: LISBON_TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    })
+    : null;
+
+  function pad(value) {
+    return String(value).padStart(2, '0');
+  }
+
+  function isValidDate(year, month, day) {
+    var date = new Date(year, month - 1, day);
+    return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+  }
+
+  function isValidTime(hour, minute, second) {
+    return hour >= 0 && hour <= 23
+      && minute >= 0 && minute <= 59
+      && second >= 0 && second <= 59;
+  }
+
+  function displayDateTime(year, month, day, hour, minute, second) {
+    if (!isValidDate(year, month, day) || !isValidTime(hour, minute, second)) {
+      return '';
+    }
+    return pad(day) + '-' + pad(month) + '-' + year + ' ' + pad(hour) + '-' + pad(minute) + '-' + pad(second);
+  }
+
+  function lisbonParts(value) {
+    if (!dateTimeFormatter || typeof dateTimeFormatter.formatToParts !== 'function') {
+      return null;
+    }
+    var parts = {};
+    dateTimeFormatter.formatToParts(value).forEach(function (part) {
+      if (part.type !== 'literal') {
+        parts[part.type] = part.value;
+      }
+    });
+    return parts.year && parts.month && parts.day && parts.hour && parts.minute && parts.second ? parts : null;
+  }
+
+  function formatZonedIso(value) {
+    var date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    var parts = lisbonParts(date);
+    if (!parts) {
+      return value;
+    }
+    return displayDateTime(
+      Number(parts.year),
+      Number(parts.month),
+      Number(parts.day),
+      Number(parts.hour),
+      Number(parts.minute),
+      Number(parts.second)
+    ) || value;
+  }
+
+  function formatDateTime(year, month, day, hour, minute, second, value) {
+    return displayDateTime(
+      Number(year),
+      Number(month),
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second || 0)
+    ) || value;
+  }
+
+  function formatDate(year, month, day, value) {
+    if (!isValidDate(Number(year), Number(month), Number(day))) {
+      return value;
+    }
+    return pad(day) + '-' + pad(month) + '-' + year;
+  }
+
+  function formatTime(hour, minute, second, value) {
+    if (!isValidTime(Number(hour), Number(minute), Number(second || 0))) {
+      return value;
+    }
+    return pad(hour) + '-' + pad(minute) + '-' + pad(second || 0);
+  }
+
+  function formatDisplayText(value) {
+    if (typeof value !== 'string' || !value) {
+      return value;
+    }
+    return value
+      .replace(/\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})\b/g, formatZonedIso)
+      .replace(/\b(\d{4})-(\d{2})-(\d{2})(?:T|\s)(\d{2}):(\d{2})(?::(\d{2}))?\b/g, function (match, year, month, day, hour, minute, second) {
+        return formatDateTime(year, month, day, hour, minute, second, match);
+      })
+      .replace(/\b(\d{1,2})[/.](\d{1,2})[/.](\d{4})(?:,?\s+)(\d{1,2}):(\d{2})(?::(\d{2}))?\b/g, function (match, day, month, year, hour, minute, second) {
+        return formatDateTime(year, month, day, hour, minute, second, match);
+      })
+      .replace(/\b(\d{1,2})[/.](\d{1,2})[/.](\d{4})\b/g, function (match, day, month, year) {
+        return formatDate(year, month, day, match);
+      })
+      .replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, function (match, year, month, day) {
+        return formatDate(year, month, day, match);
+      })
+      .replace(/\b([01]\d|2[0-3]):([0-5]\d)(?::([0-5]\d))?\b/g, function (match, hour, minute, second) {
+        return formatTime(hour, minute, second, match);
+      });
+  }
+
+  function currentLisbonMinuteValue() {
+    var now = new Date();
+    var parts = lisbonParts(now);
+    if (parts) {
+      return parts.year + '-' + parts.month + '-' + parts.day + 'T' + parts.hour + ':' + parts.minute;
+    }
+    return now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
+      + 'T' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+  }
+
+  function formatElement(element) {
+    var walker = document.createTreeWalker(element, 4, null);
+    var textNodes = [];
+    var node;
+    while ((node = walker.nextNode())) {
+      textNodes.push(node);
+    }
+    textNodes.forEach(function (textNode) {
+      var formatted = formatDisplayText(textNode.nodeValue);
+      if (formatted !== textNode.nodeValue) {
+        textNode.nodeValue = formatted;
+      }
+    });
+  }
+
+  function formatWithin(root) {
+    if (!root) {
+      return;
+    }
+    if (root.nodeType === 1 && root.matches && root.matches(DISPLAY_SELECTOR)) {
+      formatElement(root);
+    }
+    if (!root.querySelectorAll) {
+      return;
+    }
+    Array.prototype.forEach.call(root.querySelectorAll(DISPLAY_SELECTOR), formatElement);
+  }
+
+  function observeDisplayValues() {
+    if (!window.MutationObserver || !document.body) {
+      return;
+    }
+    new window.MutationObserver(function (records) {
+      records.forEach(function (record) {
+        Array.prototype.forEach.call(record.addedNodes, function (node) {
+          if (node.nodeType === 1 || node.nodeType === 9 || node.nodeType === 11) {
+            formatWithin(node);
+          }
+        });
+      });
+    }).observe(document.body, {childList: true, subtree: true});
+  }
+
+  function initialize() {
+    formatWithin(document);
+    observeDisplayValues();
+  }
+
+  window.GapeDateTimeFormat = {
+    timeZone: LISBON_TIME_ZONE,
+    currentLisbonMinuteValue: currentLisbonMinuteValue,
+    formatDisplayText: formatDisplayText,
+    formatTechnicalDateTime: formatDisplayText,
+    formatWithin: formatWithin
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initialize);
+  } else {
+    initialize();
+  }
+
+  window.addEventListener('pageshow', function () {
+    formatWithin(document);
+  });
+}());

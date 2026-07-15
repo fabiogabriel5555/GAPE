@@ -11,6 +11,7 @@ import java.util.Objects;
 import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.common.time.ApplicationClock;
 import pt.isel.gape.common.validation.AcademicTextValidator;
 import pt.isel.gape.learning.dao.LessonDAO;
 import pt.isel.gape.learning.dao.PhysicalRoomDAO;
@@ -55,7 +56,7 @@ public final class PhysicalRoomService {
                 new LessonDAO(connectionProvider),
                 permissionChecker,
                 auditService,
-                Clock.systemDefaultZone()
+                ApplicationClock.system()
         );
     }
 

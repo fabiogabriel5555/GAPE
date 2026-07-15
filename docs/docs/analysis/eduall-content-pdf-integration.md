@@ -28,12 +28,12 @@ Target-context permissions are still enforced by the association flow. This prot
 
 ## Delete Rule
 
-Deleting content from a block deletes or archives the pedagogical content item for that block.
+Deleting content from a block deletes or deactivates the pedagogical content item for that block.
 
 - The actor must have management permission over the block/context.
 - Authorship is audit metadata, not the delete permission rule.
 - Students cannot delete pedagogical content.
-- Protected content is archived instead of physically deleted.
+- Protected content is marked inactive instead of physically deleted.
 - A stored file is physically removed only when no remaining content item uses the same source.
 
 ## EduAll UI

@@ -280,44 +280,6 @@
                     </div>
 
                     <div class="mt-24">
-                        <c:if test="${not empty coordinatorContextOptions}">
-                            <div class="gape-profile-context ${form.coordinatorProfile ? '' : 'd-none'}"
-                                 data-profile-context-section
-                                 data-profile-type="COORDINATOR">
-                                <h4 class="text-16 fw-medium text-neutral-700 mb-16">Coordinator Context</h4>
-                                <div class="d-flex flex-column gap-12">
-                                    <c:forEach var="option" items="${coordinatorContextOptions}">
-                                        <div style="margin-left: ${option.hierarchyIndent}px;">
-                                            <div class="border border-neutral-30 rounded-12 px-20 py-16 bg-neutral-10">
-                                                <c:choose>
-                                                    <c:when test="${option.selectable}">
-                                                        <div class="form-check common-check">
-                                                            <input class="form-check-input"
-                                                                   type="checkbox"
-                                                                   id="${option.elementId}"
-                                                                   name="profileContextAssignments"
-                                                                   value="${option.value}"
-                                                                   data-profile-context-input
-                                                                   data-profile-type="${option.profileType}"
-                                                                   ${form.hasProfileContextAssignment(option.profileType, option.contextType, option.contextId, option.parentContextIdValue) ? 'checked' : ''}>
-                                                            <label class="form-check-label fw-medium" for="${option.elementId}">
-                                                                <c:out value="${option.label}"/>
-                                                                <span class="d-block text-12 text-neutral-500"><c:out value="${option.detail}"/></span>
-                                                            </label>
-                                                        </div>
-                                                    </c:when>
-                                                    <c:otherwise>
-                                                        <span class="fw-medium text-14 text-neutral-700"><c:out value="${option.label}"/></span>
-                                                        <span class="d-block text-12 text-neutral-500"><c:out value="${option.detail}"/></span>
-                                                    </c:otherwise>
-                                                </c:choose>
-                                            </div>
-                                        </div>
-                                    </c:forEach>
-                                </div>
-                            </div>
-                        </c:if>
-
                         <c:if test="${not empty teacherContextOptions}">
                             <div class="gape-profile-context mt-24 ${form.teacherProfile ? '' : 'd-none'}"
                                  data-profile-context-section
@@ -360,7 +322,7 @@
                             <div class="gape-profile-context mt-24 ${form.studentProfile ? '' : 'd-none'}"
                                  data-profile-context-section
                                  data-profile-type="STUDENT">
-                                <h4 class="text-16 fw-medium text-neutral-700 mb-16">Student Context</h4>
+                                <h4 class="text-16 fw-medium text-neutral-700 mb-16">Student Course Context</h4>
                                 <div class="d-flex flex-column gap-12">
                                     <c:forEach var="option" items="${studentContextOptions}">
                                         <div style="margin-left: ${option.hierarchyIndent}px;">

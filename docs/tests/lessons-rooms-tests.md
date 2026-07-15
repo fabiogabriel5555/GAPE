@@ -32,7 +32,7 @@ mvn test -Dtest=StoredVideoConferenceAdapterTest,DashboardServletSupportTest
 - Content block from another class group: `62`
 - Valid room: `SALA-A1`
 - Room from another organization: `SALA-X1`
-- Existing active lesson: `80`, in `SALA-A1`, from `2026-02-05 18:00` to `20:00`
+- Existing active lesson: `80`, in `SALA-A1`, from `05-02-2026 18-00-00` to `20-00-00`
 
 ## Covered cases
 
@@ -83,7 +83,7 @@ Both commands must finish with zero failures and zero errors.
 
 ## Execution result
 
-Executed on 2026-06-24:
+Executed on 24-06-2026:
 
 - `mvn -q "-Dtest=LessonServiceTest,PhysicalRoomServiceTest,StoredVideoConferenceAdapterTest,DashboardServletSupportTest,TemplateStructureTest" test`: 0 failures, 0 errors.
 - `mvn -q "-Dtest=TemplateAssetReferenceTest" test`: 0 failures, 0 errors.

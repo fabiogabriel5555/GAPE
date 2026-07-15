@@ -39,7 +39,8 @@ import pt.isel.gape.transversal.DatabaseTestSupport;
 class LessonServiceTest {
 
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-06-20T10:15:30Z"), ZoneOffset.UTC);
-    private static final LocalDateTime FUTURE_START = LocalDateTime.of(2026, 7, 6, 18, 0);
+    private static final LocalDateTime FUTURE_START = LocalDateTime.of(2026, 6, 23, 18, 0);
+    private static final LocalDateTime OTHER_CLASS_GROUP_START = LocalDateTime.of(2026, 6, 24, 18, 0);
 
     private LessonService lessonService;
 
@@ -188,7 +189,7 @@ class LessonServiceTest {
 
     @Test
     void scheduledLessonRequiresStartDate() {
-        assertThrows(
+        IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> lessonService.createLesson(
                         3L,
@@ -211,6 +212,37 @@ class LessonServiceTest {
                         "127.0.0.1"
                 )
         );
+
+        assertEquals("Lesson start date is required", exception.getMessage());
+    }
+
+    @Test
+    void scheduledLessonRequiresEndDate() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(
+                        3L,
+                        null,
+                        AccessProfileType.TEACHER,
+                        new LessonCreateCommand(
+                                50L,
+                                60L,
+                                null,
+                                "Lesson Without End",
+                                null,
+                                LessonType.ONLINE,
+                                "Meet",
+                                "https://meet.google.com/no-end-date",
+                                true,
+                                LessonState.SCHEDULED,
+                                FUTURE_START,
+                                null
+                        ),
+                        "127.0.0.1"
+                )
+        );
+
+        assertEquals("Lesson end date is required", exception.getMessage());
     }
 
     @Test
@@ -544,8 +576,8 @@ class LessonServiceTest {
                         "https://meet.google.com/no-enrollment",
                         true,
                         LessonState.SCHEDULED,
-                        FUTURE_START,
-                        FUTURE_START.plusHours(1)
+                        OTHER_CLASS_GROUP_START,
+                        OTHER_CLASS_GROUP_START.plusHours(1)
                 ),
                 "127.0.0.1"
         );
@@ -756,8 +788,8 @@ class LessonServiceTest {
                         "https://meet.google.com/out-context",
                         true,
                         LessonState.SCHEDULED,
-                        FUTURE_START.plusDays(2),
-                        FUTURE_START.plusDays(2).plusHours(1)
+                        OTHER_CLASS_GROUP_START,
+                        OTHER_CLASS_GROUP_START.plusHours(1)
                 ),
                 "127.0.0.1"
         );
@@ -843,22 +875,15 @@ class LessonServiceTest {
                 profile.executeUpdate();
             }
             try (PreparedStatement course = connection.prepareStatement("""
-                    INSERT INTO enroll_course (id_student_user, id_course, state, start_date, end_date)
-                    VALUES (?, 30, 'active', '2026-02-01', NULL)
+                    INSERT INTO enroll_course (id_student_user, id_course, id_course_occurrence, state, start_date, end_date)
+                    VALUES (?, 30, 300, 'active', '2026-01-01', '2026-06-30')
                     """)) {
                 course.setLong(1, userId);
                 course.executeUpdate();
             }
-            try (PreparedStatement subject = connection.prepareStatement("""
-                    INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date)
-                    VALUES (?, 30, 40, 'active', '2026-02-01', NULL)
-                    """)) {
-                subject.setLong(1, userId);
-                subject.executeUpdate();
-            }
             try (PreparedStatement classGroup = connection.prepareStatement("""
                     INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date)
-                    VALUES (?, ?, 'active', '2026-02-01', NULL)
+                    VALUES (?, ?, 'active', '2026-01-01', '2026-06-30')
                     """)) {
                 classGroup.setLong(1, userId);
                 classGroup.setLong(2, classGroupId);

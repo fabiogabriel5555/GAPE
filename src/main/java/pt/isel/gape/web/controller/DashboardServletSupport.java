@@ -3,7 +3,10 @@ package pt.isel.gape.web.controller;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -15,8 +18,16 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.access.model.User;
+import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.common.time.ApplicationClock;
 import pt.isel.gape.security.session.SessionManager;
 import pt.isel.gape.security.session.SessionUser;
+import pt.isel.gape.transversal.model.CommunicationSnapshot;
+import pt.isel.gape.transversal.service.ApplicationReadService;
+import pt.isel.gape.transversal.service.CommunicationReadService;
+import pt.isel.gape.web.support.DashboardEventUnreadCounter;
+import pt.isel.gape.web.support.DashboardClassGroupPendingEnrollmentCounter;
+import pt.isel.gape.web.support.DashboardLearningPendingWorkCounter;
 
 abstract class DashboardServletSupport extends HttpServlet {
 
@@ -24,13 +35,22 @@ abstract class DashboardServletSupport extends HttpServlet {
     private static final String FLASH_ERROR = "gape.flash.error";
 
     protected final SessionManager sessionManager;
+    private final ApplicationReadService.LearningEvents learningEvents;
 
     DashboardServletSupport() {
-        this(new SessionManager());
+        this(new SessionManager(), new ApplicationReadService(ConnectionProvider.defaultProvider()));
     }
 
     DashboardServletSupport(SessionManager sessionManager) {
+        this(sessionManager, new ApplicationReadService(ConnectionProvider.defaultProvider()));
+    }
+
+    DashboardServletSupport(
+            SessionManager sessionManager,
+            ApplicationReadService applicationReadService
+    ) {
         this.sessionManager = sessionManager;
+        this.learningEvents = applicationReadService.learningEvents();
     }
 
     protected SessionUser requireCurrentUser(HttpServletRequest request) {
@@ -77,6 +97,10 @@ abstract class DashboardServletSupport extends HttpServlet {
         request.setAttribute("topActionLabel", topActionLabel);
         request.setAttribute("mediaCacheVersion", Long.toString(System.currentTimeMillis()));
         prepareSmartNavigation(request);
+        prepareNotificationSummary(request);
+        prepareEventUnreadSummary(request);
+        prepareClassGroupEventSummary(request);
+        prepareLearningPendingWorkSummary(request);
         consumeFlash(request);
     }
 
@@ -159,6 +183,44 @@ abstract class DashboardServletSupport extends HttpServlet {
                 + URLEncoder.encode(returnTo, StandardCharsets.UTF_8);
     }
 
+    protected void markLearningEventsReadForCurrentUser(
+            HttpServletRequest request,
+            String href,
+            boolean includeAnchoredChildren
+    ) {
+        if (text(request, "eventReadRedirect") != null) {
+            return;
+        }
+        if (!isSafeReturnPath(href)) {
+            return;
+        }
+        try {
+            SessionUser actor = requireCurrentUser(request);
+            learningEvents.markReadByHref(
+                    actor.userId(),
+                    href,
+                    includeAnchoredChildren,
+                    LocalDateTime.now(ApplicationClock.system())
+            );
+        } catch (SQLException | RuntimeException ignored) {
+            // Reading an event must not block the target page.
+        }
+    }
+
+    /**
+     * Learning events are a projection of mutable learning records.  Keep the
+     * projection fresh after a successful mutation rather than waiting for a
+     * restart or a later bootstrap pass.
+     */
+    protected void refreshLearningEvents() {
+        try {
+            learningEvents.rebuildFromCurrentRecords();
+        } catch (SQLException | RuntimeException ignored) {
+            // The completed domain action remains valid if a non-critical feed
+            // refresh cannot run; the next mutation/bootstrap will retry it.
+        }
+    }
+
     private String redirectPath(HttpServletRequest request, String path) {
         String returnTo = safeReturnPath(request);
         if (returnTo == null || path == null || path.isBlank() || path.equals(returnTo)) {
@@ -206,6 +268,99 @@ abstract class DashboardServletSupport extends HttpServlet {
         request.setAttribute("currentReturnToParam", URLEncoder.encode(currentPath, StandardCharsets.UTF_8));
         request.setAttribute("returnTo", returnTo);
         request.setAttribute("returnToParam", returnTo == null ? "" : URLEncoder.encode(returnTo, StandardCharsets.UTF_8));
+    }
+
+    private void prepareNotificationSummary(HttpServletRequest request) {
+        boolean hasNotificationSummary = request.getAttribute("notificationItems") != null
+                && request.getAttribute("notificationUnreadCount") != null;
+        boolean hasMessageSummary = request.getAttribute("messageUnreadCount") != null;
+        if (hasNotificationSummary && hasMessageSummary) {
+            return;
+        }
+        try {
+            sessionManager.getSessionUser(request).ifPresent(sessionUser -> {
+                CommunicationReadService readService =
+                        new CommunicationReadService(ConnectionProvider.defaultProvider());
+                CommunicationSnapshot snapshot = readService.loadTopbarSummary(sessionUser.userId());
+                if (!hasNotificationSummary) {
+                    request.setAttribute("notificationUnreadCount", snapshot.notificationUnreadCount());
+                    request.setAttribute(
+                            "notificationItems",
+                            new CommunicationViewFactory().notificationViews(snapshot, sessionUser.userId())
+                    );
+                }
+                if (!hasMessageSummary) {
+                    request.setAttribute("messageUnreadCount", snapshot.unreadCount());
+                }
+            });
+        } catch (RuntimeException exception) {
+            if (!hasNotificationSummary) {
+                request.setAttribute("notificationUnreadCount", 0);
+                request.setAttribute("notificationItems", List.of());
+            }
+            if (!hasMessageSummary) {
+                request.setAttribute("messageUnreadCount", 0);
+            }
+        }
+    }
+
+    private void prepareEventUnreadSummary(HttpServletRequest request) {
+        if (request.getAttribute("eventUnreadCount") != null) {
+            return;
+        }
+        try {
+            sessionManager.getSessionUser(request).ifPresentOrElse(
+                    sessionUser -> request.setAttribute(
+                            "eventUnreadCount",
+                            new DashboardEventUnreadCounter().countUnread(request, sessionUser, currentSessionId(request))
+                    ),
+                    () -> request.setAttribute("eventUnreadCount", 0)
+            );
+        } catch (RuntimeException exception) {
+            request.setAttribute("eventUnreadCount", 0);
+        }
+    }
+
+    private void prepareClassGroupEventSummary(HttpServletRequest request) {
+        if (request.getAttribute("classGroupEventCount") != null) {
+            return;
+        }
+        try {
+            sessionManager.getSessionUser(request).ifPresentOrElse(
+                    sessionUser -> request.setAttribute(
+                            "classGroupEventCount",
+                            new DashboardClassGroupPendingEnrollmentCounter().countPendingWork(
+                                    request,
+                                    sessionUser,
+                                    currentSessionId(request)
+                            )
+                    ),
+                    () -> request.setAttribute("classGroupEventCount", 0)
+            );
+        } catch (RuntimeException exception) {
+            request.setAttribute("classGroupEventCount", 0);
+        }
+    }
+
+    private void prepareLearningPendingWorkSummary(HttpServletRequest request) {
+        if (request.getAttribute("learningPendingWorkCount") != null) {
+            return;
+        }
+        try {
+            sessionManager.getSessionUser(request).ifPresentOrElse(
+                    sessionUser -> request.setAttribute(
+                            "learningPendingWorkCount",
+                            new DashboardLearningPendingWorkCounter().countPendingWork(
+                                    request,
+                                    sessionUser,
+                                    currentSessionId(request)
+                            )
+                    ),
+                    () -> request.setAttribute("learningPendingWorkCount", 0)
+            );
+        } catch (RuntimeException exception) {
+            request.setAttribute("learningPendingWorkCount", 0);
+        }
     }
 
     protected static long longParameter(HttpServletRequest request, String name) {
@@ -258,6 +413,57 @@ abstract class DashboardServletSupport extends HttpServlet {
         if (message.contains("permission is required")) {
             return "You do not have permission to perform this operation.";
         }
+        if (message.contains("User cannot moderate this channel")
+                || message.contains("User cannot create a channel in this context")) {
+            return "You do not have permission to manage this channel.";
+        }
+        if (message.contains("Message sender must actively participate")
+                || message.contains("Message recipients must actively participate")) {
+            return "Messages can only be sent by and to active channel participants.";
+        }
+        if (message.contains("Message requires at least one recipient")
+                || message.contains("Schedule message requires event recipients")) {
+            return "Select at least one valid recipient.";
+        }
+        if (message.contains("Reply message must belong")) {
+            return "Replies must stay inside the same channel.";
+        }
+        if (message.contains("Message cannot reply to itself")) {
+            return "You cannot reply to your own message.";
+        }
+        if (message.contains("Attachment messages require an attachment")) {
+            return "Attachment messages require an attachment path.";
+        }
+        if (message.contains("Scheduled message date cannot be before creation date")) {
+            return "Scheduled delivery cannot be before the creation date.";
+        }
+        if (message.contains("User already has an active participation")) {
+            return "This user already has an active participation in the channel.";
+        }
+        if (message.contains("Channel participant must be an active user")) {
+            return "Channel participants must be active users.";
+        }
+        if (message.contains("Student cannot participate in a channel outside their context")) {
+            return "The selected student cannot participate outside their learning context.";
+        }
+        if (message.contains("Channel references a missing class group")) {
+            return "The selected channel class group does not exist.";
+        }
+        if (message.contains("Channel references a missing content block")) {
+            return "The selected channel block does not exist.";
+        }
+        if (message.contains("Channel references a missing assessment")) {
+            return "The selected channel assessment does not exist.";
+        }
+        if (message.contains("Channel content blocks must belong to the channel class groups")) {
+            return "Channel blocks must belong to the selected class groups.";
+        }
+        if (message.contains("Channel assessments must match the channel class groups")) {
+            return "Channel assessments must match the selected class groups.";
+        }
+        if (message.contains("Notification service only sends system notification types")) {
+            return "Use alert, warning, reminder, notification or system as notification type.";
+        }
         if (message.contains("not a supported image")) {
             return "The uploaded file is not a supported image.";
         }
@@ -288,6 +494,9 @@ abstract class DashboardServletSupport extends HttpServlet {
         if (message.contains("Subject name is required")) {
             return "Subject name is required.";
         }
+        if (message.contains("active course associations") && message.contains("inactive")) {
+            return "A subject cannot be inactive while it has active course associations.";
+        }
         if (message.contains("Course-subject association already exists")) {
             return "This subject is already associated with the selected course.";
         }
@@ -300,18 +509,8 @@ abstract class DashboardServletSupport extends HttpServlet {
         if (message.contains("Active course enrollment overlaps")) {
             return "There is already an active enrollment for this course in the selected period.";
         }
-        if (message.contains("Active subject enrollment overlaps")) {
-            return "There is already an active enrollment for this subject in the selected period.";
-        }
-        if (message.contains("Student must be actively enrolled in the course")
-                || message.contains("Subject enrollment requires active Course enrollment")) {
-            return "You must be enrolled in the course before enrolling in one of its subjects.";
-        }
         if (message.contains("Enrollment requires an active course")) {
             return "Enrollment requires an active course.";
-        }
-        if (message.contains("Enrollment requires an active subject")) {
-            return "Enrollment requires an active subject.";
         }
         if (message.contains("Subject is not integrated in the course")) {
             return "This subject is not integrated in the selected course.";
@@ -334,11 +533,26 @@ abstract class DashboardServletSupport extends HttpServlet {
         if (message.contains("Class group end date cannot be before start date")) {
             return "Class group end date cannot be before start date.";
         }
+        if (message.contains("Class group start and end dates must be in the same year")) {
+            return "Class group start and end dates must be in the same year.";
+        }
+        if (message.contains("Class group start date must be inside the subject association period")) {
+            return "Class group start date must be inside the subject association period.";
+        }
+        if (message.contains("Class group end date must be inside the subject association period")) {
+            return "Class group end date must be inside the subject association period.";
+        }
         if (message.contains("Class group maximum capacity exceeded")) {
             return "Class group maximum capacity exceeded.";
         }
-        if (message.contains("Student must be actively enrolled in the subject")) {
-            return "The student must be actively enrolled in this subject before joining the class group.";
+        if (message.contains("Completed class group with academic history cannot be deleted")) {
+            return "Completed class groups with academic history cannot be deleted.";
+        }
+        if (message.contains("Class group with domain dependencies cannot be deleted")) {
+            return "Class groups with dependencies cannot be deleted.";
+        }
+        if (message.contains("Student must be actively enrolled in the course occurrence")) {
+            return "The student must be actively enrolled in this course occurrence for the full class group period.";
         }
         if (message.contains("Class group enrollment already exists")) {
             return "This student already has a class group enrollment.";
@@ -355,14 +569,8 @@ abstract class DashboardServletSupport extends HttpServlet {
         if (message.contains("Content block order must be positive")) {
             return "Content block order must be positive.";
         }
-        if (message.contains("Active content block order already exists")) {
-            return "Another active content block already uses this order.";
-        }
-        if (message.contains("Scheduled content blocks require an availability start date")) {
-            return "Scheduled content blocks require an availability start date.";
-        }
-        if (message.contains("Content block availability end cannot be before start")) {
-            return "Content block availability end cannot be before start.";
+        if (message.contains("Content block order already exists")) {
+            return "Another content block already uses this order.";
         }
         if (message.contains("Lesson title is required")) {
             return "Lesson title is required.";
@@ -372,6 +580,18 @@ abstract class DashboardServletSupport extends HttpServlet {
         }
         if (message.contains("Lesson start date cannot be in the past")) {
             return "Lesson start date cannot be in the past.";
+        }
+        if (message.contains("Lesson start date cannot be before the class group start date")) {
+            return "Lesson start date cannot be before the class group start date.";
+        }
+        if (message.contains("Lesson start date cannot be after the class group end date")) {
+            return "Lesson start date cannot be after the class group end date.";
+        }
+        if (message.contains("Lesson end date cannot be before the class group start date")) {
+            return "Lesson end date cannot be before the class group start date.";
+        }
+        if (message.contains("Lesson end date cannot be after the class group end date")) {
+            return "Lesson end date cannot be after the class group end date.";
         }
         if (message.contains("Online lessons cannot have a physical room")) {
             return "Online lessons cannot have a physical room.";
@@ -408,6 +628,21 @@ abstract class DashboardServletSupport extends HttpServlet {
         }
         if (message.contains("Physical room already has an overlapping lesson")) {
             return "The physical room already has a lesson in the selected period.";
+        }
+        if (message.contains("Assessment start date cannot be before the class group start date")) {
+            return "Assessment start date cannot be before the class group start date.";
+        }
+        if (message.contains("Assessment start date cannot be after the class group end date")) {
+            return "Assessment start date cannot be after the class group end date.";
+        }
+        if (message.contains("Assessment end date cannot be before the class group start date")) {
+            return "Assessment end date cannot be before the class group start date.";
+        }
+        if (message.contains("Assessment end date cannot be after the class group end date")) {
+            return "Assessment end date cannot be after the class group end date.";
+        }
+        if (message.contains("Physical room already has an overlapping assessment")) {
+            return "The physical room already has an assessment in the selected period.";
         }
         if (message.contains("Lesson physical room must belong to the same organization")) {
             return "The physical room must belong to the same organization as the class group.";
@@ -514,9 +749,6 @@ abstract class DashboardServletSupport extends HttpServlet {
         if (message.contains("New grade sheets must start as draft")) {
             return "New grade sheets must start as draft.";
         }
-        if (message.contains("Grade sheet class groups must belong to the subject")) {
-            return "The selected class groups must belong to the grade sheet subject.";
-        }
         if (message.contains("Grade sheet assessments must belong to the subject")) {
             return "The selected assessments must belong to the grade sheet subject.";
         }
@@ -556,9 +788,6 @@ abstract class DashboardServletSupport extends HttpServlet {
         }
         if (message.contains("Student has no approved grade record")) {
             return "The student needs an approved grade in each selected grade sheet.";
-        }
-        if (message.contains("validation code") && message.contains("already")) {
-            return "The certificate validation code is already in use.";
         }
         if (message.contains("Unknown")) {
             return "The selected record does not exist.";

@@ -2,6 +2,7 @@ package pt.isel.gape.web.view;
 
 import java.time.LocalDate;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.structure.model.RoleAssignmentState;
 import pt.isel.gape.structure.model.TeacherClassGroupAssignment;
 
@@ -47,7 +48,7 @@ public final class ClassGroupTeacherView {
     public String getStateBadgeClass() {
         return switch (state) {
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
         };
     }
 
@@ -55,12 +56,24 @@ public final class ClassGroupTeacherView {
         return state == RoleAssignmentState.ACTIVE;
     }
 
+    public String getStateValue() {
+        return state.toDatabaseValue();
+    }
+
     public String getStartDate() {
-        return startDate == null ? "-" : startDate.toString();
+        return startDate == null ? "-" : ApplicationDateTimeFormat.date(startDate);
+    }
+
+    public String getStartDateValue() {
+        return startDate == null ? "" : startDate.toString();
     }
 
     public String getEndDate() {
-        return endDate == null ? "-" : endDate.toString();
+        return endDate == null ? "-" : ApplicationDateTimeFormat.date(endDate);
+    }
+
+    public String getEndDateValue() {
+        return endDate == null ? "" : endDate.toString();
     }
 
     public String getTeacherName() {

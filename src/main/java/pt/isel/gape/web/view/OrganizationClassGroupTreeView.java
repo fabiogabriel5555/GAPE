@@ -2,6 +2,7 @@ package pt.isel.gape.web.view;
 
 import java.time.LocalDate;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupModality;
 import pt.isel.gape.learning.model.ClassGroupShift;
@@ -77,7 +78,7 @@ public final class OrganizationClassGroupTreeView {
         };
     }
 
-    public boolean isArchived() {
+    public boolean isCompleted() {
         return state == ClassGroupState.COMPLETED;
     }
 
@@ -89,8 +90,8 @@ public final class OrganizationClassGroupTreeView {
         if (startsAt == null && endsAt == null) {
             return "-";
         }
-        return (startsAt == null ? "-" : startsAt.toString())
+        return (startsAt == null ? "-" : ApplicationDateTimeFormat.date(startsAt))
                 + " to "
-                + (endsAt == null ? "-" : endsAt.toString());
+                + (endsAt == null ? "-" : ApplicationDateTimeFormat.date(endsAt));
     }
 }

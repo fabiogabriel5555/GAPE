@@ -23,14 +23,12 @@ INSERT INTO user_account (
 -- Block order must be unique in the same class group
 INSERT INTO content_block (
     id_content_block, id_class_group, cod_content_block, name, description, order_no,
-    access_mode, state, available_from, available_until
+    state
 ) VALUES
-    (9022, 50, 'BLK-UNQ-ORDER', 'Bloco Ordem Duplicada', NULL, 1, 'open', 'active', NULL, NULL);
+    (9022, 50, 'BLK-UNQ-ORDER', 'Bloco Ordem Duplicada', NULL, 1, 'active');
 
--- Only one non-revoked certificate is allowed per course and student
+-- Only one certificate is allowed per course and student
 INSERT INTO certificate (
-    id_certificate, id_course, id_user_student, title, notes, type, template,
-    validation_code, issued_at, state, revoked_at, final_grade
+    id_certificate, id_course, id_course_occurrence, id_user_student, title, notes, type, template, validation_code, issued_at, state, final_grade
 ) VALUES
-    (9023, 30, 4, 'Duplicate Active Certificate', NULL, 'completion', 'template-v1',
-     'VAL-UNQ-ACTIVE-CERT', '2026-07-02 11:00:00', 'issued', NULL, 10.00);
+    (9023, 30, 300, 4, 'Duplicate Active Certificate', NULL, 'completion', 'template-v1', 'CERT-UNIQUE-9023', '2026-07-02 11:00:00', 'issued', 10.00);

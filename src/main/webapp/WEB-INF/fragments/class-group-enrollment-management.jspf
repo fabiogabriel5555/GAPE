@@ -1,145 +1,61 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
-<div class="bg-white rounded-10 px-24 py-24 mb-24" id="class-group-enrollments">
-    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
-        <div>
-            <h3 class="text-18 fw-medium text-neutral-700 mb-4">Enrollments</h3>
-            <span class="text-14 text-neutral-500">Approve requests and keep active enrollments separate from audit history.</span>
-        </div>
-        <div class="d-flex align-items-center gap-10 flex-wrap">
-            <span class="bg-warning-30 text-warning-600 px-14 py-8 rounded-pill text-13 fw-semibold">
-                ${fn:length(pendingClassGroupEnrollments)} pending
-            </span>
-            <span class="bg-success-50 text-success-600 px-14 py-8 rounded-pill text-13 fw-semibold">
-                ${fn:length(activeClassGroupEnrollments)} active
-            </span>
-        </div>
-    </div>
-
-    <c:if test="${not classGroup.archived and canManageClassGroupEnrollments}">
-        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollment-policy" method="post" class="d-flex align-items-center gap-10 flex-wrap mb-20">
-            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-            <input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-enrollments">
-            <span class="text-14 text-neutral-600 fw-medium">Enrollment policy</span>
-            <select name="approvalMode" class="form-select px-14 py-8 text-13 bg-neutral-20 border-neutral-30 border rounded-8" style="max-width: 190px;">
-                <option value="manual" <c:if test="${classGroupEnrollmentPolicy ne 'auto_approve'}">selected</c:if>>Manual approval</option>
-                <option value="auto_approve" <c:if test="${classGroupEnrollmentPolicy eq 'auto_approve'}">selected</c:if>>Auto approve</option>
-            </select>
-            <button type="submit" class="border-main-600 border bg-white px-14 py-8 rounded-8 text-13 fw-semibold text-main-600 hover-bg-main-50 transition-03">Save policy</button>
-        </form>
-
-        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments" method="post" class="border border-neutral-30 rounded-12 px-20 py-18 mb-20">
-            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-            <input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-enrollments">
-            <div class="row gy-3 align-items-start">
-                <div class="col-lg-8 gape-select-field">
-                    <label for="classGroupEnrollmentStudentUserId" class="fw-medium text-base text-neutral-800 mb-12">Student</label>
-                    <select id="classGroupEnrollmentStudentUserId" name="studentUserId" required class="form-select px-20 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
-                        <option value="">Select student</option>
-                        <c:forEach var="student" items="${studentOptions}">
-                            <c:if test="${not activeEnrollmentByStudent[student.id]}">
-                                <option value="${student.id}"><c:out value="${student.name}"/> - <c:out value="${student.email}"/></option>
-                            </c:if>
-                        </c:forEach>
-                    </select>
+<section class="cg-surface px-22 py-22 mb-20" id="class-group-enrollments">
+    <div class="cg-detail-panel">
+        <div class="cg-detail-panel-content" data-cg-detail-sort-root>
+            <div class="cg-detail-panel-header">
+                <div class="cg-detail-panel-heading">
+                    <h3 class="text-18 fw-semibold text-neutral-800 mb-4">Enrollments</h3>
+                    <span class="text-13 text-neutral-500">Manage student membership and review enrollment requests separately.</span>
                 </div>
-                <div class="col-lg-4">
-                    <label for="classGroupEnrollmentEndDate" class="fw-medium text-base text-neutral-800 mb-12">End</label>
-                    <input id="classGroupEnrollmentEndDate" name="endDate" type="date" class="form-control px-20 py-12 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
-                </div>
-                <div class="col-12">
-                    <button type="submit" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03 border-0">Enroll Student</button>
-                </div>
-            </div>
-        </form>
-    </c:if>
-
-    <div class="border border-warning-600 rounded-12 overflow-hidden mb-16">
-        <div class="bg-warning-30 px-20 py-14 border-bottom border-neutral-30">
-            <h4 class="text-16 fw-semibold text-neutral-800 mb-0">Pending approval</h4>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="table mb-0">
-                <thead>
-                <tr>
-                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Student</th>
-                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Period</th>
-                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
-                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                <c:forEach var="enrollment" items="${pendingClassGroupEnrollments}">
-                    <%@ include file="/WEB-INF/fragments/class-group-enrollment-row.jspf" %>
-                </c:forEach>
-                <c:if test="${empty pendingClassGroupEnrollments}">
-                    <tr>
-                        <td colspan="4" class="py-28 px-20 text-center text-14 text-neutral-500">No pending class group enrollment requests.</td>
-                    </tr>
-                </c:if>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="border border-neutral-30 rounded-12 overflow-hidden mb-16">
-        <div class="bg-main-25 px-20 py-14 border-bottom border-neutral-30">
-            <h4 class="text-16 fw-semibold text-neutral-800 mb-0">Active enrollments</h4>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="table mb-0">
-                <thead>
-                <tr>
-                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Student</th>
-                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Period</th>
-                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
-                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                <c:forEach var="enrollment" items="${activeClassGroupEnrollments}">
-                    <%@ include file="/WEB-INF/fragments/class-group-enrollment-row.jspf" %>
-                </c:forEach>
-                <c:if test="${empty activeClassGroupEnrollments}">
-                    <tr>
-                        <td colspan="4" class="py-28 px-20 text-center text-14 text-neutral-500">No active students enrolled in this class group.</td>
-                    </tr>
-                </c:if>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <button type="button" class="border-main-600 border px-16 py-9 rounded-10 text-14 fw-semibold text-main-600 hover-bg-main-50 transition-03 mb-14" data-bs-toggle="collapse" data-bs-target="#classGroupEnrollmentHistory" aria-expanded="false" aria-controls="classGroupEnrollmentHistory">
-        Show audit enrollments
-    </button>
-    <div class="collapse" id="classGroupEnrollmentHistory">
-        <div class="border border-neutral-30 rounded-12 overflow-hidden">
-            <div class="bg-neutral-20 px-20 py-14 border-bottom border-neutral-30">
-                <h4 class="text-16 fw-semibold text-neutral-700 mb-0">Audit history</h4>
-            </div>
-            <div class="overflow-x-auto">
-                <table class="table mb-0">
-                    <thead>
-                    <tr>
-                        <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Student</th>
-                        <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Period</th>
-                        <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
-                        <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <c:forEach var="enrollment" items="${auditClassGroupEnrollments}">
-                        <%@ include file="/WEB-INF/fragments/class-group-enrollment-row.jspf" %>
-                    </c:forEach>
-                    <c:if test="${empty auditClassGroupEnrollments}">
-                        <tr>
-                            <td colspan="4" class="py-28 px-20 text-center text-14 text-neutral-500">No audit enrollment records found.</td>
-                        </tr>
+                <div class="cg-detail-panel-actions">
+                    <div class="dropdown">
+                        <button type="button" class="cg-sort-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" data-cg-detail-sort-toggle aria-expanded="false"><i class="ph ph-sort-ascending"></i>Sort by</button>
+                        <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                            <li><button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-cg-detail-sort-option data-sort-field="name" data-sort-normal="asc" data-sort-state="none" aria-pressed="false"><span>Name</span><span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span></button></li>
+                            <li><button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-cg-detail-sort-option data-sort-field="date" data-sort-normal="desc" data-sort-state="none" aria-pressed="false"><span>Date</span><span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--reverse"></i></span></button></li>
+                            <li><button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-cg-detail-sort-option data-sort-field="status" data-sort-normal="asc" data-sort-state="none" aria-pressed="false"><span>State</span><span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span></button></li>
+                        </ul>
+                    </div>
+                    <c:if test="${not classGroup.completed and canManageClassGroupEnrollments}">
+                        <button type="button" class="cg-outline-button" data-bs-toggle="modal" data-bs-target="#classGroupEnrollmentPolicyModal"><i class="ph ph-sliders-horizontal me-8"></i>Policy</button>
+                        <button type="button" class="cg-primary-button" data-bs-toggle="modal" data-bs-target="#newClassGroupEnrollmentModal"><i class="ph ph-plus-circle me-8"></i>Enroll Student</button>
                     </c:if>
-                    </tbody>
-                </table>
+                </div>
+            </div>
+
+            <div class="cg-enrollment-tabs" role="tablist" aria-label="Class group enrollment views">
+                <button type="button" class="cg-enrollment-tab is-active" data-cg-enrollment-tab="enrollments" aria-selected="true"><i class="ph ph-users-three"></i>Enrollments <span class="cg-element-count">${fn:length(activeClassGroupEnrollments)}</span></button>
+                <button type="button" class="cg-enrollment-tab" data-cg-enrollment-tab="requests" aria-selected="false"><i class="ph ph-clock"></i>Enrollment Requests <c:if test="${fn:length(pendingClassGroupEnrollments) > 0}"><span class="badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2" data-class-group-enrollment-requests-pending-badge>${fn:length(pendingClassGroupEnrollments)}</span></c:if></button>
+            </div>
+
+            <div class="cg-enrollment-tab-panel" data-cg-enrollment-panel="enrollments">
+                <div class="cg-structure-list-header cg-assignment-list-header"><span>Student</span><span>Occurrence period</span><span>State</span><span class="text-end">Actions</span></div>
+                <div class="d-flex flex-column gap-12" data-cg-detail-sort-list>
+                    <c:set var="classGroupEnrollmentTab" value="enrollments"/>
+                    <c:forEach var="enrollment" items="${activeClassGroupEnrollments}" varStatus="enrollmentLoop"><c:set var="classGroupEnrollmentRowIndex" value="${enrollmentLoop.index}"/><%@ include file="/WEB-INF/fragments/class-group-enrollment-row.jspf" %></c:forEach>
+                    <c:if test="${empty activeClassGroupEnrollments}"><div class="border border-neutral-30 rounded-8 px-18 py-28 text-center text-14 text-neutral-500">No active students are enrolled in this class group.</div></c:if>
+                </div>
+                <c:if test="${not empty auditClassGroupEnrollments}">
+                    <div class="border-top border-neutral-30 mt-20 pt-20"><button type="button" class="cg-outline-button" data-bs-toggle="collapse" data-bs-target="#classGroupEnrollmentHistory" aria-expanded="false" aria-controls="classGroupEnrollmentHistory">Show enrollment history</button><div class="collapse mt-14" id="classGroupEnrollmentHistory"><div class="d-flex flex-column gap-12" data-cg-detail-sort-list><c:set var="classGroupEnrollmentTab" value="history"/><c:forEach var="enrollment" items="${auditClassGroupEnrollments}" varStatus="enrollmentLoop"><c:set var="classGroupEnrollmentRowIndex" value="${enrollmentLoop.index}"/><%@ include file="/WEB-INF/fragments/class-group-enrollment-row.jspf" %></c:forEach></div></div></div>
+                </c:if>
+            </div>
+
+            <div class="cg-enrollment-tab-panel" data-cg-enrollment-panel="requests" hidden>
+                <div class="cg-structure-list-header cg-assignment-list-header"><span>Student</span><span>Occurrence period</span><span>State</span><span class="text-end">Actions</span></div>
+                <div class="d-flex flex-column gap-12" data-cg-detail-sort-list>
+                    <c:set var="classGroupEnrollmentTab" value="requests"/>
+                    <c:forEach var="enrollment" items="${pendingClassGroupEnrollments}" varStatus="enrollmentLoop"><c:set var="classGroupEnrollmentRowIndex" value="${enrollmentLoop.index}"/><%@ include file="/WEB-INF/fragments/class-group-enrollment-row.jspf" %></c:forEach>
+                    <c:if test="${empty pendingClassGroupEnrollments}"><div class="border border-neutral-30 rounded-8 px-18 py-28 text-center text-14 text-neutral-500">No pending class group enrollment requests.</div></c:if>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</section>
+
+<c:if test="${not classGroup.completed and canManageClassGroupEnrollments}">
+    <div class="modal fade" id="newClassGroupEnrollmentModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-12 border-0"><div class="modal-header border-neutral-30"><h5 class="modal-title text-18 fw-semibold">Enroll Student</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments" method="post" data-class-group-live-form data-class-group-live-panel="info"><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-enrollments"><div class="modal-body"><p class="text-14 text-neutral-600 mb-20">Search and select a student by name or email.</p><p class="text-13 text-neutral-500 mb-20">The enrollment period is managed automatically from this class group's occurrence.</p><div class="gape-select-field mb-16"><label for="classGroupEnrollmentStudentUserId" class="fw-medium text-base text-neutral-800 mb-12">Student</label><select id="classGroupEnrollmentStudentUserId" name="studentUserId" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select"><option value="">Select student</option><c:forEach var="student" items="${studentOptions}"><c:if test="${not activeEnrollmentByStudent[student.id]}"><option value="${student.id}">#<c:out value="${student.id}"/> &middot; <c:out value="${student.name}"/> &middot; <c:out value="${student.email}"/></option></c:if></c:forEach></select></div></div><div class="modal-footer border-neutral-30"><button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button><button type="submit" class="cg-primary-button border-0" data-class-group-live-submit>Enroll Student</button></div></form></div></div></div>
+
+    <div class="modal fade" id="classGroupEnrollmentPolicyModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-12 border-0"><div class="modal-header border-neutral-30"><h5 class="modal-title text-18 fw-semibold">Enrollment Policy</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollment-policy" method="post" data-class-group-live-form data-class-group-live-panel="info"><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-enrollments"><div class="modal-body"><div><label for="classGroupEnrollmentApprovalMode" class="fw-medium text-base text-neutral-800 mb-12">Approval mode</label><select id="classGroupEnrollmentApprovalMode" name="approvalMode" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8"><option value="manual" <c:if test="${classGroupEnrollmentPolicy ne 'auto_approve'}">selected</c:if>>Manual approval</option><option value="auto_approve" <c:if test="${classGroupEnrollmentPolicy eq 'auto_approve'}">selected</c:if>>Auto approve</option></select></div></div><div class="modal-footer border-neutral-30"><button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button><button type="submit" class="cg-primary-button border-0" data-class-group-live-submit>Save Policy</button></div></form></div></div></div>
+</c:if>

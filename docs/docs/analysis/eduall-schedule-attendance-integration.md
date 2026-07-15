@@ -129,7 +129,7 @@ Additional focused regression run:
 mvn test "-Dtest=ScheduleEventServiceTest,AttendanceRecordServiceTest,AbsenceJustificationServiceTest,TemplateStructureTest"
 ```
 
-Result on 2026-06-27: 63 tests, 0 failures, 0 errors.
+Result on 27-06-2026: 63 tests, 0 failures, 0 errors.
 
 Full regression run:
 
@@ -137,4 +137,4 @@ Full regression run:
 mvn test
 ```
 
-Result on 2026-06-27: 515 tests, 0 failures, 0 errors.
+Result on 27-06-2026: 515 tests, 0 failures, 0 errors.

@@ -36,7 +36,7 @@
         <div class="col-md-3">
             <div class="gape-student-card px-18 py-18 h-100">
                 <span class="text-13 text-neutral-500 d-block mb-4">Submitted</span>
-                <strong class="text-16 fw-semibold text-neutral-800"><c:out value="${attempt.submittedAt}"/></strong>
+                <strong class="text-16 fw-semibold text-neutral-800" data-gape-datetime-display><c:out value="${attempt.submittedAt}"/></strong>
             </div>
         </div>
         <div class="col-md-3">

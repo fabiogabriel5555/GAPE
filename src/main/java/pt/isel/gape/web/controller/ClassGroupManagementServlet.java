@@ -18,24 +18,10 @@ import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import pt.isel.gape.access.dao.UserDAO;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.time.ApplicationClock;
-import pt.isel.gape.learning.dao.ClassGroupDAO;
-import pt.isel.gape.learning.dao.ClassGroupEnrollmentDAO;
-import pt.isel.gape.learning.dao.ContentBlockDAO;
-import pt.isel.gape.learning.dao.CourseDAO;
-import pt.isel.gape.learning.dao.CourseSubjectDAO;
-import pt.isel.gape.learning.dao.EnrollmentApprovalPolicyDAO;
-import pt.isel.gape.learning.dao.EnrollmentDAO;
-import pt.isel.gape.learning.dao.PhysicalRoomDAO;
-import pt.isel.gape.learning.dao.AssessmentDAO;
-import pt.isel.gape.learning.dao.AttemptDAO;
-import pt.isel.gape.learning.dao.QuestionDAO;
-import pt.isel.gape.learning.dao.QuestionOptionDAO;
-import pt.isel.gape.learning.dao.ResponseDAO;
-import pt.isel.gape.learning.dao.SubjectDAO;
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupCreateCommand;
 import pt.isel.gape.learning.model.ClassGroupEnrollmentCommand;
@@ -46,7 +32,6 @@ import pt.isel.gape.learning.model.ClassGroupUpdateCommand;
 import pt.isel.gape.learning.model.BlockContentPlacement;
 import pt.isel.gape.learning.model.ContentAssociationType;
 import pt.isel.gape.learning.model.ContentBlock;
-import pt.isel.gape.learning.model.ContentBlockAccessMode;
 import pt.isel.gape.learning.model.ContentBlockCreateCommand;
 import pt.isel.gape.learning.model.ContentBlockState;
 import pt.isel.gape.learning.model.ContentBlockUpdateCommand;
@@ -61,6 +46,7 @@ import pt.isel.gape.learning.model.Lesson;
 import pt.isel.gape.learning.model.LessonCreateCommand;
 import pt.isel.gape.learning.model.LessonState;
 import pt.isel.gape.learning.model.LessonType;
+import pt.isel.gape.learning.model.AttemptState;
 import pt.isel.gape.learning.model.PhysicalRoom;
 import pt.isel.gape.learning.model.PhysicalRoomState;
 import pt.isel.gape.learning.service.ClassGroupEnrollmentService;
@@ -68,27 +54,34 @@ import pt.isel.gape.learning.service.ClassGroupService;
 import pt.isel.gape.learning.service.ContentAssociationService;
 import pt.isel.gape.learning.service.ContentBlockService;
 import pt.isel.gape.learning.service.ContentItemService;
+import pt.isel.gape.learning.service.CertificateService;
+import pt.isel.gape.learning.service.GradeCertificateReadService;
+import pt.isel.gape.learning.service.GradeRecordService;
+import pt.isel.gape.learning.service.GradeSheetService;
 import pt.isel.gape.learning.service.LessonService;
 import pt.isel.gape.learning.service.PdfUploadService;
 import pt.isel.gape.learning.service.PhysicalRoomService;
 import pt.isel.gape.security.session.SessionUser;
-import pt.isel.gape.structure.dao.OrganicUnitDAO;
-import pt.isel.gape.structure.dao.OrganizationDAO;
-import pt.isel.gape.structure.dao.TeachClassGroupDAO;
+import pt.isel.gape.structure.model.RoleAssignmentState;
+import pt.isel.gape.transversal.service.ApplicationReadService;
 import pt.isel.gape.web.view.BlockActivityView;
 import pt.isel.gape.web.view.BlockContentItemView;
 import pt.isel.gape.web.view.AssessmentView;
 import pt.isel.gape.web.view.ClassGroupEnrollmentView;
 import pt.isel.gape.web.view.ClassGroupFormData;
+import pt.isel.gape.web.view.ClassGroupOccurrenceGroupView;
 import pt.isel.gape.web.view.ClassGroupTeacherView;
 import pt.isel.gape.web.view.ClassGroupView;
 import pt.isel.gape.web.view.ContentBlockFormData;
 import pt.isel.gape.web.view.ContentBlockView;
 import pt.isel.gape.web.view.ContentRepositoryItemView;
+import pt.isel.gape.web.view.CourseOccurrenceView;
 import pt.isel.gape.web.view.CourseSubjectView;
 import pt.isel.gape.web.view.CourseView;
+import pt.isel.gape.web.view.GradeSheetView;
 import pt.isel.gape.web.view.LessonView;
 import pt.isel.gape.web.view.PhysicalRoomView;
+import pt.isel.gape.web.view.SubjectView;
 
 @WebServlet(name = "classGroupManagementServlet", urlPatterns = {"/learning/class-groups", "/learning/class-groups/*"})
 @MultipartConfig(maxFileSize = 1024L * 1024L, maxRequestSize = 2L * 1024L * 1024L)
@@ -114,6 +107,17 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
             "/instructor/instructor/class-group/instructor-class-group-form.jsp";
     private static final String INSTRUCTOR_CONTENT_BLOCK_FORM_JSP =
             "/instructor/instructor/class-group/instructor-content-block-form.jsp";
+    private static final String CLASS_GROUP_ENROLLMENTS_FRAGMENT_JSP =
+            "/WEB-INF/fragments/class-group-enrollments-panel.jsp";
+    private static final String CLASS_GROUP_TEACHERS_FRAGMENT_JSP =
+            "/WEB-INF/fragments/class-group-teachers-panel.jsp";
+    private static final String CLASS_GROUP_GRADE_SHEET_FRAGMENT_JSP =
+            "/WEB-INF/fragments/class-group-grade-sheet-panel.jsp";
+    private static final String CLASS_GROUP_LIST_ROWS_FRAGMENT_JSP =
+            "/WEB-INF/fragments/class-group-list-rows.jsp";
+    private static final String CLASS_GROUP_ACTIVITIES_FRAGMENT_JSP =
+            "/WEB-INF/fragments/class-group-activities-panel.jspf";
+    private static final int LIST_PAGE_SIZE = 10;
 
     private final ClassGroupService classGroupService;
     private final ClassGroupEnrollmentService enrollmentService;
@@ -123,14 +127,25 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
     private final LessonService lessonService;
     private final PhysicalRoomService roomService;
     private final PdfUploadService pdfUploadService;
-    private final ClassGroupDAO classGroupDAO;
-    private final CourseDAO courseDAO;
-    private final CourseSubjectDAO courseSubjectDAO;
-    private final EnrollmentApprovalPolicyDAO enrollmentApprovalPolicyDAO;
-    private final PhysicalRoomDAO physicalRoomDAO;
+    private final ApplicationReadService.ClassGroups classGroupDAO;
+    private final ApplicationReadService.Courses courseDAO;
+    private final ApplicationReadService.CourseSubjects courseSubjectDAO;
+    private final ApplicationReadService.EnrollmentApprovalPolicies enrollmentApprovalPolicyDAO;
+    private final ApplicationReadService.ClassGroupEnrollments classGroupEnrollmentDAO;
+    private final ApplicationReadService.AssessmentEnrollments assessmentEnrollmentDAO;
+    private final ApplicationReadService.Attempts attemptDAO;
+    private final ApplicationReadService.PhysicalRooms physicalRoomDAO;
     private final LearningViewFactory viewFactory;
-    private final AssessmentDAO assessmentDAO;
+    private final ApplicationReadService.Assessments assessmentDAO;
     private final AssessmentViewFactory assessmentViewFactory;
+    private final GradeCertificateServlet gradeCertificateServlet;
+
+    private record SubjectCreationContext(
+            SubjectView subject,
+            Map<Long, CourseSubjectView> associationsByCourseId,
+            Map<Long, Boolean> selectableCourseById
+    ) {
+    }
 
     public ClassGroupManagementServlet() {
         this(ConnectionProvider.defaultProvider(), ApplicationClock.system());
@@ -138,6 +153,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
 
     private ClassGroupManagementServlet(ConnectionProvider connectionProvider, Clock clock) {
         this(
+                new ApplicationReadService(connectionProvider),
                 new ClassGroupService(connectionProvider, clock),
                 new ClassGroupEnrollmentService(connectionProvider, clock),
                 new ContentBlockService(connectionProvider, clock),
@@ -146,40 +162,19 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 new LessonService(connectionProvider, clock),
                 new PhysicalRoomService(connectionProvider, clock),
                 new PdfUploadService(),
-                new ClassGroupDAO(connectionProvider),
-                new CourseDAO(connectionProvider),
-                new CourseSubjectDAO(connectionProvider),
-                new EnrollmentApprovalPolicyDAO(connectionProvider),
-                new PhysicalRoomDAO(connectionProvider),
-                new LearningViewFactory(
-                        new OrganizationDAO(connectionProvider),
-                        new OrganicUnitDAO(connectionProvider),
-                        new CourseDAO(connectionProvider),
-                        new SubjectDAO(connectionProvider),
-                        new CourseSubjectDAO(connectionProvider),
-                        new EnrollmentDAO(connectionProvider),
-                        new ClassGroupDAO(connectionProvider),
-                        new ClassGroupEnrollmentDAO(connectionProvider),
-                        new ContentBlockDAO(connectionProvider),
-                        new UserDAO(connectionProvider),
-                        new TeachClassGroupDAO(connectionProvider)
-                ),
-                new AssessmentDAO(connectionProvider),
-                new AssessmentViewFactory(
-                        new AssessmentDAO(connectionProvider),
-                        new QuestionDAO(connectionProvider),
-                        new QuestionOptionDAO(connectionProvider),
-                        new AttemptDAO(connectionProvider),
-                        new ResponseDAO(connectionProvider),
-                        new SubjectDAO(connectionProvider),
-                        new ContentBlockDAO(connectionProvider),
-                        new ClassGroupDAO(connectionProvider),
-                        new UserDAO(connectionProvider)
+                new GradeCertificateServlet(
+                        connectionProvider,
+                        new GradeSheetService(connectionProvider, clock),
+                        new GradeRecordService(connectionProvider, clock),
+                        new CertificateService(connectionProvider, clock),
+                        new GradeCertificateReadService(connectionProvider),
+                        clock
                 )
         );
     }
 
     ClassGroupManagementServlet(
+            ApplicationReadService readService,
             ClassGroupService classGroupService,
             ClassGroupEnrollmentService enrollmentService,
             ContentBlockService contentBlockService,
@@ -188,14 +183,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
             LessonService lessonService,
             PhysicalRoomService roomService,
             PdfUploadService pdfUploadService,
-            ClassGroupDAO classGroupDAO,
-            CourseDAO courseDAO,
-            CourseSubjectDAO courseSubjectDAO,
-            EnrollmentApprovalPolicyDAO enrollmentApprovalPolicyDAO,
-            PhysicalRoomDAO physicalRoomDAO,
-            LearningViewFactory viewFactory,
-            AssessmentDAO assessmentDAO,
-            AssessmentViewFactory assessmentViewFactory
+            GradeCertificateServlet gradeCertificateServlet
     ) {
         this.classGroupService = classGroupService;
         this.enrollmentService = enrollmentService;
@@ -205,14 +193,41 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         this.lessonService = lessonService;
         this.roomService = roomService;
         this.pdfUploadService = pdfUploadService;
-        this.classGroupDAO = classGroupDAO;
-        this.courseDAO = courseDAO;
-        this.courseSubjectDAO = courseSubjectDAO;
-        this.enrollmentApprovalPolicyDAO = enrollmentApprovalPolicyDAO;
-        this.physicalRoomDAO = physicalRoomDAO;
-        this.viewFactory = viewFactory;
-        this.assessmentDAO = assessmentDAO;
-        this.assessmentViewFactory = assessmentViewFactory;
+        this.classGroupDAO = readService.classGroups();
+        this.courseDAO = readService.courses();
+        this.courseSubjectDAO = readService.courseSubjects();
+        this.enrollmentApprovalPolicyDAO = readService.enrollmentApprovalPolicies();
+        this.classGroupEnrollmentDAO = readService.classGroupEnrollments();
+        this.assessmentEnrollmentDAO = readService.assessmentEnrollments();
+        this.attemptDAO = readService.attempts();
+        this.physicalRoomDAO = readService.physicalRooms();
+        this.viewFactory = new LearningViewFactory(
+                readService.organizations(),
+                readService.organicUnits(),
+                readService.courses(),
+                readService.courseOccurrences(),
+                readService.subjects(),
+                readService.courseSubjects(),
+                readService.enrollments(),
+                readService.classGroups(),
+                readService.classGroupEnrollments(),
+                readService.contentBlocks(),
+                readService.users(),
+                readService.teachClassGroups()
+        );
+        this.assessmentDAO = readService.assessments();
+        this.assessmentViewFactory = new AssessmentViewFactory(
+                readService.assessments(),
+                readService.questions(),
+                readService.questionOptions(),
+                readService.attempts(),
+                readService.responses(),
+                readService.subjects(),
+                readService.contentBlocks(),
+                readService.classGroups(),
+                readService.users()
+        );
+        this.gradeCertificateServlet = gradeCertificateServlet;
     }
 
     @Override
@@ -238,23 +253,37 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 showDetail(request, response, Long.parseLong(segments[0]));
                 return;
             }
+            if (segments.length == 2 && "structure".equals(segments[1])) {
+                showStructureFragment(request, response, Long.parseLong(segments[0]));
+                return;
+            }
+            if (segments.length == 2 && "enrollments".equals(segments[1])) {
+                showEnrollmentsFragment(request, response, Long.parseLong(segments[0]));
+                return;
+            }
+            if (segments.length == 2 && "teachers".equals(segments[1])) {
+                showTeachersFragment(request, response, Long.parseLong(segments[0]));
+                return;
+            }
+            if (segments.length == 2 && "grade-sheet".equals(segments[1])) {
+                showGradeSheetFragment(request, response, Long.parseLong(segments[0]));
+                return;
+            }
+            if (segments.length == 2 && "activities".equals(segments[1])) {
+                showActivitiesFragment(request, response, Long.parseLong(segments[0]));
+                return;
+            }
             if (segments.length == 2 && "edit".equals(segments[1])) {
                 showEditForm(request, response, Long.parseLong(segments[0]), null);
                 return;
             }
             if (segments.length == 3 && "blocks".equals(segments[1]) && "new".equals(segments[2])) {
-                showContentBlockForm(request, response, Long.parseLong(segments[0]), null, true, null);
+                redirect(request, response, "/learning/class-groups/" + Long.parseLong(segments[0]) + "#pedagogical-blocks");
                 return;
             }
             if (segments.length == 4 && "blocks".equals(segments[1]) && "edit".equals(segments[3])) {
-                showContentBlockForm(
-                        request,
-                        response,
-                        Long.parseLong(segments[0]),
-                        Long.parseLong(segments[2]),
-                        false,
-                        null
-                );
+                redirect(request, response, "/learning/class-groups/" + Long.parseLong(segments[0]) + "#block-"
+                        + Long.parseLong(segments[2]));
                 return;
             }
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -276,10 +305,13 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 updateClassGroup(request, response, Long.parseLong(segments[0]));
                 return;
             }
+            long classGroupId = Long.parseLong(segments[0]);
+            if (!isClassGroupDeletionRequest(segments) && isCompletedClassGroup(request, classGroupId)) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
             if (segments.length == 2) {
-                long classGroupId = Long.parseLong(segments[0]);
                 switch (segments[1]) {
-                    case "archive" -> archiveClassGroup(request, response, classGroupId);
                     case "delete" -> deleteClassGroup(request, response, classGroupId);
                     case "teachers" -> assignTeacher(request, response, classGroupId);
                     case "enrollments" -> enrollStudent(request, response, classGroupId);
@@ -301,16 +333,16 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 withdrawStudent(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
                 return;
             }
-            if (segments.length == 4 && "enrollments".equals(segments[1]) && "update".equals(segments[3])) {
-                updateStudentEnrollment(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
-                return;
-            }
             if (segments.length == 4 && "enrollments".equals(segments[1]) && "delete".equals(segments[3])) {
                 deleteStudentEnrollment(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
                 return;
             }
             if (segments.length == 4 && "teachers".equals(segments[1]) && "remove".equals(segments[3])) {
                 removeTeacher(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
+                return;
+            }
+            if (segments.length == 4 && "teachers".equals(segments[1]) && "update".equals(segments[3])) {
+                updateTeacherAssignment(request, response, Long.parseLong(segments[0]), Long.parseLong(segments[2]));
                 return;
             }
             if (segments.length == 3 && "blocks".equals(segments[1]) && "reorder".equals(segments[2])) {
@@ -342,12 +374,9 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 return;
             }
             if (segments.length == 4 && "blocks".equals(segments[1])) {
-                long classGroupId = Long.parseLong(segments[0]);
                 long contentBlockId = Long.parseLong(segments[2]);
                 switch (segments[3]) {
                     case "lessons" -> createBlockLesson(request, response, classGroupId, contentBlockId);
-                    case "archive" -> archiveContentBlock(request, response, classGroupId, contentBlockId);
-                    case "unarchive" -> unarchiveContentBlock(request, response, classGroupId, contentBlockId);
                     case "delete" -> deleteContentBlock(request, response, classGroupId, contentBlockId);
                     default -> response.sendError(HttpServletResponse.SC_NOT_FOUND);
                 }
@@ -361,28 +390,12 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
 
     private void showList(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        Long courseFilter = optionalLong(request, "courseId");
-        Long subjectFilter = optionalLong(request, "subjectId");
-        List<ClassGroup> visible = visibleClassGroups(request).stream()
-                .filter(classGroup -> courseFilter == null || classGroup.courseId() == courseFilter)
-                .filter(classGroup -> subjectFilter == null || classGroup.subjectId() == subjectFilter)
-                .sorted(Comparator.comparingLong(ClassGroup::id))
-                .toList();
-        List<ClassGroupView> classGroups = viewFactory.classGroupViews(visible);
-        Map<Long, List<LessonView>> classGroupLessonsByClassGroup = classGroupLessonsByClassGroup(request, visible);
-        Map<Long, List<PhysicalRoomView>> classGroupRoomsByClassGroup =
-                classGroupRoomsByClassGroup(classGroupLessonsByClassGroup);
-        request.setAttribute("classGroups", classGroups);
-        request.setAttribute("classGroupLessonsByClassGroup", classGroupLessonsByClassGroup);
-        request.setAttribute("classGroupRoomsByClassGroup", classGroupRoomsByClassGroup);
-        request.setAttribute("canManagePhysicalRoomByCode",
-                canManagePhysicalRoomByCode(request, classGroupRoomsByClassGroup));
-        request.setAttribute("classGroupCount", classGroups.size());
-        request.setAttribute("activeClassGroups", classGroups.stream().filter(ClassGroupView::isActive).count());
-        request.setAttribute("archivedClassGroups", classGroups.stream().filter(ClassGroupView::isArchived).count());
-        request.setAttribute("canCreateClassGroups", canCreateClassGroups(request));
-        request.setAttribute("canModifyClassGroupById", canModifyClassGroupById(request, classGroups));
-        request.setAttribute("canManageClassGroupStructureById", canManageClassGroupStructureById(request, classGroups));
+        if (isListRowsFragmentRequest(request)) {
+            prepareClassGroupListRows(request, requestedListOffset(request), requestedListLoadAll(request));
+            forward(request, response, CLASS_GROUP_LIST_ROWS_FRAGMENT_JSP);
+            return;
+        }
+        prepareClassGroupListRows(request, 0, false);
         prepareDashboard(
                 request,
                 "class-groups",
@@ -393,8 +406,85 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         forward(request, response, classGroupListJsp(request));
     }
 
+    /**
+     * Supplies a small, independently refreshable page of rows.  Activities are deliberately
+     * excluded here and are fetched only when a row is opened.
+     */
+    private void prepareClassGroupListRows(
+            HttpServletRequest request,
+            int requestedOffset,
+            boolean loadAll
+    ) {
+        Long courseFilter = optionalLong(request, "courseId");
+        Long subjectFilter = optionalLong(request, "subjectId");
+        List<ClassGroup> visible = visibleClassGroups(request).stream()
+                .filter(classGroup -> courseFilter == null || classGroup.courseId() == courseFilter)
+                .filter(classGroup -> subjectFilter == null || classGroup.subjectId() == subjectFilter)
+                .sorted(Comparator.comparingLong(ClassGroup::id).reversed())
+                .toList();
+        int total = visible.size();
+        int fromIndex = Math.min(Math.max(0, requestedOffset), total);
+        int toIndex = loadAll ? total : Math.min(fromIndex + LIST_PAGE_SIZE, total);
+        List<ClassGroup> pageClassGroups = visible.subList(fromIndex, toIndex);
+        List<ClassGroupView> classGroups = viewFactory.classGroupViews(pageClassGroups);
+        request.setAttribute("classGroups", classGroups);
+        request.setAttribute("classGroupCount", total);
+        request.setAttribute("activeClassGroups", visible.stream().filter(classGroup -> classGroup.state() == ClassGroupState.ACTIVE).count());
+        request.setAttribute("completedClassGroups", visible.stream().filter(classGroup -> classGroup.state() == ClassGroupState.COMPLETED).count());
+        request.setAttribute("canCreateClassGroups", canCreateClassGroups(request));
+        request.setAttribute("canModifyClassGroupById", canModifyClassGroupById(request, classGroups));
+        request.setAttribute("canManageClassGroupStructureById", canManageClassGroupStructureById(request, classGroups));
+        request.setAttribute(
+                "classGroupEventCountById",
+                manageableEventCountsByClassGroupId(request, classGroups)
+        );
+        request.setAttribute("classGroupListOffset", fromIndex);
+        request.setAttribute("classGroupListCurrentPage", fromIndex / LIST_PAGE_SIZE + 1);
+        request.setAttribute("classGroupListLoadAll", loadAll);
+        request.setAttribute("classGroupListHasMore", !loadAll && toIndex < total);
+        request.setAttribute("classGroupListNextOffset", toIndex);
+    }
+
+    private void showActivitiesFragment(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long classGroupId
+    ) throws ServletException, IOException {
+        SessionUser actor = requireCurrentUser(request);
+        ClassGroup classGroup = visibleClassGroup(request, actor, classGroupId);
+        ClassGroupView classGroupView = viewFactory.classGroupView(classGroup);
+        List<ClassGroup> classGroups = List.of(classGroup);
+        Map<Long, List<LessonView>> lessonsByClassGroup = classGroupLessonsByClassGroup(request, classGroups);
+        Map<Long, List<AssessmentView>> assessmentsByClassGroup = classGroupAssessmentsByClassGroup(classGroups);
+        Map<Long, List<PhysicalRoomView>> roomsByClassGroup =
+                classGroupRoomsByClassGroup(lessonsByClassGroup, assessmentsByClassGroup);
+        request.setAttribute("classGroup", classGroupView);
+        request.setAttribute("classGroupLessonsByClassGroup", lessonsByClassGroup);
+        request.setAttribute("classGroupAssessmentsByClassGroup", assessmentsByClassGroup);
+        request.setAttribute("classGroupRoomsByClassGroup", roomsByClassGroup);
+        request.setAttribute("canManagePhysicalRoomByCode", canManagePhysicalRoomByCode(request, roomsByClassGroup));
+        request.setAttribute("canModifyClassGroup", canModifyClassGroup(request, classGroupView));
+        request.setAttribute("currentReturnToParam", "/learning/class-groups");
+        forward(request, response, CLASS_GROUP_ACTIVITIES_FRAGMENT_JSP);
+    }
+
     private void showDetail(HttpServletRequest request, HttpServletResponse response, long classGroupId)
             throws ServletException, IOException {
+        // The learning plan is the default view.  Keep it in the first response just like
+        // Subject Details does, so the user sees the already-rendered structure immediately.
+        showDetail(request, response, classGroupId, true);
+    }
+
+    /**
+     * The structure is available in the initial response.  The explicit endpoint remains for
+     * live refreshes after a structure mutation.
+     */
+    private void showDetail(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long classGroupId,
+            boolean includeStructure
+    ) throws ServletException, IOException {
         SessionUser actor = requireCurrentUser(request);
         ClassGroup classGroup = classGroupService.getClassGroup(
                 actor.userId(),
@@ -403,12 +493,66 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 classGroupId,
                 request.getRemoteAddr()
         );
+        markLearningEventsReadForCurrentUser(request, "/learning/class-groups/" + classGroup.id(), true);
         ClassGroupView classGroupView = viewFactory.classGroupView(classGroup);
+        boolean classGroupCompleted = classGroupView.isCompleted();
         boolean canManageClassGroup = canModifyClassGroup(request, classGroupView);
-        boolean canManageClassGroupStructure = canManageClassGroupStructure(request, classGroupView);
+        boolean canDeleteClassGroup = canManageClassGroupStructure(request, classGroupView);
+        boolean canManageClassGroupStructure = !classGroupCompleted && canDeleteClassGroup;
         boolean canManageClassGroupEnrollments = canManageClassGroupEnrollments(request, classGroupView);
         boolean canManageTeacherAssignments = canManageClassGroupStructure
                 && primaryProfile(actor) != AccessProfileType.TEACHER;
+        request.setAttribute("classGroup", classGroupView);
+        request.setAttribute("classGroupDetailStructureLoaded", includeStructure);
+        if (includeStructure) {
+            prepareClassGroupStructureAttributes(
+                    request,
+                    actor,
+                    classGroupView,
+                    canManageClassGroup,
+                    canManageClassGroupStructure
+            );
+        }
+        request.setAttribute(
+                "classGroupAssessmentWeightWarning",
+                includeStructure ? classGroupAssessmentWeightWarning(classGroupId) : null
+        );
+        request.setAttribute("canManageClassGroup", canManageClassGroup);
+        request.setAttribute("canManageClassGroupContent", !classGroupCompleted && canManageClassGroup);
+        request.setAttribute("canManageLessons", !classGroupCompleted && canManageClassGroup);
+        request.setAttribute("canManageClassGroupStructure", canManageClassGroupStructure);
+        request.setAttribute("canDeleteClassGroup", canDeleteClassGroup);
+        request.setAttribute("canManageClassGroupEnrollments", canManageClassGroupEnrollments);
+        // This count belongs to the detail card only.  The dashboard attribute with a
+        // similarly named purpose is calculated across every manageable class group by
+        // DashboardServletSupport, so do not overwrite it here.
+        request.setAttribute(
+                "classGroupDetailPendingEnrollmentCount",
+                canManageClassGroupEnrollments ? pendingEnrollmentCount(classGroupId) : 0
+        );
+        request.setAttribute("canManageTeacherAssignments", canManageTeacherAssignments);
+        request.setAttribute("classGroupGradeSheetAvailable", Boolean.FALSE);
+        request.setAttribute("classGroupBackHref", backHref(request, "/learning/class-groups"));
+        prepareClassGroupContext(request, classGroupView, "detail");
+        prepareDashboard(request, "class-groups", "Class Group Details");
+        forward(request, response, classGroupDetailJsp(request));
+    }
+
+    private void showStructureFragment(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long classGroupId
+    ) throws ServletException, IOException {
+        showDetail(request, response, classGroupId, true);
+    }
+
+    private void prepareClassGroupStructureAttributes(
+            HttpServletRequest request,
+            SessionUser actor,
+            ClassGroupView classGroup,
+            boolean canManageClassGroup,
+            boolean canManageClassGroupStructure
+    ) {
         List<ContentBlockView> blocks = List.of();
         String blockContentLoadError = null;
         if (canManageClassGroup || canManageClassGroupStructure) {
@@ -417,7 +561,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                                 actor.userId(),
                                 currentSessionId(request),
                                 primaryProfile(actor),
-                                classGroupId,
+                                classGroup.getId(),
                                 request.getRemoteAddr()
                         )
                         .stream()
@@ -427,10 +571,6 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 blockContentLoadError = "Could not load pedagogical blocks for this class group.";
             }
         }
-        List<ClassGroupEnrollmentView> enrollments = viewFactory.classGroupEnrollmentViews(classGroupId);
-        prepareClassGroupEnrollmentAttributes(request, classGroupView, enrollments);
-        List<ClassGroupTeacherView> teacherAssignments = viewFactory.classGroupTeacherViews(classGroupId);
-        Map<Long, Boolean> activeEnrollmentByStudent = activeEnrollmentByStudent(enrollments);
         Map<Long, List<BlockContentItemView>> blockContentsByBlock = new LinkedHashMap<>();
         Map<Long, List<LessonView>> blockLessonsByBlock = new LinkedHashMap<>();
         Map<Long, List<AssessmentView>> blockAssessmentsByBlock = new LinkedHashMap<>();
@@ -443,13 +583,35 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 blockContentLoadError = "Could not load pedagogical contents for this class group.";
             }
         }
-        int blockContentCount = blockContentsByBlock.values().stream().mapToInt(List::size).sum();
-        int lessonCount = blockLessonsByBlock.values().stream().mapToInt(List::size).sum();
-        int assessmentCount = blockAssessmentsByBlock.values().stream().mapToInt(List::size).sum();
-        long pdfContentCount = blockContentsByBlock.values().stream()
-                .flatMap(List::stream)
-                .filter(BlockContentItemView::isPdf)
-                .count();
+        request.setAttribute("contentBlocks", blocks);
+        request.setAttribute("blockContentsByBlock", blockContentsByBlock);
+        request.setAttribute("blockLessonsByBlock", blockLessonsByBlock);
+        request.setAttribute("blockAssessmentsByBlock", blockAssessmentsByBlock);
+        Map<Long, Integer> pendingAssessmentEnrollmentCountById =
+                pendingAssessmentEnrollmentCounts(blockAssessmentsByBlock);
+        Map<Long, Integer> pendingAssessmentCorrectionCountById =
+                pendingAssessmentCorrectionCounts(blockAssessmentsByBlock);
+        request.setAttribute("classGroupAssessmentPendingEnrollmentCountById", pendingAssessmentEnrollmentCountById);
+        request.setAttribute("classGroupAssessmentPendingCorrectionCountById", pendingAssessmentCorrectionCountById);
+        request.setAttribute(
+                "classGroupDetailPendingCorrectionCount",
+                pendingAssessmentCorrectionCountById.values().stream().mapToInt(Integer::intValue).sum()
+        );
+        request.setAttribute("blockActivitiesByBlock", blockActivitiesByBlock(
+                blocks,
+                blockContentsByBlock,
+                blockLessonsByBlock,
+                blockAssessmentsByBlock
+        ));
+        request.setAttribute("blockContentLoadSuccess", blockContentLoadError == null);
+        request.setAttribute("blockContentLoadError", blockContentLoadError);
+        request.setAttribute("blockContentCount", blockContentsByBlock.values().stream().mapToInt(List::size).sum());
+        request.setAttribute("lessonCount", blockLessonsByBlock.values().stream().mapToInt(List::size).sum());
+        request.setAttribute("assessmentCount", blockAssessmentsByBlock.values().stream().mapToInt(List::size).sum());
+        request.setAttribute(
+                "pdfContentCount",
+                blockContentsByBlock.values().stream().flatMap(List::stream).filter(BlockContentItemView::isPdf).count()
+        );
         List<ContentRepositoryItemView> contentRepository = List.of();
         if (canManageClassGroupStructure) {
             try {
@@ -458,7 +620,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                                 currentSessionId(request),
                                 primaryProfile(actor),
                                 ContentAssociationType.CLASS_GROUP,
-                                classGroupId,
+                                classGroup.getId(),
                                 request.getRemoteAddr()
                         )
                         .stream()
@@ -468,44 +630,112 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 contentRepository = List.of();
             }
         }
+        request.setAttribute("contentRepository", contentRepository);
+        request.setAttribute("physicalRoomOptions", physicalRoomOptions(classGroup));
+    }
+
+    private void showEnrollmentsFragment(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long classGroupId
+    ) throws ServletException, IOException {
+        SessionUser actor = requireCurrentUser(request);
+        ClassGroup classGroup = visibleClassGroup(request, actor, classGroupId);
+        ClassGroupView classGroupView = viewFactory.classGroupView(classGroup);
+        List<ClassGroupEnrollmentView> enrollments = viewFactory.classGroupEnrollmentViews(classGroupId);
 
         request.setAttribute("classGroup", classGroupView);
-        request.setAttribute("contentBlocks", blocks);
-        request.setAttribute("blockContentsByBlock", blockContentsByBlock);
-        request.setAttribute("blockLessonsByBlock", blockLessonsByBlock);
-        request.setAttribute("blockAssessmentsByBlock", blockAssessmentsByBlock);
-        request.setAttribute("blockActivitiesByBlock", blockActivitiesByBlock(
-                blocks,
-                blockContentsByBlock,
-                blockLessonsByBlock,
-                blockAssessmentsByBlock
-        ));
-        request.setAttribute("blockContentLoadSuccess", blockContentLoadError == null);
-        request.setAttribute("blockContentLoadError", blockContentLoadError);
-        request.setAttribute("blockContentCount", blockContentCount);
-        request.setAttribute("lessonCount", lessonCount);
-        request.setAttribute("assessmentCount", assessmentCount);
-        request.setAttribute(
-                "classGroupAssessmentWeightWarning",
-                classGroupAssessmentWeightWarning(classGroupId)
-        );
-        request.setAttribute("pdfContentCount", pdfContentCount);
-        request.setAttribute("contentRepository", contentRepository);
+        prepareClassGroupEnrollmentAttributes(request, classGroupView, enrollments);
         request.setAttribute("classGroupEnrollmentPolicy", classGroupEnrollmentPolicy(classGroupId));
-        request.setAttribute("classGroupTeachers", teacherAssignments);
-        request.setAttribute("teacherOptions", viewFactory.activeTeacherOptions(null));
-        request.setAttribute("studentOptions", viewFactory.eligibleStudentOptions(classGroup.courseId(), classGroup.subjectId()));
-        request.setAttribute("physicalRoomOptions", physicalRoomOptions(classGroupView));
-        request.setAttribute("activeEnrollmentByStudent", activeEnrollmentByStudent);
-        request.setAttribute("canManageClassGroup", canManageClassGroup);
-        request.setAttribute("canManageLessons", canManageClassGroup);
-        request.setAttribute("canManageClassGroupStructure", canManageClassGroupStructure);
-        request.setAttribute("canManageClassGroupEnrollments", canManageClassGroupEnrollments);
+        request.setAttribute("activeEnrollmentByStudent", activeEnrollmentByStudent(enrollments));
+        request.setAttribute(
+                "studentOptions",
+                canManageClassGroupEnrollments(request, classGroupView)
+                        ? viewFactory.eligibleStudentOptions(classGroup.courseId(), classGroup.subjectId())
+                        : List.of()
+        );
+        prepareClassGroupFragment(request, classGroupView);
+        forward(request, response, CLASS_GROUP_ENROLLMENTS_FRAGMENT_JSP);
+    }
+
+    private void showTeachersFragment(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long classGroupId
+    ) throws ServletException, IOException {
+        SessionUser actor = requireCurrentUser(request);
+        ClassGroup classGroup = visibleClassGroup(request, actor, classGroupId);
+        ClassGroupView classGroupView = viewFactory.classGroupView(classGroup);
+        boolean canManageTeacherAssignments = !classGroupView.isCompleted()
+                && canManageClassGroupStructure(request, classGroupView)
+                && primaryProfile(actor) != AccessProfileType.TEACHER;
+
+        request.setAttribute("classGroup", classGroupView);
+        request.setAttribute("classGroupTeachers", viewFactory.classGroupTeacherViews(classGroupId));
         request.setAttribute("canManageTeacherAssignments", canManageTeacherAssignments);
-        request.setAttribute("classGroupBackHref", backHref(request, "/learning/class-groups"));
-        prepareClassGroupContext(request, classGroupView, "detail");
-        prepareDashboard(request, "class-groups", "Class Group Detail");
-        forward(request, response, classGroupDetailJsp(request));
+        request.setAttribute(
+                "teacherOptions",
+                canManageTeacherAssignments ? viewFactory.activeTeacherOptions(null) : List.of()
+        );
+        prepareClassGroupFragment(request, classGroupView);
+        forward(request, response, CLASS_GROUP_TEACHERS_FRAGMENT_JSP);
+    }
+
+    private void showGradeSheetFragment(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long classGroupId
+    ) throws ServletException, IOException {
+        SessionUser actor = requireCurrentUser(request);
+        ClassGroup classGroup = visibleClassGroup(request, actor, classGroupId);
+        ClassGroupView classGroupView = viewFactory.classGroupView(classGroup);
+        GradeSheetView classGroupGradeSheet = classGroupGradeSheet(request, actor, classGroupId);
+
+        request.setAttribute("classGroup", classGroupView);
+        request.setAttribute("classGroupGradeSheet", classGroupGradeSheet);
+        request.setAttribute("classGroupGradeDocument",
+                classGroupGradeSheet == null ? null : classGroupGradeSheet.getDocument());
+        request.setAttribute("classGroupGradeSheetAvailable", classGroupGradeSheet != null);
+        prepareClassGroupFragment(request, classGroupView);
+        forward(request, response, CLASS_GROUP_GRADE_SHEET_FRAGMENT_JSP);
+    }
+
+    private ClassGroup visibleClassGroup(HttpServletRequest request, SessionUser actor, long classGroupId) {
+        return classGroupService.getClassGroup(
+                actor.userId(),
+                currentSessionId(request),
+                primaryProfile(actor),
+                classGroupId,
+                request.getRemoteAddr()
+        );
+    }
+
+    private boolean isCompletedClassGroup(HttpServletRequest request, long classGroupId) {
+        SessionUser actor = requireCurrentUser(request);
+        return visibleClassGroup(request, actor, classGroupId).state() == ClassGroupState.COMPLETED;
+    }
+
+    private static boolean isClassGroupDeletionRequest(String[] segments) {
+        return segments.length == 2 && "delete".equals(segments[1]);
+    }
+
+    private void prepareClassGroupFragment(HttpServletRequest request, ClassGroupView classGroup) {
+        request.setAttribute("currentReturnTo", "/learning/class-groups/" + classGroup.getId());
+        request.setAttribute("mediaCacheVersion", Long.toString(System.currentTimeMillis()));
+    }
+
+    private GradeSheetView classGroupGradeSheet(HttpServletRequest request, SessionUser actor, long classGroupId)
+            throws ServletException {
+        try {
+            return gradeCertificateServlet.visibleClassGroupGradeSheet(
+                    actor,
+                    primaryProfile(actor),
+                    request.getRemoteAddr(),
+                    classGroupId
+            );
+        } catch (SQLException exception) {
+            throw new ServletException("Failed to load class group grade sheet", exception);
+        }
     }
 
     private Map<Long, List<BlockContentItemView>> blockContentsByBlock(
@@ -534,7 +764,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
 
     private String classGroupAssessmentWeightWarning(long classGroupId) {
         try {
-            AssessmentDAO.ClassGroupAssessmentWeightSummary summary =
+            var summary =
                     assessmentDAO.summarizeAssessmentWeightsForClassGroup(classGroupId);
             if (summary == null || !summary.hasAssessments() || summary.totalIsOneHundred()) {
                 return null;
@@ -584,7 +814,8 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
     }
 
     private Map<Long, List<PhysicalRoomView>> classGroupRoomsByClassGroup(
-            Map<Long, List<LessonView>> lessonsByClassGroup
+            Map<Long, List<LessonView>> lessonsByClassGroup,
+            Map<Long, List<AssessmentView>> assessmentsByClassGroup
     ) {
         Map<Long, List<PhysicalRoomView>> result = new LinkedHashMap<>();
         for (Map.Entry<Long, List<LessonView>> entry : lessonsByClassGroup.entrySet()) {
@@ -602,7 +833,41 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                     throw new IllegalStateException("Failed to load class group physical rooms", exception);
                 }
             }
+            for (AssessmentView assessment : assessmentsByClassGroup.getOrDefault(entry.getKey(), List.of())) {
+                if (!assessment.isHasRoom()) {
+                    continue;
+                }
+                try {
+                    PhysicalRoom room = physicalRoomDAO.findByCode(assessment.getPhysicalRoomCode()).orElse(null);
+                    if (room != null) {
+                        roomsByCode.putIfAbsent(room.code(), viewFactory.physicalRoomView(room));
+                    }
+                } catch (SQLException exception) {
+                    throw new IllegalStateException("Failed to load class group physical rooms", exception);
+                }
+            }
             result.put(entry.getKey(), List.copyOf(roomsByCode.values()));
+        }
+        return result;
+    }
+
+    private Map<Long, List<AssessmentView>> classGroupAssessmentsByClassGroup(List<ClassGroup> classGroups) {
+        Map<Long, List<AssessmentView>> result = new LinkedHashMap<>();
+        for (ClassGroup classGroup : classGroups) {
+            try {
+                result.put(
+                        classGroup.id(),
+                        assessmentDAO.findByClassGroup(classGroup.id()).stream()
+                                .map(assessmentViewFactory::assessmentView)
+                                .sorted(Comparator.comparing(AssessmentView::getAvailableFromRaw,
+                                                Comparator.nullsLast(Comparator.naturalOrder()))
+                                        .thenComparing(AssessmentView::getTitle, String.CASE_INSENSITIVE_ORDER)
+                                        .thenComparingLong(AssessmentView::getId))
+                                .toList()
+                );
+            } catch (SQLException exception) {
+                result.put(classGroup.id(), List.of());
+            }
         }
         return result;
     }
@@ -668,6 +933,47 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         return result;
     }
 
+    /**
+     * Counts are loaded with the learning-plan fragment, so both the aggregate
+     * card and the assessment entries expose the same event total without a
+     * per-row query or a stale, independently-calculated badge.
+     */
+    private Map<Long, Integer> pendingAssessmentEnrollmentCounts(
+            Map<Long, List<AssessmentView>> assessmentsByBlock
+    ) {
+        List<Long> assessmentIds = assessmentIds(assessmentsByBlock);
+        if (assessmentIds.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            return assessmentEnrollmentDAO.countByAssessmentIdsAndState(assessmentIds, EnrollmentState.PENDING);
+        } catch (SQLException exception) {
+            return Map.of();
+        }
+    }
+
+    private Map<Long, Integer> pendingAssessmentCorrectionCounts(
+            Map<Long, List<AssessmentView>> assessmentsByBlock
+    ) {
+        List<Long> assessmentIds = assessmentIds(assessmentsByBlock);
+        if (assessmentIds.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            return attemptDAO.countByAssessmentIdsAndState(assessmentIds, AttemptState.SUBMITTED);
+        } catch (SQLException exception) {
+            return Map.of();
+        }
+    }
+
+    private static List<Long> assessmentIds(Map<Long, List<AssessmentView>> assessmentsByBlock) {
+        return assessmentsByBlock.values().stream()
+                .flatMap(List::stream)
+                .map(AssessmentView::getId)
+                .distinct()
+                .toList();
+    }
+
     private static Map<Long, List<BlockActivityView>> blockActivitiesByBlock(
             List<ContentBlockView> blocks,
             Map<Long, List<BlockContentItemView>> contentsByBlock,
@@ -721,10 +1027,6 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 classGroupId,
                 request.getRemoteAddr()
         );
-        if (classGroup.state() == ClassGroupState.COMPLETED) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
-            return;
-        }
         ClassGroupFormData form = error == null
                 ? ClassGroupFormData.from(classGroup)
                 : ClassGroupFormData.from(request, classGroupId);
@@ -793,6 +1095,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         SessionUser actor = requireCurrentUser(request);
         ClassGroupFormData form = ClassGroupFormData.from(request, null);
         try {
+            requireSubjectCreationContext(request, form);
             ClassGroup created = classGroupService.createClassGroup(
                     actor.userId(),
                     currentSessionId(request),
@@ -826,25 +1129,6 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         }
     }
 
-    private void archiveClassGroup(HttpServletRequest request, HttpServletResponse response, long classGroupId)
-            throws IOException {
-        SessionUser actor = requireCurrentUser(request);
-        try {
-            classGroupService.archiveClassGroup(
-                    actor.userId(),
-                    currentSessionId(request),
-                    primaryProfile(actor),
-                    classGroupId,
-                    request.getRemoteAddr()
-            );
-            flashSuccess(request, "Class group completed.");
-            redirect(request, response, "/learning/class-groups");
-        } catch (RuntimeException exception) {
-            flashError(request, messageFor(exception));
-            redirect(request, response, "/learning/class-groups/" + classGroupId);
-        }
-    }
-
     private void deleteClassGroup(HttpServletRequest request, HttpServletResponse response, long classGroupId)
             throws IOException {
         SessionUser actor = requireCurrentUser(request);
@@ -874,15 +1158,43 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                     primaryProfile(actor),
                     classGroupId,
                     longParameter(request, "teacherUserId"),
-                    optionalDate(request, "startDate"),
-                    optionalDate(request, "endDate"),
+                    null,
+                    null,
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Teacher assigned successfully.");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirect(request, response, "/learning/class-groups/" + classGroupId);
+        redirectToReturnPath(request, response, "/learning/class-groups/" + classGroupId + "#class-group-teachers");
+    }
+
+    private void updateTeacherAssignment(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            long classGroupId,
+            long teacherUserId
+    ) throws IOException {
+        SessionUser actor = requireCurrentUser(request);
+        try {
+            String state = text(request, "state");
+            if (state == null) {
+                throw new IllegalArgumentException("state is required");
+            }
+            classGroupService.updateTeacherAssignment(
+                    actor.userId(),
+                    currentSessionId(request),
+                    primaryProfile(actor),
+                    classGroupId,
+                    teacherUserId,
+                    RoleAssignmentState.fromDatabaseValue(state),
+                    request.getRemoteAddr()
+            );
+            flashSuccess(request, "Teacher assignment updated successfully.");
+        } catch (RuntimeException exception) {
+            flashError(request, messageFor(exception));
+        }
+        redirectToReturnPath(request, response, "/learning/class-groups/" + classGroupId + "#class-group-teachers");
     }
 
     private void removeTeacher(HttpServletRequest request, HttpServletResponse response, long classGroupId, long teacherUserId)
@@ -902,7 +1214,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirect(request, response, "/learning/class-groups/" + classGroupId);
+        redirectToReturnPath(request, response, "/learning/class-groups/" + classGroupId + "#class-group-teachers");
     }
 
     private void reorderContentBlocks(HttpServletRequest request, HttpServletResponse response, long classGroupId)
@@ -952,11 +1264,12 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                     new ClassGroupEnrollmentCommand(
                             longParameter(request, "studentUserId"),
                             classGroupId,
-                            optionalDate(request, "startDate"),
-                            optionalDate(request, "endDate")
+                            null,
+                            null
                     ),
                     request.getRemoteAddr()
             );
+            refreshLearningEvents();
             flashSuccess(request, "Student enrolled in class group.");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
@@ -976,6 +1289,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                     EnrollmentApprovalMode.parse(text(request, "approvalMode")),
                     request.getRemoteAddr()
             );
+            refreshLearningEvents();
             flashSuccess(request, "Class group enrollment policy updated.");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
@@ -997,10 +1311,9 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                     primaryProfile(actor),
                     studentUserId,
                     classGroupId,
-                    optionalDate(request, "startDate"),
-                    optionalDate(request, "endDate"),
                     request.getRemoteAddr()
             );
+            refreshLearningEvents();
             flashSuccess(request, "Class group enrollment request approved.");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
@@ -1024,6 +1337,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                     classGroupId,
                     request.getRemoteAddr()
             );
+            refreshLearningEvents();
             flashSuccess(request, "Class group enrollment request rejected.");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
@@ -1041,32 +1355,10 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                     primaryProfile(actor),
                     studentUserId,
                     classGroupId,
-                    optionalDate(request, "endDate"),
                     request.getRemoteAddr()
             );
+            refreshLearningEvents();
             flashSuccess(request, "Student removed from class group.");
-        } catch (RuntimeException exception) {
-            flashError(request, messageFor(exception));
-        }
-        redirectToReturnPath(request, response, "/learning/class-groups/" + classGroupId + "#class-group-enrollments");
-    }
-
-    private void updateStudentEnrollment(HttpServletRequest request, HttpServletResponse response, long classGroupId, long studentUserId)
-            throws IOException {
-        SessionUser actor = requireCurrentUser(request);
-        try {
-            enrollmentService.updateClassGroupEnrollment(
-                    actor.userId(),
-                    currentSessionId(request),
-                    primaryProfile(actor),
-                    studentUserId,
-                    classGroupId,
-                    classGroupEnrollmentState(text(request, "state")),
-                    optionalDate(request, "startDate"),
-                    optionalDate(request, "endDate"),
-                    request.getRemoteAddr()
-            );
-            flashSuccess(request, "Class group enrollment updated.");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
@@ -1085,6 +1377,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                     classGroupId,
                     request.getRemoteAddr()
             );
+            refreshLearningEvents();
             flashSuccess(request, "Class group enrollment deleted.");
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
@@ -1104,9 +1397,10 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Content block created successfully.");
-            redirect(request, response, "/learning/class-groups/" + classGroupId);
+            redirectToReturnPath(request, response, "/learning/class-groups/" + classGroupId + "#pedagogical-blocks");
         } catch (RuntimeException exception) {
-            showContentBlockForm(request, response, classGroupId, null, true, messageFor(exception));
+            flashError(request, messageFor(exception));
+            redirectToReturnPath(request, response, "/learning/class-groups/" + classGroupId + "#pedagogical-blocks");
         }
     }
 
@@ -1123,54 +1417,11 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Content block updated successfully.");
-            redirect(request, response, "/learning/class-groups/" + classGroupId);
-        } catch (RuntimeException exception) {
-            showContentBlockForm(request, response, classGroupId, contentBlockId, false, messageFor(exception));
-        }
-    }
-
-    private void archiveContentBlock(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            long classGroupId,
-            long contentBlockId
-    ) throws IOException {
-        SessionUser actor = requireCurrentUser(request);
-        try {
-            contentBlockService.archiveContentBlock(
-                    actor.userId(),
-                    currentSessionId(request),
-                    primaryProfile(actor),
-                    contentBlockId,
-                    request.getRemoteAddr()
-            );
-            flashSuccess(request, "Content block deactivated.");
+            redirectToReturnPath(request, response, "/learning/class-groups/" + classGroupId + "#block-" + contentBlockId);
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
+            redirectToReturnPath(request, response, "/learning/class-groups/" + classGroupId + "#block-" + contentBlockId);
         }
-        redirect(request, response, "/learning/class-groups/" + classGroupId);
-    }
-
-    private void unarchiveContentBlock(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            long classGroupId,
-            long contentBlockId
-    ) throws IOException {
-        SessionUser actor = requireCurrentUser(request);
-        try {
-            contentBlockService.unarchiveContentBlock(
-                    actor.userId(),
-                    currentSessionId(request),
-                    primaryProfile(actor),
-                    contentBlockId,
-                    request.getRemoteAddr()
-            );
-            flashSuccess(request, "Content block restored successfully.");
-        } catch (RuntimeException exception) {
-            flashError(request, messageFor(exception));
-        }
-        redirect(request, response, "/learning/class-groups/" + classGroupId);
     }
 
     private void deleteContentBlock(
@@ -1281,10 +1532,32 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
             ClassGroup classGroup
     ) {
         ClassGroupView classGroupView = classGroup == null ? null : viewFactory.classGroupView(classGroup);
+        List<CourseSubjectView> courseSubjectOptions = courseSubjectOptions(request);
+        SubjectCreationContext subjectCreationContext = creating
+                ? subjectCreationContext(request, courseSubjectOptions)
+                : null;
+        List<CourseView> courseOptions = subjectCreationContext == null
+                ? courseOptions(courseSubjectOptions)
+                : courseOptionsForSubjectCreation(subjectCreationContext);
+        List<CourseOccurrenceView> courseOccurrenceOptions = courseOptions.stream()
+                .flatMap(course -> viewFactory.courseOccurrenceViews(course.getId()).stream())
+                .toList();
         request.setAttribute("form", form);
         request.setAttribute("creating", creating);
-        request.setAttribute("courseOptions", courseOptions(request));
-        request.setAttribute("courseSubjectOptions", courseSubjectOptions(request));
+        request.setAttribute("courseOptions", courseOptions);
+        request.setAttribute("courseOccurrenceOptions", courseOccurrenceOptions);
+        request.setAttribute("courseSubjectOptions", courseSubjectOptions);
+        request.setAttribute("subjectCreationContext", subjectCreationContext == null ? null : subjectCreationContext.subject());
+        request.setAttribute(
+                "subjectCreationAssociationByCourseId",
+                subjectCreationContext == null ? Map.of() : subjectCreationContext.associationsByCourseId()
+        );
+        request.setAttribute(
+                "subjectCreationCourseSelectableByCourseId",
+                subjectCreationContext == null ? Map.of() : subjectCreationContext.selectableCourseById()
+        );
+        request.setAttribute("classGroupSelectedYear", selectedCourseSubjectYear(form));
+        request.setAttribute("classGroupSelectedTerm", selectedCourseSubjectTerm(form));
         request.setAttribute("shiftOptions", ClassGroupShift.values());
         request.setAttribute("formAction", creating
                 ? request.getContextPath() + "/learning/class-groups"
@@ -1294,6 +1567,9 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         boolean canManageClassGroupStructure = classGroupView != null
                 && canManageClassGroupStructure(request, classGroupView);
         request.setAttribute("canManageClassGroupStructure", canManageClassGroupStructure);
+        if (creating) {
+            request.setAttribute("learningClassGroupActiveChild", "new");
+        }
         if (classGroupView != null) {
             List<ClassGroupEnrollmentView> enrollments = viewFactory.classGroupEnrollmentViews(classGroupView.getId());
             prepareClassGroupEnrollmentAttributes(request, classGroupView, enrollments);
@@ -1313,7 +1589,11 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         if (error != null) {
             request.setAttribute("errorMessage", error);
         }
-        prepareDashboard(request, "class-groups", creating ? "Create Class Group" : "Edit Class Group");
+        String pageTitle = creating && subjectCreationContext != null
+                ? "Create Class Group on " + subjectCreationContext.subject().getName()
+                : creating ? "Create Class Group" : "Edit Class Group";
+        request.setAttribute("classGroupPageTitle", pageTitle);
+        prepareDashboard(request, "class-groups", pageTitle);
     }
 
     private List<ClassGroup> visibleClassGroups(HttpServletRequest request) {
@@ -1353,6 +1633,30 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         return permissions;
     }
 
+    private static List<ClassGroupOccurrenceGroupView> classGroupOccurrenceGroups(List<ClassGroupView> classGroups) {
+        Map<Long, List<ClassGroupView>> byOccurrence = new LinkedHashMap<>();
+        for (ClassGroupView classGroup : classGroups) {
+            byOccurrence.computeIfAbsent(classGroup.getCourseOccurrenceId(), ignored -> new ArrayList<>())
+                    .add(classGroup);
+        }
+        List<ClassGroupOccurrenceGroupView> groups = new ArrayList<>();
+        for (List<ClassGroupView> occurrenceClassGroups : byOccurrence.values()) {
+            if (occurrenceClassGroups.isEmpty()) {
+                continue;
+            }
+            ClassGroupView first = occurrenceClassGroups.get(0);
+            groups.add(new ClassGroupOccurrenceGroupView(
+                    first.getCourseOccurrenceId(),
+                    first.getOccurrenceLabel(),
+                    first.getOccurrenceDateRangeLabel(),
+                    first.getOccurrenceStateLabel(),
+                    first.getOccurrenceStateBadgeClass(),
+                    occurrenceClassGroups
+            ));
+        }
+        return List.copyOf(groups);
+    }
+
     private Map<Long, Boolean> canManageClassGroupStructureById(
             HttpServletRequest request,
             List<ClassGroupView> classGroups
@@ -1365,9 +1669,6 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
     }
 
     private boolean canManageClassGroupStructure(HttpServletRequest request, ClassGroupView classGroup) {
-        if (classGroup.isArchived()) {
-            return false;
-        }
         SessionUser actor = requireCurrentUser(request);
         return classGroupService.canManageClassGroupStructure(
                 actor.userId(),
@@ -1379,9 +1680,6 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
     }
 
     private boolean canModifyClassGroup(HttpServletRequest request, ClassGroupView classGroup) {
-        if (classGroup.isArchived()) {
-            return false;
-        }
         SessionUser actor = requireCurrentUser(request);
         return classGroupService.canModifyClassGroup(
                 actor.userId(),
@@ -1393,7 +1691,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
     }
 
     private boolean canManageClassGroupEnrollments(HttpServletRequest request, ClassGroupView classGroup) {
-        if (classGroup.isArchived()) {
+        if (classGroup.isCompleted()) {
             return false;
         }
         SessionUser actor = requireCurrentUser(request);
@@ -1406,9 +1704,9 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         );
     }
 
-    private List<CourseView> courseOptions(HttpServletRequest request) {
+    private List<CourseView> courseOptions(List<CourseSubjectView> courseSubjectOptions) {
         try {
-            List<Long> courseIds = courseSubjectOptions(request).stream()
+            List<Long> courseIds = courseSubjectOptions.stream()
                     .map(CourseSubjectView::getCourseId)
                     .distinct()
                     .toList();
@@ -1422,11 +1720,68 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         }
     }
 
+    private List<CourseView> courseOptionsForSubjectCreation(SubjectCreationContext context) {
+        try {
+            return courseDAO.findCatalogCourses(context.subject().getOrganizationId(), null, null).stream()
+                    .map(viewFactory::courseView)
+                    .toList();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load subject-context course options", exception);
+        }
+    }
+
+    private SubjectCreationContext subjectCreationContext(
+            HttpServletRequest request,
+            List<CourseSubjectView> creatableAssociations
+    ) {
+        Long subjectContextId = optionalLong(request, "subjectContextId");
+        if (subjectContextId == null || subjectContextId <= 0) {
+            return null;
+        }
+        try {
+            List<CourseSubjectAssociation> associations = courseSubjectDAO.findBySubject(subjectContextId);
+            if (associations.isEmpty()) {
+                return null;
+            }
+            Map<Long, CourseSubjectView> associationsByCourseId = new LinkedHashMap<>();
+            SubjectView subject = null;
+            for (CourseSubjectAssociation association : associations) {
+                CourseSubjectView associationView = viewFactory.courseSubjectView(association, null);
+                associationsByCourseId.put(association.courseId(), associationView);
+                if (subject == null) {
+                    subject = associationView.getSubject();
+                }
+            }
+            if (subject == null) {
+                return null;
+            }
+            Map<Long, Boolean> selectableCourseById = new HashMap<>();
+            for (CourseSubjectView association : creatableAssociations) {
+                if (association.getSubjectId() == subjectContextId) {
+                    selectableCourseById.put(association.getCourseId(), true);
+                }
+            }
+            return new SubjectCreationContext(subject, Map.copyOf(associationsByCourseId), Map.copyOf(selectableCourseById));
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load subject creation context", exception);
+        }
+    }
+
+    private static void requireSubjectCreationContext(HttpServletRequest request, ClassGroupFormData form) {
+        Long subjectContextId = optionalLong(request, "subjectContextId");
+        if (subjectContextId == null) {
+            return;
+        }
+        if (!Long.toString(subjectContextId).equals(form.getSubjectId())) {
+            throw new IllegalArgumentException("A class group opened from Subject Details must keep its selected subject");
+        }
+    }
+
     private List<CourseSubjectView> courseSubjectOptions(HttpServletRequest request) {
         try {
             return courseDAO.findCatalogCourses(null, null, null).stream()
                     .filter(course -> course.state() == CourseState.ACTIVE)
-                    .flatMap(course -> activeCourseSubjects(course).stream())
+                    .flatMap(course -> courseSubjects(course).stream())
                     .filter(association -> canCreateClassGroup(request, association.courseId(), association.subjectId()))
                     .map(association -> viewFactory.courseSubjectView(association, null))
                     .toList();
@@ -1447,18 +1802,55 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         );
     }
 
-    private List<CourseSubjectAssociation> activeCourseSubjects(Course course) {
+    private List<CourseSubjectAssociation> courseSubjects(Course course) {
         try {
-            Map<String, CourseSubjectAssociation> distinctAssociations = new LinkedHashMap<>();
-            for (CourseSubjectAssociation association : courseSubjectDAO.findActiveByCourse(course.id())) {
-                distinctAssociations.putIfAbsent(
-                        association.courseId() + ":" + association.subjectId(),
-                        association
-                );
-            }
-            return List.copyOf(distinctAssociations.values());
+            return courseSubjectDAO.findByCourse(course.id());
         } catch (SQLException exception) {
-            throw new IllegalStateException("Failed to load active course subjects", exception);
+            throw new IllegalStateException("Failed to load course subjects", exception);
+        }
+    }
+
+    private String selectedCourseSubjectTerm(ClassGroupFormData form) {
+        if (form == null || form.getCourseId() == null || form.getCourseId().isBlank()
+                || form.getSubjectId() == null || form.getSubjectId().isBlank()) {
+            return "";
+        }
+        try {
+            long courseId = Long.parseLong(form.getCourseId());
+            long subjectId = Long.parseLong(form.getSubjectId());
+            return courseSubjectDAO.findByCourse(courseId).stream()
+                    .filter(association -> association.subjectId() == subjectId)
+                    .map(CourseSubjectAssociation::term)
+                    .filter(term -> term != null)
+                    .map(Enum::name)
+                    .findFirst()
+                    .orElse("");
+        } catch (NumberFormatException exception) {
+            return "";
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load class group subject period", exception);
+        }
+    }
+
+    private String selectedCourseSubjectYear(ClassGroupFormData form) {
+        if (form == null || form.getCourseId() == null || form.getCourseId().isBlank()
+                || form.getSubjectId() == null || form.getSubjectId().isBlank()) {
+            return "";
+        }
+        try {
+            long courseId = Long.parseLong(form.getCourseId());
+            long subjectId = Long.parseLong(form.getSubjectId());
+            return courseSubjectDAO.findByCourse(courseId).stream()
+                    .filter(association -> association.subjectId() == subjectId)
+                    .map(CourseSubjectAssociation::curricularYear)
+                    .filter(year -> year != null)
+                    .map(String::valueOf)
+                    .findFirst()
+                    .orElse("");
+        } catch (NumberFormatException exception) {
+            return "";
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load class group subject curricular year", exception);
         }
     }
 
@@ -1493,8 +1885,15 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
             List<ClassGroupEnrollmentView> enrollments
     ) {
         request.setAttribute("classGroupEnrollments", enrollments);
-        request.setAttribute("pendingClassGroupEnrollments",
-                enrollments.stream().filter(ClassGroupEnrollmentView::isPending).toList());
+        List<ClassGroupEnrollmentView> pendingEnrollments = enrollments.stream()
+                .filter(ClassGroupEnrollmentView::isPending)
+                .toList();
+        boolean canManageEnrollments = classGroup != null && canManageClassGroupEnrollments(request, classGroup);
+        request.setAttribute("pendingClassGroupEnrollments", pendingEnrollments);
+        request.setAttribute(
+                "classGroupDetailPendingEnrollmentCount",
+                canManageEnrollments ? pendingEnrollments.size() : 0
+        );
         request.setAttribute("activeClassGroupEnrollments",
                 enrollments.stream().filter(ClassGroupEnrollmentView::isActive).toList());
         request.setAttribute("auditClassGroupEnrollments",
@@ -1503,8 +1902,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                         .toList());
         request.setAttribute("activeClassGroupEnrollmentCount",
                 enrollments.stream().filter(ClassGroupEnrollmentView::isActive).count());
-        request.setAttribute("canManageClassGroupEnrollments",
-                classGroup != null && canManageClassGroupEnrollments(request, classGroup));
+        request.setAttribute("canManageClassGroupEnrollments", canManageEnrollments);
     }
 
     private String classGroupEnrollmentPolicy(long classGroupId) {
@@ -1515,14 +1913,44 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         }
     }
 
-    private static EnrollmentState classGroupEnrollmentState(String value) {
-        if (value == null || value.isBlank()) {
-            return EnrollmentState.PENDING;
+    private int pendingEnrollmentCount(long classGroupId) {
+        try {
+            return classGroupEnrollmentDAO.countPendingByClassGroupIds(List.of(classGroupId))
+                    .getOrDefault(classGroupId, 0);
+        } catch (SQLException exception) {
+            return 0;
+        }
+    }
+
+    private Map<Long, Integer> manageableEventCountsByClassGroupId(
+            HttpServletRequest request,
+            List<ClassGroupView> classGroups
+    ) {
+        if (classGroups.isEmpty()) {
+            return Map.of();
         }
         try {
-            return EnrollmentState.parse(value);
-        } catch (IllegalArgumentException exception) {
-            throw new IllegalArgumentException("Invalid class group enrollment state: " + value, exception);
+            List<ClassGroupView> manageableClassGroups = classGroups.stream()
+                    .filter(classGroup -> canManageClassGroupEnrollments(request, classGroup))
+                    .toList();
+            if (manageableClassGroups.isEmpty()) {
+                return Map.of();
+            }
+            List<Long> manageableIds = manageableClassGroups.stream().map(ClassGroupView::getId).toList();
+            Map<Long, Integer> pendingCounts = classGroupEnrollmentDAO.countPendingByClassGroupIds(manageableIds);
+            Map<Long, Integer> submittedAttemptCounts = assessmentDAO
+                    .countSubmittedAttemptsByClassGroupIds(manageableIds);
+            Map<Long, Integer> manageableCounts = new HashMap<>();
+            for (ClassGroupView classGroup : manageableClassGroups) {
+                int eventCount = pendingCounts.getOrDefault(classGroup.getId(), 0)
+                        + submittedAttemptCounts.getOrDefault(classGroup.getId(), 0);
+                if (eventCount > 0) {
+                    manageableCounts.put(classGroup.getId(), eventCount);
+                }
+            }
+            return manageableCounts;
+        } catch (SQLException exception) {
+            return Map.of();
         }
     }
 
@@ -1543,11 +1971,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
     }
 
     private String classGroupFormJsp(HttpServletRequest request) {
-        return switch (primaryProfile(requireCurrentUser(request))) {
-            case COORDINATOR -> COORDINATOR_CLASS_GROUP_FORM_JSP;
-            case TEACHER -> INSTRUCTOR_CLASS_GROUP_FORM_JSP;
-            default -> ADMIN_CLASS_GROUP_FORM_JSP;
-        };
+        return ADMIN_CLASS_GROUP_FORM_JSP;
     }
 
     private String contentBlockFormJsp(HttpServletRequest request) {
@@ -1562,13 +1986,15 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         return new ClassGroupCreateCommand(
                 longParameter(request, "subjectId"),
                 longParameter(request, "courseId"),
+                optionalLong(request, "courseOccurrenceId"),
+                optionalLong(request, "courseOccurrencePeriodId"),
                 text(request, "code"),
                 classGroupModality(text(request, "modality")),
                 classGroupState(text(request, "state")),
                 optionalInteger(request, "minStudents"),
                 optionalInteger(request, "maxStudents"),
-                optionalDate(request, "startsAt"),
-                optionalDate(request, "endsAt"),
+                null,
+                null,
                 classGroupShift(text(request, "shift")),
                 "true".equalsIgnoreCase(request.getParameter("showContentThumbnails"))
         );
@@ -1578,13 +2004,15 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         return new ClassGroupUpdateCommand(
                 longParameter(request, "subjectId"),
                 longParameter(request, "courseId"),
+                optionalLong(request, "courseOccurrenceId"),
+                optionalLong(request, "courseOccurrencePeriodId"),
                 text(request, "code"),
                 classGroupModality(text(request, "modality")),
                 classGroupState(text(request, "state")),
                 optionalInteger(request, "minStudents"),
                 optionalInteger(request, "maxStudents"),
-                optionalDate(request, "startsAt"),
-                optionalDate(request, "endsAt"),
+                null,
+                null,
                 classGroupShift(text(request, "shift")),
                 "true".equalsIgnoreCase(request.getParameter("showContentThumbnails"))
         );
@@ -1598,10 +2026,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 text(request, "name"),
                 text(request, "description"),
                 orderNo,
-                contentBlockAccessMode(text(request, "accessMode")),
-                contentBlockState(text(request, "state")),
-                optionalDateTime(request, "availableFrom"),
-                optionalDateTime(request, "availableUntil")
+                contentBlockState(text(request, "state"))
         );
     }
 
@@ -1612,10 +2037,7 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 text(request, "name"),
                 text(request, "description"),
                 integerParameter(request, "orderNo"),
-                contentBlockAccessMode(text(request, "accessMode")),
-                contentBlockState(text(request, "state")),
-                optionalDateTime(request, "availableFrom"),
-                optionalDateTime(request, "availableUntil")
+                contentBlockState(text(request, "state"))
         );
     }
 
@@ -1673,6 +2095,26 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         return Integer.parseInt(value);
     }
 
+    private static boolean isListRowsFragmentRequest(HttpServletRequest request) {
+        return "rows".equals(request.getParameter("fragment"));
+    }
+
+    private static int requestedListOffset(HttpServletRequest request) {
+        String value = request.getParameter("offset");
+        if (value == null || value.isBlank()) {
+            return 0;
+        }
+        try {
+            return Math.max(0, Integer.parseInt(value));
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
+    }
+
+    private static boolean requestedListLoadAll(HttpServletRequest request) {
+        return "true".equalsIgnoreCase(request.getParameter("loadAll"));
+    }
+
     private static Long optionalLong(HttpServletRequest request, String name) {
         String value = text(request, name);
         return value == null ? null : Long.parseLong(value);
@@ -1680,12 +2122,16 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
 
     private static LocalDate optionalDate(HttpServletRequest request, String name) {
         String value = text(request, name);
-        return value == null ? null : LocalDate.parse(value);
+        return value == null ? null : ApplicationDateTimeFormat.parseUserDate(value);
+    }
+
+    private static boolean isAjaxRequest(HttpServletRequest request) {
+        return "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"));
     }
 
     private static LocalDateTime optionalDateTime(HttpServletRequest request, String name) {
         String value = text(request, name);
-        return value == null ? null : LocalDateTime.parse(value);
+        return value == null ? null : ApplicationDateTimeFormat.parseUserDateTime(value);
     }
 
     private static List<Long> orderedLongValues(HttpServletRequest request, String name) {
@@ -1772,10 +2218,6 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException("Invalid class group shift");
         }
-    }
-
-    private static ContentBlockAccessMode contentBlockAccessMode(String value) {
-        return enumValue(ContentBlockAccessMode.class, value, ContentBlockAccessMode.OPEN, "content block access mode");
     }
 
     private static ContentBlockState contentBlockState(String value) {

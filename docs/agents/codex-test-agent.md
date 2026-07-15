@@ -49,6 +49,7 @@ Deve criar testes executaveis, explicar como os executar, executar os testes, an
 
 - Cada suite deve ter objetivo claro e criterio de sucesso observavel.
 - Antes de executar `mvn -q test` ou validacao no browser, consultar `docs/tests/browser-validation.md` para usar os defaults locais de timeout, Brave/Playwright, Tomcat e limpeza de processos.
+- Nao usar o browser integrado `iab` neste workspace; ele falha de forma recorrente. Usar sempre Brave/Playwright ou os scripts CDP documentados.
 - Testes invalidos devem falhar pelas razoes corretas.
 - Quando a falha estiver no codigo de producao, o agente deve encaminhar a correcao para o agente responsavel e retestar depois.
 - A documentacao de testes deve ser atualizada sempre que houver mudancas relevantes.

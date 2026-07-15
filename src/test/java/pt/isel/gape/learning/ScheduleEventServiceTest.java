@@ -393,9 +393,9 @@ class ScheduleEventServiceTest {
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement("""
                      INSERT INTO assessment (
-                         id_subject, id_content_block, title, description, type, mode, correction_mode,
+                         id_subject, id_content_block, cod_physical_room, title, description, type, mode, correction_mode,
                          max_grade, passing_grade, attempts_limit, state, available_from, available_until
-                     ) VALUES (?, NULL, ?, 'Subject assessment without explicit groups', 'exam', 'onsite',
+                     ) VALUES (?, NULL, 'SALA-A1', ?, 'Subject assessment without explicit groups', 'exam', 'onsite',
                          'manual', 20.00, 10.00, 1, 'active', '2026-02-10 00:00:00',
                          '2026-02-20 23:59:59')
                      """, Statement.RETURN_GENERATED_KEYS)) {

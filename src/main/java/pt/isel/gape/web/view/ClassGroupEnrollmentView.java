@@ -2,6 +2,7 @@ package pt.isel.gape.web.view;
 
 import java.time.LocalDate;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.ClassGroupEnrollment;
 import pt.isel.gape.learning.model.EnrollmentState;
 
@@ -68,7 +69,7 @@ public final class ClassGroupEnrollmentView {
         return switch (state) {
             case PENDING -> "bg-warning-30 text-warning-600";
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
             case REJECTED -> "bg-danger-50 text-danger-600";
             case COMPLETED -> "bg-info-50 text-info-600";
             case WITHDRAWN -> "bg-warning-30 text-warning-600";
@@ -84,7 +85,7 @@ public final class ClassGroupEnrollmentView {
     }
 
     public String getStartDate() {
-        return startDate == null ? "-" : startDate.toString();
+        return startDate == null ? "-" : ApplicationDateTimeFormat.date(startDate);
     }
 
     public String getStartDateValue() {
@@ -92,7 +93,7 @@ public final class ClassGroupEnrollmentView {
     }
 
     public String getEndDate() {
-        return endDate == null ? "-" : endDate.toString();
+        return endDate == null ? "-" : ApplicationDateTimeFormat.date(endDate);
     }
 
     public String getEndDateValue() {

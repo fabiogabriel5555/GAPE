@@ -1,11 +1,9 @@
 package pt.isel.gape.structure.dao;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +13,7 @@ import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.structure.model.CoordinateSubjectAssignment;
 import pt.isel.gape.structure.model.RoleAssignmentState;
 
-public final class CoordinateSubjectDAO {
+public final class CoordinateSubjectDAO implements pt.isel.gape.transversal.service.ApplicationReadService.CoordinateSubjects {
 
     private final ConnectionProvider connectionProvider;
 
@@ -50,31 +48,27 @@ public final class CoordinateSubjectDAO {
         }
     }
 
-    public void assign(long coordinatorUserId, long subjectId, LocalDate startDate, LocalDate endDate) throws SQLException {
+    public void assign(long coordinatorUserId, long subjectId) throws SQLException {
         try (Connection connection = connectionProvider.getConnection()) {
-            assign(connection, coordinatorUserId, subjectId, startDate, endDate);
+            assign(connection, coordinatorUserId, subjectId);
         }
     }
 
     public void assign(
             Connection connection,
             long coordinatorUserId,
-            long subjectId,
-            LocalDate startDate,
-            LocalDate endDate
+            long subjectId
     ) throws SQLException {
         String sql = """
-                INSERT INTO coordinate_subject (id_coordinator_user, id_subject, state, start_date, end_date)
-                VALUES (?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE state = VALUES(state), start_date = VALUES(start_date), end_date = VALUES(end_date)
+                INSERT INTO coordinate_subject (id_coordinator_user, id_subject, state)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE state = VALUES(state)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, coordinatorUserId);
             statement.setLong(2, subjectId);
             statement.setString(3, RoleAssignmentState.ACTIVE.toDatabaseValue());
-            setDate(statement, 4, startDate);
-            setDate(statement, 5, endDate);
             statement.executeUpdate();
         }
     }
@@ -97,8 +91,6 @@ public final class CoordinateSubjectDAO {
                   AND cs.state = 'active'
                   AND u.state = 'active'
                   AND s.state = 'active'
-                  AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
-                  AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -116,8 +108,6 @@ public final class CoordinateSubjectDAO {
                 SELECT cs.id_coordinator_user,
                        cs.id_subject,
                        cs.state,
-                       cs.start_date,
-                       cs.end_date,
                        u.name AS coordinator_name,
                        u.email AS coordinator_email
                 FROM coordinate_subject cs
@@ -129,7 +119,6 @@ public final class CoordinateSubjectDAO {
                         WHEN 'inactive' THEN 1
                         ELSE 2
                     END,
-                    cs.start_date DESC,
                     u.name
                 """;
 
@@ -150,23 +139,39 @@ public final class CoordinateSubjectDAO {
             Connection connection,
             long coordinatorUserId,
             long subjectId,
-            RoleAssignmentState state,
-            LocalDate startDate,
-            LocalDate endDate
+            RoleAssignmentState state
     ) throws SQLException {
         String sql = """
                 UPDATE coordinate_subject
-                SET state = ?, start_date = ?, end_date = ?
+                SET state = ?
                 WHERE id_coordinator_user = ?
                   AND id_subject = ?
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, state.toDatabaseValue());
-            setDate(statement, 2, startDate);
-            setDate(statement, 3, endDate);
-            statement.setLong(4, coordinatorUserId);
-            statement.setLong(5, subjectId);
+            statement.setLong(2, coordinatorUserId);
+            statement.setLong(3, subjectId);
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Coordinator assignment not found");
+            }
+        }
+    }
+
+    public void deleteAssignment(
+            Connection connection,
+            long coordinatorUserId,
+            long subjectId
+    ) throws SQLException {
+        String sql = """
+                DELETE FROM coordinate_subject
+                WHERE id_coordinator_user = ?
+                  AND id_subject = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, coordinatorUserId);
+            statement.setLong(2, subjectId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Coordinator assignment not found");
             }
@@ -181,8 +186,6 @@ public final class CoordinateSubjectDAO {
                 WHERE cs.id_coordinator_user = ?
                   AND cs.state = 'active'
                   AND s.state = 'active'
-                  AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
-                  AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 ORDER BY cs.id_subject
                 """;
 
@@ -202,38 +205,24 @@ public final class CoordinateSubjectDAO {
     public void synchronizeAssignments(
             Connection connection,
             long coordinatorUserId,
-            Set<Long> selectedSubjectIds,
-            LocalDate startDate
+            Set<Long> selectedSubjectIds
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE coordinate_subject SET state = 'inactive', end_date = ? WHERE id_coordinator_user = ?"
+                "UPDATE coordinate_subject SET state = 'inactive' WHERE id_coordinator_user = ?"
         )) {
-            setDate(statement, 1, startDate);
-            statement.setLong(2, coordinatorUserId);
+            statement.setLong(1, coordinatorUserId);
             statement.executeUpdate();
         }
         for (long subjectId : selectedSubjectIds) {
-            assign(connection, coordinatorUserId, subjectId, startDate, null);
-        }
-    }
-
-    private static void setDate(PreparedStatement statement, int index, LocalDate value) throws SQLException {
-        if (value == null) {
-            statement.setNull(index, java.sql.Types.DATE);
-        } else {
-            statement.setDate(index, Date.valueOf(value));
+            assign(connection, coordinatorUserId, subjectId);
         }
     }
 
     private static CoordinateSubjectAssignment mapAssignment(ResultSet resultSet) throws SQLException {
-        Date startDate = resultSet.getDate("start_date");
-        Date endDate = resultSet.getDate("end_date");
         return new CoordinateSubjectAssignment(
                 resultSet.getLong("id_coordinator_user"),
                 resultSet.getLong("id_subject"),
                 RoleAssignmentState.fromDatabaseValue(resultSet.getString("state")),
-                startDate == null ? null : startDate.toLocalDate(),
-                endDate == null ? null : endDate.toLocalDate(),
                 resultSet.getString("coordinator_name"),
                 resultSet.getString("coordinator_email")
         );

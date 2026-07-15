@@ -15,24 +15,44 @@ param(
     [string] $BrowserPath,
     [string[]] $ClickSelector = @(),
     [string[]] $ClickText = @(),
+    [string[]] $HoverSelector = @(),
+    [string[]] $SetSelectValue = @(),
+    [string] $ScrollToSelector = "",
     [string[]] $ExpectSelector = @(),
+    [string[]] $InspectSelector = @(),
+    [string[]] $ExpectBadgeAtParentTopLeft = @(),
     [string[]] $RejectSelector = @(),
     [string[]] $ExpectText = @(),
     [string[]] $RejectText = @("HTTP Status 500", "Internal Server Error", "Exception", "Stacktrace"),
     [int] $WaitBeforeActionsMs = 900,
     [int] $WaitAfterActionMs = 500,
+    [ValidateRange(0, 5000)]
+    [int] $NetworkLatencyMs = 0,
     [switch] $Prepare,
     [switch] $AllowHorizontalOverflow,
+    [switch] $AllowNetworkErrors,
+    [switch] $AllowConsoleErrors,
+    [switch] $AllowBrokenImages,
+    [switch] $AllowAccessibilityIssues,
+    [string] $Baseline,
+    [switch] $UpdateBaseline,
+    [ValidateRange(0, 100)]
+    [double] $MaxPixelDifferencePercent = 0.25,
+    [ValidateRange(0, 255)]
+    [int] $PixelColorTolerance = 20,
     [switch] $NoScreenshot
 )
 
 $ErrorActionPreference = "Stop"
+$script:CdpEvents = [System.Collections.Generic.List[object]]::new()
 
 function Assert-InWorkspace {
     param([string] $Workspace, [string] $Path, [string] $Label)
-    $resolvedWorkspace = (Resolve-Path -LiteralPath $Workspace).Path
+    $resolvedWorkspace = (Resolve-Path -LiteralPath $Workspace).Path.TrimEnd('\', '/')
     $fullPath = [System.IO.Path]::GetFullPath($Path)
-    if (-not $fullPath.StartsWith($resolvedWorkspace, [System.StringComparison]::OrdinalIgnoreCase)) {
+    $insideWorkspace = $fullPath.Equals($resolvedWorkspace, [System.StringComparison]::OrdinalIgnoreCase) -or
+        $fullPath.StartsWith($resolvedWorkspace + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+    if (-not $insideWorkspace) {
         throw "$Label is outside the workspace: $fullPath"
     }
 }
@@ -84,18 +104,43 @@ function Resolve-BrowserExecutable {
     throw "No Chromium browser was found. Install Brave, Edge or Chrome."
 }
 
+function Get-CsrfTokenFromHtml {
+    param([string] $Html)
+    $inputMatch = [regex]::Match(
+        $Html,
+        '<input\b(?=[^>]*\bname\s*=\s*["'']csrfToken["''])[^>]*>',
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+    if (-not $inputMatch.Success) {
+        throw "Login page did not expose a CSRF token field."
+    }
+    $valueMatch = [regex]::Match(
+        $inputMatch.Value,
+        '\bvalue\s*=\s*(["''])(.*?)\1',
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+    if (-not $valueMatch.Success -or [string]::IsNullOrWhiteSpace($valueMatch.Groups[2].Value)) {
+        throw "Login page exposed an empty CSRF token."
+    }
+    return [System.Net.WebUtility]::HtmlDecode($valueMatch.Groups[2].Value)
+}
+
 function New-SessionId {
     param([string] $BaseUrl, [string] $Email, [string] $Password)
     $session = New-Object Microsoft.PowerShell.Commands.WebRequestSession
-    Invoke-WebRequest -Uri "$BaseUrl/login.jsp" -WebSession $session -UseBasicParsing -TimeoutSec 15 | Out-Null
-    Invoke-WebRequest -Uri "$BaseUrl/auth/login" `
+    $loginPage = Invoke-WebRequest -Uri "$BaseUrl/login.jsp" -WebSession $session -UseBasicParsing -TimeoutSec 15
+    $csrfToken = Get-CsrfTokenFromHtml -Html $loginPage.Content
+    $loginResponse = Invoke-WebRequest -Uri "$BaseUrl/auth/login" `
         -Method POST `
         -WebSession $session `
-        -Body @{email = $Email; password = $Password} `
+        -Body @{csrfToken = $csrfToken; email = $Email; password = $Password} `
         -ContentType "application/x-www-form-urlencoded" `
         -UseBasicParsing `
         -MaximumRedirection 5 `
-        -TimeoutSec 20 | Out-Null
+        -TimeoutSec 20
+    if ($loginResponse.Content -match '(?is)<form\b[^>]*\baction\s*=\s*["''][^"'']*auth/login') {
+        throw "Authentication failed for $Email."
+    }
     $cookie = $session.Cookies.GetCookies($BaseUrl) |
         Where-Object { $_.Name -eq "JSESSIONID" } |
         Select-Object -First 1
@@ -138,11 +183,98 @@ function Send-Cdp {
         [System.Net.WebSockets.WebSocketMessageType]::Text,
         $true,
         [Threading.CancellationToken]::None
-    ).GetAwaiter().GetResult()
+    ).GetAwaiter().GetResult() | Out-Null
     do {
         $response = Receive-Cdp -Socket $Socket
+        if ($null -eq $response.id) {
+            $script:CdpEvents.Add($response)
+        }
     } while ($response.id -ne $MessageId.Value)
     return $response
+}
+
+function Compare-Png {
+    param(
+        [string] $ActualPath,
+        [string] $BaselinePath,
+        [int] $ColorTolerance,
+        [double] $MaximumDifferencePercent
+    )
+
+    Add-Type -AssemblyName System.Drawing
+    $actualSource = [System.Drawing.Bitmap]::new($ActualPath)
+    $baselineSource = [System.Drawing.Bitmap]::new($BaselinePath)
+    try {
+        if ($actualSource.Width -ne $baselineSource.Width -or $actualSource.Height -ne $baselineSource.Height) {
+            return [PSCustomObject]@{
+                passed = $false
+                reason = "dimension-mismatch"
+                actual = "$($actualSource.Width)x$($actualSource.Height)"
+                baseline = "$($baselineSource.Width)x$($baselineSource.Height)"
+                differencePercent = 100.0
+                maximumDifferencePercent = $MaximumDifferencePercent
+            }
+        }
+
+        $width = $actualSource.Width
+        $height = $actualSource.Height
+        $actual = [System.Drawing.Bitmap]::new($width, $height, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+        $expected = [System.Drawing.Bitmap]::new($width, $height, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+        try {
+            $actualGraphics = [System.Drawing.Graphics]::FromImage($actual)
+            $expectedGraphics = [System.Drawing.Graphics]::FromImage($expected)
+            try {
+                $actualGraphics.DrawImageUnscaled($actualSource, 0, 0)
+                $expectedGraphics.DrawImageUnscaled($baselineSource, 0, 0)
+            } finally {
+                $actualGraphics.Dispose()
+                $expectedGraphics.Dispose()
+            }
+
+            $rectangle = [System.Drawing.Rectangle]::new(0, 0, $width, $height)
+            $actualData = $actual.LockBits($rectangle, [System.Drawing.Imaging.ImageLockMode]::ReadOnly, $actual.PixelFormat)
+            $expectedData = $expected.LockBits($rectangle, [System.Drawing.Imaging.ImageLockMode]::ReadOnly, $expected.PixelFormat)
+            try {
+                $byteCount = [Math]::Abs($actualData.Stride) * $height
+                $actualBytes = New-Object byte[] $byteCount
+                $expectedBytes = New-Object byte[] $byteCount
+                [Runtime.InteropServices.Marshal]::Copy($actualData.Scan0, $actualBytes, 0, $byteCount)
+                [Runtime.InteropServices.Marshal]::Copy($expectedData.Scan0, $expectedBytes, 0, $byteCount)
+
+                [long] $differentPixels = 0
+                for ($index = 0; $index -lt $byteCount; $index += 4) {
+                    $blue = [Math]::Abs([int] $actualBytes[$index] - [int] $expectedBytes[$index])
+                    $green = [Math]::Abs([int] $actualBytes[$index + 1] - [int] $expectedBytes[$index + 1])
+                    $red = [Math]::Abs([int] $actualBytes[$index + 2] - [int] $expectedBytes[$index + 2])
+                    $alpha = [Math]::Abs([int] $actualBytes[$index + 3] - [int] $expectedBytes[$index + 3])
+                    if ([Math]::Max([Math]::Max($blue, $green), [Math]::Max($red, $alpha)) -gt $ColorTolerance) {
+                        $differentPixels++
+                    }
+                }
+            } finally {
+                $actual.UnlockBits($actualData)
+                $expected.UnlockBits($expectedData)
+            }
+
+            $pixelCount = [long] $width * [long] $height
+            $differencePercent = if ($pixelCount -eq 0) { 0.0 } else { 100.0 * $differentPixels / $pixelCount }
+            return [PSCustomObject]@{
+                passed = $differencePercent -le $MaximumDifferencePercent
+                reason = "pixel-difference"
+                differentPixels = $differentPixels
+                totalPixels = $pixelCount
+                differencePercent = [Math]::Round($differencePercent, 5)
+                maximumDifferencePercent = $MaximumDifferencePercent
+                colorTolerance = $ColorTolerance
+            }
+        } finally {
+            $actual.Dispose()
+            $expected.Dispose()
+        }
+    } finally {
+        $actualSource.Dispose()
+        $baselineSource.Dispose()
+    }
 }
 
 $workspace = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..\..\..")).Path
@@ -153,6 +285,21 @@ if (-not [System.IO.Path]::IsPathRooted($outPath)) {
 }
 Assert-InWorkspace -Workspace $workspace -Path $outPath -Label "Screenshot output"
 New-Item -ItemType Directory -Path (Split-Path -Parent $outPath) -Force | Out-Null
+
+$baselinePath = $null
+if ($Baseline) {
+    $baselinePath = $Baseline
+    if (-not [System.IO.Path]::IsPathRooted($baselinePath)) {
+        $baselinePath = Join-Path $workspace $baselinePath
+    }
+    Assert-InWorkspace -Workspace $workspace -Path $baselinePath -Label "Visual baseline"
+}
+if (($Baseline -or $UpdateBaseline) -and $NoScreenshot) {
+    throw "Visual baseline operations require a screenshot. Remove -NoScreenshot."
+}
+if ($UpdateBaseline -and -not $baselinePath) {
+    throw "-UpdateBaseline requires -Baseline <path>."
+}
 
 if ($Prepare) {
     & (Join-Path $PSScriptRoot "browser-prepare.ps1") -Port $Port -ContextPath $ContextPath -Email $Email -Password $Password -SkipPackage
@@ -203,10 +350,23 @@ try {
     }
 
     $socket = [System.Net.WebSockets.ClientWebSocket]::new()
-    $socket.ConnectAsync([Uri] $tab.webSocketDebuggerUrl, [Threading.CancellationToken]::None).GetAwaiter().GetResult()
+    $socket.ConnectAsync([Uri] $tab.webSocketDebuggerUrl, [Threading.CancellationToken]::None).GetAwaiter().GetResult() | Out-Null
     $messageId = 0
     Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Page.enable" | Out-Null
     Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Runtime.enable" | Out-Null
+    Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Network.enable" | Out-Null
+    if ($NetworkLatencyMs -gt 0) {
+        # Keep throughput effectively local while making asynchronous UI states
+        # observable long enough for a screenshot-based visual validation.
+        Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Network.emulateNetworkConditions" -Params @{
+            offline = $false
+            latency = $NetworkLatencyMs
+            downloadThroughput = 100000000
+            uploadThroughput = 100000000
+            connectionType = "cellular3g"
+        } | Out-Null
+    }
+    Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Log.enable" | Out-Null
     Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Page.addScriptToEvaluateOnNewDocument" -Params @{
         source = @"
 window.__gapeBrowserErrors = [];
@@ -237,13 +397,19 @@ window.addEventListener('unhandledrejection', function (event) {
         presetValue = $PresetValue
         clickSelector = $ClickSelector
         clickText = $ClickText
+        setSelectValue = $SetSelectValue
+        scrollToSelector = $ScrollToSelector
         expectSelector = $ExpectSelector
+        inspectSelector = $InspectSelector
+        expectBadgeAtParentTopLeft = $ExpectBadgeAtParentTopLeft
         rejectSelector = $RejectSelector
         expectText = $ExpectText
         rejectText = $RejectText
         waitBeforeActionsMs = $WaitBeforeActionsMs
         waitAfterActionMs = $WaitAfterActionMs
         allowHorizontalOverflow = [bool] $AllowHorizontalOverflow
+        allowBrokenImages = [bool] $AllowBrokenImages
+        allowAccessibilityIssues = [bool] $AllowAccessibilityIssues
     } | ConvertTo-Json -Depth 10 -Compress
 
     $script = @"
@@ -251,6 +417,37 @@ window.addEventListener('unhandledrejection', function (event) {
   const cfg = $payload;
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   const visibleText = () => document.body ? document.body.innerText : '';
+  const isVisible = (element) => {
+    if (!element) return false;
+    const rect = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return rect.width > 0
+      && rect.height > 0
+      && style.display !== 'none'
+      && style.visibility !== 'hidden'
+      && style.opacity !== '0';
+  };
+  const accessibleName = (element) => {
+    const ariaLabel = element.getAttribute('aria-label');
+    if (ariaLabel && ariaLabel.trim()) return ariaLabel.trim();
+    const labelledBy = element.getAttribute('aria-labelledby');
+    if (labelledBy) {
+      const label = labelledBy.split(/\s+/).map((id) => document.getElementById(id)?.textContent || '').join(' ').trim();
+      if (label) return label;
+    }
+    if (element.id) {
+      const explicitLabel = [...document.querySelectorAll('label[for]')]
+        .find((item) => item.getAttribute('for') === element.id);
+      if (explicitLabel?.textContent?.trim()) return explicitLabel.textContent.trim();
+    }
+    const wrappingLabel = element.closest('label');
+    if (wrappingLabel?.textContent?.trim()) return wrappingLabel.textContent.trim();
+    const title = element.getAttribute('title');
+    if (title && title.trim()) return title.trim();
+    const text = (element.innerText || element.value || '').trim();
+    if (text) return text;
+    return [...element.querySelectorAll('img[alt]')].map((image) => image.alt).join(' ').trim();
+  };
   const isPreloaderVisible = () => {
     const preloader = document.querySelector('.preloader');
     if (!preloader) return false;
@@ -273,7 +470,8 @@ window.addEventListener('unhandledrejection', function (event) {
     return document.readyState === 'complete' && !isPreloaderVisible();
   };
   const clickBySelector = (selector) => {
-    const element = document.querySelector(selector);
+    const candidates = [...document.querySelectorAll(selector)];
+    const element = candidates.find(isVisible);
     if (!element) return { ok: false, selector };
     element.click();
     return { ok: true, selector };
@@ -281,10 +479,24 @@ window.addEventListener('unhandledrejection', function (event) {
   const clickByText = (text) => {
     const normalized = String(text).trim().toLowerCase();
     const candidates = [...document.querySelectorAll('button,a,[role="button"],input[type="submit"],input[type="button"]')];
-    const element = candidates.find((item) => (item.innerText || item.value || '').trim().toLowerCase().includes(normalized));
+    const element = candidates.find((item) => isVisible(item)
+      && (item.innerText || item.value || '').trim().toLowerCase().includes(normalized));
     if (!element) return { ok: false, text };
     element.click();
     return { ok: true, text };
+  };
+  const setSelectValue = (instruction) => {
+    const separator = '::';
+    const index = String(instruction).lastIndexOf(separator);
+    if (index < 1) return { ok: false, setSelectValue: instruction, reason: 'Use selector::value' };
+    const selector = String(instruction).slice(0, index);
+    const value = String(instruction).slice(index + separator.length);
+    const element = document.querySelector(selector);
+    if (!element || element.tagName !== 'SELECT') return { ok: false, setSelectValue: instruction };
+    element.value = value;
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+    return { ok: element.value === value, setSelectValue: instruction };
   };
   const pageReady = await waitForPageReady(Math.max(cfg.waitBeforeActionsMs, 10000));
   const actions = [];
@@ -310,13 +522,149 @@ window.addEventListener('unhandledrejection', function (event) {
     actions.push(clickByText(text));
     await sleep(cfg.waitAfterActionMs);
   }
+  for (const instruction of cfg.setSelectValue || []) {
+    actions.push(setSelectValue(instruction));
+    await sleep(cfg.waitAfterActionMs);
+  }
+  if (cfg.scrollToSelector) {
+    const element = document.querySelector(cfg.scrollToSelector);
+    if (!element) {
+      actions.push({ ok: false, scrollToSelector: cfg.scrollToSelector });
+    } else {
+      element.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' });
+      actions.push({ ok: true, scrollToSelector: cfg.scrollToSelector });
+      await sleep(Math.min(cfg.waitAfterActionMs, 500));
+    }
+  }
   const bodyText = visibleText();
-  const missingSelectors = (cfg.expectSelector || []).filter((selector) => !document.querySelector(selector));
+  const missingSelectors = (cfg.expectSelector || []).filter((selector) => !isVisible(document.querySelector(selector)));
+  const selectorInspections = (cfg.inspectSelector || []).map((selector) => {
+    const nodes = [...document.querySelectorAll(selector)];
+    return {
+      selector,
+      count: nodes.length,
+      samples: nodes.slice(0, 50).map((node) => {
+        const rect = node.getBoundingClientRect();
+        const style = getComputedStyle(node);
+        return {
+          sortIndex: node.getAttribute('data-sort-index') || '',
+          text: (node.innerText || '').trim().slice(0, 160),
+          href: node.getAttribute('href') || '',
+          ariaLabel: node.getAttribute('aria-label') || '',
+          rect: {
+            x: Math.round(rect.x * 100) / 100,
+            y: Math.round(rect.y * 100) / 100,
+            width: Math.round(rect.width * 100) / 100,
+            height: Math.round(rect.height * 100) / 100
+          },
+          clientWidth: node.clientWidth,
+          scrollWidth: node.scrollWidth,
+          display: style.display,
+          computedWidth: style.width
+        };
+      })
+    };
+  });
+  const badgeCornerMeasurements = (cfg.expectBadgeAtParentTopLeft || []).flatMap((selector) =>
+    [...document.querySelectorAll(selector)]
+      .filter(isVisible)
+      .map((badge) => {
+        const menuItem = badge.closest('.gape-sidebar-badged-item');
+        const menuItemRect = menuItem?.getBoundingClientRect();
+        const badgeRect = badge.getBoundingClientRect();
+        const badgeAnchor = {
+          x: badgeRect.left,
+          y: badgeRect.top
+        };
+        const expectedAnchor = menuItemRect ? { x: menuItemRect.left, y: menuItemRect.top } : null;
+        const delta = expectedAnchor ? {
+          x: badgeAnchor.x - expectedAnchor.x,
+          y: badgeAnchor.y - expectedAnchor.y
+        } : null;
+        const clipping = [];
+        for (let ancestor = badge.parentElement;
+             ancestor && ancestor !== document.body;
+             ancestor = ancestor.parentElement) {
+          const ancestorStyle = getComputedStyle(ancestor);
+          const ancestorRect = ancestor.getBoundingClientRect();
+          const ancestorName = ancestor.tagName.toLowerCase()
+            + (ancestor.id ? '#' + ancestor.id : '')
+            + ([...ancestor.classList].slice(0, 3).map((name) => '.' + name).join(''));
+          if (ancestorStyle.overflowX !== 'visible') {
+            if (badgeRect.left < ancestorRect.left - 0.51
+                && (!menuItemRect || menuItemRect.left >= ancestorRect.left - 0.51)) {
+              clipping.push({ axis: 'x', side: 'left', ancestor: ancestorName });
+            }
+            if (badgeRect.right > ancestorRect.right + 0.51
+                && (!menuItemRect || menuItemRect.right <= ancestorRect.right + 0.51)) {
+              clipping.push({ axis: 'x', side: 'right', ancestor: ancestorName });
+            }
+          }
+          if (ancestorStyle.overflowY !== 'visible') {
+            if (badgeRect.top < ancestorRect.top - 0.51
+                && (!menuItemRect || menuItemRect.top >= ancestorRect.top - 0.51)) {
+              clipping.push({ axis: 'y', side: 'top', ancestor: ancestorName });
+            }
+            if (badgeRect.bottom > ancestorRect.bottom + 0.51
+                && (!menuItemRect || menuItemRect.bottom <= ancestorRect.bottom + 0.51)) {
+              clipping.push({ axis: 'y', side: 'bottom', ancestor: ancestorName });
+            }
+          }
+        }
+        const matches = Boolean(delta)
+          && Math.abs(delta.x) <= 0.51
+          && Math.abs(delta.y) <= 0.51
+          && clipping.length === 0;
+        const round = (value) => Math.round(value * 100) / 100;
+        return {
+          selector,
+          text: (badge.innerText || '').trim(),
+          expectedAnchor: expectedAnchor && { x: round(expectedAnchor.x), y: round(expectedAnchor.y) },
+          badgeAnchor: { x: round(badgeAnchor.x), y: round(badgeAnchor.y) },
+          delta: delta && { x: round(delta.x), y: round(delta.y) },
+          size: { width: round(badgeRect.width), height: round(badgeRect.height) },
+          clipping,
+          matches
+        };
+      })
+  );
+  const missingBadgeCornerSelectors = (cfg.expectBadgeAtParentTopLeft || []).filter((selector) =>
+    ![...document.querySelectorAll(selector)].some(isVisible)
+  );
+  const badgeCornerIssues = badgeCornerMeasurements.filter((measurement) => !measurement.matches);
   const rejectedSelectorsFound = (cfg.rejectSelector || []).filter((selector) => document.querySelector(selector));
   const missingText = (cfg.expectText || []).filter((text) => !bodyText.includes(text));
   const rejectedTextFound = (cfg.rejectText || []).filter((text) => bodyText.includes(text));
   const failedActions = actions.filter((action) => !action.ok);
   const browserErrors = Array.isArray(window.__gapeBrowserErrors) ? window.__gapeBrowserErrors : [];
+  const brokenImages = [...document.images]
+    .filter((image) => isVisible(image) && image.complete && image.naturalWidth === 0)
+    .map((image) => ({ src: image.currentSrc || image.src || '', alt: image.alt || '' }));
+  const duplicateIds = [...document.querySelectorAll('[id]')]
+    .map((element) => element.id)
+    .filter((id, index, ids) => id && ids.indexOf(id) !== index)
+    .filter((id, index, ids) => ids.indexOf(id) === index)
+    .map((id) => ({ type: 'duplicate-id', target: '#' + id }));
+  const unnamedImages = [...document.querySelectorAll('img:not([alt])')]
+    .filter(isVisible)
+    .map((image) => ({ type: 'image-missing-alt', target: image.currentSrc || image.src || '<img>' }));
+  const unnamedControls = [...document.querySelectorAll('input:not([type="hidden"]):not([type="submit"]):not([type="button"]), select, textarea')]
+    .filter(isVisible)
+    .filter((element) => !accessibleName(element))
+    .map((element) => ({ type: 'control-missing-name', target: element.id ? '#' + element.id : element.outerHTML.slice(0, 160) }));
+  const unnamedActions = [...document.querySelectorAll('button, a[href], input[type="submit"], input[type="button"]')]
+    .filter(isVisible)
+    .filter((element) => !accessibleName(element))
+    .map((element) => ({ type: 'action-missing-name', target: element.id ? '#' + element.id : element.outerHTML.slice(0, 160) }));
+  const accessibilityIssues = [
+    ...duplicateIds,
+    ...unnamedImages,
+    ...unnamedControls,
+    ...unnamedActions
+  ];
+  if (!document.documentElement.lang) {
+    accessibilityIssues.push({ type: 'document-missing-lang', target: 'html' });
+  }
   const modal = document.querySelector('.modal.show');
   let modalInfo = null;
   if (modal) {
@@ -329,18 +677,6 @@ window.addEventListener('unhandledrejection', function (event) {
     const dialogRect = dialog ? dialog.getBoundingClientRect() : null;
     const footerRect = footer ? footer.getBoundingClientRect() : null;
     const fileRect = file ? file.getBoundingClientRect() : null;
-    const isVisible = (element) => {
-      if (!element) {
-        return false;
-      }
-      const rect = element.getBoundingClientRect();
-      const style = getComputedStyle(element);
-      return rect.width > 0
-        && rect.height > 0
-        && style.display !== 'none'
-        && style.visibility !== 'hidden'
-        && style.opacity !== '0';
-    };
     modalInfo = {
       title: modal.querySelector('.modal-title')?.innerText.trim() || '',
       dialog: dialogRect ? {
@@ -379,7 +715,11 @@ window.addEventListener('unhandledrejection', function (event) {
     && rejectedSelectorsFound.length === 0
     && missingText.length === 0
     && rejectedTextFound.length === 0
+    && missingBadgeCornerSelectors.length === 0
+    && badgeCornerIssues.length === 0
     && browserErrors.length === 0
+    && (cfg.allowBrokenImages || brokenImages.length === 0)
+    && (cfg.allowAccessibilityIssues || accessibilityIssues.length === 0)
     && (cfg.allowHorizontalOverflow || !pageOverflowX)
     && (!modalInfo || modalInfo.footerVisible !== false);
   return {
@@ -393,8 +733,14 @@ window.addEventListener('unhandledrejection', function (event) {
     viewport: { width: innerWidth, height: innerHeight },
     actions,
     browserErrors,
+    brokenImages,
+    accessibilityIssues,
     pageOverflowX,
     missingSelectors,
+    selectorInspections,
+    badgeCornerMeasurements,
+    missingBadgeCornerSelectors,
+    badgeCornerIssues,
     rejectedSelectorsFound,
     missingText,
     rejectedTextFound,
@@ -410,6 +756,132 @@ window.addEventListener('unhandledrejection', function (event) {
         returnByValue = $true
     }
     $result = $evaluation.result.result.value
+    Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Runtime.evaluate" -Params @{
+        expression = "new Promise((resolve) => setTimeout(() => resolve(true), 500))"
+        awaitPromise = $true
+        returnByValue = $true
+    } | Out-Null
+
+    # Use a real CDP pointer move rather than a synthetic MouseEvent: CSS :hover
+    # only reflects the browser's actual pointer state.  This keeps visual QA
+    # useful for card/table hover regressions without changing the application.
+    $hoverResults = [System.Collections.Generic.List[object]]::new()
+    foreach ($selector in $HoverSelector) {
+        $selectorJson = $selector | ConvertTo-Json -Compress
+        $target = Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Runtime.evaluate" -Params @{
+            expression = @"
+(() => {
+  const selector = $selectorJson;
+  const element = document.querySelector(selector);
+  if (!element) return { selector, found: false };
+  element.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' });
+  const rect = element.getBoundingClientRect();
+  return {
+    selector,
+    found: true,
+    visible: rect.width > 0 && rect.height > 0 && getComputedStyle(element).display !== 'none' && getComputedStyle(element).visibility !== 'hidden',
+    x: rect.left + (rect.width / 2),
+    y: rect.top + (rect.height / 2)
+  };
+})()
+"@
+            returnByValue = $true
+        }
+        $targetValue = $target.result.result.value
+        if (-not $targetValue.found -or -not $targetValue.visible) {
+            $hoverResults.Add([PSCustomObject]@{ selector = $selector; found = [bool]$targetValue.found; hovered = $false })
+            $result.passed = $false
+            continue
+        }
+        Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Input.dispatchMouseEvent" -Params @{
+            type = "mouseMoved"
+            x = [double]$targetValue.x
+            y = [double]$targetValue.y
+        } | Out-Null
+        Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Runtime.evaluate" -Params @{
+            expression = "new Promise((resolve) => setTimeout(() => resolve(true), 120))"
+            awaitPromise = $true
+            returnByValue = $true
+        } | Out-Null
+        $hoverState = Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Runtime.evaluate" -Params @{
+            expression = @"
+(() => {
+  const element = document.querySelector($selectorJson);
+  if (!element) return { hovered: false };
+  const cells = [...element.querySelectorAll(':scope > td')].map((cell) => {
+    const style = getComputedStyle(cell);
+    return { backgroundColor: style.backgroundColor, boxShadow: style.boxShadow };
+  });
+  return { hovered: element.matches(':hover'), backgroundColor: getComputedStyle(element).backgroundColor, cells };
+})()
+"@
+            returnByValue = $true
+        }
+        $state = $hoverState.result.result.value
+        $hoverResults.Add([PSCustomObject]@{
+            selector = $selector
+            found = $true
+            hovered = [bool]$state.hovered
+            backgroundColor = $state.backgroundColor
+            cells = @($state.cells)
+        })
+        if (-not $state.hovered) {
+            $result.passed = $false
+        }
+    }
+    if ($HoverSelector.Count -gt 0) {
+        $result | Add-Member -NotePropertyName hover -NotePropertyValue @($hoverResults) -Force
+    }
+
+    $networkErrors = [System.Collections.Generic.List[object]]::new()
+    $consoleErrors = [System.Collections.Generic.List[object]]::new()
+    $requestUrls = @{}
+    foreach ($event in $script:CdpEvents) {
+        if ($event.method -eq "Network.requestWillBeSent") {
+            $requestUrls[[string] $event.params.requestId] = [string] $event.params.request.url
+        } elseif ($event.method -eq "Network.responseReceived") {
+            $responseInfo = $event.params.response
+            if ($responseInfo.url -match '^https?://' -and [double] $responseInfo.status -ge 400) {
+                $networkErrors.Add([PSCustomObject]@{
+                    type = "http"
+                    status = [int] $responseInfo.status
+                    url = [string] $responseInfo.url
+                    resourceType = [string] $event.params.type
+                })
+            }
+        } elseif ($event.method -eq "Network.loadingFailed") {
+            $failure = $event.params
+            if (-not $failure.canceled -and $failure.errorText -notmatch 'ERR_ABORTED') {
+                $networkErrors.Add([PSCustomObject]@{
+                    type = "loading"
+                    status = $null
+                    url = [string] $requestUrls[[string] $failure.requestId]
+                    resourceType = [string] $failure.type
+                    error = [string] $failure.errorText
+                })
+            }
+        } elseif ($event.method -eq "Runtime.consoleAPICalled" -and $event.params.type -eq "error") {
+            $messages = @($event.params.args | ForEach-Object {
+                if ($null -ne $_.value) { [string] $_.value } else { [string] $_.description }
+            })
+            $consoleErrors.Add([PSCustomObject]@{
+                type = "console.error"
+                message = ($messages -join " ").Trim()
+            })
+        } elseif ($event.method -eq "Log.entryAdded" -and $event.params.entry.level -eq "error") {
+            $consoleErrors.Add([PSCustomObject]@{
+                type = "browser-log"
+                message = [string] $event.params.entry.text
+                url = [string] $event.params.entry.url
+            })
+        }
+    }
+    $result | Add-Member -NotePropertyName networkErrors -NotePropertyValue @($networkErrors) -Force
+    $result | Add-Member -NotePropertyName consoleErrors -NotePropertyValue @($consoleErrors) -Force
+    if ((-not $AllowNetworkErrors -and $networkErrors.Count -gt 0) -or
+            (-not $AllowConsoleErrors -and $consoleErrors.Count -gt 0)) {
+        $result.passed = $false
+    }
 
     if (-not $NoScreenshot) {
         $screenshot = Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Page.captureScreenshot" -Params @{
@@ -417,6 +889,37 @@ window.addEventListener('unhandledrejection', function (event) {
             captureBeyondViewport = $false
         }
         [IO.File]::WriteAllBytes($outPath, [Convert]::FromBase64String($screenshot.result.data))
+
+        if ($UpdateBaseline) {
+            if (-not $result.passed) {
+                $result | Add-Member -NotePropertyName visualRegression -NotePropertyValue ([PSCustomObject]@{
+                    passed = $false
+                    reason = "baseline-not-updated-because-page-checks-failed"
+                    baseline = $baselinePath
+                }) -Force
+            } else {
+                New-Item -ItemType Directory -Path (Split-Path -Parent $baselinePath) -Force | Out-Null
+                Copy-Item -LiteralPath $outPath -Destination $baselinePath -Force
+                $result | Add-Member -NotePropertyName visualRegression -NotePropertyValue ([PSCustomObject]@{
+                    passed = $true
+                    reason = "baseline-updated"
+                    baseline = $baselinePath
+                }) -Force
+            }
+        } elseif ($baselinePath) {
+            if (-not (Test-Path -LiteralPath $baselinePath -PathType Leaf)) {
+                throw "Visual baseline does not exist: $baselinePath. Use -UpdateBaseline to create it."
+            }
+            $visualRegression = Compare-Png `
+                -ActualPath $outPath `
+                -BaselinePath $baselinePath `
+                -ColorTolerance $PixelColorTolerance `
+                -MaximumDifferencePercent $MaxPixelDifferencePercent
+            $result | Add-Member -NotePropertyName visualRegression -NotePropertyValue $visualRegression -Force
+            if (-not $visualRegression.passed) {
+                $result.passed = $false
+            }
+        }
     }
 
     $result | ConvertTo-Json -Depth 20

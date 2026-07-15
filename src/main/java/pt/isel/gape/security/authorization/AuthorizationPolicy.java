@@ -59,7 +59,7 @@ public final class AuthorizationPolicy {
                     AccessEntityType.GLOBAL
             ));
         }
-        if (path.equals("/dashboard") || path.equals("/profile")) {
+        if (path.equals("/dashboard") || path.equals("/profile") || isPathOrChild(path, "/messages")) {
             return Optional.of(new AuthorizationRule(
                     Set.of(AccessProfileType.ADMINISTRATOR, AccessProfileType.COORDINATOR,
                             AccessProfileType.TEACHER, AccessProfileType.STUDENT),
@@ -170,8 +170,6 @@ public final class AuthorizationPolicy {
                 || path.equals("/contact.jsp")
                 || path.equals("/courses")
                 || isPathOrChild(path, "/courses")
-                || path.equals("/certificates/validate")
-                || isPathOrChild(path, "/certificates/validate")
                 || path.equals("/courses.jsp")
                 || path.equals("/course.jsp")
                 || path.equals("/course-list-view.jsp")
@@ -185,6 +183,7 @@ public final class AuthorizationPolicy {
                 || path.equals("/error-403.jsp")
                 || path.equals("/error-404.jsp")
                 || path.equals("/error-500.jsp")
+                || isPathOrChild(path, "/certificates/validate")
                 || isPathOrChild(path, "/assets")
                 || isPathOrChild(path, "/media")
                 || isPathOrChild(path, "/auth");

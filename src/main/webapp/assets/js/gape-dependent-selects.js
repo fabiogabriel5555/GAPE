@@ -43,6 +43,10 @@
     }
   }
 
+  function notifyDependentSelectSynced(select) {
+    select.dispatchEvent(new CustomEvent('gape:dependent-select-sync', { bubbles: true }));
+  }
+
   function syncDependentSelect(select) {
     const parentSelector = select.dataset.parentSelect;
     const parent = parentSelector ? document.querySelector(parentSelector) : null;
@@ -52,6 +56,7 @@
 
     const selectedParents = parentValues(parent);
     let invalidSelection = false;
+    let visibleChildCount = 0;
 
     options(select).forEach(function (option) {
       const parentValue = option.dataset.parentValue;
@@ -64,20 +69,27 @@
       const visible = selectedParents.length > 0 && selectedParents.indexOf(parentValue) >= 0;
       option.hidden = !visible;
       option.disabled = !visible;
+      if (visible) {
+        visibleChildCount += 1;
+      }
       if (!visible && option.selected) {
         invalidSelection = true;
       }
     });
 
+    select.disabled = selectedParents.length === 0 || visibleChildCount === 0;
+
     if (invalidSelection) {
       resetSelection(select);
       notifySelectChanged(select);
+      notifyDependentSelectSynced(select);
       return;
     }
 
     if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
       window.jQuery(select).trigger('change.select2');
     }
+    notifyDependentSelectSynced(select);
   }
 
   ready(function () {

@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -20,6 +21,8 @@ import pt.isel.gape.learning.dao.ContentAssociationDAO;
 import pt.isel.gape.learning.dao.ContentBlockDAO;
 import pt.isel.gape.learning.dao.ContentItemDAO;
 import pt.isel.gape.learning.dao.GradeSheetDAO;
+import pt.isel.gape.learning.dao.LessonDAO;
+import pt.isel.gape.learning.dao.PhysicalRoomDAO;
 import pt.isel.gape.learning.dao.QuestionDAO;
 import pt.isel.gape.learning.dao.QuestionOptionDAO;
 import pt.isel.gape.learning.dao.SubjectDAO;
@@ -35,12 +38,13 @@ import pt.isel.gape.learning.model.ClassGroupState;
 import pt.isel.gape.learning.model.ContentAssociationCommand;
 import pt.isel.gape.learning.model.ContentAssociationType;
 import pt.isel.gape.learning.model.ContentBlock;
-import pt.isel.gape.learning.model.ContentBlockState;
 import pt.isel.gape.learning.model.ContentFormat;
 import pt.isel.gape.learning.model.ContentItem;
 import pt.isel.gape.learning.model.ContentItemCreateCommand;
 import pt.isel.gape.learning.model.ContentItemState;
 import pt.isel.gape.learning.model.EnrollmentApprovalMode;
+import pt.isel.gape.learning.model.PhysicalRoom;
+import pt.isel.gape.learning.model.PhysicalRoomState;
 import pt.isel.gape.learning.model.Question;
 import pt.isel.gape.learning.model.QuestionCreateCommand;
 import pt.isel.gape.learning.model.QuestionOption;
@@ -67,6 +71,8 @@ public final class AssessmentService {
     private final ClassGroupDAO classGroupDAO;
     private final ContentItemDAO contentItemDAO;
     private final ContentAssociationDAO contentAssociationDAO;
+    private final LessonDAO lessonDAO;
+    private final PhysicalRoomDAO physicalRoomDAO;
     private final QuestionDAO questionDAO;
     private final QuestionOptionDAO optionDAO;
     private final GradeSheetDAO gradeSheetDAO;
@@ -117,6 +123,8 @@ public final class AssessmentService {
         this.classGroupDAO = Objects.requireNonNull(classGroupDAO, "classGroupDAO is required");
         this.contentItemDAO = Objects.requireNonNull(contentItemDAO, "contentItemDAO is required");
         this.contentAssociationDAO = Objects.requireNonNull(contentAssociationDAO, "contentAssociationDAO is required");
+        this.lessonDAO = new LessonDAO(connectionProvider);
+        this.physicalRoomDAO = new PhysicalRoomDAO(connectionProvider);
         this.questionDAO = Objects.requireNonNull(questionDAO, "questionDAO is required");
         this.optionDAO = Objects.requireNonNull(optionDAO, "optionDAO is required");
         this.gradeSheetDAO = new GradeSheetDAO(connectionProvider);
@@ -161,6 +169,22 @@ public final class AssessmentService {
                             context.context(),
                             null,
                             sourceIp
+                    );
+                    requireAssessmentWithinClassGroupDates(
+                            connection,
+                            context.context(),
+                            context.command().availableFrom(),
+                            context.command().availableUntil()
+                    );
+                    requirePhysicalRoomAvailable(
+                            connection,
+                            context.context(),
+                            context.command().physicalRoomCode(),
+                            context.command().mode(),
+                            context.command().state(),
+                            context.command().availableFrom(),
+                            context.command().availableUntil(),
+                            null
                     );
                     long assessmentId = assessmentDAO.create(connection, context.command());
                     assessmentDAO.replaceApplicableClassGroups(
@@ -299,6 +323,22 @@ public final class AssessmentService {
                             assessmentId,
                             sourceIp
                     );
+                    requireAssessmentWithinClassGroupDates(
+                            connection,
+                            context.context(),
+                            context.command().availableFrom(),
+                            context.command().availableUntil()
+                    );
+                    requirePhysicalRoomAvailable(
+                            connection,
+                            context.context(),
+                            context.command().physicalRoomCode(),
+                            context.command().mode(),
+                            context.command().state(),
+                            context.command().availableFrom(),
+                            context.command().availableUntil(),
+                            assessmentId
+                    );
                     List<Long> currentClassGroupIds = assessmentDAO.findApplicableClassGroupIds(connection, assessmentId);
                     if (assessmentDAO.hasAnyAttempts(connection, assessmentId)
                             && structuralAssessmentChanged(
@@ -423,6 +463,22 @@ public final class AssessmentService {
                             context.context(),
                             null,
                             sourceIp
+                    );
+                    requireAssessmentWithinClassGroupDates(
+                            connection,
+                            context.context(),
+                            context.command().availableFrom(),
+                            context.command().availableUntil()
+                    );
+                    requirePhysicalRoomAvailable(
+                            connection,
+                            context.context(),
+                            context.command().physicalRoomCode(),
+                            context.command().mode(),
+                            context.command().state(),
+                            context.command().availableFrom(),
+                            context.command().availableUntil(),
+                            null
                     );
 
                     long cloneId = assessmentDAO.create(connection, context.command());
@@ -549,6 +605,7 @@ public final class AssessmentService {
         return new NormalizedCreateAssessment(new AssessmentCreateCommand(
                 context.subjectId(),
                 context.contentBlockId(),
+                command.physicalRoomCode(),
                 command.title().trim(),
                 normalizeText(command.description()),
                 command.type(),
@@ -582,6 +639,7 @@ public final class AssessmentService {
         return new AssessmentCreateCommand(
                 null,
                 targetContentBlockId,
+                source.physicalRoomCode(),
                 source.title(),
                 source.description(),
                 source.type(),
@@ -621,6 +679,7 @@ public final class AssessmentService {
         return new NormalizedUpdateAssessment(new AssessmentUpdateCommand(
                 context.subjectId(),
                 context.contentBlockId(),
+                command.physicalRoomCode(),
                 command.title().trim(),
                 normalizeText(command.description()),
                 command.type(),
@@ -658,9 +717,6 @@ public final class AssessmentService {
         if (contentBlockId != null) {
             ContentBlock contentBlock = contentBlockDAO.findById(connection, contentBlockId)
                     .orElseThrow(() -> new IllegalArgumentException("Content block not found: " + contentBlockId));
-            if (contentBlock.state() == ContentBlockState.INACTIVE) {
-                throw new IllegalStateException("Inactive content blocks cannot receive assessments");
-            }
             ClassGroup classGroup = classGroupDAO.findById(connection, contentBlock.classGroupId())
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Class group not found: " + contentBlock.classGroupId()));
@@ -834,6 +890,7 @@ public final class AssessmentService {
                 command.description(),
                 command.type(),
                 command.mode(),
+                command.physicalRoomCode(),
                 command.correctionMode(),
                 command.maxGrade(),
                 command.passingGrade(),
@@ -855,6 +912,7 @@ public final class AssessmentService {
                 command.description(),
                 command.type(),
                 command.mode(),
+                command.physicalRoomCode(),
                 command.correctionMode(),
                 command.maxGrade(),
                 command.passingGrade(),
@@ -877,6 +935,7 @@ public final class AssessmentService {
         return new AssessmentCreateCommand(
                 command.subjectId(),
                 command.contentBlockId(),
+                command.physicalRoomCode(),
                 command.title(),
                 command.description(),
                 command.type(),
@@ -902,6 +961,7 @@ public final class AssessmentService {
         return new AssessmentUpdateCommand(
                 command.subjectId(),
                 command.contentBlockId(),
+                command.physicalRoomCode(),
                 command.title(),
                 command.description(),
                 command.type(),
@@ -941,6 +1001,7 @@ public final class AssessmentService {
             String description,
             AssessmentType type,
             Object mode,
+            String physicalRoomCode,
             Object correctionMode,
             BigDecimal maxGrade,
             BigDecimal passingGrade,
@@ -964,6 +1025,19 @@ public final class AssessmentService {
         if (mode == AssessmentMode.ONSITE && correctionMode != AssessmentCorrectionMode.MANUAL) {
             throw new IllegalArgumentException("In-person assessments must use manual correction");
         }
+        if (availableFrom == null) {
+            throw new IllegalArgumentException("Assessment availability start is required");
+        }
+        if (availableUntil == null) {
+            throw new IllegalArgumentException("Assessment availability end is required");
+        }
+        if (mode == AssessmentMode.ONSITE) {
+            if (physicalRoomCode == null || physicalRoomCode.isBlank()) {
+                throw new IllegalArgumentException("In-person assessments require a physical room");
+            }
+        } else if (physicalRoomCode != null && !physicalRoomCode.isBlank()) {
+            throw new IllegalArgumentException("Online assessments cannot reserve a physical room");
+        }
         requirePositive(maxGrade, "Assessment maximum grade must be positive");
         requireNonNegative(passingGrade, "Assessment passing grade cannot be negative");
         requirePercentage(finalGradeWeight, "Assessment final grade weight must be between 0 and 100");
@@ -974,6 +1048,107 @@ public final class AssessmentService {
             throw new IllegalArgumentException("Assessment attempts limit must be greater than zero");
         }
         requireValidDates(availableFrom, availableUntil, now, requireFutureDates);
+    }
+
+    private void requireAssessmentWithinClassGroupDates(
+            Connection connection,
+            NormalizedContext context,
+            LocalDateTime availableFrom,
+            LocalDateTime availableUntil
+    ) throws SQLException {
+        for (Long classGroupId : context.classGroupIds()) {
+            ClassGroup classGroup = classGroupDAO.findById(connection, classGroupId)
+                    .orElseThrow(() -> new IllegalArgumentException("Class group not found: " + classGroupId));
+            if (availableFrom != null) {
+                requireAssessmentInstantWithinClassGroup(
+                        availableFrom,
+                        classGroup.startsAt(),
+                        classGroup.endsAt(),
+                        "Assessment start date"
+                );
+            }
+            if (availableUntil != null) {
+                requireAssessmentInstantWithinClassGroup(
+                        availableUntil,
+                        classGroup.startsAt(),
+                        classGroup.endsAt(),
+                        "Assessment end date"
+                );
+            }
+        }
+    }
+
+    private static void requireAssessmentInstantWithinClassGroup(
+            LocalDateTime value,
+            LocalDate classGroupStart,
+            LocalDate classGroupEnd,
+            String label
+    ) {
+        LocalDate date = value.toLocalDate();
+        if (classGroupStart != null && date.isBefore(classGroupStart)) {
+            throw new IllegalArgumentException(label + " cannot be before the class group start date");
+        }
+        if (classGroupEnd != null && date.isAfter(classGroupEnd)) {
+            throw new IllegalArgumentException(label + " cannot be after the class group end date");
+        }
+    }
+
+    private void requirePhysicalRoomAvailable(
+            Connection connection,
+            NormalizedContext context,
+            String physicalRoomCode,
+            AssessmentMode mode,
+            AssessmentState state,
+            LocalDateTime availableFrom,
+            LocalDateTime availableUntil,
+            Long excludedAssessmentId
+    ) throws SQLException {
+        if (mode != AssessmentMode.ONSITE) {
+            return;
+        }
+        PhysicalRoom room = physicalRoomDAO.findByCode(connection, physicalRoomCode)
+                .orElseThrow(() -> new IllegalArgumentException("Assessment physical room not found: " + physicalRoomCode));
+        if (room.state() != PhysicalRoomState.ACTIVE) {
+            throw new IllegalStateException("Assessment physical room must be active");
+        }
+        long activeEnrollments = 0;
+        for (Long classGroupId : context.classGroupIds()) {
+            long classGroupOrganizationId = lessonDAO.findClassGroupOrganizationId(connection, classGroupId)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Class group organization not found: " + classGroupId));
+            if (room.organizationId() != classGroupOrganizationId) {
+                throw new IllegalArgumentException("Assessment physical room must belong to the same organization");
+            }
+            activeEnrollments += classGroupDAO.countActiveEnrollments(connection, classGroupId);
+        }
+        if (room.capacity() < activeEnrollments) {
+            throw new IllegalStateException("Physical room capacity is below assessment active enrollments");
+        }
+        if (!reservesPhysicalRoom(state)) {
+            return;
+        }
+        if (lessonDAO.roomHasOverlappingReservedLesson(
+                connection,
+                room.code(),
+                availableFrom,
+                availableUntil,
+                null
+        )) {
+            throw new IllegalStateException("Physical room already has an overlapping lesson");
+        }
+        if (assessmentDAO.roomHasOverlappingReservedAssessment(
+                connection,
+                room.code(),
+                availableFrom,
+                availableUntil,
+                excludedAssessmentId
+        )) {
+            throw new IllegalStateException("Physical room already has an overlapping assessment");
+        }
+    }
+
+    private static boolean reservesPhysicalRoom(AssessmentState state) {
+        return state == AssessmentState.SCHEDULED || state == AssessmentState.ACTIVE;
     }
 
     private void requireContextManagers(
@@ -1032,16 +1207,19 @@ public final class AssessmentService {
             boolean requireFutureDates
     ) {
         Objects.requireNonNull(now, "now is required");
-        if (availableUntil != null && availableFrom == null) {
-            throw new IllegalArgumentException("Assessment availability end requires an availability start");
+        if (availableFrom == null) {
+            throw new IllegalArgumentException("Assessment availability start is required");
         }
-        if (requireFutureDates && availableFrom != null && availableFrom.isBefore(now)) {
+        if (availableUntil == null) {
+            throw new IllegalArgumentException("Assessment availability end is required");
+        }
+        if (requireFutureDates && availableFrom.isBefore(now)) {
             throw new IllegalArgumentException("Assessment availability start cannot be in the past");
         }
-        if (requireFutureDates && availableUntil != null && availableUntil.isBefore(now)) {
+        if (requireFutureDates && availableUntil.isBefore(now)) {
             throw new IllegalArgumentException("Assessment availability end cannot be in the past");
         }
-        if (availableFrom != null && availableUntil != null && availableUntil.isBefore(availableFrom)) {
+        if (availableUntil.isBefore(availableFrom)) {
             throw new IllegalArgumentException("Assessment availability end cannot be before start");
         }
     }

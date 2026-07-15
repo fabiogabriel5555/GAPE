@@ -1,6 +1,7 @@
 package pt.isel.gape.learning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -26,10 +27,7 @@ import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.dao.EnrollmentDAO;
 import pt.isel.gape.learning.model.CourseEnrollment;
 import pt.isel.gape.learning.model.CourseEnrollmentCommand;
-import pt.isel.gape.learning.model.EnrollmentApprovalMode;
 import pt.isel.gape.learning.model.EnrollmentState;
-import pt.isel.gape.learning.model.SubjectEnrollment;
-import pt.isel.gape.learning.model.SubjectEnrollmentCommand;
 import pt.isel.gape.learning.service.EnrollmentService;
 import pt.isel.gape.transversal.DatabaseTestSupport;
 
@@ -59,7 +57,7 @@ class EnrollmentServiceTest {
     }
 
     @Test
-    void administratorCanEnrollStudentInCourse() {
+    void administratorCanEnrollStudentInCourseOccurrence() {
         CourseEnrollment enrollment = enrollmentService.enrollStudentInCourse(
                 1L,
                 null,
@@ -67,270 +65,37 @@ class EnrollmentServiceTest {
                 new CourseEnrollmentCommand(
                         4L,
                         31L,
-                        LocalDate.of(2026, 3, 1),
-                        null
+                        310L
                 ),
                 "127.0.0.1"
         );
 
         assertEquals(EnrollmentState.ACTIVE, enrollment.state());
         assertEquals(31L, enrollment.courseId());
-        assertEquals("draft", certificateState(4L, 31L));
-        assertEquals("draft", subjectGradeSheetState(41L));
+        assertEquals(310L, enrollment.courseOccurrenceId());
+        assertEquals("draft", certificateState(4L, 31L, 310L));
+        // A course enrollment alone must not invent a subject-occurrence grade sheet.
+        // That sheet is created only when a real class group exists in this exact
+        // subject/course-occurrence context.
+        assertNull(subjectGradeSheetState(41L, 310L));
     }
 
     @Test
-    void studentCanRequestSelfSubjectEnrollmentIntegratedInActiveCourseEnrollment() {
-        SubjectEnrollment enrollment = enrollmentService.requestStudentInSubject(
-                4L,
-                null,
-                new SubjectEnrollmentCommand(
-                        4L,
-                        41L,
-                        30L,
-                        LocalDate.of(2026, 3, 1),
-                        null
-                ),
-                "127.0.0.1"
-        );
+    void administratorCanEnrollStudentInScheduledCourseOccurrence() throws Exception {
+        long scheduledOccurrenceId = insertScheduledCourseOccurrence();
 
-        assertEquals(EnrollmentState.PENDING, enrollment.state());
-        assertEquals(30L, enrollment.courseId());
-        assertEquals(41L, enrollment.subjectId());
-    }
-
-    @Test
-    void subjectRequestIsAutoApprovedWhenPolicyIsAutoApprove() {
-        enrollmentService.updateSubjectEnrollmentPolicy(
+        CourseEnrollment enrollment = enrollmentService.enrollStudentInCourse(
                 1L,
                 null,
                 AccessProfileType.ADMINISTRATOR,
-                30L,
-                41L,
-                EnrollmentApprovalMode.AUTO_APPROVE,
-                "127.0.0.1"
-        );
-
-        SubjectEnrollment enrollment = enrollmentService.requestStudentInSubject(
-                4L,
-                null,
-                new SubjectEnrollmentCommand(
-                        4L,
-                        41L,
-                        30L,
-                        LocalDate.of(2026, 3, 1),
-                        null
-                ),
+                new CourseEnrollmentCommand(4L, 30L, scheduledOccurrenceId),
                 "127.0.0.1"
         );
 
         assertEquals(EnrollmentState.ACTIVE, enrollment.state());
-        assertEquals(30L, enrollment.courseId());
-        assertEquals(41L, enrollment.subjectId());
-        assertEquals("draft", subjectGradeSheetState(41L));
-    }
-
-    @Test
-    void autoApprovedSubjectRequestAllowsSameSubjectInAnotherCourse() throws Exception {
-        integrateSubject(31L, 40L);
-        insertCourseEnrollment(4L, 31L, LocalDate.of(2026, 3, 1), null);
-        enrollmentService.updateSubjectEnrollmentPolicy(
-                1L,
-                null,
-                AccessProfileType.ADMINISTRATOR,
-                31L,
-                40L,
-                EnrollmentApprovalMode.AUTO_APPROVE,
-                "127.0.0.1"
-        );
-
-        SubjectEnrollment enrollment = enrollmentService.requestStudentInSubject(
-                4L,
-                null,
-                new SubjectEnrollmentCommand(
-                        4L,
-                        40L,
-                        31L,
-                        LocalDate.of(2026, 3, 1),
-                        null
-                ),
-                "127.0.0.1"
-        );
-
-        assertEquals(EnrollmentState.ACTIVE, enrollment.state());
-        assertEquals(31L, enrollment.courseId());
-        assertEquals(40L, enrollment.subjectId());
-    }
-
-    @Test
-    void subjectEnrollmentRequiresIntegratedSubject() throws Exception {
-        try (Connection connection = DatabaseTestSupport.openConnection();
-             PreparedStatement statement = connection.prepareStatement("""
-                     INSERT INTO subject (
-                         id_subject, id_organization, name, acronym, description, ects, workload_hours, state
-                     ) VALUES (42, 10, 'Sistemas Distribuidos', 'SD', NULL, 6.00, 70, 'active')
-                     """)) {
-            statement.executeUpdate();
-        }
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> enrollmentService.enrollStudentInSubject(
-                        1L,
-                        null,
-                        AccessProfileType.ADMINISTRATOR,
-                        new SubjectEnrollmentCommand(
-                                4L,
-                                42L,
-                                30L,
-                                LocalDate.of(2026, 3, 1),
-                                null
-                        ),
-                        "127.0.0.1"
-                )
-        );
-    }
-
-    @Test
-    void subjectEnrollmentRequiresCourseEnrollment() {
-        assertThrows(
-                IllegalStateException.class,
-                () -> enrollmentService.enrollStudentInSubject(
-                        1L,
-                        null,
-                        AccessProfileType.ADMINISTRATOR,
-                        new SubjectEnrollmentCommand(
-                                4L,
-                                41L,
-                                31L,
-                                LocalDate.of(2026, 3, 1),
-                                null
-                        ),
-                        "127.0.0.1"
-                )
-        );
-    }
-
-    @Test
-    void subjectEnrollmentRequiresCourseEnrollmentForFullSubjectPeriod() throws Exception {
-        integrateSubject(31L, 41L);
-        insertCourseEnrollment(4L, 31L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 4, 1));
-
-        assertThrows(
-                IllegalStateException.class,
-                () -> enrollmentService.enrollStudentInSubject(
-                        1L,
-                        null,
-                        AccessProfileType.ADMINISTRATOR,
-                        new SubjectEnrollmentCommand(
-                                4L,
-                                41L,
-                                31L,
-                                LocalDate.of(2026, 3, 1),
-                                LocalDate.of(2026, 5, 1)
-                        ),
-                        "127.0.0.1"
-                )
-        );
-    }
-
-    @Test
-    void administratorCanEnrollStudentInSameSubjectThroughAnotherCourse() throws Exception {
-        integrateSubject(31L, 40L);
-        insertCourseEnrollment(4L, 31L, LocalDate.of(2026, 3, 1), null);
-
-        SubjectEnrollment enrollment = enrollmentService.enrollStudentInSubject(
-                1L,
-                null,
-                AccessProfileType.ADMINISTRATOR,
-                new SubjectEnrollmentCommand(
-                        4L,
-                        40L,
-                        31L,
-                        LocalDate.of(2026, 3, 1),
-                        null
-                ),
-                "127.0.0.1"
-        );
-
-        assertEquals(EnrollmentState.ACTIVE, enrollment.state());
-        assertEquals(31L, enrollment.courseId());
-        assertEquals(40L, enrollment.subjectId());
-    }
-
-    @Test
-    void administratorCanApproveSameSubjectEnrollmentThroughAnotherCourse() throws Exception {
-        insertSubjectEnrollment(
-                4L,
-                30L,
-                41L,
-                EnrollmentState.ACTIVE,
-                LocalDate.of(2026, 3, 1),
-                null
-        );
-        insertCourseEnrollment(4L, 31L, LocalDate.of(2026, 3, 1), null);
-        insertSubjectEnrollment(
-                4L,
-                31L,
-                41L,
-                EnrollmentState.PENDING,
-                LocalDate.of(2026, 3, 1),
-                null
-        );
-
-        SubjectEnrollment enrollment = enrollmentService.approveSubjectEnrollment(
-                1L,
-                null,
-                AccessProfileType.ADMINISTRATOR,
-                4L,
-                31L,
-                41L,
-                null,
-                null,
-                "127.0.0.1"
-        );
-
-        assertEquals(EnrollmentState.ACTIVE, enrollment.state());
-        assertEquals(31L, enrollment.courseId());
-        assertEquals(41L, enrollment.subjectId());
-    }
-
-    @Test
-    void withdrawnSubjectEnrollmentCanBeRequestedAgainWhenApprovalIsManual() throws Exception {
-        insertSubjectEnrollment(
-                4L,
-                30L,
-                41L,
-                EnrollmentState.ACTIVE,
-                LocalDate.of(2026, 3, 1),
-                null
-        );
-        insertCourseEnrollment(4L, 31L, LocalDate.of(2026, 3, 1), null);
-        insertSubjectEnrollment(
-                4L,
-                31L,
-                41L,
-                EnrollmentState.WITHDRAWN,
-                LocalDate.of(2026, 3, 1),
-                LocalDate.of(2026, 3, 2)
-        );
-
-        SubjectEnrollment enrollment = enrollmentService.requestStudentInSubject(
-                4L,
-                null,
-                new SubjectEnrollmentCommand(
-                        4L,
-                        41L,
-                        31L,
-                        LocalDate.of(2026, 3, 3),
-                        null
-                ),
-                "127.0.0.1"
-        );
-
-        assertEquals(EnrollmentState.PENDING, enrollment.state());
-        assertEquals(31L, enrollment.courseId());
-        assertEquals(41L, enrollment.subjectId());
+        assertEquals(scheduledOccurrenceId, enrollment.courseOccurrenceId());
+        assertEquals(LocalDate.of(2027, 1, 1), enrollment.startDate());
+        assertEquals(LocalDate.of(2027, 12, 31), enrollment.endDate());
     }
 
     @Test
@@ -344,8 +109,7 @@ class EnrollmentServiceTest {
                         new CourseEnrollmentCommand(
                                 4L,
                                 30L,
-                                LocalDate.of(2026, 3, 1),
-                                null
+                                300L
                         ),
                         "127.0.0.1"
                 )
@@ -360,12 +124,12 @@ class EnrollmentServiceTest {
                 AccessProfileType.ADMINISTRATOR,
                 4L,
                 30L,
-                LocalDate.of(2026, 5, 31),
+                300L,
                 "127.0.0.1"
         );
 
         assertEquals(EnrollmentState.WITHDRAWN, enrollment.state());
-        assertEquals(LocalDate.of(2026, 5, 31), enrollment.endDate());
+        assertEquals(LocalDate.of(2026, 12, 31), enrollment.endDate());
     }
 
     @Test
@@ -376,13 +140,30 @@ class EnrollmentServiceTest {
                 AccessProfileType.ADMINISTRATOR,
                 4L,
                 30L,
+                300L,
                 EnrollmentState.INACTIVE,
-                LocalDate.of(2026, 5, 15),
                 "127.0.0.1"
         );
 
         assertEquals(EnrollmentState.INACTIVE, enrollment.state());
-        assertEquals(LocalDate.of(2026, 5, 15), enrollment.endDate());
+        assertEquals(LocalDate.of(2026, 12, 31), enrollment.endDate());
+    }
+
+    @Test
+    void completedCourseEnrollmentStateIsManagedAutomatically() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> enrollmentService.updateCourseEnrollment(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        4L,
+                        30L,
+                        300L,
+                        EnrollmentState.COMPLETED,
+                        "127.0.0.1"
+                )
+        );
     }
 
     @Test
@@ -393,17 +174,17 @@ class EnrollmentServiceTest {
                 AccessProfileType.ADMINISTRATOR,
                 4L,
                 30L,
+                300L,
                 "127.0.0.1"
         );
 
         assertTrue(isCourseEnrollmentMissing(4L, 30L));
-        assertTrue(isSubjectEnrollmentMissing(4L, 30L, 40L));
         assertTrue(isClassGroupEnrollmentMissing(4L, 50L));
     }
 
     @Test
     void activeCourseEnrollmentCountIncludesActiveRowsOutsideCurrentDateWindow() throws Exception {
-        insertCourseEnrollment(4L, 31L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 4, 1));
+        insertCourseEnrollment(4L, 31L, 310L, LocalDate.of(2026, 3, 1), LocalDate.of(2026, 4, 1));
 
         EnrollmentDAO enrollmentDAO = new EnrollmentDAO(DatabaseTestSupport::openConnection);
 
@@ -411,18 +192,18 @@ class EnrollmentServiceTest {
     }
 
     @Test
-    void withdrawingCourseWithdrawsActiveSubjectEnrollmentsInThatCourse() throws Exception {
+    void withdrawingCourseWithdrawsActiveClassGroupEnrollmentsInThatCourse() throws Exception {
         enrollmentService.withdrawStudentFromCourse(
                 1L,
                 null,
                 AccessProfileType.ADMINISTRATOR,
                 4L,
                 30L,
-                LocalDate.of(2026, 5, 31),
+                300L,
                 "127.0.0.1"
         );
 
-        assertTrue(isSubjectEnrollmentWithdrawn(4L, 30L, 40L));
+        assertEquals("withdrawn", classGroupEnrollmentState(4L, 50L));
     }
 
     @Test
@@ -436,97 +217,48 @@ class EnrollmentServiceTest {
                         new CourseEnrollmentCommand(
                                 4L,
                                 31L,
-                                LocalDate.of(2026, 3, 1),
-                                null
+                                310L
                         ),
                         "127.0.0.1"
                 )
         );
     }
 
-    private static void integrateSubject(long courseId, long subjectId) throws Exception {
-        try (Connection connection = DatabaseTestSupport.openConnection();
-             PreparedStatement statement = connection.prepareStatement("""
-                     INSERT INTO integrate_subject (id_course, id_subject, curricular_year, term, mandatory, state)
-                     VALUES (?, ?, 1, 'semester_1', 1, 'active')
-                     ON DUPLICATE KEY UPDATE state = 'active'
-                     """)) {
-            statement.setLong(1, courseId);
-            statement.setLong(2, subjectId);
-            statement.executeUpdate();
-        }
-    }
-
     private static void insertCourseEnrollment(
             long studentUserId,
             long courseId,
+            long courseOccurrenceId,
             LocalDate startDate,
             LocalDate endDate
     ) throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement("""
-                     INSERT INTO enroll_course (id_student_user, id_course, state, start_date, end_date)
-                     VALUES (?, ?, 'active', ?, ?)
+                     INSERT INTO enroll_course (
+                         id_student_user, id_course, id_course_occurrence, state, start_date, end_date
+                     ) VALUES (?, ?, ?, 'active', ?, ?)
                      """)) {
             statement.setLong(1, studentUserId);
             statement.setLong(2, courseId);
-            statement.setDate(3, java.sql.Date.valueOf(startDate));
+            statement.setLong(3, courseOccurrenceId);
+            statement.setDate(4, java.sql.Date.valueOf(startDate));
             if (endDate == null) {
-                statement.setNull(4, java.sql.Types.DATE);
-            } else {
-                statement.setDate(4, java.sql.Date.valueOf(endDate));
-            }
-            statement.executeUpdate();
-        }
-    }
-
-    private static void insertSubjectEnrollment(
-            long studentUserId,
-            long courseId,
-            long subjectId,
-            EnrollmentState state,
-            LocalDate startDate,
-            LocalDate endDate
-    ) throws Exception {
-        try (Connection connection = DatabaseTestSupport.openConnection();
-             PreparedStatement statement = connection.prepareStatement("""
-                     INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date)
-                     VALUES (?, ?, ?, ?, ?, ?)
-                     """)) {
-            statement.setLong(1, studentUserId);
-            statement.setLong(2, courseId);
-            statement.setLong(3, subjectId);
-            statement.setString(4, state.toDatabaseValue());
-            if (startDate == null) {
                 statement.setNull(5, java.sql.Types.DATE);
             } else {
-                statement.setDate(5, java.sql.Date.valueOf(startDate));
-            }
-            if (endDate == null) {
-                statement.setNull(6, java.sql.Types.DATE);
-            } else {
-                statement.setDate(6, java.sql.Date.valueOf(endDate));
+                statement.setDate(5, java.sql.Date.valueOf(endDate));
             }
             statement.executeUpdate();
         }
     }
 
-    private static boolean isSubjectEnrollmentWithdrawn(long studentUserId, long courseId, long subjectId)
-            throws Exception {
+    private static long insertScheduledCourseOccurrence() throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement("""
-                     SELECT state
-                     FROM enroll_subject
-                     WHERE id_student_user = ?
-                       AND id_course = ?
-                       AND id_subject = ?
+                     INSERT INTO course_occurrence (
+                         id_course_occurrence, id_course, reference_year, label, starts_at, ends_at, state
+                     ) VALUES (301, 30, 2027, '2027', '2027-01-01', '2027-12-31', 'scheduled')
                      """)) {
-            statement.setLong(1, studentUserId);
-            statement.setLong(2, courseId);
-            statement.setLong(3, subjectId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next() && "withdrawn".equals(resultSet.getString("state"));
-            }
+            statement.executeUpdate();
+            return 301L;
         }
     }
 
@@ -540,26 +272,6 @@ class EnrollmentServiceTest {
                      """)) {
             statement.setLong(1, studentUserId);
             statement.setLong(2, courseId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                resultSet.next();
-                return resultSet.getLong(1) == 0L;
-            }
-        }
-    }
-
-    private static boolean isSubjectEnrollmentMissing(long studentUserId, long courseId, long subjectId)
-            throws Exception {
-        try (Connection connection = DatabaseTestSupport.openConnection();
-             PreparedStatement statement = connection.prepareStatement("""
-                     SELECT COUNT(*)
-                     FROM enroll_subject
-                     WHERE id_student_user = ?
-                       AND id_course = ?
-                       AND id_subject = ?
-                     """)) {
-            statement.setLong(1, studentUserId);
-            statement.setLong(2, courseId);
-            statement.setLong(3, subjectId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 return resultSet.getLong(1) == 0L;
@@ -584,17 +296,34 @@ class EnrollmentServiceTest {
         }
     }
 
-    private static String certificateState(long studentUserId, long courseId) {
+    private static String classGroupEnrollmentState(long studentUserId, long classGroupId) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT state
+                     FROM enroll_class_group
+                     WHERE id_student_user = ?
+                       AND id_class_group = ?
+                     """)) {
+            statement.setLong(1, studentUserId);
+            statement.setLong(2, classGroupId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() ? resultSet.getString("state") : null;
+            }
+        }
+    }
+
+    private static String certificateState(long studentUserId, long courseId, long courseOccurrenceId) {
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement("""
                      SELECT state
                      FROM certificate
                      WHERE id_user_student = ?
                        AND id_course = ?
-                       AND state <> 'revoked'
+                       AND id_course_occurrence = ?
                      """)) {
             statement.setLong(1, studentUserId);
             statement.setLong(2, courseId);
+            statement.setLong(3, courseOccurrenceId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next() ? resultSet.getString("state") : null;
             }
@@ -603,12 +332,13 @@ class EnrollmentServiceTest {
         }
     }
 
-    private static String subjectGradeSheetState(long subjectId) {
+    private static String subjectGradeSheetState(long subjectId, long courseOccurrenceId) {
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement("""
                      SELECT gs.state
                      FROM grade_sheet gs
                      WHERE gs.id_subject = ?
+                       AND gs.id_course_occurrence = ?
                        AND NOT EXISTS (
                              SELECT 1
                              FROM associate_grade_sheet_class_group agscg
@@ -618,11 +348,12 @@ class EnrollmentServiceTest {
                      LIMIT 1
                      """)) {
             statement.setLong(1, subjectId);
+            statement.setLong(2, courseOccurrenceId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 return resultSet.next() ? resultSet.getString("state") : null;
             }
         } catch (SQLException exception) {
-            throw new IllegalStateException("Failed to load subject grade sheet state", exception);
+            throw new IllegalStateException("Failed to load grade sheet state", exception);
         }
     }
 }

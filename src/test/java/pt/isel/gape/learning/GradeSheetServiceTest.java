@@ -305,7 +305,7 @@ class GradeSheetServiceTest {
     }
 
     @Test
-    void stalePublishedSheetWithMissingGradesIsSynchronizedBackToDraftOnRead() {
+    void publishedSheetWithMissingGradesRemainsPublishedOnRead() {
         GradeSheet gradeSheet = gradeSheetService.createGradeSheet(
                 3L,
                 null,
@@ -323,7 +323,78 @@ class GradeSheetServiceTest {
                 IP
         );
 
-        assertEquals(GradeSheetState.DRAFT, synchronizedSheet.state());
+        assertEquals(GradeSheetState.PUBLISHED, synchronizedSheet.state());
+    }
+
+    @Test
+    void completedPeriodPublishesIncompleteGradeSheetWithPendingExplanation() throws Exception {
+        GradeSheetService completedPeriodService = new GradeSheetService(
+                DatabaseTestSupport::openConnection,
+                Clock.fixed(Instant.parse("2026-08-01T10:15:30Z"), ZoneOffset.UTC)
+        );
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            completedPeriodService.synchronizeCompletedPeriodPublications(connection);
+        }
+
+        GradeSheet published = completedPeriodService.getGradeSheet(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                170L,
+                IP
+        );
+
+        assertEquals(GradeSheetState.PUBLISHED, published.state());
+        assertNotNull(published.releasedAt());
+        assertNotNull(published.publicationExplanation());
+        assertTrue(published.publicationExplanation().contains("associated course occurrence period is completed"));
+        assertTrue(published.publicationExplanation().contains("Missing grade values are displayed as '-'"));
+    }
+
+    @Test
+    void subjectGradeSheetKeepsItsPublishedAvailabilityWhenAnotherClassGroupSheetIsStillPending() {
+        GradeSheet classGroupSheet = gradeSheetService.createGradeSheet(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                finalClassGroupCommand(50L, "Project T1 Final Grade Sheet"),
+                IP
+        );
+        long subjectGradeSheetId = subjectGradeSheetId(40L, 300L);
+
+        assertEquals(GradeSheetState.DRAFT, gradeSheetState(subjectGradeSheetId));
+
+        completeBaseGradeSheet(classGroupSheet);
+        GradeSheet publishedClassGroupSheet = gradeSheetService.publishGradeSheet(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                classGroupSheet.id(),
+                IP
+        );
+        GradeSheet consolidatedSubjectSheet = gradeSheetService.getGradeSheet(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                subjectGradeSheetId,
+                IP
+        );
+
+        assertEquals(GradeSheetState.PUBLISHED, publishedClassGroupSheet.state());
+        assertEquals(GradeSheetState.PUBLISHED, consolidatedSubjectSheet.state());
+        assertEquals(List.of(), consolidatedSubjectSheet.assessmentWeights());
+        assertEquals(classGroupFinalGrade(classGroupSheet.id(), 4L), classGroupFinalGrade(subjectGradeSheetId, 4L));
+
+        insertSecondProjectClassGroup();
+        gradeSheetService.createGradeSheet(
+                2L,
+                null,
+                AccessProfileType.COORDINATOR,
+                finalClassGroupCommand(53L, "Project T2 Final Grade Sheet"),
+                IP
+        );
+
+        assertEquals(GradeSheetState.PUBLISHED, gradeSheetState(subjectGradeSheetId));
     }
 
     @Test
@@ -369,6 +440,22 @@ class GradeSheetServiceTest {
                 GradeSheetState.DRAFT,
                 List.of(50L),
                 List.of(new GradeAssessmentWeight(90L, bd("100.00")))
+        );
+    }
+
+    private static GradeSheetCreateCommand finalClassGroupCommand(long classGroupId, String title) {
+        return new GradeSheetCreateCommand(
+                40L,
+                title,
+                GradeSheetType.FINAL,
+                bd("20.00"),
+                bd("9.50"),
+                GradeSheetState.DRAFT,
+                List.of(classGroupId),
+                List.of(
+                        new GradeAssessmentWeight(90L, bd("50.00")),
+                        new GradeAssessmentWeight(92L, bd("50.00"))
+                )
         );
     }
 
@@ -434,6 +521,89 @@ class GradeSheetServiceTest {
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to force published grade sheet fixture", exception);
+        }
+    }
+
+    private static long subjectGradeSheetId(long subjectId, long courseOccurrenceId) {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT gs.id_grade_sheet
+                     FROM grade_sheet gs
+                     WHERE gs.id_subject = ?
+                       AND gs.id_course_occurrence = ?
+                       AND NOT EXISTS (
+                             SELECT 1
+                             FROM associate_grade_sheet_class_group agscg
+                             WHERE agscg.id_grade_sheet = gs.id_grade_sheet
+                       )
+                     ORDER BY gs.id_grade_sheet
+                     LIMIT 1
+                     """)) {
+            statement.setLong(1, subjectId);
+            statement.setLong(2, courseOccurrenceId);
+            try (var resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new IllegalStateException("Subject grade sheet fixture was not found");
+                }
+                return resultSet.getLong(1);
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load subject grade sheet fixture", exception);
+        }
+    }
+
+    private static GradeSheetState gradeSheetState(long gradeSheetId) {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT state FROM grade_sheet WHERE id_grade_sheet = ?")) {
+            statement.setLong(1, gradeSheetId);
+            try (var resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new IllegalStateException("Grade sheet fixture was not found");
+                }
+                return GradeSheetState.fromDatabaseValue(resultSet.getString(1));
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load grade sheet state", exception);
+        }
+    }
+
+    private static BigDecimal classGroupFinalGrade(long gradeSheetId, long studentUserId) {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT value
+                     FROM grade_record
+                     WHERE id_grade_sheet = ?
+                       AND id_user_student = ?
+                       AND state = 'published'
+                     ORDER BY recorded_at DESC, id_grade_record DESC
+                     LIMIT 1
+                     """)) {
+            statement.setLong(1, gradeSheetId);
+            statement.setLong(2, studentUserId);
+            try (var resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new IllegalStateException("Published grade record fixture was not found");
+                }
+                return resultSet.getBigDecimal(1);
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load published grade record", exception);
+        }
+    }
+
+    private static void insertSecondProjectClassGroup() {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     INSERT INTO class_group (
+                         id_class_group, id_subject, id_course, id_course_occurrence, id_course_occurrence_period,
+                         cod_class_group, modality, state, min_students, max_students, starts_at, ends_at, shift
+                     ) VALUES (53, 40, 30, 300, 3001, 'PRJ-T2', 'onsite', 'active', 5, 30,
+                               '2026-01-01', '2026-06-30', 'morning')
+                     """)) {
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to create second class group fixture", exception);
         }
     }
 }

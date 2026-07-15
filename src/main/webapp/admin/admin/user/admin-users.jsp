@@ -1,5 +1,6 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
     if (request.getAttribute("activeMenu") == null) {
         request.setAttribute("activeMenu", "users");
@@ -136,15 +137,47 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-10 px-24 py-24">
+                <div class="bg-white rounded-10 px-24 py-24" data-gape-sort-root data-gape-group-item-label="user">
                     <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
                         <div>
                             <h2 class="text-18 fw-medium text-neutral-700 mb-4">User Management</h2>
                     <span class="text-14 text-neutral-500">Personal data, profiles, and access state.</span>
                         </div>
-                        <a href="${pageContext.request.contextPath}/admin/users/new" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
-                            <i class="ph ph-user-plus me-8"></i>New User
-                        </a>
+                        <div class="gape-management-actions d-flex align-items-center gap-12 flex-wrap">
+                            <div class="dropdown">
+                                <button type="button"
+                                        class="gape-filter-toggle border-neutral-30 border px-20 py-12 rounded-12 fw-semibold text-neutral-700 hover-bg-main-50 transition-03 bg-white d-flex align-items-center gap-8"
+                                        data-bs-toggle="dropdown"
+                                        data-bs-auto-close="outside"
+                                        data-gape-sort-toggle
+                                        aria-expanded="false">
+                                    <i class="ph ph-sort-ascending"></i>Sort by
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                                    <li>
+                                        <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-sort-option data-sort-field="name" data-sort-normal="asc" data-sort-state="none" aria-pressed="false">
+                                            <span>Name</span>
+                                            <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-sort-option data-sort-field="date" data-sort-normal="desc" data-sort-type="date" data-sort-state="none" aria-pressed="false">
+                                            <span>Date</span>
+                                            <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-sort-option data-sort-field="status" data-sort-normal="asc" data-sort-state="none" aria-pressed="false">
+                                            <span>State</span>
+                                            <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <a href="${pageContext.request.contextPath}/admin/users/new" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
+                                <i class="ph ph-user-plus me-8"></i>New User
+                            </a>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="table mb-0">
@@ -157,13 +190,20 @@
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
                             </tr>
                             </thead>
-                            <tbody>
-                            <c:forEach var="user" items="${users}">
+                            <tbody data-gape-sort-list>
+                            <c:forEach var="user" items="${users}" varStatus="userLoop">
                                 <c:set var="userPhotoUrl" value=""/>
                                 <c:if test="${user.hasPhoto}">
                                     <c:set var="userPhotoUrl" value="${pageContext.request.contextPath}/media/${user.photo}?v=${mediaCacheVersion}"/>
                                 </c:if>
-                                <tr class="hover-bg-neutral-20 border-bottom transition-03">
+                                <tr class="hover-bg-neutral-20 border-bottom transition-03"
+                                    data-gape-sort-row
+                                    data-sort-index="${userLoop.index}"
+                                    data-sort-name="${fn:escapeXml(user.name)}"
+                                    data-sort-profile="${fn:escapeXml(user.profileSummary)}"
+                                    data-sort-status="${fn:escapeXml(user.stateLabel)}"
+                                    data-sort-date="${fn:escapeXml(user.createdAtSort)}"
+                                    data-sort-created="${fn:escapeXml(user.createdAtSort)}">
                                     <td class="py-20 px-20">
                                         <div class="d-flex align-items-center gap-12">
                                             <c:choose>

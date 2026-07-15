@@ -17,7 +17,7 @@ import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.security.authorization.AccessEntityType;
 import pt.isel.gape.security.authorization.AuthorizationPolicy;
 
-public final class PermissionDAO {
+public final class PermissionDAO implements pt.isel.gape.transversal.service.ApplicationReadService.Permissions {
 
     private final ConnectionProvider connectionProvider;
 

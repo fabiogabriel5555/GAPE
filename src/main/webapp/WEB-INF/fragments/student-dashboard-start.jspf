@@ -59,7 +59,16 @@
         }
 
         .gape-student-hero-band {
-            min-height: 382px;
+            /* The original empty breadcrumb band was 382px high.  Keep the
+               same visual rhythm at 35% of that geometry (a 65% reduction),
+               including the matching overlap of the dashboard shell. */
+            min-height: 134px;
+            padding-bottom: 65px !important;
+            padding-top: 28px !important;
+        }
+
+        .gape-student-dashboard-layout {
+            margin-top: -42px !important;
         }
 
         .footer-item__logo img {
@@ -924,7 +933,7 @@
 
         @media (max-width: 575px) {
             .gape-student-hero-band {
-                min-height: 348px;
+                min-height: 122px;
             }
 
             .gape-student-hero-band .shape.one {
@@ -988,7 +997,7 @@
             <div class="w-100 gape-student-dashboard-main">
                 <%@ include file="/WEB-INF/fragments/flash-messages.jspf" %>
                 <div class="gape-student-mobile-menu-bar d-flex align-items-center justify-content-end mb-16 d-xl-none">
-                    <button type="button" class="toggle-student-dashbord-button text-white text-32">
+                    <button type="button" class="toggle-student-dashbord-button text-white text-32" aria-label="Open dashboard menu">
                         <i class="ph-bold ph-list"></i>
                     </button>
                 </div>

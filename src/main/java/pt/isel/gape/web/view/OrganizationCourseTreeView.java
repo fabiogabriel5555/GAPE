@@ -2,6 +2,7 @@ package pt.isel.gape.web.view;
 
 import java.util.List;
 
+import pt.isel.gape.common.validation.MediaPathValidator;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseState;
 import pt.isel.gape.learning.model.CourseType;
@@ -13,6 +14,7 @@ public final class OrganizationCourseTreeView {
     private final Long organicUnitId;
     private final String name;
     private final String acronym;
+    private final String photo;
     private final CourseType type;
     private final CourseState state;
     private final List<OrganizationSubjectTreeView> subjects;
@@ -23,6 +25,7 @@ public final class OrganizationCourseTreeView {
         this.organicUnitId = course.organicUnitId();
         this.name = course.name();
         this.acronym = course.acronym();
+        this.photo = MediaPathValidator.safeRelativePath(course.photo()).orElse(null);
         this.type = course.type();
         this.state = course.state();
         this.subjects = List.copyOf(subjects);
@@ -52,6 +55,14 @@ public final class OrganizationCourseTreeView {
         return acronym == null || acronym.isBlank() ? "-" : acronym;
     }
 
+    public String getPhoto() {
+        return photo;
+    }
+
+    public boolean isHasPhoto() {
+        return photo != null && !photo.isBlank();
+    }
+
     public String getTypeLabel() {
         return switch (type) {
             case DEGREE -> "Degree";
@@ -72,11 +83,11 @@ public final class OrganizationCourseTreeView {
     public String getStateBadgeClass() {
         return switch (state) {
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
         };
     }
 
-    public boolean isArchived() {
+    public boolean isInactive() {
         return state == CourseState.INACTIVE;
     }
 

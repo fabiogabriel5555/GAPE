@@ -46,24 +46,6 @@
             border-inline-start: 3px solid var(--main-600);
         }
 
-        .gape-tree-toggle {
-            align-items: center;
-            background: transparent;
-            border: 0;
-            border-radius: 8px;
-            display: inline-flex;
-            height: 32px;
-            justify-content: center;
-            padding: 0;
-            width: 32px;
-        }
-
-        .gape-tree-toggle:hover,
-        .gape-tree-toggle:focus-visible {
-            background-color: var(--main-50);
-            text-decoration: none;
-        }
-
         .gape-organization-card {
             background-color: #fff;
             border: 1px solid #d9e2ef;
@@ -91,70 +73,82 @@
             padding: 0 20px 12px;
         }
 
+        .gape-tree-toggle {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            height: 32px;
+            justify-content: center;
+            padding: 0;
+            width: 32px;
+        }
+
+        .gape-tree-toggle:hover,
+        .gape-tree-toggle:focus-visible {
+            background-color: var(--main-50);
+            text-decoration: none;
+        }
+
+        .gape-tree-toggle i {
+            transition: transform 0.2s ease;
+        }
+
+        .gape-tree-toggle[aria-expanded="true"] i {
+            transform: rotate(180deg);
+        }
+
         .gape-organization-units-panel {
             background-color: #f8fbff;
             border-top: 1px solid #d9e2ef;
             padding: 20px;
         }
 
-        .gape-structure-panel {
-            background-color: #f8fbff;
-            border: 1px solid #d9e2ef;
-            border-radius: 8px;
-            margin-top: 14px;
-            padding: 14px;
+        .gape-filter-toggle.is-active {
+            background-color: var(--main-600) !important;
+            border-color: var(--main-600) !important;
+            color: #fff !important;
         }
 
-        .gape-class-activities-panel {
-            margin-inline-start: 28px;
-            position: relative;
+        .gape-filter-toggle.is-active:hover,
+        .gape-filter-toggle.is-active:focus-visible {
+            background-color: var(--main-700) !important;
+            border-color: var(--main-700) !important;
+            color: #fff !important;
         }
 
-        .gape-class-activities-panel::before {
-            background-color: #d9e2ef;
-            bottom: 12px;
-            content: "";
-            left: -16px;
-            position: absolute;
-            top: 12px;
-            width: 2px;
+        .gape-filter-toggle.is-active i {
+            color: inherit;
         }
 
-        .gape-course-node {
-            border-inline-start: 3px solid #2563eb;
+        .gape-sort-option {
+            background: transparent;
+            border: 0;
+            text-align: start;
+            width: 100%;
         }
 
-        .gape-subject-node {
-            border-inline-start: 3px solid #16a34a;
+        .gape-sort-option.is-active {
+            background-color: var(--main-50);
+            color: var(--main-600);
         }
 
-        .gape-class-group-node {
-            border-inline-start: 3px solid #7c3aed;
+        .gape-sort-arrows {
+            min-width: 42px;
         }
 
-        .gape-lesson-node {
-            border-inline-start: 3px solid #2563eb;
+        .gape-sort-arrow {
+            color: #94a3b8;
+            opacity: 0.55;
+            transition: color 0.2s ease, opacity 0.2s ease;
         }
 
-        .gape-room-node {
-            border-inline-start: 3px solid #16a34a;
-        }
-
-        .gape-node-meta {
-            color: #64748b;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        @media (max-width: 575.98px) {
-            .gape-class-activities-panel {
-                margin-inline-start: 0;
-            }
-
-            .gape-class-activities-panel::before {
-                display: none;
-            }
+        .gape-sort-option[data-sort-state="normal"] .gape-sort-arrow--normal,
+        .gape-sort-option[data-sort-state="reverse"] .gape-sort-arrow--reverse {
+            color: var(--main-600);
+            opacity: 1;
         }
 
         @media (max-width: 1199.98px) {
@@ -198,7 +192,7 @@
                     <div class="col-md-3">
                         <div class="bg-white rounded-10 px-24 py-24 border border-neutral-30">
                             <span class="text-14 text-neutral-500">Inactive</span>
-                            <h2 class="text-32 fw-semibold text-warning-600 mb-0">${inactiveOrganizations}</h2>
+                            <h2 class="text-32 fw-semibold text-danger-600 mb-0">${inactiveOrganizations}</h2>
                         </div>
                     </div>
                     <div class="col-md-3">
@@ -215,11 +209,70 @@
                             <h2 class="text-18 fw-medium text-neutral-700 mb-4">Organization Management</h2>
                             <span class="text-14 text-neutral-500">Organizations, institutions, hierarchy and administrator context.</span>
                         </div>
-                        <c:if test="${canCreateOrganizations}">
-                            <a href="${pageContext.request.contextPath}/admin/organizations/new" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
-                                <i class="ph ph-plus-circle me-8"></i>New Organization
-                            </a>
-                        </c:if>
+                        <div class="d-flex align-items-center gap-12 flex-wrap">
+                            <div class="dropdown">
+                                <button type="button"
+                                        class="gape-filter-toggle border-neutral-30 border px-20 py-12 rounded-12 fw-semibold text-neutral-700 hover-bg-main-50 transition-03 bg-white d-flex align-items-center gap-8"
+                                        data-bs-toggle="dropdown"
+                                        data-bs-auto-close="outside"
+                                        data-organization-sort-toggle
+                                        aria-expanded="false">
+                                    <i class="ph ph-sort-ascending"></i>Sort by
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                                    <li>
+                                        <button type="button"
+                                                class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10"
+                                                data-organization-sort-option
+                                                data-sort-field="name"
+                                                data-sort-normal="asc"
+                                                data-sort-state="none"
+                                                aria-pressed="false">
+                                            <span>Name</span>
+                                            <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true">
+                                                <i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i>
+                                                <i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i>
+                                            </span>
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button"
+                                                class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10"
+                                                data-organization-sort-option
+                                                data-sort-field="date"
+                                                data-sort-normal="desc"
+                                                data-sort-state="none"
+                                                aria-pressed="false">
+                                            <span>Date</span>
+                                            <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true">
+                                                <i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--normal"></i>
+                                                <i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--reverse"></i>
+                                            </span>
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button type="button"
+                                                class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10"
+                                                data-organization-sort-option
+                                                data-sort-field="status"
+                                                data-sort-normal="asc"
+                                                data-sort-state="none"
+                                                aria-pressed="false">
+                                            <span>State</span>
+                                            <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true">
+                                                <i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i>
+                                                <i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i>
+                                            </span>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <c:if test="${canCreateOrganizations}">
+                                <a href="${pageContext.request.contextPath}/admin/organizations/new" class="bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
+                                    <i class="ph ph-plus-circle me-8"></i>New Organization
+                                </a>
+                            </c:if>
+                        </div>
                     </div>
                     <div class="gape-organization-list">
                         <div class="gape-organization-list-header">
@@ -229,14 +282,20 @@
                             <span class="text-14 fw-medium text-neutral-600">State</span>
                             <span class="text-14 fw-medium text-neutral-600 text-end">Actions</span>
                         </div>
-                        <div class="d-flex flex-column gap-14">
-                            <c:forEach var="organization" items="${organizations}">
+                        <div class="d-flex flex-column gap-14" data-organization-list>
+                            <c:forEach var="organization" items="${organizations}" varStatus="organizationLoop">
                                 <c:set var="canCreateOrganicUnits" value="${canCreateOrganicUnitsByOrganizationId[organization.id]}" />
                                 <c:set var="organizationPhotoUrl" value=""/>
                                 <c:if test="${organization.hasPhoto}">
                                     <c:set var="organizationPhotoUrl" value="${pageContext.request.contextPath}/media/${organization.photo}?v=${mediaCacheVersion}"/>
                                 </c:if>
-                                <section class="gape-organization-card">
+                                <section class="gape-organization-card"
+                                         data-organization-card
+                                         data-sort-index="${organizationLoop.index}"
+                                         data-sort-name="${fn:escapeXml(organization.name)}"
+                                         data-sort-date="${organization.id}"
+                                         data-sort-status="${fn:escapeXml(organization.stateLabel)}"
+                                         data-sort-type="${fn:escapeXml(organization.typeLabel)}">
                                     <div class="gape-organization-summary">
                                         <div class="d-flex align-items-center gap-12">
                                             <c:choose>
@@ -308,7 +367,7 @@
                                                 </span>
                                             </div>
                                             <c:if test="${canCreateOrganicUnits}">
-                                                <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/new" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
+                                                <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}?unitModal=create" class="bg-main-600 px-20 py-10 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03">
                                                     <i class="ph ph-plus-circle me-8"></i>New Unit
                                                 </a>
                                             </c:if>
@@ -322,7 +381,7 @@
                                                         <div class="d-flex align-items-start gap-12">
                                                             <span class="text-22 text-main-600 line-height-1"><i class="ph ph-tree-structure"></i></span>
                                                             <div>
-                                                                <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/${unit.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                                                <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}?unitDetail=${unit.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
                                                                     <c:out value="${unit.code}"/> - <c:out value="${unit.name}"/>
                                                                 </a>
                                                                 <span class="d-block text-12 text-neutral-500">Parent: <c:out value="${unit.parentLabel}"/></span>
@@ -333,330 +392,28 @@
                                                             <span class="${unit.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
                                                                 <c:out value="${unit.stateLabel}"/>
                                                             </span>
-                                                            <button type="button"
-                                                                    class="gape-tree-toggle text-21 text-neutral-500 hover-text-main-600"
-                                                                    title="Show courses"
-                                                                    aria-label="Show courses"
-                                                                    aria-expanded="false"
-                                                                    aria-controls="unitCourses${unit.id}"
-                                                                    data-gape-tree-toggle="unitCourses${unit.id}"
-                                                                    data-gape-open-title="Hide courses"
-                                                                    data-gape-closed-title="Show courses">
-                                                                <i class="ph ph-caret-down"></i>
-                                                            </button>
-                                                            <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/${unit.id}" class="text-21 text-neutral-500 hover-text-main-600" title="Detail">
+                                                            <c:if test="${canCreateOrganicUnits}">
+                                                                <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}?unitModal=create&amp;parentUnitId=${unit.id}" class="text-21 text-neutral-500 hover-text-main-600" title="New child unit" aria-label="New child unit">
+                                                                    <i class="ph ph-plus-circle"></i>
+                                                                </a>
+                                                            </c:if>
+                                                            <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}?unitDetail=${unit.id}" class="text-21 text-neutral-500 hover-text-main-600" title="Detail" aria-label="Detail">
                                                                 <i class="ph ph-eye"></i>
                                                             </a>
-                                                            <c:if test="${not unit.archived and canModifyUnit}">
-                                                                <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/${unit.id}/edit" class="text-21 text-neutral-500 hover-text-main-600" title="Edit">
+                                                            <c:if test="${canModifyUnit}">
+                                                                <a href="${pageContext.request.contextPath}/admin/organizations/${organization.id}?unitEdit=${unit.id}" class="text-21 text-neutral-500 hover-text-main-600" title="Edit" aria-label="Edit">
                                                                     <i class="ph ph-pencil-simple-line"></i>
                                                                 </a>
-                                                                <button type="button" class="text-21 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteUnit${unit.id}">
+                                                                <button type="button" class="text-21 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" aria-label="Delete" data-bs-toggle="modal" data-bs-target="#deleteListUnit${organization.id}_${unit.id}">
                                                                     <i class="ph ph-trash"></i>
                                                                 </button>
                                                             </c:if>
                                                         </div>
                                                     </div>
-
-                                                    <div id="unitCourses${unit.id}" class="gape-structure-panel d-none">
-                                                        <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mb-12">
-                                                            <div>
-                                                                <h3 class="text-16 fw-medium text-neutral-700 mb-4">Courses</h3>
-                                                                <span class="text-13 text-neutral-500">
-                                                                    <c:out value="${unit.code}"/> &middot; <c:out value="${unit.courseCount}"/> courses
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <div class="d-flex flex-column gap-10">
-                                                            <c:forEach var="course" items="${unit.courses}">
-                                                                <c:set var="canModifyCourse" value="${canModifyCourseById[course.id]}" />
-                                                                <c:set var="canManageCourseChildren" value="${canManageCourseChildrenById[course.id]}" />
-                                                                <div class="gape-course-node border border-neutral-30 rounded-8 px-16 py-14 bg-white">
-                                                                    <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap">
-                                                                        <div class="d-flex align-items-start gap-10">
-                                                                            <span class="text-20 text-main-600 line-height-1"><i class="ph ph-graduation-cap"></i></span>
-                                                                            <div>
-                                                                                <a href="${pageContext.request.contextPath}/admin/courses/${course.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
-                                                                                    <span class="gape-acronym-token" tabindex="0" title="<c:out value='${course.name}'/>"><c:out value="${course.acronym}"/></span>
-                                                                                    <span class="ms-4"><c:out value="${course.name}"/></span>
-                                                                                </a>
-                                                                                <span class="gape-node-meta text-12">
-                                                                                    <span><c:out value="${course.typeLabel}"/></span>
-                                                                                    <span><c:out value="${course.subjectCount}"/> subjects</span>
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="d-flex align-items-center gap-10 flex-wrap">
-                                                                            <span class="${course.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
-                                                                                <c:out value="${course.stateLabel}"/>
-                                                                            </span>
-                                                                            <button type="button"
-                                                                                    class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600"
-                                                                                    title="Show subjects"
-                                                                                    aria-label="Show subjects"
-                                                                                    aria-expanded="false"
-                                                                                    aria-controls="courseSubjects${course.id}"
-                                                                                    data-gape-tree-toggle="courseSubjects${course.id}"
-                                                                                    data-gape-open-title="Hide subjects"
-                                                                                    data-gape-closed-title="Show subjects">
-                                                                                <i class="ph ph-caret-down"></i>
-                                                                            </button>
-                                                                            <a href="${pageContext.request.contextPath}/admin/courses/${course.id}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail">
-                                                                                <i class="ph ph-eye"></i>
-                                                                            </a>
-                                                                            <c:if test="${not course.archived and canModifyCourse}">
-                                                                                <a href="${pageContext.request.contextPath}/admin/courses/${course.id}/edit" class="text-20 text-neutral-500 hover-text-main-600" title="Edit">
-                                                                                    <i class="ph ph-pencil-simple-line"></i>
-                                                                                </a>
-                                                                            </c:if>
-                                                                            <c:if test="${not course.archived and canManageCourseChildren}">
-                                                                                <a href="${pageContext.request.contextPath}/admin/courses/${course.id}/subjects/new" class="text-20 text-neutral-500 hover-text-main-600" title="Associate subject">
-                                                                                    <i class="ph ph-link-simple"></i>
-                                                                                </a>
-                                                                            </c:if>
-                                                                            <c:if test="${not course.archived and canModifyCourse}">
-                                                                                <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteTreeCourse${course.id}">
-                                                                                    <i class="ph ph-trash"></i>
-                                                                                </button>
-                                                                            </c:if>
-                                                                            <c:if test="${course.archived and canModifyCourse}">
-                                                                                <form action="${pageContext.request.contextPath}/admin/courses/${course.id}/unarchive" method="post" class="m-0">
-                                                                                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                                                    <button type="submit" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Unarchive">
-                                                                                        <i class="ph ph-arrow-u-up-left"></i>
-                                                                                    </button>
-                                                                                </form>
-                                                                            </c:if>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <c:if test="${not course.archived and canModifyCourse}">
-                                                                        <div class="modal fade" id="deleteTreeCourse${course.id}" tabindex="-1" aria-hidden="true">
-                                                                            <div class="modal-dialog modal-dialog-centered">
-                                                                                <div class="modal-content rounded-12 border-0">
-                                                                                    <div class="modal-header border-neutral-30">
-                                                                                        <h5 class="modal-title text-18 fw-semibold">Delete Course</h5>
-                                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                                                    </div>
-                                                                                    <div class="modal-body">
-                                                                                        <p class="text-14 text-neutral-600 mb-0">This action removes <strong><c:out value="${course.name}"/></strong> if it has no dependencies.</p>
-                                                                                    </div>
-                                                                                    <div class="modal-footer border-neutral-30">
-                                                                                        <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
-                                                                                        <form action="${pageContext.request.contextPath}/admin/courses/${course.id}/delete" method="post" class="m-0">
-                                                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                                                            <button type="submit" class="gape-action-button gape-action-delete px-20 py-10 rounded-12 fw-semibold transition-03">Delete</button>
-                                                                                        </form>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </c:if>
-
-                                                                    <div id="courseSubjects${course.id}" class="gape-structure-panel d-none">
-                                                                        <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mb-12">
-                                                                            <div>
-                                                                                <h5 class="text-14 fw-medium text-neutral-700 mb-2">Subjects</h5>
-                                                                                <span class="text-12 text-neutral-500">
-                                                                                    <c:out value="${course.name}"/> &middot; <c:out value="${course.subjectCount}"/> subjects
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div class="d-flex flex-column gap-10">
-                                                                            <c:forEach var="subject" items="${course.subjects}">
-                                                                                <c:set var="canModifySubject" value="${canModifySubjectById[subject.subjectId]}" />
-                                                                                <c:set var="canManageSubjectAssociations" value="${canManageSubjectAssociationsById[subject.subjectId]}" />
-                                                                                <div class="gape-subject-node border border-neutral-30 rounded-8 px-16 py-14 bg-white">
-                                                                                    <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap">
-                                                                                        <div class="d-flex align-items-start gap-10">
-                                                                                            <span class="text-20 text-success-600 line-height-1"><i class="ph ph-book-open-text"></i></span>
-                                                                                            <div>
-                                                                                                <a href="${pageContext.request.contextPath}/admin/subjects/${subject.subjectId}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
-                                                                                                    <span class="gape-acronym-token" tabindex="0" title="<c:out value='${subject.name}'/>"><c:out value="${subject.acronym}"/></span>
-                                                                                                    <span class="ms-4"><c:out value="${subject.name}"/></span>
-                                                                                                </a>
-                                                                                                <span class="gape-node-meta text-12">
-                                                                                                    <span><c:out value="${subject.curricularPositionLabel}"/></span>
-                                                                                                    <span><c:out value="${subject.mandatoryLabel}"/></span>
-                                                                                                    <span><c:out value="${subject.classGroupCount}"/> class groups</span>
-                                                                                                </span>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <div class="d-flex align-items-center gap-10 flex-wrap">
-                                                                                            <span class="${subject.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
-                                                                                                <c:out value="${subject.stateLabel}"/>
-                                                                                            </span>
-                                                                                            <button type="button"
-                                                                                                    class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600"
-                                                                                                    title="Show class groups"
-                                                                                                    aria-label="Show class groups"
-                                                                                                    aria-expanded="false"
-                                                                                                    aria-controls="subjectClassGroups${course.id}_${subject.subjectId}"
-                                                                                                    data-gape-tree-toggle="subjectClassGroups${course.id}_${subject.subjectId}"
-                                                                                                    data-gape-open-title="Hide class groups"
-                                                                                                    data-gape-closed-title="Show class groups">
-                                                                                                <i class="ph ph-caret-down"></i>
-                                                                                            </button>
-                                                                                            <a href="${pageContext.request.contextPath}/admin/subjects/${subject.subjectId}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail">
-                                                                                                <i class="ph ph-eye"></i>
-                                                                                            </a>
-                                                                                            <c:if test="${not subject.archived and canModifySubject}">
-                                                                                                <a href="${pageContext.request.contextPath}/admin/subjects/${subject.subjectId}/edit" class="text-20 text-neutral-500 hover-text-main-600" title="Edit">
-                                                                                                    <i class="ph ph-pencil-simple-line"></i>
-                                                                                                </a>
-                                                                                            </c:if>
-                                                                                            <c:if test="${not subject.archived and canManageSubjectAssociations}">
-                                                                                                <a href="${pageContext.request.contextPath}/admin/subjects/${subject.subjectId}/courses" class="text-20 text-neutral-500 hover-text-main-600" title="Associate courses">
-                                                                                                    <i class="ph ph-link-simple"></i>
-                                                                                                </a>
-                                                                                            </c:if>
-                                                                                            <c:if test="${not subject.archived and canModifySubject}">
-                                                                                                <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteTreeSubject${course.id}_${subject.subjectId}">
-                                                                                                    <i class="ph ph-trash"></i>
-                                                                                                </button>
-                                                                                            </c:if>
-                                                                                        </div>
-                                                                                    </div>
-
-                                                                                    <c:if test="${not subject.archived and canModifySubject}">
-                                                                                        <div class="modal fade" id="deleteTreeSubject${course.id}_${subject.subjectId}" tabindex="-1" aria-hidden="true">
-                                                                                            <div class="modal-dialog modal-dialog-centered">
-                                                                                                <div class="modal-content rounded-12 border-0">
-                                                                                                    <div class="modal-header border-neutral-30">
-                                                                                                        <h5 class="modal-title text-18 fw-semibold">Delete Subject</h5>
-                                                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                                                                    </div>
-                                                                                                    <div class="modal-body">
-                                                                                                        <p class="text-14 text-neutral-600 mb-0">This action removes <strong><c:out value="${subject.name}"/></strong> if it has no dependencies.</p>
-                                                                                                    </div>
-                                                                                                    <div class="modal-footer border-neutral-30">
-                                                                                                        <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
-                                                                                                        <form action="${pageContext.request.contextPath}/admin/subjects/${subject.subjectId}/delete" method="post" class="m-0">
-                                                                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                                                                            <button type="submit" class="gape-action-button gape-action-delete px-20 py-10 rounded-12 fw-semibold transition-03">Delete</button>
-                                                                                                        </form>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </c:if>
-
-                                                                                    <div id="subjectClassGroups${course.id}_${subject.subjectId}" class="gape-structure-panel d-none">
-                                                                                        <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mb-12">
-                                                                                            <div>
-                                                                                                <h6 class="text-14 fw-medium text-neutral-700 mb-2">Class Groups</h6>
-                                                                                                <span class="text-12 text-neutral-500">
-                                                                                                    <c:out value="${subject.name}"/> &middot; <c:out value="${subject.classGroupCount}"/> class groups
-                                                                                                </span>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <div class="d-flex flex-column gap-10">
-                                                                                            <c:forEach var="classGroup" items="${subject.classGroups}">
-                                                                                                <c:set var="canModifyClassGroup" value="${canModifyClassGroupById[classGroup.id]}" />
-                                                                                                <c:set var="canManageClassGroupStructure" value="${canManageClassGroupStructureById[classGroup.id]}" />
-                                                                                                <c:set var="activityPanelId" value="organizationClassGroupActivities${course.id}_${subject.subjectId}_${classGroup.id}" />
-                                                                                                <div class="gape-class-group-node border border-neutral-30 rounded-8 px-16 py-12 bg-white">
-                                                                                                    <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap">
-                                                                                                        <div class="d-flex align-items-start gap-10">
-                                                                                                            <span class="text-20 text-warning-600 line-height-1"><i class="ph ph-users-three"></i></span>
-                                                                                                            <div>
-                                                                                                                <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
-                                                                                                                    <c:out value="${classGroup.code}"/>
-                                                                                                                </a>
-                                                                                                                <span class="gape-node-meta text-12">
-                                                                                                                    <span><c:out value="${classGroup.modalityLabel}"/></span>
-                                                                                                                    <span><c:out value="${classGroup.shift}"/></span>
-                                                                                                                    <span><c:out value="${classGroup.dateRangeLabel}"/></span>
-                                                                                                                </span>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                        <div class="d-flex align-items-center gap-10 flex-wrap">
-                                                                                                            <span class="${classGroup.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
-                                                                                                                <c:out value="${classGroup.stateLabel}"/>
-                                                                                                            </span>
-                                                                                                            <button type="button"
-                                                                                                                    class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600"
-                                                                                                                    title="Show Activities"
-                                                                                                                    aria-label="Show Activities"
-                                                                                                                    aria-expanded="false"
-                                                                                                                    aria-controls="${activityPanelId}"
-                                                                                                                    data-gape-tree-toggle="${activityPanelId}"
-                                                                                                                    data-gape-open-title="Hide Activities"
-                                                                                                                    data-gape-closed-title="Show Activities">
-                                                                                                                <i class="ph ph-caret-down"></i>
-                                                                                                            </button>
-                                                                                                            <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail">
-                                                                                                                <i class="ph ph-eye"></i>
-                                                                                                            </a>
-                                                                                                            <c:if test="${not classGroup.archived and canModifyClassGroup}">
-                                                                                                                <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/edit" class="text-20 text-neutral-500 hover-text-main-600" title="Edit">
-                                                                                                                    <i class="ph ph-pencil-simple-line"></i>
-                                                                                                                </a>
-                                                                                                            </c:if>
-                                                                                                            <c:if test="${not classGroup.archived and canManageClassGroupStructure}">
-                                                                                                                <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" data-bs-toggle="modal" data-bs-target="#deleteTreeClassGroup${classGroup.id}">
-                                                                                                                    <i class="ph ph-trash"></i>
-                                                                                                                </button>
-                                                                                                            </c:if>
-                                                                                                        </div>
-                                                                                                    </div>
-
-                                                                                                    <c:if test="${not classGroup.archived and canManageClassGroupStructure}">
-                                                                                                        <div class="modal fade" id="deleteTreeClassGroup${classGroup.id}" tabindex="-1" aria-hidden="true">
-                                                                                                            <div class="modal-dialog modal-dialog-centered">
-                                                                                                                <div class="modal-content rounded-12 border-0">
-                                                                                                                    <div class="modal-header border-neutral-30">
-                                                                                                                        <h5 class="modal-title text-18 fw-semibold">Delete Class Group</h5>
-                                                                                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                                                                                    </div>
-                                                                                                                    <div class="modal-body">
-                                                                                                                        <p class="text-14 text-neutral-600 mb-0">This action removes <strong><c:out value="${classGroup.code}"/></strong> if it has no dependencies.</p>
-                                                                                                                    </div>
-                                                                                                                    <div class="modal-footer border-neutral-30">
-                                                                                                                        <button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-12 hover-bg-main-50 transition-03" data-bs-dismiss="modal">Cancel</button>
-                                                                                                                        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/delete" method="post" class="m-0">
-                                                                                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                                                                                            <button type="submit" class="gape-action-button gape-action-delete px-20 py-10 rounded-12 fw-semibold transition-03">Delete</button>
-                                                                                                                        </form>
-                                                                                                                    </div>
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    </c:if>
-                                                                                                    <div id="${activityPanelId}" class="d-none">
-                                                                                                        <%@ include file="/WEB-INF/fragments/class-group-activities-panel.jspf" %>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </c:forEach>
-                                                                                            <c:if test="${empty subject.classGroups}">
-                                                                                                <div class="border border-neutral-30 rounded-8 px-16 py-18 text-center text-13 text-neutral-500 bg-white">
-                                                                                                    No class groups registered for this subject in this course.
-                                                                                                </div>
-                                                                                            </c:if>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </c:forEach>
-                                                                            <c:if test="${empty course.subjects}">
-                                                                                <div class="border border-neutral-30 rounded-8 px-16 py-18 text-center text-13 text-neutral-500 bg-white">
-                                                                                    No subjects associated with this course.
-                                                                                </div>
-                                                                            </c:if>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </c:forEach>
-                                                            <c:if test="${empty unit.courses}">
-                                                                <div class="border border-neutral-30 rounded-8 px-16 py-18 text-center text-13 text-neutral-500 bg-white">
-                                                                    No courses registered for this organic unit.
-                                                                </div>
-                                                            </c:if>
-                                                        </div>
-                                                    </div>
                                                 </div>
 
-                                                <c:if test="${not unit.archived and canModifyUnit}">
-                                                    <div class="modal fade" id="deleteUnit${unit.id}" tabindex="-1" aria-hidden="true">
+                                                <c:if test="${canModifyUnit}">
+                                                    <div class="modal fade" id="deleteListUnit${organization.id}_${unit.id}" tabindex="-1" aria-hidden="true">
                                                         <div class="modal-dialog modal-dialog-centered">
                                                             <div class="modal-content rounded-12 border-0">
                                                                 <div class="modal-header border-neutral-30">
@@ -679,8 +436,8 @@
                                                 </c:if>
                                             </c:forEach>
                                             <c:if test="${empty organization.organicUnits}">
-                                                <div class="border border-neutral-30 rounded-12 px-20 py-24 text-center text-14 text-neutral-500 bg-white">
-                                                    No organic units registered.
+                                                <div class="border border-neutral-30 rounded-8 px-18 py-24 text-center text-13 text-neutral-500 bg-white">
+                                                    No organic units found for this organization.
                                                 </div>
                                             </c:if>
                                         </div>
@@ -725,24 +482,161 @@
 </div>
 <%@ include file="/WEB-INF/fragments/template-base-scripts.jspf" %>
 <script>
-    document.querySelectorAll('[data-gape-tree-toggle]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            var target = document.getElementById(button.dataset.gapeTreeToggle);
-            if (!target) {
+    (function () {
+        document.querySelectorAll('[data-gape-tree-toggle]').forEach(function (toggle) {
+            var panel = document.getElementById(toggle.dataset.gapeTreeToggle);
+            if (!panel) {
                 return;
             }
-            var isHidden = target.classList.toggle('d-none');
-            var isExpanded = !isHidden;
-            var icon = button.querySelector('i');
-            button.setAttribute('aria-expanded', String(isExpanded));
-            button.setAttribute('title', isExpanded ? button.dataset.gapeOpenTitle : button.dataset.gapeClosedTitle);
-            button.setAttribute('aria-label', isExpanded ? button.dataset.gapeOpenTitle : button.dataset.gapeClosedTitle);
-            if (icon) {
-                icon.classList.toggle('ph-caret-down', !isExpanded);
-                icon.classList.toggle('ph-caret-up', isExpanded);
-            }
+            toggle.addEventListener('click', function () {
+                var expanded = toggle.getAttribute('aria-expanded') === 'true';
+                toggle.setAttribute('aria-expanded', String(!expanded));
+                panel.classList.toggle('d-none', expanded);
+                var nextTitle = expanded ? toggle.dataset.gapeClosedTitle : toggle.dataset.gapeOpenTitle;
+                if (nextTitle) {
+                    toggle.setAttribute('title', nextTitle);
+                    toggle.setAttribute('aria-label', nextTitle);
+                }
+            });
         });
-    });
+    })();
+
+    (function () {
+        var list = document.querySelector('[data-organization-list]');
+        if (!list) {
+            return;
+        }
+
+        var cards = Array.prototype.slice.call(list.querySelectorAll('[data-organization-card]'));
+        var options = Array.prototype.slice.call(document.querySelectorAll('[data-organization-sort-option]'));
+        var sortToggle = document.querySelector('[data-organization-sort-toggle]');
+        if (!cards.length || !options.length) {
+            return;
+        }
+
+        var collator = new Intl.Collator(document.documentElement.lang || undefined, {
+            numeric: true,
+            sensitivity: 'base'
+        });
+        var activeField = null;
+        var activeDirection = null;
+
+        function oppositeDirection(direction) {
+            return direction === 'asc' ? 'desc' : 'asc';
+        }
+
+        function datasetKey(field) {
+            return 'sort' + field.charAt(0).toUpperCase() + field.slice(1);
+        }
+
+        function numericValue(card, field) {
+            return Number(card.dataset[datasetKey(field)] || '0');
+        }
+
+        function textValue(card, field) {
+            return card.dataset[datasetKey(field)] || '';
+        }
+
+        function originalIndex(card) {
+            return numericValue(card, 'index');
+        }
+
+        function compareCards(field, direction, first, second) {
+            var result;
+            if (field === 'date') {
+                result = numericValue(first, field) - numericValue(second, field);
+            } else {
+                result = collator.compare(textValue(first, field), textValue(second, field));
+            }
+
+            if (result === 0) {
+                result = originalIndex(first) - originalIndex(second);
+            }
+
+            return direction === 'desc' ? -result : result;
+        }
+
+        function renderCards() {
+            var sorted = cards.slice();
+            if (activeField && activeDirection) {
+                sorted.sort(function (first, second) {
+                    return compareCards(activeField, activeDirection, first, second);
+                });
+            } else {
+                sorted.sort(function (first, second) {
+                    return originalIndex(first) - originalIndex(second);
+                });
+            }
+            sorted.forEach(function (card) {
+                list.appendChild(card);
+            });
+        }
+
+        function updateOptionStates() {
+            options.forEach(function (option) {
+                var field = option.dataset.sortField;
+                var normalDirection = option.dataset.sortNormal;
+                var state = 'none';
+                if (activeField === field) {
+                    state = activeDirection === normalDirection ? 'normal' : 'reverse';
+                }
+
+                option.dataset.sortState = state;
+                option.classList.toggle('is-active', state !== 'none');
+                option.setAttribute('aria-pressed', String(state !== 'none'));
+            });
+            if (sortToggle) {
+                sortToggle.classList.toggle('is-active', activeField !== null);
+            }
+        }
+
+        function closeDropdown(toggle) {
+            if (!toggle) {
+                return;
+            }
+            if (window.bootstrap && window.bootstrap.Dropdown) {
+                window.bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
+            }
+        }
+
+        if (sortToggle) {
+            sortToggle.addEventListener('click', function (event) {
+                if (!activeField) {
+                    return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                activeField = null;
+                activeDirection = null;
+                updateOptionStates();
+                renderCards();
+                closeDropdown(sortToggle);
+            });
+        }
+
+        options.forEach(function (option) {
+            option.addEventListener('click', function () {
+                var field = option.dataset.sortField;
+                var normalDirection = option.dataset.sortNormal;
+                var currentState = option.dataset.sortState;
+
+                if (activeField !== field || currentState === 'none') {
+                    activeField = field;
+                    activeDirection = normalDirection;
+                } else if (currentState === 'normal') {
+                    activeDirection = oppositeDirection(normalDirection);
+                } else {
+                    activeField = null;
+                    activeDirection = null;
+                }
+
+                updateOptionStates();
+                renderCards();
+            });
+        });
+
+        updateOptionStates();
+    })();
 </script>
 </body>
 </html>

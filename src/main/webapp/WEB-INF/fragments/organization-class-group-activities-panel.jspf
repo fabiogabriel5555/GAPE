@@ -1,0 +1,93 @@
+<c:set var="classGroupLessons" value="${classGroupLessonsByClassGroup[classGroup.id]}" />
+<c:set var="classGroupAssessments" value="${classGroupAssessmentsByClassGroup[classGroup.id]}" />
+<div class="og-activity-panel">
+    <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mb-14">
+        <div>
+            <h3 class="text-16 fw-semibold text-neutral-800 mb-4">Class Activities</h3>
+            <span class="text-13 text-neutral-500">
+                <c:out value="${classGroup.code}"/> &middot;
+                <c:out value="${fn:length(classGroupLessons)}"/> lessons &middot;
+                <c:out value="${fn:length(classGroupAssessments)}"/> assessments
+            </span>
+        </div>
+    </div>
+
+    <div class="og-activity-grid">
+        <section class="og-activity-column">
+            <div class="og-activity-column-header">
+                <span class="og-activity-heading"><i class="ph ph-chalkboard-teacher me-8"></i>Lessons</span>
+                <span class="og-activity-count"><c:out value="${fn:length(classGroupLessons)}"/></span>
+            </div>
+            <div class="og-activity-list">
+                <c:forEach var="lesson" items="${classGroupLessons}" varStatus="lessonLoop">
+                    <c:set var="lessonTimelineRank" value="${classGroupLessonTimelineRankByClassGroup[classGroup.id][lesson.id]}" />
+                    <article class="og-activity-card og-activity-card--lesson" style="margin-top: ${lessonTimelineRank == null ? lessonLoop.index * 8 : lessonTimelineRank * 8}px;">
+                        <div class="d-flex align-items-start justify-content-between gap-12">
+                            <div class="min-w-0">
+                                <a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}" class="fw-semibold text-14 text-neutral-800 hover-text-main-600" data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}" data-lesson-modal-title="Lesson Details">
+                                    <c:out value="${lesson.title}"/>
+                                </a>
+                                <span class="d-block text-12 text-neutral-500 mt-4" data-gape-datetime-display><c:out value="${lesson.compactDateRangeLabel}"/></span>
+                            </div>
+                            <span class="${lesson.stateBadgeClass} px-10 py-5 rounded-pill text-12 flex-shrink-0">
+                                <c:out value="${lesson.stateLabel}"/>
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-8 flex-wrap mt-10">
+                            <span class="${lesson.typeBadgeClass} px-10 py-5 rounded-pill text-12">
+                                <i class="${lesson.typeIconClass} me-6"></i><c:out value="${lesson.typeLabel}"/>
+                            </span>
+                            <span class="bg-neutral-20 text-neutral-600 px-10 py-5 rounded-pill text-12"><c:out value="${lesson.durationLabel}"/></span>
+                            <a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}" class="og-activity-action" title="Detail" aria-label="Detail" data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}" data-lesson-modal-title="Lesson Details">
+                                <i class="ph ph-eye"></i>
+                            </a>
+                        </div>
+                    </article>
+                </c:forEach>
+                <c:if test="${empty classGroupLessons}">
+                    <div class="og-activity-empty">No lessons registered.</div>
+                </c:if>
+            </div>
+        </section>
+
+        <section class="og-activity-column">
+            <div class="og-activity-column-header">
+                <span class="og-activity-heading"><i class="ph ph-seal-check me-8"></i>Assessments</span>
+                <span class="og-activity-count"><c:out value="${fn:length(classGroupAssessments)}"/></span>
+            </div>
+            <div class="og-activity-list">
+                <c:forEach var="assessmentItem" items="${classGroupAssessments}" varStatus="assessmentLoop">
+                    <c:set var="assessmentTimelineRank" value="${classGroupAssessmentTimelineRankByClassGroup[classGroup.id][assessmentItem.id]}" />
+                    <article class="og-activity-card og-activity-card--assessment" style="margin-top: ${assessmentTimelineRank == null ? assessmentLoop.index * 8 : assessmentTimelineRank * 8}px;">
+                        <div class="d-flex align-items-start justify-content-between gap-12">
+                            <div class="min-w-0">
+                                <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}" class="fw-semibold text-14 text-neutral-800 hover-text-main-600">
+                                    <c:out value="${assessmentItem.title}"/>
+                                </a>
+                                <span class="d-block text-12 text-neutral-500 mt-4" data-gape-datetime-display><c:out value="${assessmentItem.availabilityLabel}"/></span>
+                            </div>
+                            <span class="${assessmentItem.stateBadgeClass} px-10 py-5 rounded-pill text-12 flex-shrink-0">
+                                <c:out value="${assessmentItem.stateLabel}"/>
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-8 flex-wrap mt-10">
+                            <span class="${assessmentItem.softClass} px-10 py-5 rounded-pill text-12">
+                                <i class="${assessmentItem.iconClass} me-6"></i><c:out value="${assessmentItem.typeLabel}"/>
+                            </span>
+                            <span class="bg-neutral-20 text-neutral-600 px-10 py-5 rounded-pill text-12"><c:out value="${assessmentItem.questionCountLabel}"/></span>
+                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}" class="og-activity-action" title="Detail" aria-label="Detail">
+                                <i class="ph ph-eye"></i>
+                            </a>
+                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}/pdf" class="og-activity-action" title="Download" aria-label="Download">
+                                <i class="ph ph-download-simple"></i>
+                            </a>
+                        </div>
+                    </article>
+                </c:forEach>
+                <c:if test="${empty classGroupAssessments}">
+                    <div class="og-activity-empty">No assessments registered.</div>
+                </c:if>
+            </div>
+        </section>
+    </div>
+</div>

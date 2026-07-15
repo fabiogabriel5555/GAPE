@@ -89,7 +89,7 @@
             </div>
             <div class="gape-student-class-group-metric">
                 <span class="text-12 text-neutral-500 d-block mb-4">Dates</span>
-                <span class="text-14 fw-semibold text-neutral-800"><c:out value="${classGroup.dateRangeLabel}"/></span>
+                <span class="text-14 fw-semibold text-neutral-800" data-gape-datetime-display><c:out value="${classGroup.dateRangeLabel}"/></span>
             </div>
             <div class="gape-student-class-group-metric">
                 <span class="text-12 text-neutral-500 d-block mb-4">Blocks</span>
@@ -129,13 +129,12 @@
                                 <div class="min-w-0">
                                     <div class="d-flex align-items-center gap-8 flex-wrap mb-6">
                                         <h5 class="text-18 fw-semibold text-neutral-800 mb-0"><c:out value="${block.name}"/></h5>
-                                        <span class="${block.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${block.stateLabel}"/></span>
                                     </div>
                                     <p class="text-13 text-neutral-500 mb-0"><c:out value="${block.description}"/></p>
                                 </div>
                             </div>
-                            <span class="bg-white border border-neutral-30 text-neutral-600 px-12 py-7 rounded-pill text-12">
-                                <c:out value="${block.accessModeLabel}"/>
+                            <span class="${block.stateBadgeClass} px-12 py-7 rounded-pill text-12">
+                                <c:out value="${block.stateLabel}"/>
                             </span>
                         </div>
                     </div>
@@ -156,7 +155,7 @@
                                                 <span class="${lesson.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${lesson.stateLabel}"/></span>
                                             </div>
                                             <div class="d-flex align-items-center gap-8 flex-wrap text-12 text-neutral-500">
-                                                <span><i class="ph ph-clock me-4"></i><c:out value="${lesson.compactDateRangeLabel}"/></span>
+                                                <span data-gape-datetime-display><i class="ph ph-clock me-4"></i><c:out value="${lesson.compactDateRangeLabel}"/></span>
                                                 <span><i class="ph ph-timer me-4"></i><c:out value="${lesson.durationLabel}"/></span>
                                                 <span><i class="${lesson.typeIconClass} me-4"></i><c:out value="${lesson.typeLabel}"/></span>
                                                 <span><i class="ph ph-user-check me-4"></i><c:out value="${lesson.attendanceLabel}"/></span>
@@ -246,7 +245,7 @@
                                             <div class="d-flex align-items-center gap-8 flex-wrap text-12 text-neutral-500">
                                                 <span><i class="ph ph-seal-question me-4"></i><c:out value="${assessmentItem.questionCountLabel}"/></span>
                                                 <span><i class="ph ph-repeat me-4"></i><c:out value="${assessmentItem.attemptsLimitLabel}"/> attempts</span>
-                                                <span><i class="ph ph-clock me-4"></i><c:out value="${assessmentItem.availabilityLabel}"/></span>
+                                                <span data-gape-datetime-display><i class="ph ph-clock me-4"></i><c:out value="${assessmentItem.availabilityLabel}"/></span>
                                             </div>
                                         </div>
                                         <div class="d-flex align-items-center justify-content-end gap-8">

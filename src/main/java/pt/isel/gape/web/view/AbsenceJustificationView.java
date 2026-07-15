@@ -1,16 +1,12 @@
 package pt.isel.gape.web.view;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.AbsenceJustification;
 import pt.isel.gape.learning.model.AbsenceJustificationState;
 
 public final class AbsenceJustificationView {
-
-    private static final DateTimeFormatter DISPLAY_DATE_TIME =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("pt-PT"));
 
     private final AbsenceJustification justification;
     private final AttendanceRecordView attendanceRecord;
@@ -129,6 +125,6 @@ public final class AbsenceJustificationView {
     }
 
     private static String format(LocalDateTime value) {
-        return value == null ? "-" : DISPLAY_DATE_TIME.format(value);
+        return value == null ? "-" : ApplicationDateTimeFormat.dateTime(value);
     }
 }

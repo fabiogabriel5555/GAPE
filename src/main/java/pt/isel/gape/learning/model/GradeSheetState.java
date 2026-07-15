@@ -6,7 +6,7 @@ public enum GradeSheetState {
     DRAFT("draft"),
     PUBLISHED("published"),
     CLOSED("closed"),
-    ARCHIVED("archived");
+    INACTIVE("inactive");
 
     private final String databaseValue;
 
@@ -19,7 +19,7 @@ public enum GradeSheetState {
     }
 
     public boolean blocksDirectChanges() {
-        return this == PUBLISHED || this == CLOSED || this == ARCHIVED;
+        return this == PUBLISHED || this == CLOSED || this == INACTIVE;
     }
 
     public static GradeSheetState fromDatabaseValue(String value) {

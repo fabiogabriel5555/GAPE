@@ -148,7 +148,9 @@
     <div>
         <!-- ========Dashdord Sidebar start======== -->
          <div class="px-20 py-24 max-w-288-px bg-white h-100">
-              <img src="assets/images/logo/logo.svg" alt="" class="">
+              <a href="${pageContext.request.contextPath}/index.jsp" class="dashboard-sidebar__site-logo">
+                  <img src="assets/images/logo/logo.svg" alt="GAPE" class="">
+              </a>
               <span class="w-100 border-main-100 border mb-24 mt-24"></span>
               <div>
                 <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome Henry,</span>

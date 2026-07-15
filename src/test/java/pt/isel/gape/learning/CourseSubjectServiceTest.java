@@ -24,7 +24,6 @@ import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.CourseSubjectAssociationCommand;
-import pt.isel.gape.learning.model.CourseSubjectState;
 import pt.isel.gape.learning.model.CurricularTerm;
 import pt.isel.gape.learning.service.CourseSubjectService;
 import pt.isel.gape.transversal.DatabaseTestSupport;
@@ -66,10 +65,9 @@ class CourseSubjectServiceTest {
                 new CourseSubjectAssociationCommand(
                         30L,
                         42L,
-                        2,
+                        1,
                         CurricularTerm.SEMESTER_2,
-                        true,
-                        CourseSubjectState.ACTIVE
+                        true
                 ),
                 "127.0.0.1"
         );
@@ -90,10 +88,9 @@ class CourseSubjectServiceTest {
                         new CourseSubjectAssociationCommand(
                                 30L,
                                 40L,
-                                3,
-                                CurricularTerm.ANNUAL,
-                                true,
-                                CourseSubjectState.ACTIVE
+                                1,
+                                CurricularTerm.SEMESTER_1,
+                                true
                         ),
                         "127.0.0.1"
                 )
@@ -101,7 +98,7 @@ class CourseSubjectServiceTest {
     }
 
     @Test
-    void curricularYearAndTermMustBeProvidedTogether() {
+    void curricularTermIsRequired() {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> courseSubjectService.associateSubject(
@@ -113,8 +110,7 @@ class CourseSubjectServiceTest {
                                 42L,
                                 1,
                                 null,
-                                true,
-                                CourseSubjectState.ACTIVE
+                                true
                         ),
                         "127.0.0.1"
                 )
@@ -122,11 +118,7 @@ class CourseSubjectServiceTest {
     }
 
     @Test
-    void subjectMustBelongToCourseOrganization() throws Exception {
-        try (Connection connection = DatabaseTestSupport.openConnection()) {
-            insertSubject(connection, 43L, 11L, "Subject Externa");
-        }
-
+    void curricularYearCannotExceedCourseDuration() {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> courseSubjectService.associateSubject(
@@ -135,15 +127,58 @@ class CourseSubjectServiceTest {
                         AccessProfileType.ADMINISTRATOR,
                         new CourseSubjectAssociationCommand(
                                 30L,
-                                43L,
-                                1,
+                                42L,
+                                2,
                                 CurricularTerm.SEMESTER_1,
-                                true,
-                                CourseSubjectState.ACTIVE
+                                true
                         ),
                         "127.0.0.1"
                 )
         );
+    }
+
+    @Test
+    void curricularTermMustMatchCourseFrequency() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> courseSubjectService.associateSubject(
+                        1L,
+                        null,
+                        AccessProfileType.ADMINISTRATOR,
+                        new CourseSubjectAssociationCommand(
+                                30L,
+                                42L,
+                                1,
+                                CurricularTerm.ANNUAL,
+                                true
+                        ),
+                        "127.0.0.1"
+                )
+        );
+    }
+
+    @Test
+    void subjectCanBelongToAnotherOrganizationThanItsCourse() throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            insertSubject(connection, 43L, 11L, "Subject Externa");
+        }
+
+        CourseSubjectAssociation association = courseSubjectService.associateSubject(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new CourseSubjectAssociationCommand(
+                        30L,
+                        43L,
+                        1,
+                        CurricularTerm.SEMESTER_1,
+                        true
+                ),
+                "127.0.0.1"
+        );
+
+        assertEquals(30L, association.courseId());
+        assertEquals(43L, association.subjectId());
     }
 
     @Test
@@ -157,10 +192,9 @@ class CourseSubjectServiceTest {
                         new CourseSubjectAssociationCommand(
                                 30L,
                                 42L,
-                                2,
+                                1,
                                 CurricularTerm.SEMESTER_2,
-                                true,
-                                CourseSubjectState.ACTIVE
+                                true
                         ),
                         "127.0.0.1"
                 )
@@ -168,37 +202,31 @@ class CourseSubjectServiceTest {
     }
 
     @Test
-    void lastCourseSubjectAssociationCannotBeDeleted() {
-        courseSubjectService.associateSubject(
-                1L,
-                null,
-                AccessProfileType.ADMINISTRATOR,
-                new CourseSubjectAssociationCommand(
-                        30L,
-                        42L,
-                        2,
-                        CurricularTerm.SEMESTER_2,
-                        true,
-                        CourseSubjectState.ACTIVE
-                ),
-                "127.0.0.1"
-        );
+    void inactiveSubjectCannotReceiveCourseAssociation() throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            insertSubject(connection, 43L, 10L, "Inactive Subject", "inactive");
+        }
 
         assertThrows(
                 IllegalStateException.class,
-                () -> courseSubjectService.deleteAssociation(
+                () -> courseSubjectService.associateSubject(
                         1L,
                         null,
                         AccessProfileType.ADMINISTRATOR,
-                        30L,
-                        42L,
+                        new CourseSubjectAssociationCommand(
+                                30L,
+                                43L,
+                                1,
+                                CurricularTerm.SEMESTER_1,
+                                true
+                        ),
                         "127.0.0.1"
                 )
         );
     }
 
     @Test
-    void lastCourseSubjectAssociationCannotBeArchived() {
+    void associationWithoutDependenciesIsClosedHistorically() throws SQLException {
         courseSubjectService.associateSubject(
                 1L,
                 null,
@@ -206,25 +234,94 @@ class CourseSubjectServiceTest {
                 new CourseSubjectAssociationCommand(
                         30L,
                         42L,
-                        2,
+                        1,
                         CurricularTerm.SEMESTER_2,
-                        true,
-                        CourseSubjectState.ACTIVE
+                        true
+                ),
+                "127.0.0.1"
+        );
+        courseSubjectService.associateSubject(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new CourseSubjectAssociationCommand(
+                        31L,
+                        42L,
+                        1,
+                        CurricularTerm.SEMESTER_2,
+                        true
                 ),
                 "127.0.0.1"
         );
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> courseSubjectService.archiveAssociation(
-                        1L,
-                        null,
-                        AccessProfileType.ADMINISTRATOR,
+        courseSubjectService.deleteAssociation(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                30L,
+                42L,
+                "127.0.0.1"
+        );
+
+        assertTrue(courseSubjectAssociationExists(30L, 42L));
+        assertEquals("historical", courseSubjectAssociationState(30L, 42L));
+        assertTrue(courseSubjectAssociationExists(31L, 42L));
+        assertEquals("active", courseSubjectAssociationState(31L, 42L));
+    }
+
+    @Test
+    void lastCourseAssociationCanBeClosedHistorically() throws SQLException {
+        courseSubjectService.associateSubject(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new CourseSubjectAssociationCommand(
                         30L,
                         42L,
-                        "127.0.0.1"
-                )
+                        1,
+                        CurricularTerm.SEMESTER_2,
+                        true
+                ),
+                "127.0.0.1"
         );
+
+        courseSubjectService.deleteAssociation(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                30L,
+                42L,
+                "127.0.0.1"
+        );
+        assertTrue(courseSubjectAssociationExists(30L, 42L));
+        assertEquals("historical", courseSubjectAssociationState(30L, 42L));
+    }
+
+    @Test
+    void associationWithClassGroupDependenciesCanBeClosedHistorically() throws SQLException {
+        courseSubjectService.associateSubject(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new CourseSubjectAssociationCommand(
+                        31L,
+                        40L,
+                        1,
+                        CurricularTerm.SEMESTER_2,
+                        true
+                ),
+                "127.0.0.1"
+        );
+
+        courseSubjectService.deleteAssociation(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                30L,
+                40L,
+                "127.0.0.1"
+        );
+        assertEquals("historical", courseSubjectAssociationState(30L, 40L));
     }
 
     @Test
@@ -278,8 +375,7 @@ class CourseSubjectServiceTest {
                                 41L,
                                 1,
                                 CurricularTerm.SEMESTER_1,
-                                true,
-                                CourseSubjectState.ACTIVE
+                                true
                         ),
                         "127.0.0.1"
                 )
@@ -288,16 +384,64 @@ class CourseSubjectServiceTest {
 
     private static void insertSubject(Connection connection, long subjectId, long organizationId, String name)
             throws Exception {
+        insertSubject(connection, subjectId, organizationId, name, "active");
+    }
+
+    private static void insertSubject(
+            Connection connection,
+            long subjectId,
+            long organizationId,
+            String name,
+            String state
+    )
+            throws Exception {
         try (PreparedStatement statement = connection.prepareStatement("""
                 INSERT INTO subject (
                     id_subject, id_organization, name, acronym, description, ects, workload_hours, state
-                ) VALUES (?, ?, ?, ?, NULL, 6.00, 70, 'active')
+                ) VALUES (?, ?, ?, ?, NULL, 6.00, 70, ?)
                 """)) {
             statement.setLong(1, subjectId);
             statement.setLong(2, organizationId);
             statement.setString(3, name);
             statement.setString(4, "S" + subjectId);
+            statement.setString(5, state);
             statement.executeUpdate();
+        }
+    }
+
+    private boolean courseSubjectAssociationExists(long courseId, long subjectId) throws SQLException {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT COUNT(*)
+                     FROM integrate_subject
+                     WHERE id_course = ?
+                       AND id_subject = ?
+                     """)) {
+            statement.setLong(1, courseId);
+            statement.setLong(2, subjectId);
+            try (var resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getLong(1) > 0;
+            }
+        }
+    }
+
+    private String courseSubjectAssociationState(long courseId, long subjectId) throws SQLException {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT state
+                     FROM integrate_subject
+                     WHERE id_course = ?
+                       AND id_subject = ?
+                     """)) {
+            statement.setLong(1, courseId);
+            statement.setLong(2, subjectId);
+            try (var resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new AssertionError("Course-subject association not found");
+                }
+                return resultSet.getString(1);
+            }
         }
     }
 

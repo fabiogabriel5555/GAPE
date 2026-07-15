@@ -1,0 +1,37 @@
+services:
+  database:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: gape
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: gape
+      MYSQL_PASSWORD: gape
+      TZ: Europe/Lisbon
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping --silent -h 127.0.0.1 -proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - gape-database:/var/lib/mysql
+
+  web:
+    build:
+      context: ../../..
+      dockerfile: docs/dev/docker/Dockerfile
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      GAPE_DB_URL: jdbc:mysql://database:3306/gape?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=LOCAL&forceConnectionTimeZoneToSession=false&preserveInstants=false
+      GAPE_DB_USER: gape
+      GAPE_DB_PASSWORD: gape
+      TZ: Europe/Lisbon
+    ports:
+      - "${GAPE_PORT:-8080}:8080"
+    volumes:
+      - gape-uploads:/var/lib/gape/uploads
+
+volumes:
+  gape-database:
+  gape-uploads:

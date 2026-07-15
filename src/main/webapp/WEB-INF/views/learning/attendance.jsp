@@ -1,10 +1,11 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <base href="${pageContext.request.contextPath}/">
-    <title>GAPE - Enrollments &amp; Certificates</title>
+    <title>GAPE - <c:choose><c:when test="${attendanceOnly}">Attendance</c:when><c:otherwise>Enrollments &amp; Certificates</c:otherwise></c:choose></title>
     <%@ include file="/WEB-INF/fragments/template-base-head.jspf" %>
     <style>
         .aac-page {
@@ -15,55 +16,59 @@
             min-width: 0;
         }
 
-        .aac-page .ad-mode-grid {
+        /* Shared visual contract with the Lessons & Assessments mode cards. */
+        .aac-page .la-mode-grid {
             display: grid;
-            align-items: stretch;
-            gap: 14px;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            max-width: 100%;
-            min-width: 0;
+            gap: 16px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
-        .aac-page .ad-mode-card {
+        .aac-page .la-mode-card {
+            align-items: flex-start;
             background: #fff;
             border: 1px solid var(--aac-border);
             border-radius: 8px;
             color: var(--aac-ink);
             cursor: pointer;
-            min-width: 0;
-            padding: 18px;
+            display: flex;
+            gap: 14px;
+            min-height: 118px;
+            padding: 20px;
             text-align: left;
             transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease, background .2s ease;
             width: 100%;
         }
 
-        .aac-page .ad-mode-card > .d-flex {
-            align-items: stretch !important;
-            height: 100%;
-            max-width: 100%;
-            min-width: 0;
-        }
-
-        .aac-page .ad-mode-card.is-active {
+        .aac-page .la-mode-card.is-active {
             background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(20, 184, 166, 0.05)), #f7fbff;
             border-color: rgba(37, 99, 235, 0.7);
             box-shadow: 0 16px 36px rgba(37, 99, 235, 0.12);
             transform: translateY(-1px);
         }
 
-        .aac-page .ad-mode-card.is-active .ad-mode-icon {
+        /* Use the exact Class Group Management hover geometry: the card stays
+           in place and only its border/shadow acknowledge the pointer. */
+        .aac-page .la-mode-card:hover,
+        .aac-page .la-mode-card:focus-visible {
+            border-color: rgba(37, 99, 235, .28);
+            box-shadow: 0 10px 26px rgba(15, 23, 42, .05);
+            color: #172033;
+            transform: none;
+        }
+
+        .aac-page .la-mode-card.is-active .la-mode-icon {
             background: var(--aac-primary) !important;
             color: #fff !important;
         }
 
-        .aac-page .ad-mode-icon {
+        .aac-page .la-mode-icon {
             align-items: center;
             border-radius: 8px;
             display: inline-flex;
-            flex: 0 0 44px;
-            height: 44px;
+            flex: 0 0 48px;
+            height: 48px;
             justify-content: center;
-            width: 44px;
+            width: 48px;
         }
 
         .aac-page .ad-mode-content,
@@ -77,6 +82,10 @@
             display: none !important;
         }
 
+        [data-attendance-decision][hidden] {
+            display: none !important;
+        }
+
         .aac-surface {
             background: #fff;
             border: 1px solid var(--aac-border);
@@ -84,6 +93,41 @@
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
             min-width: 0;
         }
+
+        .gape-management-archive-link {
+            align-items: center;
+            background: #fffafa;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px 18px;
+            justify-content: space-between;
+            padding: 16px 18px;
+        }
+
+        .gape-management-archive-link strong,
+        .gape-management-archive-link span {
+            display: block;
+        }
+
+        .gape-management-archive-link strong { color: #991b1b; font-size: 14px; }
+        .gape-management-archive-link span { color: #7f1d1d; font-size: 12px; margin-top: 3px; }
+        .gape-management-archive-link .gape-list-load-all { flex: 0 0 auto; width: auto; }
+
+        /* Every management dialog uses a stable viewport-bound shell. */
+        .aac-page .modal-dialog {
+            margin: 16px auto;
+            max-width: min(760px, calc(100vw - 32px));
+            width: calc(100vw - 32px);
+        }
+
+        .aac-page .modal-dialog.modal-lg { max-width: min(900px, calc(100vw - 32px)); }
+        .aac-page .modal-dialog.modal-xl { max-width: min(1180px, calc(100vw - 32px)); }
+        .aac-page .modal-content { display: flex; flex-direction: column; max-height: calc(100vh - 32px); }
+        .aac-page .modal-header,
+        .aac-page .modal-footer { flex: 0 0 auto; }
+        .aac-page .modal-body { min-height: 0; overflow: auto; }
 
         .aac-expanded-cell {
             background: #f8fbff !important;
@@ -176,6 +220,67 @@
             -webkit-line-clamp: 2;
         }
 
+        .aac-attendance-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .aac-attendance-table th,
+        .aac-attendance-table td {
+            vertical-align: middle;
+        }
+
+        .aac-attendance-table th {
+            white-space: nowrap;
+        }
+
+        .aac-attendance-table th:nth-child(1),
+        .aac-attendance-table td:nth-child(1) {
+            width: 18%;
+        }
+
+        .aac-attendance-table th:nth-child(2),
+        .aac-attendance-table td:nth-child(2) {
+            width: 12%;
+        }
+
+        .aac-attendance-table th:nth-child(3),
+        .aac-attendance-table td:nth-child(3) {
+            width: 26%;
+        }
+
+        .aac-attendance-table th:nth-child(4),
+        .aac-attendance-table td:nth-child(4) {
+            width: 24%;
+        }
+
+        .aac-attendance-table th:nth-child(5),
+        .aac-attendance-table td:nth-child(5) {
+            width: 12%;
+        }
+
+        .aac-attendance-table th:nth-child(6),
+        .aac-attendance-table td:nth-child(6) {
+            width: 8%;
+            white-space: nowrap;
+        }
+
+        .aac-attendance-table .aac-attendance-count {
+            display: inline-block;
+            max-width: 100%;
+            white-space: nowrap;
+        }
+
+        .aac-page .gape-mobile-kv {
+            grid-template-columns: minmax(82px, max-content) minmax(0, 1fr);
+        }
+
+        .aac-page .gape-mobile-kv strong {
+            overflow-wrap: normal;
+            white-space: nowrap;
+            word-break: normal;
+        }
+
         .aac-tree {
             display: flex;
             flex-direction: column;
@@ -193,9 +298,13 @@
         }
 
         .aac-tree-node:hover {
-            border-color: #d5e3ef;
+            border-color: rgba(37, 99, 235, .28);
             box-shadow: 0 10px 26px rgba(15, 23, 42, .05);
-            transform: translateY(-1px);
+            transform: none;
+        }
+
+        .aac-page [data-deferred-management-root] tr.hover-bg-neutral-20:hover {
+            background-color: #fff !important;
         }
 
         .aac-tree-row {
@@ -346,6 +455,43 @@
             color: var(--main-600) !important;
         }
 
+        .aac-settings-modal {
+            background: #fff;
+            box-shadow: 0 22px 60px rgba(15, 23, 42, .18);
+        }
+
+        .aac-settings-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .aac-settings-card {
+            background: #fff;
+            border: 1px solid #e6edf0;
+            border-radius: 8px;
+            min-width: 0;
+            padding: 14px 16px;
+        }
+
+        .aac-settings-card--wide {
+            grid-column: 1 / -1;
+        }
+
+        .aac-settings-decision {
+            background: #fff;
+            border: 1px solid #e6edf0;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .aac-settings-actions {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
         .aac-download-menu {
             border: 1px solid #e2e8f0;
             border-radius: 8px;
@@ -385,17 +531,37 @@
             background: #fff;
             color: #000;
             font-family: Arial, sans-serif;
+            max-width: 100%;
             min-width: 0;
+            overflow: hidden;
             padding: 0;
             width: 100%;
         }
 
         .aac-grade-doc__table-wrap {
-            border: 1px solid #000;
             max-width: 100%;
+            min-width: 0;
             overflow-x: auto;
             overflow-y: hidden;
-            -webkit-overflow-scrolling: touch;
+            padding-bottom: 8px;
+            scrollbar-color: #94a3b8 #eef2f7;
+            scrollbar-gutter: stable;
+            scrollbar-width: thin;
+        }
+
+        .aac-grade-doc__table-wrap::-webkit-scrollbar {
+            display: block;
+            height: 8px;
+        }
+
+        .aac-grade-doc__table-wrap::-webkit-scrollbar-track {
+            background: #eef2f7;
+            border-radius: 999px;
+        }
+
+        .aac-grade-doc__table-wrap::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 999px;
         }
 
         .aac-grade-doc__head {
@@ -543,10 +709,10 @@
 
         .aac-grade-doc__table {
             border-collapse: collapse;
-            margin: -1px;
-            min-width: var(--aac-grade-doc-min-width, 604px);
+            margin: 0;
+            min-width: var(--aac-grade-doc-min-width, 720px);
             table-layout: fixed;
-            width: 100%;
+            width: max(100%, var(--aac-grade-doc-min-width, 720px));
         }
 
         .aac-grade-doc__number-col {
@@ -640,14 +806,15 @@
 
         .aac-certificate-doc {
             background: #fff;
-            color: #111827;
+            color: #111;
             display: grid;
             font-family: Arial, sans-serif;
-            gap: 26px;
-            grid-template-columns: 44px minmax(0, 1fr);
+            gap: 34px;
+            grid-template-columns: 48px minmax(0, 1fr);
             margin: 0 auto;
-            max-width: 920px;
-            padding: 30px 34px;
+            max-width: 960px;
+            min-height: 780px;
+            padding: 26px 36px 38px 22px;
         }
 
         .aac-certificate-doc__rail {
@@ -655,7 +822,7 @@
             background: transparent;
             display: grid;
             gap: 28px;
-            grid-template-rows: 150px minmax(300px, 1fr) 132px 34px;
+            grid-template-rows: 172px minmax(380px, 1fr) 148px;
         }
 
         .aac-certificate-doc__rail span {
@@ -669,18 +836,18 @@
 
         .aac-certificate-doc h3 {
             color: #006070;
-            font-size: 32px;
+            font-size: 42px;
             font-weight: 800;
-            line-height: 1.16;
-            margin-bottom: 34px;
+            line-height: 1.08;
+            margin: 6px 0 66px;
             overflow-wrap: anywhere;
         }
 
         .aac-certificate-doc__identity {
             display: grid;
-            gap: 26px 34px;
-            grid-template-columns: 1.45fr .8fr .85fr;
-            margin-bottom: 32px;
+            gap: 16px;
+            grid-template-columns: minmax(0, 1fr);
+            margin-bottom: 34px;
         }
 
         .aac-certificate-doc__identity div {
@@ -690,25 +857,22 @@
         .aac-certificate-doc__identity span,
         .aac-certificate-doc__identity small {
             display: block;
-            font-size: 14px;
+            font-size: 17px;
             line-height: 1.35;
-            margin-bottom: 8px;
+            margin-bottom: 7px;
         }
 
         .aac-certificate-doc__identity strong {
             display: block;
-            font-size: 16px;
+            font-size: 20px;
             line-height: 1.35;
+            margin-bottom: 5px;
             overflow-wrap: anywhere;
-        }
-
-        .aac-certificate-doc__identity div:nth-child(4) {
-            grid-column: 1 / -1;
         }
 
         .aac-certificate-doc__table {
             border-collapse: collapse;
-            margin-bottom: 26px;
+            margin-bottom: 36px;
             table-layout: fixed;
             width: 100%;
         }
@@ -728,9 +892,9 @@
         .aac-certificate-doc__table th,
         .aac-certificate-doc__table td {
             border: 1px solid #b7b7b7;
-            font-size: 15px;
+            font-size: 18px;
             line-height: 1.35;
-            padding: 18px 16px;
+            padding: 22px 22px;
             overflow-wrap: anywhere;
         }
 
@@ -751,54 +915,39 @@
         }
 
         .aac-certificate-doc__statement {
-            font-size: 16px;
-            line-height: 1.65;
-            margin: 0 0 28px;
+            font-size: 18px;
+            line-height: 1.62;
+            margin: 0 0 58px;
         }
 
-        .aac-certificate-doc__date {
-            font-size: 15px;
-            margin-bottom: 28px;
+        .aac-certificate-doc__statement strong {
+            font-weight: 800;
         }
 
         .aac-certificate-doc__signatures {
             display: grid;
-            gap: 36px;
+            gap: 72px;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             margin-top: 0;
         }
 
+        .aac-certificate-doc__signatures span {
+            display: block;
+            font-size: 17px;
+            line-height: 1.35;
+        }
+
         .aac-certificate-doc__line {
-            border-top: 1px solid #111827;
-            color: #111827;
+            border-top: 1px solid #111;
+            color: #111;
             font-size: 12px;
-            margin-top: 34px;
+            margin-top: 42px;
             padding-top: 8px;
-        }
-
-        .aac-certificate-doc__legal {
-            align-items: center;
-            color: #006070;
-            display: grid;
-            font-size: 14px;
-            font-weight: 700;
-            gap: 6px 10px;
-            grid-template-columns: auto 1fr;
-            margin-top: 32px;
-        }
-
-        .aac-certificate-doc__legal span:last-child {
-            grid-column: 1 / -1;
-        }
-
-        .aac-certificate-doc__page {
-            font-size: 13px;
-            margin-top: 18px;
-            text-align: right;
+            text-align: center;
         }
 
         @media (max-width: 1199.98px) {
-            .aac-page .ad-mode-grid {
+            .aac-page .la-mode-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
@@ -836,12 +985,16 @@
         }
 
         @media (max-width: 575.98px) {
-            .aac-page .ad-mode-grid {
+            .aac-page .la-mode-grid {
                 grid-template-columns: minmax(0, 1fr);
             }
 
-            .aac-page .ad-mode-card {
+            .aac-page .la-mode-card {
                 padding: 16px;
+            }
+
+            .aac-settings-grid {
+                grid-template-columns: 1fr;
             }
 
             .aac-expanded-panel {
@@ -879,6 +1032,7 @@
             .aac-subgroup .gape-desktop-table {
                 display: block !important;
                 overflow-x: auto;
+                scrollbar-width: none;
                 -webkit-overflow-scrolling: touch;
             }
 
@@ -948,61 +1102,104 @@
             <div class="px-24 py-24 flex-grow-1">
                 <%@ include file="/WEB-INF/fragments/flash-messages.jspf" %>
 
-                <div class="aac-page" data-aac-tabs>
-                    <div class="ad-mode-grid mb-20" role="tablist" aria-label="Enrollment, grade, certificate and attendance sections">
-                        <button type="button" class="ad-mode-card is-active" data-aac-tab="enrollments" role="tab" aria-selected="true" aria-controls="enrollments">
-                            <span class="d-flex align-items-start gap-14">
-                                <span class="ad-mode-icon bg-main-50 text-main-600 text-22"><i class="ph ph-student"></i></span>
-                                <span class="min-w-0 ad-mode-content">
-                                    <span class="d-block text-17 fw-semibold text-neutral-800 mb-5">Enrollments</span>
-                                    <span class="d-block text-13 text-main-600 fw-semibold">${enrollmentCount} enrollments | ${activeEnrollmentCount} active</span>
-                                </span>
+                <div class="aac-page" data-aac-tabs data-aac-default-panel="${attendanceOnly ? 'attendance' : 'enrollments'}">
+                    <c:if test="${not attendanceOnly}">
+                    <div class="la-mode-grid mb-20" role="tablist" aria-label="Enrollment, grade and certificate sections">
+                        <button type="button" class="la-mode-card is-active" data-aac-tab="enrollments" role="tab" aria-selected="true" aria-controls="enrollments">
+                            <span class="la-mode-icon bg-main-50 text-main-600 text-24"><i class="ph ph-student"></i></span>
+                            <span class="min-w-0">
+                                <span class="text-20 fw-semibold text-neutral-800 d-block mb-8">Enrollments</span>
+                                <span class="text-13 text-main-600 fw-semibold">${enrollmentCount} enrollments | ${activeEnrollmentCount} active</span>
                             </span>
                         </button>
-                        <button type="button" class="ad-mode-card" data-aac-tab="grades" role="tab" aria-selected="false" aria-controls="grades">
-                            <span class="d-flex align-items-start gap-14">
-                                <span class="ad-mode-icon bg-warning-50 text-warning-600 text-22"><i class="ph ph-seal-check"></i></span>
-                                <span class="min-w-0 ad-mode-content">
-                                    <span class="d-block text-17 fw-semibold text-neutral-800 mb-5">Grades</span>
-                                    <span class="d-block text-13 text-main-600 fw-semibold">${gradeRecordCount} grades | ${gradeSheetCount} sheets</span>
-                                </span>
+                        <button type="button" class="la-mode-card" data-aac-tab="grades" role="tab" aria-selected="false" aria-controls="grades">
+                            <span class="la-mode-icon bg-warning-50 text-warning-600 text-24"><i class="ph ph-seal-check"></i></span>
+                            <span class="min-w-0">
+                                <span class="text-20 fw-semibold text-neutral-800 d-block mb-8">Grades</span>
+                                <span class="text-13 text-main-600 fw-semibold">${gradeRecordCount} grades | ${gradeSheetCount} sheets</span>
                             </span>
                         </button>
-                        <button type="button" class="ad-mode-card" data-aac-tab="certificates" role="tab" aria-selected="false" aria-controls="certificates">
-                            <span class="d-flex align-items-start gap-14">
-                                <span class="ad-mode-icon bg-info-50 text-info-600 text-22"><i class="ph ph-certificate"></i></span>
-                                <span class="min-w-0 ad-mode-content">
-                                    <span class="d-block text-17 fw-semibold text-neutral-800 mb-5">Certificates</span>
-                                    <span class="d-block text-13 text-main-600 fw-semibold">${certificateCount} certificates | ${publishedGradeSheetCount} published sheets</span>
-                                </span>
-                            </span>
-                        </button>
-                        <button type="button" class="ad-mode-card" data-aac-tab="attendance" role="tab" aria-selected="false" aria-controls="attendance">
-                            <span class="d-flex align-items-start gap-14">
-                                <span class="ad-mode-icon bg-success-50 text-success-600 text-22"><i class="ph ph-user-check"></i></span>
-                                <span class="min-w-0 ad-mode-content">
-                                    <span class="d-block text-17 fw-semibold text-neutral-800 mb-5">Attendance</span>
-                                    <span class="d-block text-13 text-main-600 fw-semibold">${attendanceCount} records | ${absenceCount} absences</span>
-                                </span>
+                        <button type="button" class="la-mode-card" data-aac-tab="certificates" role="tab" aria-selected="false" aria-controls="certificates">
+                            <span class="la-mode-icon bg-info-50 text-info-600 text-24"><i class="ph ph-certificate"></i></span>
+                            <span class="min-w-0">
+                                <span class="text-20 fw-semibold text-neutral-800 d-block mb-8">Certificates</span>
+                                <span class="text-13 text-main-600 fw-semibold">${certificateCount} certificates | ${publishedGradeSheetCount} published sheets</span>
                             </span>
                         </button>
                     </div>
+                    </c:if>
 
+                <c:if test="${not attendanceOnly}">
                 <section id="enrollments" class="ad-tab-panel" data-aac-panel="enrollments" role="tabpanel">
-                <div class="aac-surface px-24 py-24 mb-24">
+                <div class="aac-surface gape-structured-management-panel px-24 py-24 mb-24"
+                     data-gape-sort-root
+                     data-gape-group-item-label="student"
+                     data-deferred-management-root
+                     data-deferred-management-kind="enrollments"
+                     data-deferred-management-endpoint="${pageContext.request.contextPath}${attendanceBasePath}"
+                     data-deferred-management-page-parameter="enrollmentsPage"
+                     data-deferred-management-scope-parameter="enrollmentsScope"
+                     data-deferred-management-load-all-parameter="enrollmentsLoadAll"
+                     data-deferred-management-active-scope="active"
+                     data-deferred-management-archive-scope="completed"
+                     data-deferred-management-current-page="${enrollmentManagementCurrentPage}"
+                     data-deferred-management-total="${enrollmentManagementTotal}"
+                     data-deferred-management-page-size="10"
+                     data-deferred-management-showing-all="${enrollmentManagementLoadAll}"
+                     data-deferred-management-archive-total="${enrollmentManagementCompletedTotal}">
+                    <c:set var="enrollmentManagementIdPrefix" value="${enrollmentManagementScope eq 'completed' ? 'completed_' : 'active_'}"/>
                     <div class="gape-management-card__header d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
                         <div>
-                            <h2 class="text-18 fw-medium text-neutral-700 mb-4">Enrollments</h2>
+                            <c:choose>
+                                <c:when test="${enrollmentManagementScope eq 'completed'}"><h2 class="text-18 fw-medium text-neutral-700 mb-4">Completed Enrollments</h2></c:when>
+                                <c:otherwise><h2 class="text-18 fw-medium text-neutral-700 mb-4">Enrollments</h2></c:otherwise>
+                            </c:choose>
                             <div class="gape-management-summary" aria-label="Enrollment summary">
                                 <span>${enrollmentCount} enrollments</span>
                                 <span>${activeEnrollmentCount} active</span>
                                 <span>${pendingEnrollmentCount} pending</span>
                             </div>
                         </div>
-                        <span class="gape-management-card__icon bg-main-50 text-main-600 w-44 h-44 rounded-8 d-inline-flex align-items-center justify-content-center text-22">
-                            <i class="ph ph-student"></i>
-                        </span>
+                        <div class="d-flex align-items-center gap-10 flex-wrap">
+                            <div class="gape-learning-actions d-flex align-items-center gap-12 flex-wrap" data-enrollment-controls>
+                                <div class="dropdown">
+                                    <button type="button"
+                                            class="gape-filter-toggle border-neutral-30 border px-20 py-12 rounded-12 fw-semibold text-neutral-700 hover-bg-main-50 transition-03 bg-white d-flex align-items-center gap-8"
+                                            data-bs-toggle="dropdown"
+                                            data-bs-auto-close="outside"
+                                            data-gape-sort-toggle
+                                            aria-expanded="false">
+                                        <i class="ph ph-sort-ascending"></i>Sort by
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-sort-option data-sort-field="name" data-sort-normal="asc" data-sort-state="none" aria-pressed="false">
+                                                <span>Name</span>
+                                                <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-sort-option data-sort-field="date" data-sort-normal="desc" data-sort-type="date" data-sort-state="none" aria-pressed="false">
+                                                <span>Date</span>
+                                                <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-sort-option data-sort-field="status" data-sort-normal="asc" data-sort-state="none" aria-pressed="false">
+                                                <span>State</span>
+                                                <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <span class="gape-management-card__icon bg-main-50 text-main-600 w-44 h-44 rounded-8 d-inline-flex align-items-center justify-content-center text-22">
+                                <i class="ph ph-student"></i>
+                            </span>
+                        </div>
                     </div>
+                    <div data-deferred-management-active-content>
+                    <div data-deferred-management-page-content>
                     <div class="gape-desktop-table">
                         <table class="table mb-0">
                             <thead>
@@ -1014,9 +1211,19 @@
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
                             </tr>
                             </thead>
-                            <tbody>
-                            <c:forEach var="group" items="${enrollmentGroups}">
-                                <tr class="hover-bg-neutral-20 border-bottom transition-03">
+                            <tbody data-gape-sort-list>
+                            <c:forEach var="group" items="${enrollmentGroups}" varStatus="enrollmentLoop">
+                                <tr class="hover-bg-neutral-20 border-bottom transition-03"
+                                    data-gape-sort-row
+                                    data-gape-detail-id="enrollmentGroup${enrollmentManagementIdPrefix}${group.studentUserId}"
+                                    data-gape-mobile-id="enrollmentMobileGroup${enrollmentManagementIdPrefix}${group.studentUserId}"
+                                    data-sort-index="${enrollmentLoop.index}"
+                                    data-sort-name="${fn:escapeXml(group.studentDisplayLabel)}"
+                                    data-sort-email="${fn:escapeXml(group.studentEmail)}"
+                                    data-sort-date="${fn:escapeXml(group.primaryEnrollment.startDateSort)}"
+                                    data-sort-status="${fn:escapeXml(group.primaryEnrollment.stateLabel)}"
+                                    data-sort-course-count="${group.enrollmentCount}"
+                                    data-sort-total-count="${group.enrollmentCount}">
                                     <td class="py-20 px-20 text-14 text-neutral-500">
                                         <span class="fw-medium text-neutral-700"><c:out value="${group.studentDisplayLabel}"/></span>
                                         <span class="d-block text-12">${group.enrollmentCount} enrollments</span>
@@ -1024,177 +1231,164 @@
                                     <td class="py-20 px-20 text-14 text-neutral-500">
                                         <c:out value="${group.studentEmail}"/>
                                     </td>
-                                    <td class="py-20 px-20 text-14 text-neutral-500">${group.courseEnrollmentCount}</td>
+                                    <td class="py-20 px-20 text-14 text-neutral-500">${group.enrollmentCount}</td>
                                     <td class="py-20 px-20">
                                         <div class="aac-state-summary">
-                                            <c:forEach var="summary" items="${group.courseStateSummaries}">
+                                            <c:forEach var="summary" items="${group.stateSummaries}">
                                                 <span class="${summary.badgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12">${summary.count} <c:out value="${summary.label}"/></span>
                                             </c:forEach>
-                                            <c:if test="${empty group.courseStateSummaries}">
+                                            <c:if test="${empty group.stateSummaries}">
                                                 <span class="aac-state-empty">No enrollments</span>
                                             </c:if>
                                         </div>
                                     </td>
                                     <td class="py-20 px-20 text-end">
-                                        <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show all enrollments" data-bs-toggle="collapse" data-bs-target="#enrollmentGroup${group.studentUserId}" aria-expanded="false">
+                                        <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show all enrollments" data-bs-toggle="collapse" data-bs-target="#enrollmentGroup${enrollmentManagementIdPrefix}${group.studentUserId}" aria-expanded="false">
                                             <i class="ph ph-caret-down"></i>
                                         </button>
                                     </td>
                                 </tr>
-                                <tr class="collapse" id="enrollmentGroup${group.studentUserId}">
+                                <tr class="collapse" id="enrollmentGroup${enrollmentManagementIdPrefix}${group.studentUserId}">
                                     <td colspan="5" class="aac-expanded-cell">
                                         <div class="aac-expanded-panel">
                                             <div class="aac-expanded-panel__header">
                                                 <div>
                                                     <h3 class="text-16 fw-semibold text-neutral-800 mb-4">Enrollments</h3>
-                                                    <span class="text-13 text-neutral-600"><c:out value="${group.studentDisplayLabel}"/> | ${group.courseEnrollmentCount} enrollments | ${group.enrollmentCount} total</span>
+                                                    <span class="text-13 text-neutral-600"><c:out value="${group.studentDisplayLabel}"/> | ${group.enrollmentCount} enrollment contexts</span>
                                                 </div>
                                             </div>
                                             <div class="aac-tree">
                                                 <c:forEach var="courseGroup" items="${group.courseGroups}">
                                                     <c:set var="item" value="${courseGroup.enrollment}"/>
-                                                    <c:set var="enrollmentModalId" value="enrollment${item.modalKey}"/>
+                                                    <c:set var="enrollmentModalId" value="enrollment${enrollmentManagementIdPrefix}${item.modalKey}"/>
                                                     <article class="aac-tree-node aac-tree-node--course">
                                                         <div class="aac-tree-row">
                                                             <div class="aac-tree-main">
                                                                 <span class="aac-tree-icon bg-main-50 text-main-600"><i class="ph ph-graduation-cap"></i></span>
                                                                 <div class="min-w-0">
                                                                     <span class="aac-tree-title"><c:out value="${item.contextLabel}"/></span>
-                                                                    <span class="aac-tree-meta"><c:out value="${item.periodLabel}"/></span>
+                                                                    <span class="aac-tree-meta" data-gape-datetime-display><c:out value="${item.periodLabel}"/></span>
                                                                 </div>
                                                             </div>
                                                             <div class="aac-tree-count">
-                                                                <span class="aac-tree-count-value">${courseGroup.subjectEnrollmentCount}</span>
+                                                                <span class="aac-tree-count-value">${courseGroup.classGroupEnrollmentCount}</span>
                                                             </div>
                                                             <div class="aac-tree-status">
                                                                 <div class="aac-state-summary">
-                                                                    <c:forEach var="summary" items="${courseGroup.subjectStateSummaries}">
+                                                                    <c:forEach var="summary" items="${courseGroup.classGroupStateSummaries}">
                                                                         <span class="${summary.badgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12">${summary.count} <c:out value="${summary.label}"/></span>
                                                                     </c:forEach>
-                                                                    <c:if test="${empty courseGroup.subjectStateSummaries}">
-                                                                        <span class="aac-state-empty">No enrollments</span>
+                                                                    <c:if test="${empty courseGroup.classGroupStateSummaries}">
+                                                                        <span class="${item.stateBadgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12"><c:out value="${item.stateLabel}"/></span>
                                                                     </c:if>
                                                                 </div>
                                                             </div>
                                                             <div class="aac-tree-actions">
-                                                                <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show subject enrollments" data-bs-toggle="collapse" data-bs-target="#courseSubjects${item.modalKey}" aria-expanded="false"><i class="ph ph-caret-down"></i></button>
-                                                                <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Detail"><i class="ph ph-eye"></i></button>
-                                                                <button type="button" class="aac-icon-button bg-info-50 text-info-600" title="Edit" aria-label="Edit enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Edit"><i class="ph ph-pencil-simple-line"></i></button>
-                                                                <button type="button" class="aac-icon-button bg-danger-50 text-danger-600" title="Delete" aria-label="Delete enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Delete"><i class="ph ph-trash"></i></button>
+                                                                 <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show class group enrollments" data-bs-toggle="collapse" data-bs-target="#courseClasses${enrollmentManagementIdPrefix}${item.modalKey}" aria-expanded="false"><i class="ph ph-caret-down"></i></button>
+                                                                 <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Detail"><i class="ph ph-eye"></i></button>
+                                                                 <button type="button" class="aac-icon-button bg-danger-50 text-danger-600" title="Delete" aria-label="Delete enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Delete"><i class="ph ph-trash"></i></button>
                                                             </div>
                                                         </div>
-                                                        <div class="collapse aac-tree-children" id="courseSubjects${item.modalKey}">
-                                                            <c:forEach var="subjectGroup" items="${courseGroup.subjectGroups}">
-                                                                <c:set var="item" value="${subjectGroup.enrollment}"/>
-                                                                <c:set var="enrollmentModalId" value="enrollment${item.modalKey}"/>
-                                                                <article class="aac-tree-node aac-tree-node--subject">
+                                                        <div class="collapse aac-tree-children" id="courseClasses${enrollmentManagementIdPrefix}${item.modalKey}">
+                                                            <c:forEach var="classGroup" items="${courseGroup.classGroups}">
+                                                                <c:set var="item" value="${classGroup.enrollment}"/>
+                                                                <c:set var="enrollmentModalId" value="enrollment${enrollmentManagementIdPrefix}${item.modalKey}"/>
+                                                                <article class="aac-tree-node aac-tree-node--class">
                                                                     <div class="aac-tree-row">
                                                                         <div class="aac-tree-main">
-                                                                            <span class="aac-tree-icon bg-success-50 text-success-600"><i class="ph ph-book-open"></i></span>
+                                                                            <span class="aac-tree-icon bg-warning-50 text-warning-600"><i class="ph ph-users-three"></i></span>
                                                                             <div class="min-w-0">
                                                                                 <span class="aac-tree-title"><c:out value="${item.contextLabel}"/></span>
-                                                                                <span class="aac-tree-meta"><c:out value="${item.periodLabel}"/></span>
+                                                                                <span class="aac-tree-meta"><c:out value="${item.contextDetail}"/></span>
                                                                             </div>
                                                                         </div>
                                                                         <div class="aac-tree-count">
-                                                                            <span class="aac-tree-count-value">${subjectGroup.classGroupEnrollmentCount}</span>
+                                                                            <span class="aac-tree-count-value">${classGroup.assessmentEnrollmentCount}</span>
                                                                         </div>
                                                                         <div class="aac-tree-status">
                                                                             <div class="aac-state-summary">
-                                                                                <c:forEach var="summary" items="${subjectGroup.classGroupStateSummaries}">
+                                                                                <c:forEach var="summary" items="${classGroup.assessmentStateSummaries}">
                                                                                     <span class="${summary.badgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12">${summary.count} <c:out value="${summary.label}"/></span>
                                                                                 </c:forEach>
-                                                                                <c:if test="${empty subjectGroup.classGroupStateSummaries}">
-                                                                                    <span class="aac-state-empty">No enrollments</span>
+                                                                                <c:if test="${empty classGroup.assessmentStateSummaries}">
+                                                                                    <span class="${item.stateBadgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12"><c:out value="${item.stateLabel}"/></span>
                                                                                 </c:if>
                                                                             </div>
                                                                         </div>
                                                                         <div class="aac-tree-actions">
-                                                                            <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show class group enrollments" data-bs-toggle="collapse" data-bs-target="#subjectClasses${item.modalKey}" aria-expanded="false"><i class="ph ph-caret-down"></i></button>
+                                                                            <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show assessment enrollments" data-bs-toggle="collapse" data-bs-target="#classAssessments${enrollmentManagementIdPrefix}${item.modalKey}" aria-expanded="false"><i class="ph ph-caret-down"></i></button>
                                                                             <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Detail"><i class="ph ph-eye"></i></button>
-                                                                            <button type="button" class="aac-icon-button bg-info-50 text-info-600" title="Edit" aria-label="Edit enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Edit"><i class="ph ph-pencil-simple-line"></i></button>
                                                                             <button type="button" class="aac-icon-button bg-danger-50 text-danger-600" title="Delete" aria-label="Delete enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Delete"><i class="ph ph-trash"></i></button>
                                                                         </div>
                                                                     </div>
-                                                                    <div class="collapse aac-tree-children" id="subjectClasses${item.modalKey}">
-                                                                        <c:forEach var="classGroup" items="${subjectGroup.classGroups}">
-                                                                            <c:set var="item" value="${classGroup.enrollment}"/>
-                                                                            <c:set var="enrollmentModalId" value="enrollment${item.modalKey}"/>
-                                                                            <article class="aac-tree-node aac-tree-node--class">
+                                                                    <div class="collapse aac-tree-children" id="classAssessments${enrollmentManagementIdPrefix}${item.modalKey}">
+                                                                        <c:forEach var="item" items="${classGroup.assessmentEnrollments}">
+                                                                            <c:set var="enrollmentModalId" value="enrollment${enrollmentManagementIdPrefix}${item.modalKey}"/>
+                                                                            <article class="aac-tree-node aac-tree-node--assessment">
                                                                                 <div class="aac-tree-row">
                                                                                     <div class="aac-tree-main">
-                                                                                        <span class="aac-tree-icon bg-warning-50 text-warning-600"><i class="ph ph-users-three"></i></span>
+                                                                                        <span class="aac-tree-icon bg-info-50 text-info-600"><i class="ph ph-clipboard-text"></i></span>
                                                                                         <div class="min-w-0">
                                                                                             <span class="aac-tree-title"><c:out value="${item.contextLabel}"/></span>
                                                                                             <span class="aac-tree-meta"><c:out value="${item.contextDetail}"/></span>
                                                                                         </div>
                                                                                     </div>
                                                                                     <div class="aac-tree-count">
-                                                                                        <span class="aac-tree-count-value">${classGroup.assessmentEnrollmentCount}</span>
+                                                                                        <span class="aac-tree-count-value">0</span>
                                                                                     </div>
                                                                                     <div class="aac-tree-status">
                                                                                         <div class="aac-state-summary">
-                                                                                            <c:forEach var="summary" items="${classGroup.assessmentStateSummaries}">
-                                                                                                <span class="${summary.badgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12">${summary.count} <c:out value="${summary.label}"/></span>
-                                                                                            </c:forEach>
-                                                                                            <c:if test="${empty classGroup.assessmentStateSummaries}">
-                                                                                                <span class="aac-state-empty">No enrollments</span>
-                                                                                            </c:if>
+                                                                                            <span class="${item.stateBadgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12"><c:out value="${item.stateLabel}"/></span>
                                                                                         </div>
                                                                                     </div>
                                                                                     <div class="aac-tree-actions">
-                                                                                        <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show assessment enrollments" data-bs-toggle="collapse" data-bs-target="#classAssessments${item.modalKey}" aria-expanded="false"><i class="ph ph-caret-down"></i></button>
                                                                                         <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Detail"><i class="ph ph-eye"></i></button>
                                                                                         <button type="button" class="aac-icon-button bg-danger-50 text-danger-600" title="Delete" aria-label="Delete enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Delete"><i class="ph ph-trash"></i></button>
                                                                                     </div>
                                                                                 </div>
-                                                                                <div class="collapse aac-tree-children" id="classAssessments${item.modalKey}">
-                                                                                    <c:forEach var="item" items="${classGroup.assessmentEnrollments}">
-                                                                                        <c:set var="enrollmentModalId" value="enrollment${item.modalKey}"/>
-                                                                                        <article class="aac-tree-node aac-tree-node--assessment">
-                                                                                            <div class="aac-tree-row">
-                                                                                                <div class="aac-tree-main">
-                                                                                                    <span class="aac-tree-icon bg-info-50 text-info-600"><i class="ph ph-clipboard-text"></i></span>
-                                                                                                    <div class="min-w-0">
-                                                                                                        <span class="aac-tree-title"><c:out value="${item.contextLabel}"/></span>
-                                                                                                        <span class="aac-tree-meta"><c:out value="${item.contextDetail}"/></span>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                                <div class="aac-tree-count">
-                                                                                                    <span class="aac-tree-count-value">0</span>
-                                                                                                </div>
-                                                                                                <div class="aac-tree-status">
-                                                                                                    <div class="aac-state-summary">
-                                                                                                        <span class="${item.stateBadgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12"><c:out value="${item.stateLabel}"/></span>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                                <div class="aac-tree-actions">
-                                                                                                    <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Detail"><i class="ph ph-eye"></i></button>
-                                                                                                    <button type="button" class="aac-icon-button bg-danger-50 text-danger-600" title="Delete" aria-label="Delete enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Delete"><i class="ph ph-trash"></i></button>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        </article>
-                                                                                    </c:forEach>
-                                                                                    <c:if test="${empty classGroup.assessmentEnrollments}">
-                                                                                        <div class="aac-tree-empty">No assessment enrollments for this class group.</div>
-                                                                                    </c:if>
-                                                                                </div>
                                                                             </article>
                                                                         </c:forEach>
-                                                                        <c:if test="${empty subjectGroup.classGroups}">
-                                                                            <div class="aac-tree-empty">No class group enrollments for this subject.</div>
+                                                                        <c:if test="${empty classGroup.assessmentEnrollments}">
+                                                                            <div class="aac-tree-empty">No assessment enrollments for this class group.</div>
                                                                         </c:if>
                                                                     </div>
                                                                 </article>
                                                             </c:forEach>
-                                                            <c:if test="${empty courseGroup.subjectGroups}">
-                                                                <div class="aac-tree-empty">No subject enrollments for this course.</div>
+                                                            <c:if test="${empty courseGroup.classGroups}">
+                                                                <div class="aac-tree-empty">No class group enrollments for this course.</div>
                                                             </c:if>
                                                         </div>
                                                     </article>
                                                 </c:forEach>
-                                                <c:if test="${empty group.courseGroups}">
-                                                    <div class="aac-tree-empty">No course enrollments for this student.</div>
+                                                <c:if test="${not empty group.unattachedEnrollments}">
+                                                    <div class="aac-tree-empty">Other enrollment contexts</div>
+                                                    <c:forEach var="item" items="${group.unattachedEnrollments}">
+                                                        <c:set var="enrollmentModalId" value="enrollment${enrollmentManagementIdPrefix}${item.modalKey}"/>
+                                                        <article class="aac-tree-node aac-tree-node--assessment">
+                                                            <div class="aac-tree-row">
+                                                                <div class="aac-tree-main">
+                                                                    <c:choose>
+                                                                        <c:when test="${item.classGroup}"><span class="aac-tree-icon bg-warning-50 text-warning-600"><i class="ph ph-users-three"></i></span></c:when>
+                                                                        <c:when test="${item.assessment}"><span class="aac-tree-icon bg-info-50 text-info-600"><i class="ph ph-clipboard-text"></i></span></c:when>
+                                                                        <c:otherwise><span class="aac-tree-icon bg-neutral-20 text-neutral-600"><i class="ph ph-link"></i></span></c:otherwise>
+                                                                    </c:choose>
+                                                                    <div class="min-w-0">
+                                                                        <span class="aac-tree-title"><c:out value="${item.contextType}"/> — <c:out value="${item.contextLabel}"/></span>
+                                                                        <span class="aac-tree-meta"><c:out value="${item.contextDetail}"/></span>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="aac-tree-count"><span class="aac-tree-count-value">1</span></div>
+                                                                <div class="aac-tree-status"><span class="${item.stateBadgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12"><c:out value="${item.stateLabel}"/></span></div>
+                                                                <div class="aac-tree-actions">
+                                                                    <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Detail"><i class="ph ph-eye"></i></button>
+                                                                    <button type="button" class="aac-icon-button bg-danger-50 text-danger-600" title="Delete" aria-label="Delete enrollment" data-bs-toggle="modal" data-bs-target="#${enrollmentModalId}Delete"><i class="ph ph-trash"></i></button>
+                                                                </div>
+                                                            </div>
+                                                        </article>
+                                                    </c:forEach>
+                                                </c:if>
+                                                <c:if test="${empty group.courseGroups and empty group.unattachedEnrollments}">
+                                                    <div class="aac-tree-empty">No enrollment contexts for this student.</div>
                                                 </c:if>
                                             </div>
                                         </div>
@@ -1209,28 +1403,30 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="gape-mobile-list">
+                    <div class="gape-mobile-list" data-gape-mobile-list>
                         <c:forEach var="group" items="${enrollmentGroups}">
-                            <article class="gape-mobile-row">
+                            <article class="gape-mobile-row"
+                                     data-gape-mobile-row
+                                     data-gape-mobile-row-id="enrollmentMobileGroup${enrollmentManagementIdPrefix}${group.studentUserId}">
                                 <div class="gape-mobile-row__header">
                                     <div>
                                         <div class="gape-mobile-title"><c:out value="${group.studentDisplayLabel}"/></div>
                                         <div class="gape-mobile-subtitle"><c:out value="${group.studentEmail}"/></div>
                                     </div>
-                                    <span class="gape-mobile-badge px-12 py-7 border-neutral-30 border rounded-pill text-12">${group.courseEnrollmentCount} enrollments</span>
+                                    <span class="gape-mobile-badge px-12 py-7 border-neutral-30 border rounded-pill text-12">${group.enrollmentCount} enrollments</span>
                                 </div>
                                 <div class="gape-mobile-kv">
                                     <strong>Email</strong>
                                     <span><c:out value="${group.studentEmail}"/></span>
                                     <strong>Enrollments</strong>
-                                    <span>${group.courseEnrollmentCount}</span>
+                                    <span>${group.enrollmentCount}</span>
                                     <strong>State</strong>
                                     <span>
                                         <span class="aac-state-summary">
-                                            <c:forEach var="summary" items="${group.courseStateSummaries}">
+                                            <c:forEach var="summary" items="${group.stateSummaries}">
                                                 <span class="${summary.badgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12">${summary.count} <c:out value="${summary.label}"/></span>
                                             </c:forEach>
-                                            <c:if test="${empty group.courseStateSummaries}">
+                                            <c:if test="${empty group.stateSummaries}">
                                                 <span class="aac-state-empty">No enrollments</span>
                                             </c:if>
                                         </span>
@@ -1246,7 +1442,7 @@
                     </div>
                     <c:forEach var="group" items="${enrollmentGroups}">
                         <c:forEach var="item" items="${group.enrollments}">
-                            <c:set var="enrollmentModalId" value="enrollment${item.modalKey}"/>
+                            <c:set var="enrollmentModalId" value="enrollment${enrollmentManagementIdPrefix}${item.modalKey}"/>
                             <div class="modal fade" id="${enrollmentModalId}Detail" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog modal-dialog-centered">
                                     <div class="modal-content rounded-8 border-0">
@@ -1260,51 +1456,10 @@
                                                 <div class="col-md-6"><span class="text-12 text-neutral-500 d-block mb-6">Type</span><strong class="text-14 text-neutral-800"><c:out value="${item.contextType}"/></strong></div>
                                                 <div class="col-md-6"><span class="text-12 text-neutral-500 d-block mb-6">Context</span><strong class="text-14 text-neutral-800"><c:out value="${item.contextLabel}"/></strong></div>
                                                 <div class="col-md-6"><span class="text-12 text-neutral-500 d-block mb-6">State</span><span class="${item.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12"><c:out value="${item.stateLabel}"/></span></div>
-                                                <div class="col-md-6"><span class="text-12 text-neutral-500 d-block mb-6">Period</span><strong class="text-14 text-neutral-800"><c:out value="${item.periodLabel}"/></strong></div>
+                                                <div class="col-md-6"><span class="text-12 text-neutral-500 d-block mb-6">Occurrence period (read-only)</span><strong class="text-14 text-neutral-800" data-gape-datetime-display><c:out value="${item.periodLabel}"/></strong></div>
                                                 <div class="col-12"><span class="text-12 text-neutral-500 d-block mb-6">Details</span><span class="text-14 text-neutral-700"><c:out value="${item.contextDetail}"/></span></div>
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="modal fade" id="${enrollmentModalId}Edit" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content rounded-8 border-0">
-                                        <div class="modal-header border-neutral-30">
-                                            <h5 class="modal-title text-18 fw-semibold">Edit enrollment</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <form action="${pageContext.request.contextPath}${item.updateAction}" method="post">
-                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                            <input type="hidden" name="returnTo" value="${pageContext.request.contextPath}/learning/attendance#enrollments">
-                                            <div class="modal-body">
-                                                <div class="row gy-3">
-                                                    <div class="col-md-4">
-                                                        <label class="text-13 text-neutral-600 mb-6 d-block">State</label>
-                                                        <select name="state" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
-                                                            <option value="active" ${item.stateValue == 'active' ? 'selected' : ''}>Active</option>
-                                                            <option value="inactive" ${item.stateValue == 'inactive' ? 'selected' : ''}>Inactive</option>
-                                                            <option value="completed" ${item.stateValue == 'completed' ? 'selected' : ''}>Completed</option>
-                                                            <option value="withdrawn" ${item.stateValue == 'withdrawn' ? 'selected' : ''}>Withdrawn</option>
-                                                            <option value="pending" ${item.stateValue == 'pending' ? 'selected' : ''}>Pending</option>
-                                                            <option value="rejected" ${item.stateValue == 'rejected' ? 'selected' : ''}>Rejected</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <label class="text-13 text-neutral-600 mb-6 d-block">Start</label>
-                                                        <input type="date" name="startDate" value="<c:out value='${item.startDateValue}'/>" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <label class="text-13 text-neutral-600 mb-6 d-block">End</label>
-                                                        <input type="date" name="endDate" value="<c:out value='${item.endDateValue}'/>" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer border-neutral-30">
-                                                <button type="button" class="border border-neutral-30 text-neutral-600 bg-white px-20 py-10 rounded-8 fw-semibold" data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white border-0">Save</button>
-                                            </div>
-                                        </form>
                                     </div>
                                 </div>
                             </div>
@@ -1331,327 +1486,687 @@
                             </div>
                         </c:forEach>
                     </c:forEach>
-                </div>
+                    </div>
+                    </div>
+                    <div class="gape-learning-management-load-state mt-20" data-deferred-management-load-state>
+                        <span><strong>${enrollmentManagementTotal}</strong> current enrollment groups load in pages of 10.</span>
+                        <c:if test="${enrollmentManagementCompletedTotal > 0}">
+                            <span><strong>${enrollmentManagementCompletedTotal}</strong> completed enrollments load only when their section is opened.</span>
+                        </c:if>
+                    </div>
+                    <div class="d-flex justify-content-end mt-12" data-deferred-management-pagination data-total="${enrollmentManagementTotal}" data-page-size="10" ${enrollmentManagementTotal > 10 ? '' : 'hidden'}>
+                        <div class="gape-list-pagination">
+                            <nav class="gape-list-pagination-pages" aria-label="Enrollment pages" data-deferred-management-pagination-pages></nav>
+                            <button type="button" class="gape-list-load-all" data-deferred-management-load-all>Load All</button>
+                        </div>
+                    </div>
+                    <c:if test="${enrollmentManagementCompletedTotal > 0}">
+                        <section class="gape-learning-management-completed-wrapper mt-20" data-deferred-management-archive>
+                            <div class="gape-learning-management-completed-divider">Completed Enrollments</div>
+                            <article class="gape-learning-management-completed-node border rounded-8 px-18 py-16 bg-white">
+                                <div class="gape-deferred-management-archive-row">
+                                    <div class="d-flex align-items-center gap-12 min-w-0">
+                                        <span class="gape-learning-management-group-icon bg-danger-50 text-danger-600"><i class="ph ph-archive" aria-hidden="true"></i></span>
+                                        <div class="min-w-0">
+                                            <span class="fw-medium text-14 text-neutral-700 d-block">Completed Enrollments</span>
+                                            <span class="gape-node-meta text-12"><span>Past course-occurrence enrollments</span></span>
+                                        </div>
+                                    </div>
+                                    <div class="gape-deferred-management-archive-spacer"></div>
+                                    <div><span class="cd-element-count">${enrollmentManagementCompletedTotal}</span></div>
+                                    <div><span class="bg-neutral-20 text-neutral-600 px-14 py-6 border-neutral-30 border rounded-pill text-13">Completed</span></div>
+                                    <div class="d-flex justify-content-end"><button type="button" class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600" data-deferred-management-archive-toggle aria-expanded="false" title="Show completed enrollments" aria-label="Show completed enrollments"><i class="ph ph-caret-down" aria-hidden="true"></i></button></div>
+                                </div>
+                                <div class="gape-learning-management-completed-panel d-none" data-deferred-management-archive-panel>
+                                    <div class="gape-learning-management-completed-content d-flex flex-column gap-12" data-deferred-management-archive-content>
+                                        <div class="gape-learning-management-deferred-copy text-13 text-neutral-500">Open this section to load ${enrollmentManagementCompletedTotal} completed enrollments.</div>
+                                    </div>
+                                </div>
+                            </article>
+                        </section>
+                    </c:if>
 
+                </div>
                 </section>
 
                 <section id="grades" class="ad-tab-panel" data-aac-panel="grades" role="tabpanel" hidden>
-                <div class="aac-surface px-24 py-24 mb-24">
+                <div class="aac-surface gape-structured-management-panel px-24 py-24 mb-24"
+                     data-gape-sort-root
+                     data-gape-group-item-label="grade sheet"
+                     data-deferred-management-root
+                     data-deferred-management-kind="grades"
+                     data-deferred-management-endpoint="${pageContext.request.contextPath}${attendanceBasePath}"
+                     data-deferred-management-page-parameter="gradesPage"
+                     data-deferred-management-scope-parameter="gradesScope"
+                     data-deferred-management-load-all-parameter="gradesLoadAll"
+                     data-deferred-management-active-scope="active"
+                     data-deferred-management-archive-scope="published"
+                     data-deferred-management-current-page="${gradeManagementCurrentPage}"
+                     data-deferred-management-total="${gradeManagementTotal}"
+                     data-deferred-management-page-size="10"
+                     data-deferred-management-showing-all="${gradeManagementLoadAll}"
+                     data-deferred-management-archive-total="${gradeManagementPublishedTotal}">
                     <div class="gape-management-card__header d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
                         <div>
-                            <h2 class="text-18 fw-medium text-neutral-700 mb-4">Grades</h2>
+                            <c:choose>
+                                <c:when test="${gradeManagementScope eq 'published'}"><h2 class="text-18 fw-medium text-neutral-700 mb-4">Published Grades</h2></c:when>
+                                <c:otherwise><h2 class="text-18 fw-medium text-neutral-700 mb-4">Grades</h2></c:otherwise>
+                            </c:choose>
                             <div class="gape-management-summary" aria-label="Grade summary">
                                 <span>${gradeRecordCount} grades</span>
                                 <span>${gradeSheetCount} grade sheets</span>
                             </div>
                         </div>
-                        <span class="gape-management-card__icon bg-warning-50 text-warning-600 w-44 h-44 rounded-8 d-inline-flex align-items-center justify-content-center text-22">
-                            <i class="ph ph-seal-check"></i>
-                        </span>
+                        <div class="d-flex align-items-center gap-10 flex-wrap">
+                            <div class="gape-learning-actions d-flex align-items-center gap-12 flex-wrap" data-grade-controls>
+                                <div class="dropdown">
+                                    <button type="button"
+                                            class="gape-filter-toggle border-neutral-30 border px-20 py-12 rounded-12 fw-semibold text-neutral-700 hover-bg-main-50 transition-03 bg-white d-flex align-items-center gap-8"
+                                            data-bs-toggle="dropdown"
+                                            data-bs-auto-close="outside"
+                                            data-gape-sort-toggle
+                                            aria-expanded="false">
+                                        <i class="ph ph-sort-ascending"></i>Sort by
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-sort-option data-sort-field="name" data-sort-normal="asc" data-sort-state="none" aria-pressed="false">
+                                                <span>Name</span>
+                                                <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-sort-option data-sort-field="date" data-sort-normal="desc" data-sort-type="date" data-sort-state="none" aria-pressed="false">
+                                                <span>Date</span>
+                                                <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-sort-option data-sort-field="status" data-sort-normal="asc" data-sort-state="none" aria-pressed="false">
+                                                <span>State</span>
+                                                <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="dropdown">
+                                    <button type="button"
+                                            class="gape-filter-toggle border-neutral-30 border px-20 py-12 rounded-12 fw-semibold text-neutral-700 hover-bg-main-50 transition-03 bg-white d-flex align-items-center gap-8"
+                                            data-bs-toggle="dropdown"
+                                            data-bs-auto-close="outside"
+                                            data-gape-group-toggle
+                                            aria-expanded="false">
+                                        <i class="ph ph-stack"></i>Group by
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-group-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-group-option data-group-field="organization" data-group-normal="asc" data-group-state="none" aria-pressed="false">
+                                                <span>Organization</span>
+                                                <span class="gape-group-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-group-arrow gape-group-arrow--normal"></i><i class="ph ph-arrow-down gape-group-arrow gape-group-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-group-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-group-option data-group-field="course" data-group-normal="asc" data-group-state="none" aria-pressed="false">
+                                                <span>Courses</span>
+                                                <span class="gape-group-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-group-arrow gape-group-arrow--normal"></i><i class="ph ph-arrow-down gape-group-arrow gape-group-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-group-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-group-option data-group-field="subject" data-group-normal="asc" data-group-state="none" aria-pressed="false">
+                                                <span>Subjects</span>
+                                                <span class="gape-group-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-group-arrow gape-group-arrow--normal"></i><i class="ph ph-arrow-down gape-group-arrow gape-group-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-group-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-group-option data-group-field="classGroup" data-group-normal="asc" data-group-state="none" aria-pressed="false">
+                                                <span>Class Groups</span>
+                                                <span class="gape-group-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-group-arrow gape-group-arrow--normal"></i><i class="ph ph-arrow-down gape-group-arrow gape-group-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <span class="gape-management-card__icon bg-warning-50 text-warning-600 w-44 h-44 rounded-8 d-inline-flex align-items-center justify-content-center text-22">
+                                <i class="ph ph-seal-check"></i>
+                            </span>
+                        </div>
                     </div>
+                    <div data-deferred-management-active-content>
+                    <div data-deferred-management-page-content>
                     <%@ include file="/WEB-INF/fragments/learning-grades-certificates-content.jspf" %>
+                    </div>
+                    </div>
+
+                    <div class="gape-learning-management-load-state mt-20" data-deferred-management-load-state>
+                        <span><strong>${gradeManagementTotal}</strong> current grade groups load in pages of 10.</span>
+                        <c:if test="${gradeManagementPublishedTotal > 0}">
+                            <span><strong>${gradeManagementPublishedTotal}</strong> published grade groups load only when their section is opened.</span>
+                        </c:if>
+                    </div>
+                    <div class="d-flex justify-content-end mt-12" data-deferred-management-pagination data-total="${gradeManagementTotal}" data-page-size="10" ${gradeManagementTotal > 10 ? '' : 'hidden'}>
+                        <div class="gape-list-pagination">
+                            <nav class="gape-list-pagination-pages" aria-label="Grade pages" data-deferred-management-pagination-pages></nav>
+                            <button type="button" class="gape-list-load-all" data-deferred-management-load-all>Load All</button>
+                        </div>
+                    </div>
+                    <c:if test="${gradeManagementPublishedTotal > 0}">
+                        <section class="gape-learning-management-completed-wrapper mt-20" data-deferred-management-archive>
+                            <div class="gape-learning-management-completed-divider">Published Grades</div>
+                            <article class="gape-learning-management-completed-node border rounded-8 px-18 py-16 bg-white">
+                                <div class="gape-deferred-management-archive-row">
+                                    <div class="d-flex align-items-center gap-12 min-w-0">
+                                        <span class="gape-learning-management-group-icon bg-danger-50 text-danger-600"><i class="ph ph-archive" aria-hidden="true"></i></span>
+                                        <div class="min-w-0">
+                                            <span class="fw-medium text-14 text-neutral-700 d-block">Published Grades</span>
+                                            <span class="gape-node-meta text-12"><span>Released occurrence grade sheets</span></span>
+                                        </div>
+                                    </div>
+                                    <div class="gape-deferred-management-archive-spacer"></div>
+                                    <div><span class="cd-element-count">${gradeManagementPublishedTotal}</span></div>
+                                    <div><span class="bg-neutral-20 text-neutral-600 px-14 py-6 border-neutral-30 border rounded-pill text-13">Published</span></div>
+                                    <div class="d-flex justify-content-end"><button type="button" class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600" data-deferred-management-archive-toggle aria-expanded="false" title="Show published grades" aria-label="Show published grades"><i class="ph ph-caret-down" aria-hidden="true"></i></button></div>
+                                </div>
+                                <div class="gape-learning-management-completed-panel d-none" data-deferred-management-archive-panel>
+                                    <div class="gape-learning-management-completed-content d-flex flex-column gap-12" data-deferred-management-archive-content>
+                                        <div class="gape-learning-management-deferred-copy text-13 text-neutral-500">Open this section to load ${gradeManagementPublishedTotal} published grade groups.</div>
+                                    </div>
+                                </div>
+                            </article>
+                        </section>
+                    </c:if>
                 </div>
 
                 </section>
 
                 <section id="certificates" class="ad-tab-panel" data-aac-panel="certificates" role="tabpanel" hidden>
-                <div class="aac-surface px-24 py-24 mb-24">
+                <div class="aac-surface gape-structured-management-panel px-24 py-24 mb-24"
+                     data-gape-sort-root
+                     data-gape-group-item-label="student"
+                     data-deferred-management-root
+                     data-deferred-management-kind="certificates"
+                     data-deferred-management-endpoint="${pageContext.request.contextPath}${attendanceBasePath}"
+                     data-deferred-management-page-parameter="certificatesPage"
+                     data-deferred-management-scope-parameter="certificatesScope"
+                     data-deferred-management-load-all-parameter="certificatesLoadAll"
+                     data-deferred-management-active-scope="active"
+                     data-deferred-management-archive-scope="published"
+                     data-deferred-management-current-page="${certificateManagementCurrentPage}"
+                     data-deferred-management-total="${certificateManagementTotal}"
+                     data-deferred-management-page-size="10"
+                     data-deferred-management-showing-all="${certificateManagementLoadAll}"
+                     data-deferred-management-archive-total="${certificateManagementPublishedTotal}">
                     <div class="gape-management-card__header d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
                         <div>
-                            <h2 class="text-18 fw-medium text-neutral-700 mb-4">Certificates</h2>
+                            <c:choose>
+                                <c:when test="${certificateManagementScope eq 'published'}"><h2 class="text-18 fw-medium text-neutral-700 mb-4">Published Certificates</h2></c:when>
+                                <c:otherwise><h2 class="text-18 fw-medium text-neutral-700 mb-4">Certificates</h2></c:otherwise>
+                            </c:choose>
                             <div class="gape-management-summary" aria-label="Certificate summary">
                                 <span>${certificateCount} certificates</span>
                                 <span>${publishedGradeSheetCount} published sheets</span>
                             </div>
                         </div>
-                        <span class="gape-management-card__icon bg-info-50 text-info-600 w-44 h-44 rounded-8 d-inline-flex align-items-center justify-content-center text-22">
-                            <i class="ph ph-certificate"></i>
-                        </span>
+                        <div class="d-flex align-items-center gap-10 flex-wrap">
+                            <div class="gape-learning-actions d-flex align-items-center gap-12 flex-wrap" data-certificate-controls>
+                                <div class="dropdown">
+                                    <button type="button"
+                                            class="gape-filter-toggle border-neutral-30 border px-20 py-12 rounded-12 fw-semibold text-neutral-700 hover-bg-main-50 transition-03 bg-white d-flex align-items-center gap-8"
+                                            data-bs-toggle="dropdown"
+                                            data-bs-auto-close="outside"
+                                            data-gape-sort-toggle
+                                            aria-expanded="false">
+                                        <i class="ph ph-sort-ascending"></i>Sort by
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-sort-option data-sort-field="name" data-sort-normal="asc" data-sort-state="none" aria-pressed="false">
+                                                <span>Name</span>
+                                                <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-sort-option data-sort-field="date" data-sort-normal="desc" data-sort-type="date" data-sort-state="none" aria-pressed="false">
+                                                <span>Date</span>
+                                                <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-gape-sort-option data-sort-field="status" data-sort-normal="asc" data-sort-state="none" aria-pressed="false">
+                                                <span>State</span>
+                                                <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <span class="gape-management-card__icon bg-info-50 text-info-600 w-44 h-44 rounded-8 d-inline-flex align-items-center justify-content-center text-22">
+                                <i class="ph ph-certificate"></i>
+                            </span>
+                        </div>
                     </div>
+                    <div data-deferred-management-active-content>
+                    <div data-deferred-management-page-content>
                     <%@ include file="/WEB-INF/fragments/learning-certificates-content.jspf" %>
+                    </div>
+                    </div>
+
+                    <div class="gape-learning-management-load-state mt-20" data-deferred-management-load-state>
+                        <span><strong>${certificateManagementTotal}</strong> current certificate groups load in pages of 10.</span>
+                        <c:if test="${certificateManagementPublishedTotal > 0}">
+                            <span><strong>${certificateManagementPublishedTotal}</strong> published certificates load only when their section is opened.</span>
+                        </c:if>
+                    </div>
+                    <div class="d-flex justify-content-end mt-12" data-deferred-management-pagination data-total="${certificateManagementTotal}" data-page-size="10" ${certificateManagementTotal > 10 ? '' : 'hidden'}>
+                        <div class="gape-list-pagination">
+                            <nav class="gape-list-pagination-pages" aria-label="Certificate pages" data-deferred-management-pagination-pages></nav>
+                            <button type="button" class="gape-list-load-all" data-deferred-management-load-all>Load All</button>
+                        </div>
+                    </div>
+                    <c:if test="${certificateManagementPublishedTotal > 0}">
+                        <section class="gape-learning-management-completed-wrapper mt-20" data-deferred-management-archive>
+                            <div class="gape-learning-management-completed-divider">Published Certificates</div>
+                            <article class="gape-learning-management-completed-node border rounded-8 px-18 py-16 bg-white">
+                                <div class="gape-deferred-management-archive-row">
+                                    <div class="d-flex align-items-center gap-12 min-w-0">
+                                        <span class="gape-learning-management-group-icon bg-danger-50 text-danger-600"><i class="ph ph-archive" aria-hidden="true"></i></span>
+                                        <div class="min-w-0">
+                                            <span class="fw-medium text-14 text-neutral-700 d-block">Published Certificates</span>
+                                            <span class="gape-node-meta text-12"><span>Issued student certificates</span></span>
+                                        </div>
+                                    </div>
+                                    <div class="gape-deferred-management-archive-spacer"></div>
+                                    <div><span class="cd-element-count">${certificateManagementPublishedTotal}</span></div>
+                                    <div><span class="bg-neutral-20 text-neutral-600 px-14 py-6 border-neutral-30 border rounded-pill text-13">Published</span></div>
+                                    <div class="d-flex justify-content-end"><button type="button" class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600" data-deferred-management-archive-toggle aria-expanded="false" title="Show published certificates" aria-label="Show published certificates"><i class="ph ph-caret-down" aria-hidden="true"></i></button></div>
+                                </div>
+                                <div class="gape-learning-management-completed-panel d-none" data-deferred-management-archive-panel>
+                                    <div class="gape-learning-management-completed-content d-flex flex-column gap-12" data-deferred-management-archive-content>
+                                        <div class="gape-learning-management-deferred-copy text-13 text-neutral-500">Open this section to load ${certificateManagementPublishedTotal} published certificates.</div>
+                                    </div>
+                                </div>
+                            </article>
+                        </section>
+                    </c:if>
                 </div>
                 </section>
+                </c:if>
 
                 <section id="attendance" class="ad-tab-panel" data-aac-panel="attendance" role="tabpanel" hidden>
-                <div class="aac-surface px-24 py-24 mb-24">
+                <div class="aac-surface gape-structured-management-panel px-24 py-24 mb-24"
+                     data-deferred-management-root
+                     data-deferred-management-kind="attendance"
+                     data-deferred-management-endpoint="${pageContext.request.contextPath}${attendanceBasePath}"
+                     data-deferred-management-page-parameter="attendancePage"
+                     data-deferred-management-scope-parameter="attendanceScope"
+                     data-deferred-management-load-all-parameter="attendanceLoadAll"
+                     data-deferred-management-active-scope="active"
+                     data-deferred-management-current-page="${attendanceManagementCurrentPage}"
+                     data-deferred-management-total="${attendanceManagementTotal}"
+                     data-deferred-management-page-size="10"
+                     data-deferred-management-showing-all="${attendanceManagementLoadAll}"
+                     data-deferred-management-filter-name="attendanceState"
+                     data-deferred-management-filter-value="${selectedAttendanceState}">
                     <div class="gape-management-card__header d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
                         <div>
                             <h2 class="text-18 fw-medium text-neutral-700 mb-4">Attendance</h2>
                             <div class="gape-management-summary" aria-label="Attendance summary">
-                                <span>${attendanceCount} records</span>
-                                <span>${absenceCount} absences</span>
-                                <span>${pendingJustificationCount} pending justifications</span>
+                                <span data-attendance-total-summary>${attendanceCount} records</span>
+                                <span data-attendance-absence-summary>${absenceCount} absences</span>
+                                <span data-attendance-pending-summary>${pendingJustificationCount} pending justifications</span>
                             </div>
                         </div>
-                        <form action="${pageContext.request.contextPath}/learning/attendance" method="get" class="d-flex align-items-center gap-10 flex-wrap mb-0">
-                            <select name="status" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8" style="min-width: 190px; min-height: 44px;" aria-label="Attendance status filter" onchange="this.form.submit()">
-                                <option value="">All statuses</option>
-                                <c:forEach var="option" items="${attendanceStatusOptions}">
-                                    <option value="${option.value}" ${option.selected ? 'selected' : ''}>
-                                        <c:out value="${option.label}"/>
-                                    </option>
-                                </c:forEach>
-                            </select>
-                            <select name="justificationState" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8" style="min-width: 220px; min-height: 44px;" aria-label="Justification state filter" onchange="this.form.submit()">
-                                <option value="">All justifications</option>
-                                <c:forEach var="option" items="${justificationStateOptions}">
-                                    <option value="${option.value}" ${option.selected ? 'selected' : ''}>
-                                        <c:out value="${option.label}"/>
-                                    </option>
-                                </c:forEach>
-                            </select>
-                        </form>
-                    </div>
-
-                    <div class="mb-24 pb-24 border-bottom border-neutral-30">
-                        <h3 class="text-16 fw-semibold text-neutral-700 mb-14">Register attendance</h3>
-                        <form action="${pageContext.request.contextPath}/learning/attendance" method="post" class="row gy-3 align-items-end">
-                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                            <div class="col-xl-2 col-lg-3 col-md-6">
-                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-lesson-id">Lesson ID</label>
-                                <input type="number" id="attendance-lesson-id" name="lessonId" min="1" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8" required>
-                            </div>
-                            <div class="col-xl-2 col-lg-3 col-md-6">
-                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-student-id">Student ID</label>
-                                <input type="number" id="attendance-student-id" name="studentUserId" min="1" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8" required>
-                            </div>
-                            <div class="col-xl-2 col-lg-3 col-md-6">
-                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-status">Status</label>
-                                <select id="attendance-status" name="status" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8" required>
-                                    <c:forEach var="option" items="${attendanceCreateStatusOptions}">
-                                        <option value="${option.value}"><c:out value="${option.label}"/></option>
+                        <div class="d-flex align-items-center gap-10 flex-wrap">
+                            <form action="${pageContext.request.contextPath}${attendanceBasePath}" method="get" class="d-flex align-items-center gap-10 flex-wrap mb-0">
+                                <select name="attendanceState" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8" style="min-width: 190px; min-height: 44px;" aria-label="Attendance state filter" onchange="this.form.submit()">
+                                    <option value="">All states</option>
+                                    <c:forEach var="option" items="${attendanceStateOptions}">
+                                        <option value="${option.value}" ${option.selected ? 'selected' : ''}>
+                                            <c:out value="${option.label}"/>
+                                        </option>
                                     </c:forEach>
                                 </select>
-                            </div>
-                            <div class="col-xl-2 col-lg-3 col-md-6">
-                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-source">Source</label>
-                                <select id="attendance-source" name="source" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
-                                    <c:forEach var="option" items="${attendanceCreateSourceOptions}">
-                                        <option value="${option.value}"><c:out value="${option.label}"/></option>
-                                    </c:forEach>
-                                </select>
-                            </div>
-                            <div class="col-xl-2 col-lg-3 col-md-6">
-                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-check-in">Check-in</label>
-                                <input type="datetime-local" id="attendance-check-in" name="checkIn" value="${defaultCheckIn}" data-default-value="${defaultCheckIn}" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
-                            </div>
-                            <div class="col-xl-2 col-lg-3 col-md-6">
-                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-check-out">Check-out</label>
-                                <input type="datetime-local" id="attendance-check-out" name="checkOut" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
-                            </div>
-                            <div class="col-xl-4 col-lg-6">
-                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-notes">Notes</label>
-                                <input type="text" id="attendance-notes" name="notes" maxlength="500" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
-                            </div>
-                            <div class="col-xl-2 col-lg-3">
-                                <button type="submit" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03 border-0 d-inline-flex align-items-center" style="min-height: 44px;">
-                                    <i class="ph ph-check-circle me-8"></i>Save
-                                </button>
-                            </div>
-                        </form>
+                            </form>
+                            <button type="button" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03 border-0 d-inline-flex align-items-center" style="min-height: 44px;" data-bs-toggle="modal" data-bs-target="#registerAttendanceModal">
+                                <i class="ph ph-plus-circle me-8"></i>New Attendance
+                            </button>
+                        </div>
                     </div>
 
+                    <div class="modal fade" id="registerAttendanceModal" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content rounded-8 border-0">
+                                <div class="modal-header border-neutral-30">
+                                    <div>
+                                        <h5 class="modal-title text-18 fw-semibold mb-4">New Attendance</h5>
+                                        <span class="text-13 text-neutral-500">Create a manual attendance record.</span>
+                                    </div>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form action="${pageContext.request.contextPath}${attendanceBasePath}" method="post">
+                                    <div class="modal-body">
+                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                        <input type="hidden" name="returnTo" value="${attendanceReturnTo}">
+                                        <div class="row gy-3">
+                                            <div class="col-md-6">
+                                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-lesson-id">Lesson ID</label>
+                                                <input type="number" id="attendance-lesson-id" name="lessonId" min="1" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-student-id">Student ID</label>
+                                                <input type="number" id="attendance-student-id" name="studentUserId" min="1" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-status">State</label>
+                                                <select id="attendance-status" name="status" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8" required>
+                                                    <c:forEach var="option" items="${attendanceCreateStateOptions}">
+                                                        <option value="${option.value}"><c:out value="${option.label}"/></option>
+                                                    </c:forEach>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-source">Source</label>
+                                                <select id="attendance-source" name="source" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                                    <c:forEach var="option" items="${attendanceCreateSourceOptions}">
+                                                        <option value="${option.value}"><c:out value="${option.label}"/></option>
+                                                    </c:forEach>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-check-in">Check-in</label>
+                                                <input type="datetime-local" id="attendance-check-in" name="checkIn" value="${defaultCheckIn}" data-default-value="${defaultCheckIn}" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-check-out">Check-out</label>
+                                                <input type="datetime-local" id="attendance-check-out" name="checkOut" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-notes">Notes</label>
+                                                <input type="text" id="attendance-notes" name="notes" maxlength="500" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-neutral-30">
+                                        <button type="button" class="border border-neutral-30 bg-white text-neutral-600 px-18 py-10 rounded-8 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03 border-0 d-inline-flex align-items-center">
+                                            <i class="ph ph-check-circle me-8"></i>Save
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div data-deferred-management-active-content>
+                    <div data-deferred-management-page-content>
                     <div class="gape-desktop-table">
-                        <table class="table mb-0">
+                        <table class="table mb-0 aac-attendance-table">
                             <thead>
                             <tr>
-                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Lesson</th>
                                 <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Student</th>
-                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Status</th>
-                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Time</th>
-                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Permanence</th>
-                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Source</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Activity</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Attendance</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
                             </tr>
                             </thead>
                             <tbody>
-                            <c:forEach var="record" items="${attendanceRecords}">
-                                <tr class="hover-bg-neutral-20 border-bottom transition-03">
-                                    <td class="py-20 px-20 text-14 text-neutral-700">
-                                        <span class="fw-medium"><c:out value="${record.lessonTitle}"/></span>
-                                        <span class="d-block text-12 text-neutral-500">#<c:out value="${record.lessonId}"/></span>
+                            <c:forEach var="group" items="${attendanceStudentGroups}">
+                                <tr class="aac-attendance-summary-row hover-bg-neutral-20 border-bottom transition-03">
+                                    <td class="py-20 px-20 text-14 text-neutral-500">
+                                        <span class="fw-medium text-neutral-700"><c:out value="${group.studentLabel}"/></span>
                                     </td>
                                     <td class="py-20 px-20 text-14 text-neutral-500">
-                                        <span class="fw-medium text-neutral-700"><c:out value="${record.studentName}"/></span>
-                                        <span class="d-block text-12 text-neutral-500"><c:out value="${record.studentEmail}"/></span>
+                                        <span class="fw-medium text-neutral-700 aac-attendance-count"><c:out value="${group.activityCountLabel}"/></span>
+                                    </td>
+                                    <td class="py-20 px-20 text-14 text-neutral-500">
+                                        <span class="d-block" data-gape-datetime-display><c:out value="${group.timeLabel}"/></span>
                                     </td>
                                     <td class="py-20 px-20">
-                                        <span class="${record.statusBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13">
-                                            <c:out value="${record.statusLabel}"/>
-                                        </span>
-                                        <span class="${record.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12 ms-6">
-                                            <c:out value="${record.stateLabel}"/>
-                                        </span>
+                                        <div class="aac-state-summary" data-attendance-group-summary="${group.studentUserId}">
+                                            <c:forEach var="summary" items="${group.stateSummaries}">
+                                                <span class="${summary.badgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12">${summary.count} <c:out value="${summary.label}"/></span>
+                                            </c:forEach>
+                                        </div>
                                     </td>
-                                    <td class="py-20 px-20 text-14 text-neutral-500">
-                                        <span class="d-block">In: <c:out value="${record.checkIn}"/></span>
-                                        <span class="d-block text-12">Out: <c:out value="${record.checkOut}"/></span>
+                                    <td class="py-20 px-20 text-end">
+                                        <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show all attendance activities" data-bs-toggle="collapse" data-bs-target="#attendanceGroup${group.studentUserId}" aria-expanded="false" aria-controls="attendanceGroup${group.studentUserId}">
+                                            <i class="ph ph-caret-down"></i>
+                                        </button>
                                     </td>
-                                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${record.permanenceLabel}"/></td>
-                                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${record.sourceLabel}"/></td>
+                                </tr>
+                                <tr class="collapse" id="attendanceGroup${group.studentUserId}">
+                                    <td colspan="5" class="aac-expanded-cell">
+                                        <div class="aac-expanded-panel">
+                                            <div class="aac-tree">
+                                                <c:forEach var="activity" items="${group.activities}">
+                                                    <article class="aac-tree-node aac-tree-node--class">
+                                                        <div class="aac-tree-row">
+                                                            <div class="aac-tree-main">
+                                                                <span class="aac-tree-icon bg-main-two-50 text-main-two-600"><i class="ph ph-calendar-check"></i></span>
+                                                                <div class="min-w-0">
+                                                                    <span class="aac-tree-title"><c:out value="${activity.activityLabel}"/></span>
+                                                                    <span class="aac-tree-meta" data-gape-datetime-display><c:out value="${activity.activityMeta}"/> | <c:out value="${activity.activityScheduleLabel}"/> | <c:out value="${activity.timeLabel}"/> | <c:out value="${activity.permanenceLabel}"/></span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="aac-tree-actions">
+                                                                <span class="${activity.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12" data-attendance-activity-badge="${activity.id}" data-student-id="${group.studentUserId}" data-state-value="${activity.stateValue}">
+                                                                    <c:out value="${activity.stateLabel}"/>
+                                                                </span>
+                                                                <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View attendance detail" data-bs-toggle="modal" data-bs-target="#${activity.detailModalId}">
+                                                                    <i class="ph ph-eye"></i>
+                                                                </button>
+                                                                <c:if test="${activity.hasSettings}">
+                                                                    <button type="button" class="aac-icon-button bg-info-50 text-info-600" title="Settings" aria-label="Configure attendance justification" data-bs-toggle="modal" data-bs-target="#${activity.settingsModalId}">
+                                                                        <i class="ph ph-gear-six"></i>
+                                                                    </button>
+                                                                </c:if>
+                                                            </div>
+                                                        </div>
+                                                    </article>
+                                                </c:forEach>
+                                            </div>
+                                        </div>
+                                    </td>
                                 </tr>
                             </c:forEach>
-                            <c:if test="${empty attendanceRecords}">
+                            <c:if test="${empty attendanceStudentGroups}">
                                 <tr>
-                                    <td colspan="6" class="py-32 px-20 text-center text-14 text-neutral-500">No attendance records available.</td>
+                                    <td colspan="5" class="py-32 px-20 text-center text-14 text-neutral-500">No attendance records available.</td>
                                 </tr>
                             </c:if>
                             </tbody>
                         </table>
                     </div>
                     <div class="gape-mobile-list">
-                        <c:forEach var="record" items="${attendanceRecords}">
-                            <article class="gape-mobile-row">
+                        <c:forEach var="group" items="${attendanceStudentGroups}">
+                            <article class="gape-mobile-row aac-attendance-summary-row">
                                 <div class="gape-mobile-row__header">
                                     <div>
-                                        <div class="gape-mobile-title"><c:out value="${record.lessonTitle}"/></div>
-                                        <div class="gape-mobile-subtitle">#<c:out value="${record.lessonId}"/> | <c:out value="${record.studentName}"/></div>
+                                        <div class="gape-mobile-title"><c:out value="${group.studentLabel}"/></div>
                                     </div>
-                                    <span class="${record.statusBadgeClass} gape-mobile-badge px-12 py-7 border-neutral-30 border rounded-pill text-12">
-                                        <c:out value="${record.statusLabel}"/>
-                                    </span>
+                                    <span class="gape-mobile-badge px-12 py-7 border-neutral-30 border rounded-pill text-12"><c:out value="${group.activityCountLabel}"/></span>
                                 </div>
                                 <div class="gape-mobile-kv">
-                                    <strong>Student</strong>
-                                    <span><c:out value="${record.studentEmail}"/></span>
                                     <strong>State</strong>
-                                    <span><c:out value="${record.stateLabel}"/></span>
+                                    <span class="aac-state-summary" data-attendance-group-summary="${group.studentUserId}">
+                                        <c:forEach var="summary" items="${group.stateSummaries}">
+                                            <span class="${summary.badgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12">${summary.count} <c:out value="${summary.label}"/></span>
+                                        </c:forEach>
+                                    </span>
                                     <strong>Time</strong>
-                                    <span>In: <c:out value="${record.checkIn}"/> | Out: <c:out value="${record.checkOut}"/></span>
-                                    <strong>Duration</strong>
-                                    <span><c:out value="${record.permanenceLabel}"/></span>
-                                    <strong>Source</strong>
-                                    <span><c:out value="${record.sourceLabel}"/></span>
+                                    <span data-gape-datetime-display><c:out value="${group.timeLabel}"/></span>
+                                    <strong>Permanence</strong>
+                                    <span data-gape-datetime-display><c:out value="${group.permanenceLabel}"/></span>
+                                </div>
+                                <div class="gape-mobile-actions">
+                                    <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show all attendance activities" data-bs-toggle="collapse" data-bs-target="#attendanceMobileGroup${group.studentUserId}" aria-expanded="false" aria-controls="attendanceMobileGroup${group.studentUserId}">
+                                        <i class="ph ph-caret-down"></i>
+                                    </button>
                                 </div>
                             </article>
+                            <div class="collapse" id="attendanceMobileGroup${group.studentUserId}">
+                                <div class="aac-expanded-panel mt-12 mb-12">
+                                    <div class="aac-tree">
+                                        <c:forEach var="activity" items="${group.activities}">
+                                            <article class="aac-tree-node aac-tree-node--class">
+                                                <div class="aac-tree-row">
+                                                    <div class="aac-tree-main">
+                                                        <span class="aac-tree-icon bg-main-two-50 text-main-two-600"><i class="ph ph-calendar-check"></i></span>
+                                                        <div class="min-w-0">
+                                                            <span class="aac-tree-title"><c:out value="${activity.activityLabel}"/></span>
+                                                            <span class="aac-tree-meta" data-gape-datetime-display><c:out value="${activity.activityMeta}"/> | <c:out value="${activity.activityScheduleLabel}"/> | <c:out value="${activity.timeLabel}"/> | <c:out value="${activity.permanenceLabel}"/></span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="aac-tree-actions">
+                                                        <span class="${activity.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12" data-attendance-activity-badge="${activity.id}" data-student-id="${group.studentUserId}" data-state-value="${activity.stateValue}">
+                                                            <c:out value="${activity.stateLabel}"/>
+                                                        </span>
+                                                        <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View attendance detail" data-bs-toggle="modal" data-bs-target="#${activity.detailModalId}">
+                                                            <i class="ph ph-eye"></i>
+                                                        </button>
+                                                        <c:if test="${activity.hasSettings}">
+                                                            <button type="button" class="aac-icon-button bg-info-50 text-info-600" title="Settings" aria-label="Configure attendance justification" data-bs-toggle="modal" data-bs-target="#${activity.settingsModalId}">
+                                                                <i class="ph ph-gear-six"></i>
+                                                            </button>
+                                                        </c:if>
+                                                    </div>
+                                                </div>
+                                            </article>
+                                        </c:forEach>
+                                    </div>
+                                </div>
+                            </div>
                         </c:forEach>
-                        <c:if test="${empty attendanceRecords}">
+                        <c:if test="${empty attendanceStudentGroups}">
                             <div class="gape-mobile-empty">No attendance records available.</div>
                         </c:if>
                     </div>
 
-                    <div class="mt-28 pt-24 border-top border-neutral-30">
-                        <div class="mb-20">
-                            <h3 class="text-16 fw-semibold text-neutral-700 mb-4">Justifications</h3>
-                            <span class="text-14 text-neutral-500">Submitted absence, late and partial-presence justifications.</span>
-                        </div>
-                        <div class="gape-desktop-table">
-                            <table class="table mb-0">
-                                <thead>
-                                <tr>
-                                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Student</th>
-                                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Lesson</th>
-                                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Reason</th>
-                                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Submitted</th>
-                                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
-                                    <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Process</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <c:forEach var="justification" items="${justifications}">
-                                    <tr class="hover-bg-neutral-20 border-bottom transition-03">
-                                        <td class="py-20 px-20 text-14 text-neutral-500">
-                                            <span class="fw-medium text-neutral-700"><c:out value="${justification.studentName}"/></span>
-                                            <span class="d-block text-12"><c:out value="${justification.studentEmail}"/></span>
-                                        </td>
-                                        <td class="py-20 px-20 text-14 text-neutral-500">
-                                            <span class="fw-medium text-neutral-700"><c:out value="${justification.lessonTitle}"/></span>
-                                            <span class="d-block text-12">Record #<c:out value="${justification.attendanceRecordId}"/></span>
-                                        </td>
-                                        <td class="py-20 px-20 text-14 text-neutral-500">
-                                            <c:out value="${justification.reason}"/>
-                                            <span class="d-block text-12">Attachment: <c:out value="${justification.attachmentLabel}"/></span>
-                                        </td>
-                                        <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${justification.submittedAt}"/></td>
-                                        <td class="py-20 px-20">
-                                            <span class="${justification.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13">
-                                                <c:out value="${justification.stateLabel}"/>
-                                            </span>
-                                        </td>
-                                        <td class="py-20 px-20 text-end">
-                                            <c:choose>
-                                                <c:when test="${justification.submitted}">
-                                                    <div class="d-flex justify-content-end gap-8 flex-wrap">
-                                                        <form action="${pageContext.request.contextPath}/learning/attendance/justifications/${justification.id}/approve" method="post" class="d-flex align-items-center gap-8 mb-0">
-                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                            <input type="text" name="decisionNotes" maxlength="500" class="form-control px-12 py-8 text-13 bg-neutral-20 border-neutral-30 border rounded-8" placeholder="Notes">
-                                                            <button type="submit" class="border-0 bg-success-50 text-success-600 w-40 h-40 rounded-8 d-inline-flex align-items-center justify-content-center" title="Approve" aria-label="Approve justification">
-                                                                <i class="ph ph-check"></i>
-                                                            </button>
-                                                        </form>
-                                                        <form action="${pageContext.request.contextPath}/learning/attendance/justifications/${justification.id}/reject" method="post" class="d-flex align-items-center gap-8 mb-0">
-                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                            <input type="text" name="decisionNotes" maxlength="500" class="form-control px-12 py-8 text-13 bg-neutral-20 border-neutral-30 border rounded-8" placeholder="Notes">
-                                                            <button type="submit" class="border-0 bg-danger-50 text-danger-600 w-40 h-40 rounded-8 d-inline-flex align-items-center justify-content-center" title="Reject" aria-label="Reject justification">
-                                                                <i class="ph ph-x"></i>
-                                                            </button>
-                                                        </form>
-                                                    </div>
-                                                </c:when>
-                                                <c:otherwise>
-                                                    <span class="text-13 text-neutral-500">Processed <c:out value="${justification.processedAt}"/></span>
-                                                </c:otherwise>
-                                            </c:choose>
-                                        </td>
-                                    </tr>
-                                </c:forEach>
-                                <c:if test="${empty justifications}">
-                                    <tr>
-                                        <td colspan="6" class="py-32 px-20 text-center text-14 text-neutral-500">No justifications available.</td>
-                                    </tr>
-                                </c:if>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="gape-mobile-list">
-                            <c:forEach var="justification" items="${justifications}">
-                                <article class="gape-mobile-row">
-                                    <div class="gape-mobile-row__header">
+                    <c:forEach var="activity" items="${attendanceActivities}">
+                        <div class="modal fade" id="${activity.detailModalId}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content rounded-8 border-0">
+                                    <div class="modal-header border-neutral-30">
                                         <div>
-                                            <div class="gape-mobile-title"><c:out value="${justification.studentName}"/></div>
-                                            <div class="gape-mobile-subtitle"><c:out value="${justification.studentEmail}"/></div>
+                                            <h5 class="modal-title text-18 fw-semibold mb-4">Attendance detail</h5>
+                                            <span class="text-13 text-neutral-500"><c:out value="${activity.activityLabel}"/></span>
                                         </div>
-                                        <span class="${justification.stateBadgeClass} gape-mobile-badge px-12 py-7 border-neutral-30 border rounded-pill text-12">
-                                            <c:out value="${justification.stateLabel}"/>
-                                        </span>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
-                                    <div class="gape-mobile-kv">
-                                        <strong>Lesson</strong>
-                                        <span><c:out value="${justification.lessonTitle}"/> | Record #<c:out value="${justification.attendanceRecordId}"/></span>
-                                        <strong>Reason</strong>
-                                        <span><c:out value="${justification.reason}"/></span>
-                                        <strong>Attachment</strong>
-                                        <span><c:out value="${justification.attachmentLabel}"/></span>
-                                        <strong>Submitted</strong>
-                                        <span><c:out value="${justification.submittedAt}"/></span>
-                                    </div>
-                                    <c:choose>
-                                        <c:when test="${justification.submitted}">
-                                            <div class="gape-mobile-actions">
-                                                <form action="${pageContext.request.contextPath}/learning/attendance/justifications/${justification.id}/approve" method="post" class="d-flex align-items-center gap-8 mb-0">
-                                                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                    <input type="text" name="decisionNotes" maxlength="500" class="form-control px-12 py-8 text-13 bg-neutral-20 border-neutral-30 border rounded-8" placeholder="Notes">
-                                                    <button type="submit" class="border-0 bg-success-50 text-success-600 w-40 h-40 rounded-8 d-inline-flex align-items-center justify-content-center flex-shrink-0" title="Approve" aria-label="Approve justification">
-                                                        <i class="ph ph-check"></i>
-                                                    </button>
-                                                </form>
-                                                <form action="${pageContext.request.contextPath}/learning/attendance/justifications/${justification.id}/reject" method="post" class="d-flex align-items-center gap-8 mb-0">
-                                                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                    <input type="text" name="decisionNotes" maxlength="500" class="form-control px-12 py-8 text-13 bg-neutral-20 border-neutral-30 border rounded-8" placeholder="Notes">
-                                                    <button type="submit" class="border-0 bg-danger-50 text-danger-600 w-40 h-40 rounded-8 d-inline-flex align-items-center justify-content-center flex-shrink-0" title="Reject" aria-label="Reject justification">
-                                                        <i class="ph ph-x"></i>
-                                                    </button>
-                                                </form>
+                                    <div class="modal-body">
+                                        <div class="row gy-3">
+                                            <div class="col-md-6">
+                                                <span class="text-12 text-neutral-500 d-block mb-4">Student</span>
+                                                <span class="text-14 fw-medium text-neutral-800"><c:out value="${activity.studentLabel}"/></span>
                                             </div>
-                                        </c:when>
-                                        <c:otherwise>
-                                            <div class="gape-mobile-processed">Processed <c:out value="${justification.processedAt}"/></div>
-                                        </c:otherwise>
-                                    </c:choose>
-                                </article>
-                            </c:forEach>
-                            <c:if test="${empty justifications}">
-                                <div class="gape-mobile-empty">No justifications available.</div>
-                            </c:if>
+                                            <div class="col-md-6">
+                                                <span class="text-12 text-neutral-500 d-block mb-4">State</span>
+                                                <span class="${activity.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12" data-attendance-detail-state="${activity.id}" data-state-value="${activity.stateValue}"><c:out value="${activity.stateLabel}"/></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <span class="text-12 text-neutral-500 d-block mb-4">Activity</span>
+                                                <span class="text-14 text-neutral-700"><c:out value="${activity.activityMeta}"/></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <span class="text-12 text-neutral-500 d-block mb-4">Schedule</span>
+                                                <span class="text-14 text-neutral-700" data-gape-datetime-display><c:out value="${activity.activityScheduleLabel}"/></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <span class="text-12 text-neutral-500 d-block mb-4">Time</span>
+                                                <span class="text-14 text-neutral-700" data-gape-datetime-display><c:out value="${activity.timeLabel}"/></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <span class="text-12 text-neutral-500 d-block mb-4">Permanence</span>
+                                                <span class="text-14 text-neutral-700" data-gape-datetime-display><c:out value="${activity.permanenceLabel}"/></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <span class="text-12 text-neutral-500 d-block mb-4">Source</span>
+                                                <span class="text-14 text-neutral-700"><c:out value="${activity.sourceLabel}"/></span>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <span class="text-12 text-neutral-500 d-block mb-4">Notes</span>
+                                                <span class="text-14 text-neutral-700"><c:out value="${activity.notes}"/></span>
+                                            </div>
+                                            <c:if test="${activity.hasJustification}">
+                                                <div class="col-12">
+                                                    <div class="border border-neutral-30 rounded-8 p-16 bg-neutral-20">
+                                                        <span class="text-12 text-neutral-500 d-block mb-6">Justification</span>
+                                                        <span class="text-14 text-neutral-700 d-block"><c:out value="${activity.justification.reason}"/></span>
+                                                        <span class="text-12 text-neutral-500 d-block mt-6">Attachment: <c:out value="${activity.justification.attachmentLabel}"/></span>
+                                                        <span class="text-12 text-neutral-500 d-block" data-gape-datetime-display>Submitted: <c:out value="${activity.justification.submittedAt}"/></span>
+                                                        <span class="text-12 text-neutral-500 d-block" data-gape-datetime-display>Processed: <c:out value="${activity.justification.processedAt}"/></span>
+                                                    </div>
+                                                </div>
+                                            </c:if>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <c:if test="${activity.hasSettings}">
+                            <div class="modal fade" id="${activity.settingsModalId}" tabindex="-1" aria-hidden="true" data-attendance-settings-modal data-activity-id="${activity.id}">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content rounded-8 border-0 bg-white aac-settings-modal">
+                                        <div class="modal-header border-neutral-30 bg-white">
+                                            <div>
+                                                <h5 class="modal-title text-18 fw-semibold mb-4">Attendance settings</h5>
+                                                <span class="text-13 text-neutral-500"><c:out value="${activity.studentLabel}"/> | <c:out value="${activity.activityLabel}"/></span>
+                                            </div>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body bg-white">
+                                            <div class="aac-settings-grid">
+                                                <section class="aac-settings-card">
+                                                    <span class="text-12 text-neutral-500 d-block mb-8">Current state</span>
+                                                    <span class="${activity.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12" data-attendance-settings-state data-state-value="${activity.stateValue}"><c:out value="${activity.stateLabel}"/></span>
+                                                </section>
+                                                <section class="aac-settings-card">
+                                                    <span class="text-12 text-neutral-500 d-block mb-8">Submitted</span>
+                                                    <span class="text-14 text-neutral-700" data-gape-datetime-display><c:out value="${activity.justification.submittedAt}"/></span>
+                                                </section>
+                                                <section class="aac-settings-card aac-settings-card--wide">
+                                                    <span class="text-12 text-neutral-500 d-block mb-8">Reason</span>
+                                                    <span class="text-14 text-neutral-700"><c:out value="${activity.justification.reason}"/></span>
+                                                </section>
+                                                <section class="aac-settings-card">
+                                                    <span class="text-12 text-neutral-500 d-block mb-8">Attachment</span>
+                                                    <span class="text-14 text-neutral-700"><c:out value="${activity.justification.attachmentLabel}"/></span>
+                                                </section>
+                                                <section class="aac-settings-card">
+                                                    <span class="text-12 text-neutral-500 d-block mb-8">Processed</span>
+                                                    <span class="text-14 text-neutral-700" data-gape-datetime-display><c:out value="${activity.justification.processedAt}"/></span>
+                                                </section>
+                                            </div>
+                                            <form class="aac-settings-decision mt-18" data-attendance-settings-form data-activity-id="${activity.id}">
+                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                <input type="hidden" name="returnTo" value="${attendanceReturnTo}">
+                                                <label class="text-13 text-neutral-600 mb-6 d-block" for="decision-notes-${activity.id}">Decision notes</label>
+                                                <textarea id="decision-notes-${activity.id}" name="decisionNotes" maxlength="500" rows="3" class="form-control px-12 py-10 text-13 bg-neutral-20 border-neutral-30 border rounded-8" placeholder="Optional internal note"></textarea>
+                                                <div class="aac-settings-actions mt-14">
+                                                    <button type="button" class="border-0 bg-success-50 text-success-600 px-16 py-10 rounded-8 fw-semibold d-inline-flex align-items-center" data-attendance-decision="approve" data-action-url="${pageContext.request.contextPath}${attendanceBasePath}/justifications/${activity.justification.id}/approve" onclick="return window.handleAttendanceDecision ? window.handleAttendanceDecision(this) : false;" ${activity.canApprove ? '' : 'hidden'}>
+                                                        <i class="ph ph-check me-8"></i>Accept
+                                                    </button>
+                                                    <button type="button" class="border-0 bg-danger-50 text-danger-600 px-16 py-10 rounded-8 fw-semibold d-inline-flex align-items-center" data-attendance-decision="reject" data-action-url="${pageContext.request.contextPath}${attendanceBasePath}/justifications/${activity.justification.id}/reject" onclick="return window.handleAttendanceDecision ? window.handleAttendanceDecision(this) : false;" ${activity.canReject ? '' : 'hidden'}>
+                                                        <i class="ph ph-x me-8"></i>Reject
+                                                    </button>
+                                                    <span class="text-13 text-neutral-500" data-attendance-settings-message></span>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </c:if>
+                    </c:forEach>
+                    </div>
+                    </div>
+                    <div class="gape-learning-management-load-state mt-20" data-deferred-management-load-state>
+                        <span><strong>${attendanceManagementTotal}</strong> attendance students load in pages of 10.</span>
+                    </div>
+                    <div class="d-flex justify-content-end mt-12" data-deferred-management-pagination data-total="${attendanceManagementTotal}" data-page-size="10" ${attendanceManagementTotal > 10 ? '' : 'hidden'}>
+                        <div class="gape-list-pagination">
+                            <nav class="gape-list-pagination-pages" aria-label="Attendance pages" data-deferred-management-pagination-pages></nav>
+                            <button type="button" class="gape-list-load-all" data-deferred-management-load-all>Load All</button>
                         </div>
                     </div>
                 </div>
@@ -1670,6 +2185,7 @@
         }
         var tabs = Array.prototype.slice.call(root.querySelectorAll('[data-aac-tab]'));
         var panels = Array.prototype.slice.call(root.querySelectorAll('[data-aac-panel]'));
+        var defaultPanel = root.getAttribute('data-aac-default-panel') || 'enrollments';
         var aliases = {
             'grade-sheets': 'grades',
             'grade-records': 'grades',
@@ -1677,9 +2193,39 @@
             justifications: 'attendance'
         };
 
+        function hashValue() {
+            return (window.location.hash || '').replace(/^#/, '');
+        }
+
+        function panelForTarget(hash) {
+            if (!hash) {
+                return defaultPanel;
+            }
+            if (aliases[hash]) {
+                return aliases[hash];
+            }
+            if (hash.indexOf('gradeSheetDetail') === 0
+                    || hash.indexOf('gradeCourseSheetDetail') === 0
+                    || hash.indexOf('gradeSubjectSheetDetail') === 0
+                    || hash.indexOf('gradeSheetSetup') === 0) {
+                return 'grades';
+            }
+            if (hash.indexOf('certificateDetail') === 0) {
+                return 'certificates';
+            }
+            if (hash.indexOf('attendanceDetail') === 0
+                    || hash.indexOf('attendanceAssessmentDetail') === 0
+                    || hash.indexOf('attendanceSettings') === 0) {
+                return 'attendance';
+            }
+            if (hash.indexOf('enrollment') === 0) {
+                return 'enrollments';
+            }
+            return hash;
+        }
+
         function panelForHash() {
-            var hash = (window.location.hash || '').replace(/^#/, '');
-            return aliases[hash] || hash || 'enrollments';
+            return panelForTarget(hashValue());
         }
 
         function activate(panelName, updateHash) {
@@ -1687,7 +2233,7 @@
                 return panel.getAttribute('data-aac-panel') === panelName;
             });
             if (!activePanel) {
-                panelName = 'enrollments';
+                panelName = defaultPanel;
             }
             tabs.forEach(function (tab) {
                 var active = tab.getAttribute('data-aac-tab') === panelName;
@@ -1706,6 +2252,26 @@
             }
         }
 
+        function showHashModal(attempt) {
+            var hash = hashValue();
+            if (!hash) {
+                return;
+            }
+            var target = document.getElementById(hash);
+            if (!target || !target.classList.contains('modal')) {
+                return;
+            }
+            window.setTimeout(function () {
+                if (window.bootstrap && window.bootstrap.Modal) {
+                    window.bootstrap.Modal.getOrCreateInstance(target).show();
+                    return;
+                }
+                if ((attempt || 0) < 40) {
+                    showHashModal((attempt || 0) + 1);
+                }
+            }, 50);
+        }
+
         tabs.forEach(function (tab) {
             tab.addEventListener('click', function () {
                 activate(tab.getAttribute('data-aac-tab'), true);
@@ -1713,11 +2279,13 @@
         });
 
         activate(panelForHash(), false);
+        showHashModal();
         window.addEventListener('hashchange', function () {
             activate(panelForHash(), false);
+            showHashModal();
         });
 
-        var rawHash = (window.location.hash || '').replace(/^#/, '');
+        var rawHash = hashValue();
         if (aliases[rawHash]) {
             window.setTimeout(function () {
                 var anchor = document.getElementById(rawHash);
@@ -1778,6 +2346,201 @@
     }());
 
     (function () {
+        var attendanceStateMeta = {
+            present: {label: 'Present', badgeClass: 'bg-success-50 text-success-600'},
+            absent: {label: 'Absent', badgeClass: 'bg-danger-50 text-danger-600'},
+            requested: {label: 'Requested', badgeClass: 'bg-warning-50 text-warning-600'},
+            justified: {label: 'Justified', badgeClass: 'bg-main-50 text-main-600'},
+            rejected: {label: 'Rejected', badgeClass: 'bg-danger-50 text-danger-600'}
+        };
+        var attendanceStateOrder = ['present', 'absent', 'requested', 'justified', 'rejected'];
+        var setText = function (selector, value) {
+            var element = document.querySelector(selector);
+            if (element) {
+                element.textContent = value;
+            }
+        };
+        var plural = function (count, singular, pluralText) {
+            return count + ' ' + (count === 1 ? singular : pluralText);
+        };
+        var uniqueAttendanceBadges = function (selector) {
+            var seen = {};
+            return Array.prototype.slice.call(document.querySelectorAll(selector || '[data-attendance-activity-badge]'))
+                    .filter(function (badge) {
+                        var key = badge.getAttribute('data-attendance-activity-badge');
+                        if (!key || seen[key]) {
+                            return false;
+                        }
+                        seen[key] = true;
+                        return true;
+                    });
+        };
+        var refreshAttendanceTotals = function () {
+            var badges = uniqueAttendanceBadges();
+            var absenceCount = badges.filter(function (badge) {
+                return ['absent', 'requested', 'rejected'].indexOf(badge.getAttribute('data-state-value')) >= 0;
+            }).length;
+            var pendingCount = badges.filter(function (badge) {
+                return badge.getAttribute('data-state-value') === 'requested';
+            }).length;
+            setText('[data-attendance-total-summary]', plural(badges.length, 'record', 'records'));
+            setText('[data-attendance-absence-summary]', plural(absenceCount, 'absence', 'absences'));
+            setText('[data-attendance-pending-summary]', pendingCount + ' pending justifications');
+        };
+        var refreshAttendanceGroupSummary = function (studentId) {
+            var summaries = Array.prototype.slice.call(document.querySelectorAll('[data-attendance-group-summary="' + studentId + '"]'));
+            if (!summaries.length) {
+                return;
+            }
+            var counts = {};
+            uniqueAttendanceBadges('[data-attendance-activity-badge][data-student-id="' + studentId + '"]')
+                    .forEach(function (badge) {
+                        var state = badge.getAttribute('data-state-value');
+                        counts[state] = (counts[state] || 0) + 1;
+                    });
+            summaries.forEach(function (summary) {
+                summary.innerHTML = '';
+                attendanceStateOrder.forEach(function (state) {
+                    if (!counts[state]) {
+                        return;
+                    }
+                    var meta = attendanceStateMeta[state];
+                    var item = document.createElement('span');
+                    item.className = meta.badgeClass + ' aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12';
+                    item.textContent = counts[state] + ' ' + meta.label;
+                    summary.appendChild(item);
+                });
+            });
+        };
+        var updateAttendanceDecisionButtons = function (modal, data) {
+            var approve = modal.querySelector('[data-attendance-decision="approve"]');
+            var reject = modal.querySelector('[data-attendance-decision="reject"]');
+            if (approve) {
+                approve.hidden = !data.canApprove;
+            }
+            if (reject) {
+                reject.hidden = !data.canReject;
+            }
+        };
+        var applyAttendanceDecision = function (data) {
+            var activityId = String(data.activityId);
+            Array.prototype.slice.call(document.querySelectorAll('[data-attendance-activity-badge="' + activityId + '"]'))
+                    .forEach(function (badge) {
+                        badge.className = data.badgeClass + ' px-12 py-6 border-neutral-30 border rounded-pill text-12';
+                        badge.textContent = data.stateLabel;
+                        badge.setAttribute('data-state-value', data.stateValue);
+                        refreshAttendanceGroupSummary(badge.getAttribute('data-student-id'));
+                    });
+            Array.prototype.slice.call(document.querySelectorAll('[data-attendance-detail-state="' + activityId + '"]'))
+                    .forEach(function (stateBadge) {
+                        stateBadge.className = data.badgeClass + ' px-12 py-7 border-neutral-30 border rounded-pill text-12';
+                        stateBadge.textContent = data.stateLabel;
+                        stateBadge.setAttribute('data-state-value', data.stateValue);
+                    });
+            var modal = document.querySelector('[data-attendance-settings-modal][data-activity-id="' + activityId + '"]');
+            if (modal) {
+                var stateBadge = modal.querySelector('[data-attendance-settings-state]');
+                if (stateBadge) {
+                    stateBadge.className = data.badgeClass + ' px-12 py-7 border-neutral-30 border rounded-pill text-12';
+                    stateBadge.textContent = data.stateLabel;
+                    stateBadge.setAttribute('data-state-value', data.stateValue);
+                }
+                updateAttendanceDecisionButtons(modal, data);
+            }
+            refreshAttendanceTotals();
+        };
+        var closeAttendanceModal = function (modalElement) {
+            if (!modalElement) {
+                return;
+            }
+            if (window.bootstrap) {
+                var modal = window.bootstrap.Modal.getInstance(modalElement)
+                        || new window.bootstrap.Modal(modalElement);
+                modal.hide();
+            }
+            window.setTimeout(function () {
+                modalElement.classList.remove('show');
+                modalElement.setAttribute('aria-hidden', 'true');
+                modalElement.removeAttribute('aria-modal');
+                modalElement.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+                Array.prototype.slice.call(document.querySelectorAll('.modal-backdrop'))
+                        .forEach(function (backdrop) {
+                            backdrop.remove();
+                        });
+            }, 150);
+        };
+        window.handleAttendanceDecision = function (button) {
+            if (!button || button.hidden) {
+                return false;
+            }
+            if (button.getAttribute('data-attendance-busy') === 'true') {
+                return false;
+            }
+            button.setAttribute('data-attendance-busy', 'true');
+            var form = button.closest('[data-attendance-settings-form]');
+            if (!form) {
+                button.removeAttribute('data-attendance-busy');
+                return false;
+            }
+            var message = form.querySelector('[data-attendance-settings-message]');
+            var actionUrl = button.getAttribute('data-action-url');
+            var buttons = Array.prototype.slice.call(form.querySelectorAll('[data-attendance-decision]'));
+            buttons.forEach(function (item) {
+                item.disabled = true;
+            });
+            if (message) {
+                message.textContent = 'Saving...';
+            }
+            fetch(actionUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: new URLSearchParams(new FormData(form))
+            })
+                    .then(function (response) {
+                        return response.json().then(function (payload) {
+                            if (!response.ok || !payload.success) {
+                                throw new Error(payload.message || 'Attendance settings could not be saved.');
+                            }
+                            return payload;
+                        });
+                    })
+                    .then(function (payload) {
+                        applyAttendanceDecision(payload);
+                        if (message) {
+                            message.textContent = '';
+                        }
+                        closeAttendanceModal(button.closest('.modal'));
+                    })
+                    .catch(function (error) {
+                        if (message) {
+                            message.textContent = error.message;
+                        }
+                    })
+                    .finally(function () {
+                        button.removeAttribute('data-attendance-busy');
+                        buttons.forEach(function (item) {
+                            item.disabled = false;
+                        });
+                    });
+            return false;
+        };
+        document.addEventListener('click', function (event) {
+            var button = event.target.closest('[data-attendance-decision]');
+            if (!button) {
+                return;
+            }
+            event.preventDefault();
+            window.handleAttendanceDecision(button);
+        });
+    }());
+
+    (function () {
         var status = document.getElementById('attendance-status');
         var checkIn = document.getElementById('attendance-check-in');
         var checkOut = document.getElementById('attendance-check-out');
@@ -1802,5 +2565,6 @@
     }());
 </script>
 <%@ include file="/WEB-INF/fragments/template-base-scripts.jspf" %>
+<script src="${pageContext.request.contextPath}/assets/js/gape-deferred-management-list.js?v=20260715-deferred-management-1"></script>
 </body>
 </html>

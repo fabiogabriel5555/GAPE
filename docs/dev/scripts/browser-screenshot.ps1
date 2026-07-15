@@ -23,9 +23,11 @@ function Assert-InWorkspace {
         [string] $Label
     )
 
-    $resolvedWorkspace = (Resolve-Path -LiteralPath $Workspace).Path
+    $resolvedWorkspace = (Resolve-Path -LiteralPath $Workspace).Path.TrimEnd('\', '/')
     $fullPath = [System.IO.Path]::GetFullPath($Path)
-    if (-not $fullPath.StartsWith($resolvedWorkspace, [System.StringComparison]::OrdinalIgnoreCase)) {
+    $insideWorkspace = $fullPath.Equals($resolvedWorkspace, [System.StringComparison]::OrdinalIgnoreCase) -or
+        $fullPath.StartsWith($resolvedWorkspace + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+    if (-not $insideWorkspace) {
         throw "$Label is outside the workspace: $fullPath"
     }
 }
@@ -101,6 +103,24 @@ function Resolve-BrowserExecutable {
     throw "No Chromium browser was found. Install Brave, Chrome or Edge to use the screenshot fallback."
 }
 
+function Get-CsrfTokenFromHtml {
+    param([string] $Html)
+    $inputMatch = [regex]::Match(
+        $Html,
+        '<input\b(?=[^>]*\bname\s*=\s*["'']csrfToken["''])[^>]*>',
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+    $valueMatch = if ($inputMatch.Success) {
+        [regex]::Match($inputMatch.Value, '\bvalue\s*=\s*(["''])(.*?)\1')
+    } else {
+        $null
+    }
+    if ($null -eq $valueMatch -or -not $valueMatch.Success -or [string]::IsNullOrWhiteSpace($valueMatch.Groups[2].Value)) {
+        throw "Login page did not expose a non-empty CSRF token."
+    }
+    return [System.Net.WebUtility]::HtmlDecode($valueMatch.Groups[2].Value)
+}
+
 function New-SessionId {
     param(
         [string] $BaseUrl,
@@ -114,6 +134,7 @@ function New-SessionId {
     $loginRunId = [System.Guid]::NewGuid().ToString("N")
     $cookieJar = Join-Path $tempDirectory "browser-screenshot-cookies-$loginRunId.txt"
     $loginBody = Join-Path $tempDirectory "browser-screenshot-login-$loginRunId.html"
+    $loginHeaders = Join-Path $tempDirectory "browser-screenshot-login-$loginRunId.headers"
 
     if (Test-Path -LiteralPath $cookieJar) {
         Remove-Item -LiteralPath $cookieJar -Force
@@ -121,14 +142,29 @@ function New-SessionId {
     if (Test-Path -LiteralPath $loginBody) {
         Remove-Item -LiteralPath $loginBody -Force
     }
+    if (Test-Path -LiteralPath $loginHeaders) {
+        Remove-Item -LiteralPath $loginHeaders -Force
+    }
 
-    & curl.exe -s -L -c $cookieJar -b $cookieJar -o $loginBody `
-        -X POST "$BaseUrl/auth/login" `
+    & curl.exe -s -L -c $cookieJar -b $cookieJar -o $loginBody "$BaseUrl/login.jsp"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Login page request failed with exit code $LASTEXITCODE."
+    }
+    $csrfToken = Get-CsrfTokenFromHtml -Html (Get-Content -LiteralPath $loginBody -Raw)
+
+    $loginStatus = & curl.exe -s -c $cookieJar -b $cookieJar -D $loginHeaders -o $loginBody -w "%{http_code}" "$BaseUrl/auth/login" `
+        --data-urlencode "csrfToken=$csrfToken" `
         --data-urlencode "email=$Email" `
-        --data-urlencode "password=$Password" | Out-Null
+        --data-urlencode "password=$Password"
 
     if ($LASTEXITCODE -ne 0) {
         throw "Login request failed with exit code $LASTEXITCODE."
+    }
+    $location = Select-String -LiteralPath $loginHeaders -Pattern '(?i)^Location:\s*(.+?)\s*$' |
+        Select-Object -Last 1 |
+        ForEach-Object { $_.Matches[0].Groups[1].Value.Trim() }
+    if ($loginStatus -notin @("302", "303") -or [string]::IsNullOrWhiteSpace($location) -or $location -match '(?i)/login\.jsp') {
+        throw "Authentication failed for $Email (HTTP $loginStatus)."
     }
 
     $sessionLine = Select-String -LiteralPath $cookieJar -Pattern "JSESSIONID" -ErrorAction SilentlyContinue |

@@ -158,7 +158,7 @@
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="messages.jsp" class="nav-submenu__link hover-bg-neutral-30">Message</a>
+                <a href="messages.jsp" class="nav-submenu__link hover-bg-neutral-30">Messages</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
@@ -407,7 +407,7 @@
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="messages.jsp" class="nav-submenu__link hover-bg-neutral-30">Message</a>
+                <a href="messages.jsp" class="nav-submenu__link hover-bg-neutral-30">Messages</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
@@ -571,7 +571,7 @@
                         <p class="text-neutral-500 mb-32">You do not have permission to open this area or perform this operation in GAPE.</p>
                         <div class="d-flex justify-content-center gap-16 flex-wrap">
                             <a href="index.jsp" class="btn btn-main rounded-pill">Back to Home</a>
-                            <a href="${pageContext.request.contextPath}/dashboard" class="btn btn-outline-main rounded-pill">Abrir dashboard</a>
+                            <a href="${pageContext.request.contextPath}/dashboard" class="btn btn-outline-main rounded-pill">Open dashboard</a>
                         </div>
                     </div>
                 </div>

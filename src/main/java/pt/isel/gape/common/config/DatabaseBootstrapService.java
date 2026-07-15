@@ -4,7 +4,10 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import pt.isel.gape.common.time.ApplicationClock;
 import pt.isel.gape.common.sql.SqlScriptExecutor;
+import pt.isel.gape.learning.dao.LearningEventDAO;
+import pt.isel.gape.learning.service.AcademicLifecycleSynchronizationService;
 
 public final class DatabaseBootstrapService {
 
@@ -35,5 +38,8 @@ public final class DatabaseBootstrapService {
         for (String resource : mode.seedResources()) {
             SqlScriptExecutor.executeResource(connection, resource);
         }
+        new AcademicLifecycleSynchronizationService(DatabaseConfig::getConnection, ApplicationClock.system())
+                .synchronize(connection);
+        new LearningEventDAO(DatabaseConfig::getConnection).rebuildFromCurrentRecords(connection);
     }
 }

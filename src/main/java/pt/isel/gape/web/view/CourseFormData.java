@@ -2,6 +2,7 @@ package pt.isel.gape.web.view;
 
 import jakarta.servlet.http.HttpServletRequest;
 import pt.isel.gape.learning.model.Course;
+import pt.isel.gape.learning.model.CourseFrequency;
 import pt.isel.gape.learning.model.CourseState;
 import pt.isel.gape.learning.model.CourseType;
 
@@ -17,6 +18,7 @@ public final class CourseFormData {
     private final String ects;
     private final String certificateMaxGrade;
     private final String duration;
+    private final String frequency;
     private final String type;
     private final String state;
 
@@ -31,6 +33,7 @@ public final class CourseFormData {
             String ects,
             String certificateMaxGrade,
             String duration,
+            String frequency,
             String type,
             String state
     ) {
@@ -44,6 +47,7 @@ public final class CourseFormData {
         this.ects = ects;
         this.certificateMaxGrade = certificateMaxGrade;
         this.duration = duration;
+        this.frequency = frequency;
         this.type = type;
         this.state = state;
     }
@@ -59,6 +63,7 @@ public final class CourseFormData {
                 "",
                 "",
                 "20",
+                "",
                 "",
                 CourseType.DEGREE.name(),
                 CourseState.ACTIVE.name()
@@ -77,6 +82,7 @@ public final class CourseFormData {
                 course.ects() == null ? "" : course.ects().stripTrailingZeros().toPlainString(),
                 course.certificateMaxGrade() == null ? "" : course.certificateMaxGrade().stripTrailingZeros().toPlainString(),
                 course.duration() == null ? "" : course.duration(),
+                course.frequency().name(),
                 course.type().name(),
                 course.state().name()
         );
@@ -94,6 +100,7 @@ public final class CourseFormData {
                 value(request, "ects"),
                 value(request, "certificateMaxGrade"),
                 value(request, "duration"),
+                value(request, "frequency"),
                 value(request, "type"),
                 value(request, "state")
         );
@@ -137,6 +144,10 @@ public final class CourseFormData {
 
     public String getDuration() {
         return duration;
+    }
+
+    public String getFrequency() {
+        return frequency;
     }
 
     public String getType() {

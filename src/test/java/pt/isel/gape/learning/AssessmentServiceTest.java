@@ -4,7 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -139,6 +142,25 @@ class AssessmentServiceTest {
     }
 
     @Test
+    void synchronizeTemporalStatesCorrectsExpiredAndFutureAssessments() throws SQLException {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     UPDATE assessment
+                     SET state = 'active', available_from = ?, available_until = ?
+                     WHERE id_assessment = 90
+                     """)) {
+            statement.setTimestamp(1, Timestamp.valueOf(LocalDateTime.of(2026, 2, 10, 8, 0)));
+            statement.setTimestamp(2, Timestamp.valueOf(LocalDateTime.of(2026, 2, 11, 9, 0)));
+            assertEquals(1, statement.executeUpdate());
+        }
+
+        assertEquals(2, assessmentService.synchronizeTemporalStates());
+
+        assertEquals(AssessmentState.COMPLETED, assessmentDAO.findById(90L).orElseThrow().state());
+        assertEquals(AssessmentState.SCHEDULED, assessmentDAO.findById(91L).orElseThrow().state());
+    }
+
+    @Test
     void teacherCanCreateValidBlockExam() {
         Assessment assessment = assessmentService.createAssessment(
                 3L,
@@ -179,6 +201,64 @@ class AssessmentServiceTest {
                 command,
                 IP
         ));
+    }
+
+    @Test
+    void assessmentAvailabilityStartIsRequired() {
+        AssessmentCreateCommand command = new AssessmentCreateCommand(
+                null,
+                60L,
+                "Form Without Availability Start",
+                null,
+                AssessmentType.FORM,
+                AssessmentMode.ONLINE,
+                AssessmentCorrectionMode.AUTOMATIC,
+                bd("20.00"),
+                bd("10.00"),
+                1,
+                AssessmentState.SCHEDULED,
+                null,
+                end()
+        );
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> assessmentService.createAssessment(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                command,
+                IP
+        ));
+
+        assertEquals("Assessment availability start is required", exception.getMessage());
+    }
+
+    @Test
+    void assessmentAvailabilityEndIsRequired() {
+        AssessmentCreateCommand command = new AssessmentCreateCommand(
+                null,
+                60L,
+                "Form Without Availability End",
+                null,
+                AssessmentType.FORM,
+                AssessmentMode.ONLINE,
+                AssessmentCorrectionMode.AUTOMATIC,
+                bd("20.00"),
+                bd("10.00"),
+                1,
+                AssessmentState.SCHEDULED,
+                start(),
+                null
+        );
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> assessmentService.createAssessment(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                command,
+                IP
+        ));
+
+        assertEquals("Assessment availability end is required", exception.getMessage());
     }
 
     @Test
@@ -461,6 +541,7 @@ class AssessmentServiceTest {
         return new AssessmentCreateCommand(
                 null,
                 60L,
+                mode == AssessmentMode.ONSITE ? "SALA-A1" : null,
                 title,
                 "Block assessment",
                 AssessmentType.FORM,
@@ -479,6 +560,7 @@ class AssessmentServiceTest {
         return new AssessmentCreateCommand(
                 40L,
                 null,
+                mode == AssessmentMode.ONSITE ? "SALA-A1" : null,
                 title,
                 "Subject assessment",
                 AssessmentType.EXAM,
@@ -498,6 +580,7 @@ class AssessmentServiceTest {
         return new AssessmentCreateCommand(
                 null,
                 60L,
+                mode == AssessmentMode.ONSITE ? "SALA-A1" : null,
                 title,
                 "Block exam assessment",
                 AssessmentType.EXAM,
@@ -516,6 +599,7 @@ class AssessmentServiceTest {
         return new AssessmentCreateCommand(
                 null,
                 60L,
+                mode == AssessmentMode.ONSITE ? "SALA-A1" : null,
                 title,
                 "Manual block exam assessment",
                 AssessmentType.EXAM,

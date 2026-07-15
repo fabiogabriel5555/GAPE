@@ -38,7 +38,7 @@ Class groups:
 - `GET /learning/class-groups/{id}`
 - `GET /learning/class-groups/{id}/edit`
 - `POST /learning/class-groups/{id}`
-- `POST /learning/class-groups/{id}/archive`
+- `POST /learning/class-groups/{id}/deactivate`
 - `POST /learning/class-groups/{id}/delete`
 
 Teacher assignment:
@@ -58,7 +58,7 @@ Pedagogical blocks:
 - `POST /learning/class-groups/{id}/blocks`
 - `GET /learning/class-groups/{id}/blocks/{blockId}/edit`
 - `POST /learning/class-groups/{id}/blocks/{blockId}`
-- `POST /learning/class-groups/{id}/blocks/{blockId}/archive`
+- `POST /learning/class-groups/{id}/blocks/{blockId}/deactivate`
 - `POST /learning/class-groups/{id}/blocks/{blockId}/delete`
 
 ## JSPs
@@ -82,7 +82,7 @@ Adapted JSPs:
 
 - `admin/admin/course/admin-course-detail.jsp`: adds class groups for the course and links to create/open groups.
 - `admin/admin/subject/admin-subject-detail.jsp`: adds class groups for the subject and links to create/open groups.
-- `student/student-enrolled-courses.jsp`: adds class group enrollment, withdrawal and visible pedagogical blocks under the student's active subject contexts.
+- `student/student-enrolled-courses.jsp`: adds class group enrollment, withdrawal and visible pedagogical blocks under the student's active course-occurrence context.
 - `WEB-INF/fragments/dashboard-sidebar.jspf`: adds Class Groups navigation and contextual child links.
 
 ## Backend Link
@@ -111,8 +111,8 @@ Class group course/subject and content block class group are immutable after cre
 - `/learning/*` is now protected by `AuthorizationPolicy` for administrator, coordinator and teacher profiles.
 - Mutating `/learning/*` requests are covered by `CsrfFilter`.
 - The servlet delegates fine-grained context checks to the Phase 8 services.
-- UI actions are hidden for archived class groups and for structural operations that teachers cannot perform.
-- Student class group actions are routed through `ClassGroupEnrollmentService`, so enrollment still requires active subject enrollment, capacity, date and overlap checks.
+- UI actions are hidden for completed class groups and for structural operations that teachers cannot perform.
+- Student class group actions are routed through `ClassGroupEnrollmentService`, so enrollment requires an active enrollment in the same course occurrence covering the full class-group period, plus capacity, date, approval-policy and overlap checks.
 
 ## Visual Decisions
 
@@ -129,8 +129,8 @@ Class group course/subject and content block class group are immutable after cre
 - `ContentBlockService` and `ContentBlockDAO` no longer allow moving a block to another class group after creation.
 - `schema.sql` rejects class group and content block retargeting at trigger level.
 - `schema.sql` includes `uq_content_block_active_order` using a generated active-only order key, protecting active block order uniqueness against races.
-- Class group enrollment overlap is checked across every active class group in the same course/subject context, not only the exact same class group.
-- Student enrollment pages now include class group enroll/withdraw actions and visible active blocks. The enroll action is hidden when the student already has an active class group enrollment in the same course/subject context.
+- Class group enrollment overlap is checked across every active class group in the same course-occurrence/subject context, not only the exact same class group.
+- Student enrollment pages now include class group request/withdraw actions and visible active blocks. The request action is hidden when the student already has an active or pending class group enrollment in the same course-occurrence/subject context.
 - Tests were expanded in `ClassGroupServiceTest`, `ClassGroupEnrollmentServiceTest`, `ContentBlockServiceTest`, `AuthorizationFilterTest`, `SchemaIntegrityTest` and `TemplateStructureTest`.
 
 ## Manual Test Checklist
@@ -140,8 +140,8 @@ Class group course/subject and content block class group are immutable after cre
 - Try to create a class group where the subject is not integrated in the course and verify the error.
 - Try `minStudents > maxStudents` and verify the validation error.
 - Edit a class group and verify context, state, capacity and dates.
-- Enroll a student who is actively enrolled in the subject.
-- Try enrolling a student without subject enrollment and verify the error.
+- Enroll a student whose active course enrollment targets the class group's occurrence and covers the full class-group period.
+- Try enrolling a student without a covering enrollment in that course occurrence and verify the error.
 - Try exceeding max capacity and verify the error.
 - Withdraw an active student from the class group.
 - Assign an active teacher.
@@ -149,8 +149,8 @@ Class group course/subject and content block class group are immutable after cre
 - Try creating a scheduled block without `availableFrom` and verify the error.
 - Try duplicating an active block order and verify the error.
 - Edit a block order and verify the visual order changes.
-- Archive a block and verify edit/archive/delete actions disappear for that block.
-- Archive a class group and verify mutating actions disappear.
+- Deactivate a block and verify edit/deactivate/delete actions disappear for that block.
+- Complete a class group and verify mutating actions disappear.
 
 ## Verification Run
 
@@ -175,6 +175,6 @@ Final verification:
 - Verified duplicate active block order is blocked with `Another active content block already uses this order.`
 - Checked `/admin/courses/30` and `/admin/subjects/42`; both expose the Class Groups section and related links.
 - Checked mobile viewport `390x844` for `/learning/class-groups` and `/learning/class-groups/57`; no horizontal overflow or console errors were detected.
-- `mvn test`: passed on 2026-06-13 at 00:25 +01:00 with 233 tests, 0 failures, 0 errors and 0 skipped.
+- `mvn test`: passed on 13-06-2026 at 00-25-00 Europe/Lisbon with 233 tests, 0 failures, 0 errors and 0 skipped.
 
 The in-app Browser screenshot calls timed out in this run. Validation was completed through rendered DOM state, route transitions, form submissions, flash messages, viewport checks and console-error checks.

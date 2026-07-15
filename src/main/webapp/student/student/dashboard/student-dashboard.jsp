@@ -83,7 +83,7 @@
                     <div class="gape-student-line-card px-20 py-18 h-100">
                         <span class="text-13 text-neutral-500 d-block mb-8">Quick message center</span>
                         <strong class="text-16 text-neutral-800">Messages and updates stay separate from class content.</strong>
-                        <a href="${pageContext.request.contextPath}/student/student/message/student-message.jsp" class="gape-student-card-icon-button mt-16" aria-label="Open message" title="Open message">
+                        <a href="${pageContext.request.contextPath}/messages" class="gape-student-card-icon-button mt-16" aria-label="Open message" title="Open message">
                             <i class="ph ph-arrow-right"></i>
                         </a>
                     </div>

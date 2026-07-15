@@ -21,7 +21,7 @@ Covered by `ContentItemServiceTest`:
 - Allows reusable file reads even when the actor cannot access the original context.
 - Allows a block manager to delete pedagogical content even when they are not the author.
 - Rejects deletion by students.
-- Archives protected content instead of physically deleting it.
+- Deactivates protected content instead of physically deleting it.
 - Deletes the physical file only when no other content item uses the same stored source.
 - Preserves stored file metadata when another content item still uses the same file.
 
@@ -109,7 +109,7 @@ Expected result: deleting one content preserves the file while another content s
 1. Mark content as mandatory in an active block, or associate it to an assessment with submitted attempts.
 2. Delete the pedagogical content.
 
-Expected result: content is archived instead of physically deleted, and the stored file remains.
+Expected result: content is marked inactive instead of physically deleted, and the stored file remains.
 
 ### Student View
 

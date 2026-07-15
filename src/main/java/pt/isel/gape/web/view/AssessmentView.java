@@ -2,9 +2,8 @@ package pt.isel.gape.web.view;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.Assessment;
 import pt.isel.gape.learning.model.AssessmentCorrectionMode;
 import pt.isel.gape.learning.model.AssessmentMode;
@@ -12,11 +11,6 @@ import pt.isel.gape.learning.model.AssessmentState;
 import pt.isel.gape.learning.model.AssessmentType;
 
 public final class AssessmentView {
-
-    private static final DateTimeFormatter DISPLAY_DATE_TIME =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("pt-PT"));
-    private static final DateTimeFormatter INPUT_DATE_TIME =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
 
     private final Assessment assessment;
     private final String subjectName;
@@ -143,6 +137,14 @@ public final class AssessmentView {
         };
     }
 
+    public String getPhysicalRoomCode() {
+        return assessment.physicalRoomCode();
+    }
+
+    public boolean isHasRoom() {
+        return assessment.physicalRoomCode() != null && !assessment.physicalRoomCode().isBlank();
+    }
+
     public boolean isOnline() {
         return assessment.mode() == AssessmentMode.ONLINE;
     }
@@ -256,10 +258,6 @@ public final class AssessmentView {
         return assessment.state() == AssessmentState.ACTIVE;
     }
 
-    public boolean isArchived() {
-        return assessment.state() == AssessmentState.COMPLETED;
-    }
-
     public boolean isCompleted() {
         return assessment.state() == AssessmentState.COMPLETED;
     }
@@ -365,11 +363,11 @@ public final class AssessmentView {
     }
 
     private static String displayDateTime(LocalDateTime value) {
-        return value == null ? "" : DISPLAY_DATE_TIME.format(value);
+        return value == null ? "" : ApplicationDateTimeFormat.dateTime(value);
     }
 
     private static String inputDateTime(LocalDateTime value) {
-        return value == null ? "" : INPUT_DATE_TIME.format(value);
+        return value == null ? "" : ApplicationDateTimeFormat.TECHNICAL_DATE_TIME.format(value);
     }
 
     private static String gradeLabel(BigDecimal value) {

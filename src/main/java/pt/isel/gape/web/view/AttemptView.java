@@ -2,16 +2,12 @@ package pt.isel.gape.web.view;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.Attempt;
 import pt.isel.gape.learning.model.AttemptState;
 
 public final class AttemptView {
-
-    private static final DateTimeFormatter DISPLAY_DATE_TIME =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("pt-PT"));
 
     private final Attempt attempt;
     private final String studentName;
@@ -140,7 +136,7 @@ public final class AttemptView {
     }
 
     private static String displayDateTime(LocalDateTime value) {
-        return value == null ? "" : DISPLAY_DATE_TIME.format(value);
+        return value == null ? "" : ApplicationDateTimeFormat.dateTime(value);
     }
 
     private static String gradeLabel(BigDecimal value) {

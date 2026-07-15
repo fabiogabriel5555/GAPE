@@ -27,16 +27,18 @@ INSERT INTO organic_unit (
 
 -- Class group without an existing subject
 INSERT INTO class_group (
-    id_class_group, id_subject, id_course, cod_class_group, modality, state
+    id_class_group, id_subject, id_course, id_course_occurrence, id_course_occurrence_period, cod_class_group, modality, state,
+    starts_at, ends_at, shift
 ) VALUES
-    (9011, 999999, 30, 'PRJ-FK', 'onsite', 'active');
+    (9011, 999999, 30, 300, 3001, 'PRJ-FK', 'onsite', 'active',
+     '2026-02-01', '2026-06-30', 'evening');
 
 -- Block without an existing class group
 INSERT INTO content_block (
     id_content_block, id_class_group, cod_content_block, name, description, order_no,
-    access_mode, state, available_from, available_until
+    state
 ) VALUES
-    (9012, 999999, 'BLK-FK', 'Block FK', 'Without class group', 1, 'open', 'active', NULL, NULL);
+    (9012, 999999, 'BLK-FK', 'Block FK', 'Without class group', 1, 'active');
 
 -- Lesson without an existing block
 INSERT INTO lesson (
@@ -72,15 +74,15 @@ INSERT INTO response (
 
 -- Certificate without an existing course
 INSERT INTO certificate (
-    id_certificate, id_course, id_user_student, title, notes, type, template, validation_code, issued_at, final_grade
+    id_certificate, id_course, id_course_occurrence, id_user_student, title, notes, type, template, issued_at, final_grade
 ) VALUES
-    (9018, 999999, 4, 'Course FK Certificate', NULL, 'completion', NULL, 'CERT-FK-COURSE', '2026-07-01 10:00:00', NULL);
+    (9018, 999999, 300, 4, 'Course FK Certificate', NULL, 'completion', NULL, NULL, NULL);
 
 -- Certificate without an existing student
 INSERT INTO certificate (
-    id_certificate, id_course, id_user_student, title, notes, type, template, validation_code, issued_at, final_grade
+    id_certificate, id_course, id_course_occurrence, id_user_student, title, notes, type, template, issued_at, final_grade
 ) VALUES
-    (9019, 30, 999999, 'Cert FK Aluno', NULL, 'completion', NULL, 'CERT-FK-STUDENT', '2026-07-01 10:05:00', NULL);
+    (9019, 30, 300, 999999, 'Student FK Certificate', NULL, 'completion', NULL, NULL, NULL);
 
 -- FK para permission inexistente
 INSERT INTO grant_teacher (id_teacher_user, cod_permission)

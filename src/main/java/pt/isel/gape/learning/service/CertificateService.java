@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,6 +31,7 @@ import pt.isel.gape.learning.model.CourseEnrollment;
 import pt.isel.gape.learning.model.EnrollmentState;
 import pt.isel.gape.learning.model.GradeAssessmentWeight;
 import pt.isel.gape.learning.model.GradeSheet;
+import pt.isel.gape.learning.model.GradeSheetState;
 import pt.isel.gape.security.authorization.PermissionChecker;
 import pt.isel.gape.transversal.dao.ActivityLogDAO;
 import pt.isel.gape.transversal.service.AuditService;
@@ -58,6 +60,42 @@ public final class CertificateService {
                 new PermissionDAO(connectionProvider),
                 clock
         );
+    }
+
+    public CertificateValidationResult validateCertificate(String validationCode, String sourceIp) {
+        if (validationCode == null || validationCode.isBlank()) {
+            auditService.record(null, null, "CERTIFICATE_PUBLIC_VALIDATE",
+                    "certificate", "blank", "failure", sourceIp);
+            return CertificateValidationResult.invalid();
+        }
+        String normalizedCode = validationCode.trim();
+        if (normalizedCode.length() > VALIDATION_CODE_MAX_LENGTH) {
+            auditService.record(null, null, "CERTIFICATE_PUBLIC_VALIDATE",
+                    "certificate", "malformed", "failure", sourceIp);
+            return CertificateValidationResult.invalid();
+        }
+        try (Connection connection = connectionProvider.getConnection()) {
+            Certificate certificate = certificateDAO.findIssuedByValidationCode(connection, normalizedCode)
+                    .orElse(null);
+            if (certificate == null) {
+                auditService.record(null, null, "CERTIFICATE_PUBLIC_VALIDATE",
+                        "certificate", "not-found", "failure", sourceIp);
+                return CertificateValidationResult.invalid();
+            }
+            auditService.record(null, null, "CERTIFICATE_PUBLIC_VALIDATE",
+                    "certificate", Long.toString(certificate.id()), "success", sourceIp);
+            return new CertificateValidationResult(
+                    true,
+                    certificate.id(),
+                    certificate.title(),
+                    certificate.type(),
+                    certificate.courseId(),
+                    certificate.courseOccurrenceId(),
+                    certificate.issuedAt()
+            );
+        } catch (SQLException exception) {
+            throw wrap(exception, "Failed to validate certificate");
+        }
     }
 
     public CertificateService(
@@ -99,7 +137,12 @@ public final class CertificateService {
                     if (!enrollmentDAO.activeStudentExists(connection, command.studentUserId())) {
                         throw new IllegalArgumentException("Student not found or inactive: " + command.studentUserId());
                     }
-                    requireCertificateCourseEnrollment(connection, command.studentUserId(), command.courseId());
+                    CourseEnrollment enrollment = requireCertificateCourseEnrollment(
+                            connection,
+                            command.studentUserId(),
+                            command.courseId(),
+                            command.courseOccurrenceId()
+                    );
                     accessPolicy.requireCourseManager(
                             connection,
                             actorUserId,
@@ -111,6 +154,7 @@ public final class CertificateService {
                     Certificate certificate = synchronizeCertificateForStudentCourse(
                             connection,
                             command.courseId(),
+                            enrollment.courseOccurrenceId(),
                             command.studentUserId()
                     );
                     if (certificate == null || !isCompleted(certificate)) {
@@ -136,50 +180,44 @@ public final class CertificateService {
         }
     }
 
-    public CertificateValidationResult validateCertificate(String validationCode, String sourceIp) {
-        if (validationCode == null || validationCode.isBlank()) {
-            auditService.record(null, null, "CERTIFICATE_PUBLIC_VALIDATE",
-                    "certificate", "blank", "failure", sourceIp);
-            return CertificateValidationResult.invalid();
-        }
-        String normalizedCode = validationCode.trim();
-        try (Connection connection = connectionProvider.getConnection()) {
-            Certificate certificate = certificateDAO.findIssuedByValidationCode(connection, normalizedCode)
-                    .orElse(null);
-            if (certificate == null) {
-                auditService.record(null, null, "CERTIFICATE_PUBLIC_VALIDATE",
-                        "certificate", normalizedCode, "failure", sourceIp);
-                return CertificateValidationResult.invalid();
-            }
-            auditService.record(null, null, "CERTIFICATE_PUBLIC_VALIDATE",
-                    "certificate", Long.toString(certificate.id()), "success", sourceIp);
-            return new CertificateValidationResult(
-                    true,
-                    certificate.id(),
-                    certificate.title(),
-                    certificate.type(),
-                    certificate.courseId(),
-                    certificate.issuedAt()
-            );
-        } catch (SQLException exception) {
-            throw wrap(exception, "Failed to validate certificate");
-        }
-    }
-
     Certificate synchronizeCertificateForStudentCourse(
             Connection connection,
             long courseId,
             long studentUserId
     ) throws SQLException {
+        CourseEnrollment enrollment = requireCertificateCourseEnrollment(connection, studentUserId, courseId, null);
+        return synchronizeCertificateForStudentCourse(connection, courseId, enrollment.courseOccurrenceId(), studentUserId);
+    }
+
+    Certificate synchronizeCertificateForStudentCourse(
+            Connection connection,
+            long courseId,
+            long courseOccurrenceId,
+            long studentUserId
+    ) throws SQLException {
         if (!enrollmentDAO.activeStudentExists(connection, studentUserId)) {
             return null;
         }
-        requireCertificateCourseEnrollment(connection, studentUserId, courseId);
+        requireCertificateCourseEnrollment(connection, studentUserId, courseId, courseOccurrenceId);
         String defaultTitle = "Certificate - " + certificateDAO.findCourseName(connection, courseId);
-        long certificateId = certificateDAO.createDraftIfAbsent(connection, courseId, studentUserId, defaultTitle);
+        long certificateId = certificateDAO.createDraftIfAbsent(
+                connection,
+                courseId,
+                courseOccurrenceId,
+                studentUserId,
+                defaultTitle
+        );
         Certificate current = requireCertificate(connection, certificateId);
+        if (isCompleted(current)) {
+            return current;
+        }
         try {
-            CertificateCalculation calculation = calculateCertificate(connection, courseId, studentUserId);
+            CertificateCalculation calculation = calculateCertificate(
+                    connection,
+                    courseId,
+                    courseOccurrenceId,
+                    studentUserId
+            );
             String validationCode = resolveValidationCode(
                     connection,
                     current.state() == CertificateState.ISSUED ? current.validationCode() : null,
@@ -263,42 +301,6 @@ public final class CertificateService {
         }
     }
 
-    public Certificate revokeCertificate(
-            long actorUserId,
-            Long sessionId,
-            AccessProfileType actorProfileType,
-            long certificateId,
-            String sourceIp
-    ) {
-        try (Connection connection = connectionProvider.getConnection()) {
-            boolean originalAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            try {
-                Certificate certificate = certificateDAO.lockById(connection, certificateId)
-                        .orElseThrow(() -> new IllegalArgumentException("Certificate not found: " + certificateId));
-                requireCertificateManager(connection, actorUserId, sessionId, actorProfileType, certificate, sourceIp);
-                if (certificate.state() != CertificateState.ISSUED || !isCompleted(certificate)) {
-                    throw new IllegalStateException("Only issued certificates can be revoked");
-                }
-                certificateDAO.revoke(connection, certificateId, LocalDateTime.now(clock));
-                certificateDAO.replaceGradeSheets(connection, certificateId, certificate.gradeSheetIds());
-                auditService.record(connection, actorUserId, sessionId, "CERTIFICATE_REVOKE",
-                        "certificate", Long.toString(certificateId), "success", sourceIp);
-                Certificate revoked = requireCertificate(connection, certificateId);
-                connection.commit();
-                return revoked;
-            } catch (RuntimeException | SQLException exception) {
-                connection.rollback();
-                auditFailure(actorUserId, sessionId, "CERTIFICATE_REVOKE", Long.toString(certificateId), sourceIp);
-                throw exception;
-            } finally {
-                connection.setAutoCommit(originalAutoCommit);
-            }
-        } catch (RuntimeException | SQLException exception) {
-            throw wrap(exception, "Failed to revoke certificate");
-        }
-    }
-
     private Certificate requireCertificate(Connection connection, long certificateId) throws SQLException {
         return certificateDAO.findById(connection, certificateId)
                 .orElseThrow(() -> new IllegalArgumentException("Certificate not found: " + certificateId));
@@ -307,6 +309,7 @@ public final class CertificateService {
     private CertificateCalculation calculateCertificate(
             Connection connection,
             long courseId,
+            long courseOccurrenceId,
             long studentUserId
     ) throws SQLException {
         CertificateDAO.CourseScale course = certificateDAO.findCourseScale(connection, courseId);
@@ -328,6 +331,7 @@ public final class CertificateService {
             CertificateDAO.SubjectApprovedGrade approvedGrade = findApprovedSubjectGrade(
                     connection,
                     courseId,
+                    courseOccurrenceId,
                     subject.subjectId(),
                     studentUserId
             ).orElseThrow(() -> new IllegalStateException(
@@ -349,12 +353,14 @@ public final class CertificateService {
     private Optional<CertificateDAO.SubjectApprovedGrade> findApprovedSubjectGrade(
             Connection connection,
             long courseId,
+            long courseOccurrenceId,
             long subjectId,
             long studentUserId
     ) throws SQLException {
         for (CertificateDAO.SubjectApprovedGrade grade : certificateDAO.findApprovedSubjectGradeCandidates(
                 connection,
                 courseId,
+                courseOccurrenceId,
                 subjectId,
                 studentUserId
         )) {
@@ -371,7 +377,42 @@ public final class CertificateService {
             long studentUserId
     ) throws SQLException {
         GradeSheet gradeSheet = gradeSheetDAO.findById(connection, gradeSheetId).orElse(null);
-        if (gradeSheet == null) {
+        if (gradeSheet == null || !gradeSheetIsAcademicallyComplete(connection, gradeSheet)) {
+            return false;
+        }
+        return gradeSheetDAO.hasActiveGradeRecord(connection, gradeSheet.id(), studentUserId);
+    }
+
+    /**
+     * Publication now means that a sheet is available to consult, including
+     * the mandatory publication at the end of a period.  Certificate issuance
+     * needs the stronger condition that no class-group/student result remains
+     * pending, so it cannot use Published as a proxy for completeness.
+     */
+    private boolean gradeSheetIsAcademicallyComplete(Connection connection, GradeSheet gradeSheet)
+            throws SQLException {
+        if (!isPublishedForCertificate(gradeSheet)) {
+            return false;
+        }
+        if (gradeSheet.classGroupIds().isEmpty()) {
+            List<GradeSheet> sourceSheets = gradeSheetDAO.findClassGroupGradeSheetsForSubjectOccurrence(
+                    connection,
+                    gradeSheet.subjectId(),
+                    gradeSheet.courseOccurrenceId()
+            );
+            if (sourceSheets.isEmpty()) {
+                return false;
+            }
+            for (GradeSheet sourceSheet : sourceSheets) {
+                if (!gradeSheetIsAcademicallyComplete(connection, sourceSheet)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        List<Long> studentUserIds = gradeSheetDAO.findStudentUserIdsForSheetContext(connection, gradeSheet);
+        if (studentUserIds.isEmpty()) {
             return false;
         }
         List<GradeAssessmentWeight> assessmentWeights = gradeSheetAssessmentWeights(connection, gradeSheet);
@@ -381,12 +422,21 @@ public final class CertificateService {
         List<Long> assessmentIds = assessmentWeights.stream()
                 .map(GradeAssessmentWeight::assessmentId)
                 .toList();
-        for (Long assessmentId : assessmentIds) {
-            if (!gradeSheetDAO.hasCorrectedAssessmentScore(connection, studentUserId, assessmentId)) {
+        for (Long studentUserId : studentUserIds) {
+            if (!gradeSheetDAO.hasActiveGradeRecord(connection, gradeSheet.id(), studentUserId)) {
                 return false;
+            }
+            for (Long assessmentId : assessmentIds) {
+                if (!gradeSheetDAO.hasCorrectedAssessmentScore(connection, studentUserId, assessmentId)) {
+                    return false;
+                }
             }
         }
         return true;
+    }
+
+    private static boolean isPublishedForCertificate(GradeSheet gradeSheet) {
+        return gradeSheet.state() == GradeSheetState.PUBLISHED || gradeSheet.state() == GradeSheetState.CLOSED;
     }
 
     private List<GradeAssessmentWeight> gradeSheetAssessmentWeights(Connection connection, GradeSheet gradeSheet)
@@ -398,6 +448,7 @@ public final class CertificateService {
         List<Long> contextAssessmentIds = gradeSheetDAO.findAssessmentIdsForSheetContext(
                 connection,
                 gradeSheet.subjectId(),
+                gradeSheet.courseOccurrenceId(),
                 gradeSheet.classGroupIds()
         );
         if (contextAssessmentIds.isEmpty()) {
@@ -427,16 +478,21 @@ public final class CertificateService {
         return total.compareTo(ONE_HUNDRED) == 0;
     }
 
-    private void requireCertificateCourseEnrollment(
+    private CourseEnrollment requireCertificateCourseEnrollment(
             Connection connection,
             long studentUserId,
-            long courseId
+            long courseId,
+            Long courseOccurrenceId
     ) throws SQLException {
         CourseEnrollment enrollment = enrollmentDAO.findCourseEnrollment(connection, studentUserId, courseId)
                 .orElseThrow(() -> new IllegalStateException("Student is not enrolled in this course"));
+        if (courseOccurrenceId != null && courseOccurrenceId > 0 && enrollment.courseOccurrenceId() != courseOccurrenceId) {
+            throw new IllegalStateException("Student is not enrolled in the requested course occurrence");
+        }
         if (enrollment.state() == EnrollmentState.WITHDRAWN || enrollment.state() == EnrollmentState.REJECTED) {
             throw new IllegalStateException("Student is not eligible for a certificate in this course");
         }
+        return enrollment;
     }
 
     private static boolean isCompleted(Certificate certificate) {
@@ -517,7 +573,7 @@ public final class CertificateService {
             return code;
         }
         for (int attempts = 0; attempts < 5; attempts++) {
-            String code = "CERT-" + UUID.randomUUID().toString().replace("-", "").toUpperCase();
+            String code = "CERT-" + UUID.randomUUID().toString().replace("-", "").toUpperCase(Locale.ROOT);
             if (!certificateDAO.validationCodeExists(connection, code)) {
                 return code;
             }
@@ -532,6 +588,9 @@ public final class CertificateService {
         }
         if (command.studentUserId() <= 0) {
             throw new IllegalArgumentException("Student id must be positive");
+        }
+        if (command.courseOccurrenceId() != null && command.courseOccurrenceId() <= 0) {
+            throw new IllegalArgumentException("Course occurrence id must be positive");
         }
     }
 

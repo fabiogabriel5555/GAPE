@@ -36,9 +36,9 @@
                             <span class="${record.statusBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12">
                                 <c:out value="${record.statusLabel}"/>
                             </span>
-                            <span class="text-13 text-neutral-500"><i class="ph ph-clock me-6"></i>In: <c:out value="${record.checkIn}"/></span>
-                            <span class="text-13 text-neutral-500"><i class="ph ph-clock-counter-clockwise me-6"></i>Out: <c:out value="${record.checkOut}"/></span>
-                            <span class="text-13 text-neutral-500"><i class="ph ph-timer me-6"></i><c:out value="${record.permanenceLabel}"/></span>
+                            <span class="text-13 text-neutral-500" data-gape-datetime-display><i class="ph ph-clock me-6"></i>In: <c:out value="${record.checkIn}"/></span>
+                            <span class="text-13 text-neutral-500" data-gape-datetime-display><i class="ph ph-clock-counter-clockwise me-6"></i>Out: <c:out value="${record.checkOut}"/></span>
+                            <span class="text-13 text-neutral-500" data-gape-datetime-display><i class="ph ph-timer me-6"></i><c:out value="${record.permanenceLabel}"/></span>
                             <span class="text-13 text-neutral-500"><i class="ph ph-note me-6"></i><c:out value="${record.notes}"/></span>
                         </div>
                     </div>
@@ -109,8 +109,8 @@
                         <c:out value="${justification.reason}"/>
                         <span class="d-block text-12">Attachment: <c:out value="${justification.attachmentLabel}"/></span>
                     </td>
-                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${justification.submittedAt}"/></td>
-                    <td class="py-20 px-20 text-14 text-neutral-500"><c:out value="${justification.processedAt}"/></td>
+                    <td class="py-20 px-20 text-14 text-neutral-500" data-gape-datetime-display><c:out value="${justification.submittedAt}"/></td>
+                    <td class="py-20 px-20 text-14 text-neutral-500" data-gape-datetime-display><c:out value="${justification.processedAt}"/></td>
                     <td class="py-20 px-20">
                         <span class="${justification.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13">
                             <c:out value="${justification.stateLabel}"/>

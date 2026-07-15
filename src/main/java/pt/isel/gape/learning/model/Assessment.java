@@ -7,6 +7,7 @@ public record Assessment(
         long id,
         Long subjectId,
         Long contentBlockId,
+        String physicalRoomCode,
         String title,
         String description,
         AssessmentType type,

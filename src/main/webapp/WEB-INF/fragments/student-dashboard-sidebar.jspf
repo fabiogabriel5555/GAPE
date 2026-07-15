@@ -1,4 +1,6 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<c:set var="sidebarEventUnreadCount" value="${empty eventUnreadCount ? 0 : eventUnreadCount}" />
+<c:set var="sidebarMessageUnreadCount" value="${empty messageUnreadCount ? 0 : messageUnreadCount}" />
 <div class="student-dashboard-sidebar px-20 py-24 max-w-288-px bg-white rounded-10 w-100 position-relative" data-active-menu="${activeMenu}">
     <div class="text-center">
         <div class="gape-student-sidebar-avatar text-56">
@@ -25,15 +27,21 @@
                     </a>
                 </li>
                 <li class="mb-8 ${activeMenu == 'message' ? 'activePage' : ''}" data-menu-key="message">
-                    <a href="${pageContext.request.contextPath}/student/student/message/student-message.jsp" aria-current="${activeMenu == 'message' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                    <a href="${pageContext.request.contextPath}/messages" aria-current="${activeMenu == 'message' ? 'page' : 'false'}" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                         <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-chat-dots"></i></span>
-                        Message
+                        Messages
+                        <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarMessageUnreadCount > 0 ? '' : ' d-none'}" data-sidebar-message-badge>
+                            ${sidebarMessageUnreadCount}
+                        </span>
                     </a>
                 </li>
                 <li class="mb-8 ${activeMenu == 'calendar' ? 'activePage' : ''}" data-menu-key="calendar">
-                    <a href="${pageContext.request.contextPath}/student/events" aria-current="${activeMenu == 'calendar' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                    <a href="${pageContext.request.contextPath}/student/events" aria-current="${activeMenu == 'calendar' ? 'page' : 'false'}" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                         <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-dots"></i></span>
                         Events
+                        <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarEventUnreadCount > 0 ? '' : ' d-none'}" data-sidebar-event-badge>
+                            ${sidebarEventUnreadCount}
+                        </span>
                     </a>
                 </li>
                 <li class="mb-8 ${activeMenu == 'courses' ? 'activePage' : ''}" data-menu-key="courses">

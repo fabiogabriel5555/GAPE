@@ -15,6 +15,7 @@ import pt.isel.gape.learning.model.AssessmentEnrollment;
 import pt.isel.gape.learning.model.AssessmentEnrollmentCommand;
 import pt.isel.gape.learning.model.EnrollmentApprovalMode;
 import pt.isel.gape.learning.model.EnrollmentState;
+import pt.isel.gape.learning.model.AssessmentState;
 import pt.isel.gape.security.authorization.PermissionChecker;
 import pt.isel.gape.structure.dao.CoordinateSubjectDAO;
 import pt.isel.gape.structure.dao.ManageOrganizationDAO;
@@ -120,6 +121,7 @@ public final class AssessmentEnrollmentService {
                     } else {
                         accessPolicy.requireActiveProfile(actorUserId, sessionId, actorProfileType, sourceIp);
                     }
+                    ensureAssessmentEnrollmentCanBeChanged(assessment);
                     requireEligibleStudent(connection, normalized.studentUserId(), assessment.id());
                     AssessmentEnrollment current = assessmentEnrollmentDAO
                             .findEnrollment(connection, normalized.studentUserId(), assessment.id())
@@ -266,52 +268,6 @@ public final class AssessmentEnrollmentService {
         }
     }
 
-    public AssessmentEnrollment updateAssessmentEnrollment(
-            long actorUserId,
-            Long sessionId,
-            AccessProfileType actorProfileType,
-            long studentUserId,
-            long assessmentId,
-            EnrollmentState state,
-            String sourceIp
-    ) {
-        try (Connection connection = connectionProvider.getConnection()) {
-            boolean originalAutoCommit = connection.getAutoCommit();
-            connection.setAutoCommit(false);
-            try {
-                Assessment assessment = requireManagedAssessment(
-                        connection,
-                        actorUserId,
-                        sessionId,
-                        actorProfileType,
-                        assessmentId,
-                        sourceIp
-                );
-                requireEligibleStudent(connection, studentUserId, assessment.id());
-                assessmentEnrollmentDAO.updateEnrollment(
-                        connection,
-                        studentUserId,
-                        assessment.id(),
-                        state
-                );
-                auditService.record(connection, actorUserId, sessionId, "ASSESSMENT_ENROLL_UPDATE",
-                        "assessment_enrollment", identifier(studentUserId, assessment.id()), "success", sourceIp);
-                connection.commit();
-                return assessmentEnrollmentDAO.findEnrollment(connection, studentUserId, assessment.id())
-                        .orElseThrow(() -> new IllegalStateException("Assessment enrollment was not found"));
-            } catch (RuntimeException | SQLException exception) {
-                connection.rollback();
-                throw exception;
-            } finally {
-                connection.setAutoCommit(originalAutoCommit);
-            }
-        } catch (RuntimeException | SQLException exception) {
-            auditFailure(actorUserId, sessionId, "ASSESSMENT_ENROLL_UPDATE",
-                    identifier(studentUserId, assessmentId), sourceIp);
-            throw wrap(exception, "Failed to update assessment enrollment");
-        }
-    }
-
     public void withdrawAssessmentEnrollment(
             long actorUserId,
             Long sessionId,
@@ -450,13 +406,20 @@ public final class AssessmentEnrollmentService {
                 assessment,
                 sourceIp
         );
+        ensureAssessmentEnrollmentCanBeChanged(assessment);
         return assessment;
+    }
+
+    private static void ensureAssessmentEnrollmentCanBeChanged(Assessment assessment) {
+        if (assessment.state() == AssessmentState.COMPLETED) {
+            throw new IllegalStateException("Completed assessment enrollments cannot be changed");
+        }
     }
 
     private void requireEligibleStudent(Connection connection, long studentUserId, long assessmentId)
             throws SQLException {
         if (!assessmentEnrollmentDAO.isStudentEligible(connection, studentUserId, assessmentId)) {
-            throw new IllegalStateException("Student must be actively enrolled in the assessment class group or subject");
+            throw new IllegalStateException("Student must have an active enrollment in an assessment class group");
         }
     }
 

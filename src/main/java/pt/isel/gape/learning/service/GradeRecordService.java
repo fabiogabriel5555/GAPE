@@ -160,6 +160,7 @@ public final class GradeRecordService {
         List<Long> assessmentIds = gradeSheetDAO.findAssessmentIdsForSheetContext(
                 connection,
                 gradeSheet.subjectId(),
+                gradeSheet.courseOccurrenceId(),
                 gradeSheet.classGroupIds()
         );
         if (assessmentIds.isEmpty()) {

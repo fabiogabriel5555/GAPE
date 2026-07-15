@@ -83,7 +83,7 @@ All commands must finish with zero failures and zero errors.
 
 ## Execution result
 
-Executed on 2026-06-27:
+Executed on 27-06-2026:
 
 - `mvn test -Dtest=ScheduleEventServiceTest`: 10 tests, 0 failures, 0 errors.
 - `mvn test -Dtest=AttendanceRecordServiceTest`: 12 tests, 0 failures, 0 errors.

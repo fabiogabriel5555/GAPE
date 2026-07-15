@@ -50,21 +50,21 @@
                             <label for="name" class="fw-medium text-base text-neutral-800 mb-12">Name</label>
                             <input id="name" name="name" type="text" maxlength="120" required value="<c:out value='${form.name}'/>" class="form-control px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
                         </div>
-                        <div class="col-lg-6">
+                        <div class="col-lg-6 gape-select-field gape-class-group-context-field" data-room-organization-context>
                             <label for="organizationId" class="fw-medium text-base text-neutral-800 mb-12">Organization</label>
-                            <select id="organizationId" name="organizationId" required class="form-select px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8" data-room-organization>
+                            <select id="organizationId" name="organizationId" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 gape-eduall-select" data-room-organization>
                                 <option value="">Select organization</option>
                                 <c:forEach var="organization" items="${organizationOptions}">
-                                    <option value="${organization.id}" ${form.organizationId == organization.id ? 'selected' : ''}><c:out value="${organization.label}"/></option>
+                                    <option value="${organization.id}" title="<c:out value='${organization.name}'/>" ${form.organizationId == organization.id ? 'selected' : ''}><c:out value="${organization.label}"/></option>
                                 </c:forEach>
                             </select>
                         </div>
-                        <div class="col-lg-6">
+                        <div class="col-lg-6 gape-select-field gape-class-group-context-field ${empty form.organizationId ? 'opacity-75 is-disabled' : ''}" data-room-organic-unit-context>
                             <label for="organicUnitId" class="fw-medium text-base text-neutral-800 mb-12">Organic Unit</label>
-                            <select id="organicUnitId" name="organicUnitId" class="form-select px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8" data-room-organic-unit>
+                            <select id="organicUnitId" name="organicUnitId" class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 gape-eduall-select" data-room-organic-unit ${empty form.organizationId ? 'disabled' : ''}>
                                 <option value="">No organic unit</option>
                                 <c:forEach var="unit" items="${organicUnitOptions}">
-                                    <option value="${unit.id}" data-organization-id="${unit.organizationId}" ${form.organicUnitId == unit.id ? 'selected' : ''}><c:out value="${unit.label}"/></option>
+                                    <option value="${unit.id}" data-organization-id="${unit.organizationId}" title="<c:out value='${unit.name}'/>" ${form.organicUnitId == unit.id ? 'selected' : ''}><c:out value="${unit.label}"/></option>
                                 </c:forEach>
                             </select>
                         </div>
@@ -111,6 +111,78 @@
             callback();
         }
 
+        function normalizeText(value) {
+            return (value || '').replace(/\s+/g, ' ').trim();
+        }
+
+        function clearSelect2OptionData(option) {
+            if (!option || !window.jQuery || !window.jQuery.fn || !window.jQuery.fn.select2 || !window.jQuery.fn.select2.amd) {
+                return;
+            }
+            var utils = window.jQuery.fn.select2.amd.require('select2/utils');
+            if (utils && utils.RemoveData) {
+                utils.RemoveData(option);
+            }
+            window.jQuery(option).removeData('data');
+        }
+
+        function refreshSelectUi(select) {
+            if (!select || !window.jQuery || !window.jQuery.fn || !window.jQuery.fn.select2) {
+                return;
+            }
+            window.jQuery(select).trigger('change.select2');
+            var container = select.nextElementSibling;
+            if (container && container.classList.contains('select2-container')) {
+                container.classList.toggle('select2-container--disabled', select.disabled);
+            }
+        }
+
+        function contextMatcher(params, data) {
+            if (data && data.element && data.element.value && (data.element.hidden || data.element.disabled)) {
+                return null;
+            }
+            var defaults = window.jQuery.fn.select2.defaults.defaults;
+            return defaults && defaults.matcher ? defaults.matcher(params, data) : data;
+        }
+
+        function contextTemplate(data) {
+            var element = data.element;
+            if (element && element.value && (element.hidden || element.disabled)) {
+                return null;
+            }
+            var wrapper = document.createElement('span');
+            wrapper.className = 'gape-class-group-context-option';
+            wrapper.textContent = normalizeText(data.text || '');
+            return wrapper;
+        }
+
+        function initializeSelectUi(select) {
+            if (!select || !window.jQuery || !window.jQuery.fn || !window.jQuery.fn.select2) {
+                return;
+            }
+            var selectUi = window.jQuery(select);
+            if (selectUi.data('select2')) {
+                selectUi.select2('destroy');
+            }
+            selectUi.select2({
+                width: '100%',
+                selectionCssClass: 'gape-eduall-selection',
+                dropdownCssClass: 'gape-eduall-select-dropdown gape-class-group-context-dropdown',
+                matcher: contextMatcher,
+                templateResult: contextTemplate,
+                templateSelection: contextTemplate
+            });
+            refreshSelectUi(select);
+        }
+
+        function setWrapperState(wrapper, enabled) {
+            if (!wrapper) {
+                return;
+            }
+            wrapper.classList.toggle('opacity-75', !enabled);
+            wrapper.classList.toggle('is-disabled', !enabled);
+        }
+
         ready(function () {
             var form = document.querySelector('[data-room-form]');
             if (!form) {
@@ -118,8 +190,15 @@
             }
             var organization = form.querySelector('[data-room-organization]');
             var unit = form.querySelector('[data-room-organic-unit]');
+            var organizationWrapper = form.querySelector('[data-room-organization-context]');
+            var unitWrapper = form.querySelector('[data-room-organic-unit-context]');
             var originalUnits = unit ? Array.prototype.slice.call(unit.options).map(function (option) {
-                return { value: option.value, text: option.textContent, organizationId: option.dataset.organizationId || '' };
+                return {
+                    value: option.value,
+                    text: normalizeText(option.textContent),
+                    title: option.title || '',
+                    organizationId: option.dataset.organizationId || ''
+                };
             }) : [];
 
             function rebuildUnits() {
@@ -127,6 +206,7 @@
                     return;
                 }
                 var previousValue = unit.value;
+                Array.prototype.forEach.call(unit.options, clearSelect2OptionData);
                 unit.innerHTML = '';
                 var empty = document.createElement('option');
                 empty.value = '';
@@ -139,18 +219,53 @@
                     option.value = optionData.value;
                     option.textContent = optionData.text;
                     option.dataset.organizationId = optionData.organizationId;
+                    if (optionData.title) {
+                        option.title = optionData.title;
+                    }
                     unit.appendChild(option);
                 });
                 unit.value = previousValue;
                 if (unit.value !== previousValue) {
                     unit.value = '';
                 }
+                unit.disabled = !organization.value;
+                setWrapperState(unitWrapper, !!organization.value);
+                refreshSelectUi(unit);
             }
 
-            if (organization) {
-                organization.addEventListener('change', rebuildUnits);
+            function syncValidity() {
+                if (organization) {
+                    organization.setCustomValidity(organization.value ? '' : 'Select an organization.');
+                }
+                if (unit) {
+                    unit.setCustomValidity('');
+                }
             }
-            rebuildUnits();
+
+            function syncContext() {
+                setWrapperState(organizationWrapper, !!organization && !organization.disabled);
+                rebuildUnits();
+                syncValidity();
+                refreshSelectUi(organization);
+            }
+
+            initializeSelectUi(organization);
+            initializeSelectUi(unit);
+            if (organization) {
+                if (window.jQuery) {
+                    window.jQuery(organization)
+                            .off('change.gapeRoomContext select2:select.gapeRoomContext select2:clear.gapeRoomContext')
+                            .on('change.gapeRoomContext select2:select.gapeRoomContext select2:clear.gapeRoomContext', syncContext);
+                } else {
+                    organization.addEventListener('change', syncContext);
+                }
+            }
+            if (unit && window.jQuery) {
+                window.jQuery(unit)
+                        .off('change.gapeRoomContext select2:select.gapeRoomContext select2:clear.gapeRoomContext')
+                        .on('change.gapeRoomContext select2:select.gapeRoomContext select2:clear.gapeRoomContext', syncValidity);
+            }
+            syncContext();
         });
     })();
 </script>

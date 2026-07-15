@@ -11,13 +11,16 @@ import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.Attempt;
 import pt.isel.gape.learning.model.AttemptState;
 
-public final class AttemptDAO {
+public final class AttemptDAO implements pt.isel.gape.transversal.service.ApplicationReadService.Attempts {
 
     private final ConnectionProvider connectionProvider;
 
@@ -147,6 +150,51 @@ public final class AttemptDAO {
                 resultSet.next();
                 return resultSet.getInt(1);
             }
+        }
+    }
+
+    public int countByAssessmentAndState(long assessmentId, AttemptState state) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM attempt WHERE id_assessment = ? AND state = ?";
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, assessmentId);
+            statement.setString(2, state.toDatabaseValue());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1);
+            }
+        }
+    }
+
+    public Map<Long, Integer> countByAssessmentIdsAndState(
+            Collection<Long> assessmentIds,
+            AttemptState state
+    ) throws SQLException {
+        if (assessmentIds == null || assessmentIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> ids = assessmentIds.stream().distinct().toList();
+        String placeholders = String.join(", ", java.util.Collections.nCopies(ids.size(), "?"));
+        String sql = """
+                SELECT id_assessment, COUNT(*) AS total
+                FROM attempt
+                WHERE state = ?
+                  AND id_assessment IN (%s)
+                GROUP BY id_assessment
+                """.formatted(placeholders);
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, state.toDatabaseValue());
+            for (int index = 0; index < ids.size(); index++) {
+                statement.setLong(index + 2, ids.get(index));
+            }
+            Map<Long, Integer> result = new LinkedHashMap<>();
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    result.put(resultSet.getLong("id_assessment"), resultSet.getInt("total"));
+                }
+            }
+            return result;
         }
     }
 

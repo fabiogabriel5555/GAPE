@@ -20,7 +20,7 @@ import pt.isel.gape.learning.model.AttendanceSource;
 import pt.isel.gape.learning.model.AttendanceState;
 import pt.isel.gape.learning.model.AttendanceStatus;
 
-public final class AttendanceRecordDAO {
+public final class AttendanceRecordDAO implements pt.isel.gape.transversal.service.ApplicationReadService.AttendanceRecords {
 
     private final ConnectionProvider connectionProvider;
 
@@ -173,8 +173,6 @@ public final class AttendanceRecordDAO {
                       AND p.state = 'active'
                       AND u.state = 'active'
                       AND cg.state = 'active'
-                      AND (cs.start_date IS NULL OR cs.start_date <= CURRENT_DATE)
-                      AND (cs.end_date IS NULL OR cs.end_date >= CURRENT_DATE)
                 )
                 ORDER BY l.starts_at DESC, ar.id_lesson, ar.id_user_student
                 """;

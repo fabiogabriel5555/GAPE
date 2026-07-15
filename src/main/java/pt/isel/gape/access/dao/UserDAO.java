@@ -20,7 +20,7 @@ import pt.isel.gape.access.model.UserState;
 import pt.isel.gape.access.model.UserUpdateCommand;
 import pt.isel.gape.common.config.ConnectionProvider;
 
-public final class UserDAO {
+public final class UserDAO implements pt.isel.gape.transversal.service.ApplicationReadService.Users {
 
     private final ConnectionProvider connectionProvider;
 
@@ -171,26 +171,28 @@ public final class UserDAO {
         }
     }
 
-    public List<User> findActiveStudentsEnrolledInSubject(long courseId, long subjectId) throws SQLException {
+    public List<User> findActiveStudentsWithCurricularSubjectAccess(long courseId, long subjectId) throws SQLException {
         String sql = """
                 SELECT DISTINCT u.id_user, u.name, u.email, u.state, u.language, u.photo, u.created_at,
                        u.credential_hash, u.credential_salt, u.document_type, u.document_number
                 FROM user_account u
                 JOIN student_profile sp ON sp.id_user = u.id_user
-                JOIN enroll_subject es ON es.id_student_user = u.id_user
+                JOIN enroll_course ec ON ec.id_student_user = u.id_user
+                JOIN integrate_subject isub
+                  ON isub.id_course = ec.id_course
+                 AND isub.id_subject = ?
                 WHERE u.state = 'active'
-                  AND es.id_course = ?
-                  AND es.id_subject = ?
-                  AND es.state = 'active'
-                  AND (es.start_date IS NULL OR es.start_date <= CURRENT_DATE)
-                  AND (es.end_date IS NULL OR es.end_date >= CURRENT_DATE)
+                  AND ec.id_course = ?
+                  AND ec.state = 'active'
+                  AND (ec.start_date IS NULL OR ec.start_date <= CURRENT_DATE)
+                  AND (ec.end_date IS NULL OR ec.end_date >= CURRENT_DATE)
                 ORDER BY u.name, u.email
                 """;
 
         try (Connection connection = connectionProvider.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, courseId);
-            statement.setLong(2, subjectId);
+            statement.setLong(1, subjectId);
+            statement.setLong(2, courseId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<User> users = new ArrayList<>();
                 while (resultSet.next()) {

@@ -154,6 +154,65 @@ class MediaServletTest {
         assertEquals(HttpServletResponse.SC_NOT_FOUND, responseState.errorStatus);
     }
 
+    @Test
+    void rejectsTraversalFromPublicUploadDirectoryIntoPrivateContent() throws Exception {
+        Path privateDirectory = Files.createDirectories(uploadRoot.resolve("contents/private"));
+        Files.write(privateDirectory.resolve("secret.png"), new byte[]{1, 2, 3});
+
+        MediaServlet servlet = new MediaServlet(uploadRoot, webappRoot);
+        servlet.init(servletConfig());
+
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        servlet.doGet(
+                requestProxy("/users/../contents/private/secret.png"),
+                responseProxy(responseState)
+        );
+
+        assertEquals(HttpServletResponse.SC_NOT_FOUND, responseState.errorStatus);
+        assertEquals(0, responseState.body.size());
+    }
+
+    @Test
+    void rejectsEncodedTraversalAndDirectPrivateReferences() throws Exception {
+        Path privateDirectory = Files.createDirectories(uploadRoot.resolve("messages/9"));
+        Files.write(privateDirectory.resolve("attachment.png"), new byte[]{4, 5, 6});
+
+        MediaServlet servlet = new MediaServlet(uploadRoot, webappRoot);
+        servlet.init(servletConfig());
+
+        TestHttpServletResponse encodedTraversal = new TestHttpServletResponse();
+        servlet.doGet(
+                requestProxy("/users/%252e%252e/messages/9/attachment.png"),
+                responseProxy(encodedTraversal)
+        );
+        TestHttpServletResponse directPrivateReference = new TestHttpServletResponse();
+        servlet.doGet(
+                requestProxy("/messages/9/attachment.png"),
+                responseProxy(directPrivateReference)
+        );
+
+        assertEquals(HttpServletResponse.SC_NOT_FOUND, encodedTraversal.errorStatus);
+        assertEquals(HttpServletResponse.SC_NOT_FOUND, directPrivateReference.errorStatus);
+    }
+
+    @Test
+    void onlyExposesCanonicalEntityProfileImagesFromUploadRoot() throws Exception {
+        Path userDirectory = Files.createDirectories(uploadRoot.resolve("users/1"));
+        Files.write(userDirectory.resolve("identity-document.png"), new byte[]{7, 8, 9});
+
+        MediaServlet servlet = new MediaServlet(uploadRoot, webappRoot);
+        servlet.init(servletConfig());
+
+        TestHttpServletResponse responseState = new TestHttpServletResponse();
+        servlet.doGet(
+                requestProxy("/users/1/identity-document.png"),
+                responseProxy(responseState)
+        );
+
+        assertEquals(HttpServletResponse.SC_NOT_FOUND, responseState.errorStatus);
+        assertEquals(0, responseState.body.size());
+    }
+
     private void deleteDirectory(Path directory) throws IOException {
         if (directory != null && Files.exists(directory)) {
             try (var paths = Files.walk(directory)) {

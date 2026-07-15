@@ -47,12 +47,15 @@ import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.storage.UploadRootResolver;
 import pt.isel.gape.common.validation.MediaPathValidator;
 import pt.isel.gape.common.time.ApplicationClock;
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.Assessment;
 import pt.isel.gape.learning.model.Certificate;
 import pt.isel.gape.learning.model.CertificateState;
 import pt.isel.gape.learning.model.CertificateValidationResult;
 import pt.isel.gape.learning.model.ClassGroup;
+import pt.isel.gape.learning.model.ClassGroupState;
 import pt.isel.gape.learning.model.Course;
+import pt.isel.gape.learning.model.CourseOccurrence;
 import pt.isel.gape.learning.model.GradeAssessmentWeight;
 import pt.isel.gape.learning.model.GradeRecord;
 import pt.isel.gape.learning.model.GradeSheet;
@@ -67,8 +70,8 @@ import pt.isel.gape.learning.service.GradeSheetService;
 import pt.isel.gape.security.session.SessionUser;
 import pt.isel.gape.structure.model.OrganicUnit;
 import pt.isel.gape.structure.model.Organization;
-import pt.isel.gape.web.view.CertificateValidationView;
 import pt.isel.gape.web.view.CertificateView;
+import pt.isel.gape.web.view.CertificateValidationView;
 import pt.isel.gape.web.view.GradeDocumentView;
 import pt.isel.gape.web.view.GradeRecordView;
 import pt.isel.gape.web.view.GradeSheetView;
@@ -87,7 +90,8 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
     private static final String MANAGEMENT_JSP = "/WEB-INF/views/learning/grades-certificates.jsp";
     private static final String STUDENT_JSP = "/WEB-INF/views/student/grades-certificates.jsp";
     private static final String VALIDATION_JSP = "/WEB-INF/views/public/certificate-validation.jsp";
-    private static final DateTimeFormatter DOCUMENT_DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final DateTimeFormatter DOCUMENT_DATE = ApplicationDateTimeFormat.DISPLAY_DATE;
+    private static final int MANAGEMENT_PAGE_SIZE = 10;
 
     private final GradeSheetService gradeSheetService;
     private final GradeRecordService gradeRecordService;
@@ -164,15 +168,25 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
             downloadGradeSheet(request, response, Long.parseLong(segments[1]));
             return;
         }
-        if (segments.length == 3 && "courses".equals(segments[0]) && "download".equals(segments[2])) {
-            downloadCourseGradeSheet(request, response, Long.parseLong(segments[1]));
-            return;
-        }
         if (segments.length == 5
                 && "courses".equals(segments[0])
                 && "subjects".equals(segments[2])
                 && "download".equals(segments[4])) {
-            downloadSubjectGradeSheet(request, response, Long.parseLong(segments[1]), Long.parseLong(segments[3]));
+            downloadSubjectGradeSheet(request, response, Long.parseLong(segments[1]), null, Long.parseLong(segments[3]));
+            return;
+        }
+        if (segments.length == 7
+                && "courses".equals(segments[0])
+                && "occurrences".equals(segments[2])
+                && "subjects".equals(segments[4])
+                && "download".equals(segments[6])) {
+            downloadSubjectGradeSheet(
+                    request,
+                    response,
+                    Long.parseLong(segments[1]),
+                    Long.parseLong(segments[3]),
+                    Long.parseLong(segments[5])
+            );
             return;
         }
         if (segments.length == 3 && "certificates".equals(segments[0]) && "download".equals(segments[2])) {
@@ -193,27 +207,23 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         AccessProfileType profile = primaryProfile(actor);
         String[] segments = pathSegments(request.getPathInfo());
         String sourceIp = request.getRemoteAddr();
+        boolean jsonResponse = wantsJson(request);
         try {
             if (segments.length == 3 && "sheets".equals(segments[0]) && "configure".equals(segments[2])) {
                 configureGradeSheet(request, actor, profile, Long.parseLong(segments[1]), sourceIp);
-                flashSuccess(request, "Grade sheet configuration updated.");
+                if (jsonResponse) {
+                    writeJsonStatus(response, HttpServletResponse.SC_OK, true, "");
+                    return;
+                }
                 redirect(request, response, "/learning/attendance#grade-sheets");
-                return;
-            }
-            if (segments.length == 3 && "certificates".equals(segments[0]) && "revoke".equals(segments[2])) {
-                certificateService.revokeCertificate(
-                        actor.userId(),
-                        currentSessionId(request),
-                        profile,
-                        Long.parseLong(segments[1]),
-                        sourceIp
-                );
-                flashSuccess(request, "Certificate revoked.");
-                redirect(request, response, "/learning/attendance#certificates");
                 return;
             }
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
         } catch (RuntimeException exception) {
+            if (jsonResponse) {
+                writeJsonStatus(response, HttpServletResponse.SC_BAD_REQUEST, false, messageFor(exception));
+                return;
+            }
             flashError(request, messageFor(exception));
             redirect(request, response, failureRedirect(segments));
         }
@@ -243,6 +253,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
             Map<Long, ClassGroup> classGroups = mapById(readService.findAllClassGroups(), ClassGroup::id);
             Map<Long, Assessment> assessments = mapById(readService.findAllAssessments(), Assessment::id);
             Map<Long, Course> courses = mapById(readService.findCatalogCourses(), Course::id);
+            Map<Long, CourseOccurrence> occurrences = mapById(readService.findAllCourseOccurrences(), CourseOccurrence::id);
             Map<Long, Organization> organizations = mapById(readService.findActiveOrganizations(), Organization::id);
             Map<Long, OrganicUnit> organicUnits = loadOrganicUnits(organizations);
             Map<Long, User> users = mapById(readService.findAllUsers(), User::id);
@@ -252,6 +263,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                     classGroups,
                     assessments,
                     courses,
+                    occurrences,
                     organizations,
                     organicUnits,
                     users
@@ -264,33 +276,11 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         }
     }
 
-    private void downloadCourseGradeSheet(HttpServletRequest request, HttpServletResponse response, long courseId)
-            throws ServletException, IOException {
-        SessionUser actor = requireCurrentUser(request);
-        AccessProfileType profile = primaryProfile(actor);
-        String sourceIp = request.getRemoteAddr();
-        try {
-            GradeSheetCourseGroupView courseGroup = findCourseGroup(
-                    gradeSheetGroups(visibleGradeSheetViews(actor, profile, sourceIp)),
-                    courseId
-            );
-            writeGradeDocumentDownload(
-                    response,
-                    request.getParameter("format"),
-                    "course-grade-sheet-" + courseId,
-                    courseGroup.getCourseDocument()
-            );
-        } catch (SQLException exception) {
-            throw new ServletException("Failed to download course grade sheet", exception);
-        } catch (RuntimeException exception) {
-            throw new ServletException(messageFor(exception), exception);
-        }
-    }
-
     private void downloadSubjectGradeSheet(
             HttpServletRequest request,
             HttpServletResponse response,
             long courseId,
+            Long courseOccurrenceId,
             long subjectId
     ) throws ServletException, IOException {
         SessionUser actor = requireCurrentUser(request);
@@ -301,11 +291,13 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                     gradeSheetGroups(visibleGradeSheetViews(actor, profile, sourceIp)),
                     courseId
             );
-            GradeSheetSubjectGroupView subjectGroup = findSubjectGroup(courseGroup, subjectId);
+            GradeSheetSubjectGroupView subjectGroup = courseOccurrenceId == null
+                    ? findSubjectGroup(courseGroup, subjectId)
+                    : findSubjectGroup(courseGroup, subjectId, courseOccurrenceId);
             writeGradeDocumentDownload(
                     response,
                     request.getParameter("format"),
-                    "subject-grade-sheet-" + courseId + "-" + subjectId,
+                    "subject-grade-sheet-" + courseId + "-" + subjectGroup.getOccurrenceId() + "-" + subjectId,
                     subjectGroup.getSubjectDocument()
             );
         } catch (SQLException exception) {
@@ -411,16 +403,62 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 .forEach(optionCourseIds::add);
         Set<Long> optionStudentIds = new LinkedHashSet<>(readService.findActiveStudentIdsInClassGroups(List.copyOf(optionClassGroupIds)));
 
+        /*
+         * Page the grade sheets themselves, not the handful of course
+         * aggregators produced for display.  A course can contain dozens of
+         * sheets, and paging only the aggregators made a 83-sheet list look as
+         * if it had four items and therefore suppressed the paginator.
+         */
+        List<GradeSheetView> activeGradeSheets = gradeSheetViews.stream()
+                .filter(sheet -> !sheet.isPublished())
+                .toList();
+        List<GradeSheetView> publishedGradeSheets = gradeSheetViews.stream()
+                .filter(GradeSheetView::isPublished)
+                .toList();
+        boolean publishedGradesScope = "published".equals(text(request, "gradesScope"));
+        ManagementPage<GradeSheetView> gradePage = managementPage(
+                request,
+                "gradesPage",
+                publishedGradesScope ? publishedGradeSheets : activeGradeSheets
+        );
+        List<CertificateStudentGroupView> allCertificateGroups = certificateGroups(certificateViews);
+        List<CertificateStudentGroupView> activeCertificateGroups = allCertificateGroups.stream()
+                .filter(group -> !group.isPublished())
+                .toList();
+        List<CertificateStudentGroupView> publishedCertificateGroups = allCertificateGroups.stream()
+                .filter(CertificateStudentGroupView::isPublished)
+                .toList();
+        boolean publishedCertificatesScope = "published".equals(text(request, "certificatesScope"));
+        ManagementPage<CertificateStudentGroupView> certificatePage = managementPage(
+                request,
+                "certificatesPage",
+                publishedCertificatesScope ? publishedCertificateGroups : activeCertificateGroups
+        );
+
         request.setAttribute("gradeSheets", gradeSheetViews);
-        request.setAttribute("gradeSheetGroups", gradeSheetGroups(gradeSheetViews));
+        request.setAttribute("gradeSheetGroups", gradeSheetGroups(gradePage.rows()));
         request.setAttribute("gradeRecords", gradeRecordViews);
         request.setAttribute("certificates", certificateViews);
-        request.setAttribute("certificateGroups", certificateGroups(certificateViews));
+        request.setAttribute("certificateGroups", certificatePage.rows());
         request.setAttribute("certificateDraftDownloadsAllowed", profile != AccessProfileType.STUDENT);
         request.setAttribute("gradeSheetCount", gradeSheetViews.size());
         request.setAttribute("publishedGradeSheetCount", gradeSheetViews.stream().filter(GradeSheetView::isPublished).count());
         request.setAttribute("gradeRecordCount", gradeRecordViews.size());
         request.setAttribute("certificateCount", certificateViews.size());
+        setManagementPageAttributes(
+                request,
+                "gradeManagement",
+                publishedGradesScope ? "published" : "active",
+                gradePage,
+                publishedGradeSheets.size()
+        );
+        setManagementPageAttributes(
+                request,
+                "certificateManagement",
+                publishedCertificatesScope ? "published" : "active",
+                certificatePage,
+                publishedCertificateGroups.size()
+        );
         request.setAttribute("subjectOptions", subjectOptions(mapById(optionSubjects, Subject::id)));
         request.setAttribute("classGroupOptions", classGroupOptions(mapById(optionClassGroups, ClassGroup::id)));
         request.setAttribute("assessmentOptions", assessmentOptions(assessmentOptionsForContext(assessments, optionSubjectIds, optionClassGroupIds)));
@@ -435,6 +473,116 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         request.setAttribute("studentOptions", userOptions(readService.findActiveStudents().stream()
                 .filter(user -> profile == AccessProfileType.ADMINISTRATOR || optionStudentIds.contains(user.id()))
                 .toList()));
+    }
+
+    private static <T> ManagementPage<T> managementPage(
+            HttpServletRequest request,
+            String pageParameter,
+            List<T> items
+    ) {
+        int total = items.size();
+        String loadAllParameter = pageParameter.endsWith("Page")
+                ? pageParameter.substring(0, pageParameter.length() - "Page".length()) + "LoadAll"
+                : pageParameter + "LoadAll";
+        boolean loadAll = Boolean.parseBoolean(text(request, loadAllParameter));
+        int pageCount = Math.max(1, (total + MANAGEMENT_PAGE_SIZE - 1) / MANAGEMENT_PAGE_SIZE);
+        int currentPage = loadAll
+                ? 1
+                : Math.min(pageCount, Math.max(1, integerParameter(request, pageParameter, 1)));
+        int fromIndex = loadAll ? 0 : Math.min((currentPage - 1) * MANAGEMENT_PAGE_SIZE, total);
+        int toIndex = loadAll ? total : Math.min(fromIndex + MANAGEMENT_PAGE_SIZE, total);
+        return new ManagementPage<>(List.copyOf(items.subList(fromIndex, toIndex)), total, currentPage, pageCount, loadAll);
+    }
+
+    private static void setManagementPageAttributes(
+            HttpServletRequest request,
+            String prefix,
+            String scope,
+            ManagementPage<?> page,
+            int publishedCount
+    ) {
+        request.setAttribute(prefix + "Scope", scope);
+        request.setAttribute(prefix + "Total", page.total());
+        request.setAttribute(prefix + "CurrentPage", page.currentPage());
+        request.setAttribute(prefix + "PageCount", page.pageCount());
+        request.setAttribute(prefix + "HasPreviousPage", page.currentPage() > 1);
+        request.setAttribute(prefix + "HasNextPage", page.currentPage() < page.pageCount());
+        request.setAttribute(prefix + "PreviousPage", Math.max(1, page.currentPage() - 1));
+        request.setAttribute(prefix + "NextPage", Math.min(page.pageCount(), page.currentPage() + 1));
+        request.setAttribute(prefix + "PublishedTotal", publishedCount);
+        request.setAttribute(prefix + "LoadAll", page.loadAll());
+    }
+
+    private static int integerParameter(HttpServletRequest request, String name, int fallback) {
+        String value = text(request, name);
+        if (value == null) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException ignored) {
+            return fallback;
+        }
+    }
+
+    private record ManagementPage<T>(List<T> rows, int total, int currentPage, int pageCount, boolean loadAll) {
+    }
+
+    List<GradeSheetCourseGroupView> visibleSubjectGradeSheetCourseGroups(
+            SessionUser actor,
+            AccessProfileType profile,
+            String sourceIp,
+            long subjectId
+    ) throws SQLException {
+        List<GradeSheetCourseGroupView> subjectCourseGroups = new ArrayList<>();
+        for (GradeSheetCourseGroupView courseGroup : gradeSheetGroups(visibleGradeSheetViews(actor, profile, sourceIp))) {
+            List<GradeSheetSubjectGroupView> subjectGroups = courseGroup.getSubjects().stream()
+                    .filter(group -> group.getSubjectId() == subjectId)
+                    .toList();
+            if (!subjectGroups.isEmpty()) {
+                subjectCourseGroups.add(new GradeSheetCourseGroupView(subjectGroups));
+            }
+        }
+        return List.copyOf(subjectCourseGroups);
+    }
+
+    /**
+     * Returns the grade-sheet groups for one subject at the granularity used by
+     * Subject Details: one entry per course occurrence.  The newest grade sheet
+     * in each entry defines the default order, so new records are consistently
+     * shown before older ones.
+     */
+    List<GradeSheetSubjectGroupView> visibleSubjectGradeSheetOccurrenceGroups(
+            SessionUser actor,
+            AccessProfileType profile,
+            String sourceIp,
+            long subjectId
+    ) throws SQLException {
+        return visibleSubjectGradeSheetCourseGroups(actor, profile, sourceIp, subjectId).stream()
+                .flatMap(group -> group.getSubjects().stream())
+                .sorted(Comparator.comparingLong(GradeSheetSubjectGroupView::getNewestSheetId).reversed())
+                .toList();
+    }
+
+    int visibleSubjectGradeSheetCount(
+            SessionUser actor,
+            AccessProfileType profile,
+            String sourceIp,
+            long subjectId
+    ) throws SQLException {
+        return visibleSubjectGradeSheetOccurrenceGroups(actor, profile, sourceIp, subjectId).size();
+    }
+
+    GradeSheetView visibleClassGroupGradeSheet(
+            SessionUser actor,
+            AccessProfileType profile,
+            String sourceIp,
+            long classGroupId
+    ) throws SQLException {
+        return visibleGradeSheetViews(actor, profile, sourceIp).stream()
+                .filter(sheet -> sheet.getClassGroupIds().contains(classGroupId))
+                .findFirst()
+                .orElse(null);
     }
 
     private List<GradeSheetView> visibleGradeSheetViews(
@@ -510,6 +658,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
     ) throws SQLException {
         Map<Long, ClassGroup> classGroups = mapById(readService.findAllClassGroups(), ClassGroup::id);
         Map<Long, Assessment> assessments = mapById(readService.findAllAssessments(), Assessment::id);
+        Map<Long, CourseOccurrence> occurrences = mapById(readService.findAllCourseOccurrences(), CourseOccurrence::id);
         Map<Long, Organization> organizations = mapById(readService.findActiveOrganizations(), Organization::id);
         Map<Long, OrganicUnit> organicUnits = loadOrganicUnits(organizations);
         return visibleGradeSheets.stream()
@@ -519,6 +668,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                         classGroups,
                         assessments,
                         courses,
+                        occurrences,
                         organizations,
                         organicUnits,
                         users
@@ -562,13 +712,33 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
     private void showCertificateValidation(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String code = text(request, "code");
+        if (code == null) {
+            String[] segments = pathSegments(request.getPathInfo());
+            if (segments.length == 1) {
+                code = segments[0];
+            } else if (segments.length > 1) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+        }
         try {
             if (code != null) {
-                CertificateValidationResult result = certificateService.validateCertificate(code, request.getRemoteAddr());
+                CertificateValidationResult result = certificateService.validateCertificate(
+                        code,
+                        request.getRemoteAddr()
+                );
                 String courseLabel = result.courseId() == null
                         ? null
                         : readService.findCourseById(result.courseId()).map(this::courseLabel).orElse(null);
-                request.setAttribute("validation", CertificateValidationView.from(result, courseLabel));
+                String occurrenceLabel = result.courseOccurrenceId() == null
+                        ? null
+                        : readService.findCourseOccurrenceById(result.courseOccurrenceId())
+                                .map(CourseOccurrence::label)
+                                .orElse(null);
+                request.setAttribute(
+                        "validation",
+                        CertificateValidationView.from(result, courseLabel, occurrenceLabel)
+                );
                 request.setAttribute("validationCode", code);
             }
             forward(request, response, VALIDATION_JSP);
@@ -592,18 +762,39 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 sourceIp
         );
         Long subjectId = optionalLongParameter(request, "subjectId");
+        long effectiveSubjectId = subjectId == null ? existing.subjectId() : subjectId;
         BigDecimal maxGrade = optionalDecimalParameter(request, "maxGrade");
         BigDecimal passingGrade = optionalDecimalParameter(request, "passingGrade");
         GradeSheetUpdateCommand command = new GradeSheetUpdateCommand(
-                subjectId == null ? existing.subjectId() : subjectId,
+                effectiveSubjectId,
                 defaultText(request, "title", existing.title()),
                 GradeSheetType.parse(defaultText(request, "type", existing.type().toDatabaseValue())),
                 maxGrade == null ? existing.maxGrade() : maxGrade,
                 passingGrade == null ? existing.passingGrade() : passingGrade,
-                longParameters(request, "classGroupIds"),
+                classGroupParametersForSubject(request, effectiveSubjectId),
                 assessmentWeights(request)
         );
         gradeSheetService.updateGradeSheet(actor.userId(), currentSessionId(request), profile, gradeSheetId, command, sourceIp);
+    }
+
+    private List<Long> classGroupParametersForSubject(HttpServletRequest request, long subjectId) {
+        List<Long> submitted = longParameters(request, "classGroupIds");
+        if (submitted.isEmpty()) {
+            return submitted;
+        }
+        try {
+            Set<Long> compatibleIds = readService.findAllClassGroups().stream()
+                    .filter(classGroup -> classGroup.subjectId() == subjectId)
+                    .filter(classGroup -> classGroup.state() == ClassGroupState.ACTIVE)
+                    .map(ClassGroup::id)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            return submitted.stream()
+                    .filter(compatibleIds::contains)
+                    .distinct()
+                    .toList();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to validate grade sheet class groups", exception);
+        }
     }
 
     private List<GradeSheet> visibleGradeSheets(SessionUser actor, AccessProfileType profile, String sourceIp)
@@ -619,6 +810,29 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                         sourceIp
                 );
                 visible.add(synchronizedSheet);
+            } catch (SecurityException ignored) {
+                // Hidden from this actor's management context.
+            }
+        }
+        return List.copyOf(visible);
+    }
+
+    private List<GradeSheet> visibleSubjectGradeSheets(
+            SessionUser actor,
+            AccessProfileType profile,
+            String sourceIp,
+            long subjectId
+    ) throws SQLException {
+        List<GradeSheet> visible = new ArrayList<>();
+        for (GradeSheet gradeSheet : readService.findGradeSheetsBySubject(subjectId)) {
+            try {
+                visible.add(gradeSheetService.getGradeSheet(
+                        actor.userId(),
+                        null,
+                        profile,
+                        gradeSheet.id(),
+                        sourceIp
+                ));
             } catch (SecurityException ignored) {
                 // Hidden from this actor's management context.
             }
@@ -670,19 +884,23 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
     }
 
     private static List<GradeSheetCourseGroupView> gradeSheetGroups(List<GradeSheetView> gradeSheets) {
-        Map<Long, Map<Long, List<GradeSheetView>>> byCourseAndSubject = new LinkedHashMap<>();
+        Map<Long, Map<SubjectOccurrenceKey, List<GradeSheetView>>> byCourseAndSubjectOccurrence = new LinkedHashMap<>();
         gradeSheets.stream()
                 .sorted(Comparator
                         .comparing(GradeSheetView::getCourseLabel, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(GradeSheetView::getCourseOccurrenceLabel, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(GradeSheetView::getSubjectLabel, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(GradeSheetView::getClassGroupCode, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(GradeSheetView::getTitle, String.CASE_INSENSITIVE_ORDER))
-                .forEach(sheet -> byCourseAndSubject
+                .forEach(sheet -> byCourseAndSubjectOccurrence
                         .computeIfAbsent(sheet.getCourseId(), ignored -> new LinkedHashMap<>())
-                        .computeIfAbsent(sheet.getSubjectId(), ignored -> new ArrayList<>())
+                        .computeIfAbsent(
+                                new SubjectOccurrenceKey(sheet.getSubjectId(), sheet.getCourseOccurrenceId()),
+                                ignored -> new ArrayList<>()
+                        )
                         .add(sheet));
         List<GradeSheetCourseGroupView> groups = new ArrayList<>();
-        for (Map<Long, List<GradeSheetView>> subjectMap : byCourseAndSubject.values()) {
+        for (Map<SubjectOccurrenceKey, List<GradeSheetView>> subjectMap : byCourseAndSubjectOccurrence.values()) {
             List<GradeSheetSubjectGroupView> subjectGroups = new ArrayList<>();
             for (List<GradeSheetView> subjectSheets : subjectMap.values()) {
                 subjectGroups.add(new GradeSheetSubjectGroupView(List.copyOf(subjectSheets)));
@@ -696,7 +914,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         return groups.stream()
                 .filter(group -> group.getCourseId() == courseId)
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Course grade sheet not found: " + courseId));
+                .orElseThrow(() -> new IllegalArgumentException("No subject grade sheets are available for course: " + courseId));
     }
 
     private static GradeSheetSubjectGroupView findSubjectGroup(GradeSheetCourseGroupView courseGroup, long subjectId) {
@@ -706,63 +924,25 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 .orElseThrow(() -> new IllegalArgumentException("Subject grade sheet not found: " + subjectId));
     }
 
-    private static GradeDocumentView courseDocument(GradeSheetCourseGroupView group) {
-        GradeSheetView primary = group.primarySheet();
-        List<GradeDocumentView.ColumnView> columns = group.getSubjects().stream()
-                .map(subject -> new GradeDocumentView.ColumnView(
-                        subject.getSubjectAcronym(),
-                        subject.getSubjectEcts().equals("-") ? "ECTS" : subject.getSubjectEcts() + " ECTS",
-                        subject.getSubjectName()
-                ))
-                .toList();
-        Map<Long, CourseAggregateRow> rows = new LinkedHashMap<>();
-        for (int subjectIndex = 0; subjectIndex < group.getSubjects().size(); subjectIndex++) {
-            GradeSheetSubjectGroupView subjectGroup = group.getSubjects().get(subjectIndex);
-            for (GradeSheetView sheet : subjectGroup.getSheets()) {
-                for (GradeSheetView.StudentGradeRowView sourceRow : sheet.getStudentRows()) {
-                    CourseAggregateRow row = rows.computeIfAbsent(
-                            sourceRow.getStudentId(),
-                            ignored -> new CourseAggregateRow(
-                                    sourceRow.getStudentId(),
-                                    sourceRow.getStudentName(),
-                                    group.getSubjects().size()
-                            )
-                    );
-                    row.setSubjectGrade(
-                            subjectIndex,
-                            sourceRow.getFinalGradeValue(),
-                            sheet.getMaxGradeValue(),
-                            subjectGroup.getSubjectEctsValue(),
-                            group.getCourseCertificateMaxGradeValue()
-                    );
-                }
-            }
-        }
-        List<GradeDocumentView.RowView> documentRows = rows.values().stream()
-                .sorted(Comparator.comparing(CourseAggregateRow::studentName, String.CASE_INSENSITIVE_ORDER))
-                .map(CourseAggregateRow::toDocumentRow)
-                .toList();
-        return new GradeDocumentView(
-                "Pauta de Curso",
-                "Curso",
-                group.getCourseName(),
-                "<strong>" + GradeSheetView.escapeHtml(group.getCourseName()) + "</strong><span>" + group.getCourseContextHtml() + "</span>",
-                group.getCourseContextTitle(),
-                group.getPeriodLabel(),
-                group.getCoursePhoto(),
-                "ph ph-image",
-                "Sem registos de nota.",
-                "",
-                columns,
-                documentRows
-        );
+    private static GradeSheetSubjectGroupView findSubjectGroup(
+            GradeSheetCourseGroupView courseGroup,
+            long subjectId,
+            long courseOccurrenceId
+    ) {
+        return courseGroup.getSubjects().stream()
+                .filter(group -> group.getSubjectId() == subjectId)
+                .filter(group -> group.getOccurrenceId() == courseOccurrenceId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Subject grade sheet not found for occurrence: " + courseOccurrenceId
+                ));
     }
 
     private static GradeDocumentView subjectDocument(GradeSheetSubjectGroupView group) {
         GradeSheetView primary = group.primarySheet();
         List<GradeDocumentView.ColumnView> columns;
         if (primary.getAssessmentColumns().isEmpty()) {
-            columns = List.of(new GradeDocumentView.ColumnView("Avaliacoes", ""));
+            columns = List.of(new GradeDocumentView.ColumnView("Class group grade sheets", ""));
         } else {
             columns = primary.getAssessmentColumns().stream()
                     .map(column -> new GradeDocumentView.ColumnView(
@@ -772,7 +952,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                     .toList();
         }
         Map<Long, GradeDocumentView.RowView> rows = new LinkedHashMap<>();
-        for (GradeSheetView sheet : group.getSheets()) {
+        for (GradeSheetView sheet : List.of(primary)) {
             for (GradeSheetView.StudentGradeRowView row : sheet.getStudentRows()) {
                 rows.putIfAbsent(row.getStudentId(), new GradeDocumentView.RowView(
                         row.getStudentId(),
@@ -786,16 +966,16 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 .sorted(Comparator.comparing(GradeDocumentView.RowView::getStudentName, String.CASE_INSENSITIVE_ORDER))
                 .toList();
         return new GradeDocumentView(
-                "Pauta da Disciplina",
-                "Disciplina",
+                "Subject grade sheet",
+                "Subject",
                 group.getSubjectName(),
                 "<strong>" + GradeSheetView.escapeHtml(group.getCourseName()) + "</strong><span>" + group.getSubjectContextHtml() + "</span>",
                 group.getSubjectContextTitle(),
                 group.getPeriodLabel(),
                 group.getSubjectPhoto(),
                 "ph ph-image",
-                "Sem registos de nota.",
-                group.getWeightAlert(),
+                "No grade records.",
+                group.getRemarks(),
                 columns,
                 documentRows
         );
@@ -826,68 +1006,6 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         return value == null ? null : value.setScale(2, RoundingMode.HALF_UP).stripTrailingZeros();
     }
 
-    private static final class CourseAggregateRow {
-
-        private final long studentId;
-        private final String studentName;
-        private final List<String> values;
-        private final List<BigDecimal> weightedValues;
-        private final List<BigDecimal> ectsValues;
-
-        private CourseAggregateRow(long studentId, String studentName, int subjectCount) {
-            this.studentId = studentId;
-            this.studentName = studentName;
-            this.values = new ArrayList<>();
-            this.weightedValues = new ArrayList<>();
-            this.ectsValues = new ArrayList<>();
-            for (int index = 0; index < subjectCount; index++) {
-                values.add("-");
-                weightedValues.add(null);
-                ectsValues.add(null);
-            }
-        }
-
-        private String studentName() {
-            return studentName;
-        }
-
-        private void setSubjectGrade(
-                int subjectIndex,
-                BigDecimal grade,
-                BigDecimal sourceMaxGrade,
-                BigDecimal subjectEcts,
-                BigDecimal courseMaxGrade
-        ) {
-            if (subjectIndex < 0 || subjectIndex >= values.size() || grade == null || !"-".equals(values.get(subjectIndex))) {
-                return;
-            }
-            BigDecimal scaledGrade = documentGrade(scaleGrade(grade, sourceMaxGrade, courseMaxGrade));
-            values.set(subjectIndex, GradeSheetView.gradeLabel(scaledGrade));
-            if (subjectEcts != null && subjectEcts.compareTo(BigDecimal.ZERO) > 0) {
-                weightedValues.set(subjectIndex, scaledGrade);
-                ectsValues.set(subjectIndex, subjectEcts);
-            }
-        }
-
-        private GradeDocumentView.RowView toDocumentRow() {
-            BigDecimal weightedSum = BigDecimal.ZERO;
-            BigDecimal ectsSum = BigDecimal.ZERO;
-            for (int index = 0; index < weightedValues.size(); index++) {
-                BigDecimal grade = weightedValues.get(index);
-                BigDecimal ects = ectsValues.get(index);
-                if (grade == null || ects == null) {
-                    return new GradeDocumentView.RowView(studentId, studentName, values, null);
-                }
-                weightedSum = weightedSum.add(grade.multiply(ects));
-                ectsSum = ectsSum.add(ects);
-            }
-            BigDecimal finalGrade = ectsSum.compareTo(BigDecimal.ZERO) <= 0
-                    ? null
-                    : documentGrade(weightedSum.divide(ectsSum, 6, RoundingMode.HALF_UP));
-            return new GradeDocumentView.RowView(studentId, studentName, values, finalGrade);
-        }
-    }
-
     private static List<CertificateStudentGroupView> certificateGroups(List<CertificateView> certificates) {
         Map<Long, List<CertificateView>> byStudent = new LinkedHashMap<>();
         certificates.stream()
@@ -909,6 +1027,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
             Map<Long, ClassGroup> classGroups,
             Map<Long, Assessment> assessments,
             Map<Long, Course> courses,
+            Map<Long, CourseOccurrence> occurrences,
             Map<Long, Organization> organizations,
             Map<Long, OrganicUnit> organicUnits,
             Map<Long, User> users
@@ -919,7 +1038,11 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 .toList();
         ClassGroup primaryClassGroup = sheetClassGroups.isEmpty() ? null : sheetClassGroups.get(0);
         Subject subject = subjects.get(gradeSheet.subjectId());
-        Course course = primaryClassGroup == null ? null : courses.get(primaryClassGroup.courseId());
+        CourseOccurrence occurrence = occurrences.get(gradeSheet.courseOccurrenceId());
+        Course course = occurrence == null ? null : courses.get(occurrence.courseId());
+        if (course == null && primaryClassGroup != null) {
+            course = courses.get(primaryClassGroup.courseId());
+        }
         if (course == null && !courses.isEmpty()) {
             course = courses.values().stream()
                     .filter(candidate -> candidate.organizationId() == (subject == null ? -1 : subject.organizationId()))
@@ -1001,6 +1124,16 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 course == null ? null : course.certificateMaxGrade(),
                 courseContextHtml,
                 courseContextTitle,
+                organization == null ? 0L : organization.id(),
+                organization == null ? null : organization.name(),
+                organicUnit == null ? null : organicUnit.id(),
+                organicUnit == null ? null : organicUnit.name(),
+                gradeSheet.courseOccurrenceId(),
+                occurrence == null ? null : occurrence.label(),
+                occurrenceDateRangeLabel(occurrence),
+                occurrence == null ? null : occurrence.state().toDatabaseValue(),
+                primaryClassGroup == null ? null : primaryClassGroup.id(),
+                primaryClassGroup != null && primaryClassGroup.state() == ClassGroupState.COMPLETED,
                 subjectLabel(subjects.get(gradeSheet.subjectId())),
                 subject == null ? null : subject.name(),
                 subject == null ? null : subject.acronym(),
@@ -1022,6 +1155,9 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
     }
 
     private List<GradeAssessmentWeight> assessmentWeightsForSheet(GradeSheet gradeSheet) {
+        if (gradeSheet.classGroupIds().isEmpty()) {
+            return List.of();
+        }
         Map<Long, BigDecimal> configuredWeights = new LinkedHashMap<>();
         for (GradeAssessmentWeight weight : gradeSheet.assessmentWeights()) {
             configuredWeights.putIfAbsent(weight.assessmentId(), weight.weight());
@@ -1242,11 +1378,20 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
             }
         }
         if (startsAt == null && endsAt == null) {
-            return "__.__.____ - __.__.____";
+            return "__-__-____ - __-__-____";
         }
-        return (startsAt == null ? "__.__.____" : DOCUMENT_DATE.format(startsAt))
+        return (startsAt == null ? "__-__-____" : DOCUMENT_DATE.format(startsAt))
                 + " - "
-                + (endsAt == null ? "__.__.____" : DOCUMENT_DATE.format(endsAt));
+                + (endsAt == null ? "__-__-____" : DOCUMENT_DATE.format(endsAt));
+    }
+
+    private static String occurrenceDateRangeLabel(CourseOccurrence occurrence) {
+        if (occurrence == null) {
+            return null;
+        }
+        return (occurrence.startsAt() == null ? "-" : ApplicationDateTimeFormat.date(occurrence.startsAt()))
+                + " to "
+                + (occurrence.endsAt() == null ? "-" : ApplicationDateTimeFormat.date(occurrence.endsAt()));
     }
 
     private static String courseContextHtml(Course course, OrganicUnit organicUnit, Organization organization) {
@@ -1425,6 +1570,35 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         return value == null ? defaultValue : value;
     }
 
+    private static boolean wantsJson(HttpServletRequest request) {
+        String requestedWith = request.getHeader("X-Requested-With");
+        String accept = request.getHeader("Accept");
+        return "XMLHttpRequest".equalsIgnoreCase(requestedWith)
+                || "fetch".equalsIgnoreCase(requestedWith)
+                || (accept != null && accept.toLowerCase(Locale.ROOT).contains("application/json"));
+    }
+
+    private static void writeJsonStatus(
+            HttpServletResponse response,
+            int status,
+            boolean success,
+            String message
+    ) throws IOException {
+        response.setStatus(status);
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"success\":" + success
+                + ",\"message\":\"" + json(message) + "\"}");
+    }
+
+    private static String json(String value) {
+        return (value == null ? "" : value)
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r");
+    }
+
     private void writeGradeSheetDownload(
             HttpServletResponse response,
             String requestedFormat,
@@ -1540,7 +1714,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 if (view.isHasAlert()) {
                     writeFittedPdfLine(stream, bodyFont, 8, view.getAlert(), left, 76, 360);
                 }
-                drawCenteredFittedText(stream, bodyFont, 10, "O(A) Responsavel", right - 130, 56, 180);
+                drawCenteredFittedText(stream, bodyFont, 10, "Responsible person", right - 130, 56, 180);
                 stream.moveTo(right - 226, 40);
                 stream.lineTo(right - 6, 40);
                 stream.stroke();
@@ -1555,7 +1729,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
             PDType1Font boldFont,
             GradeDocumentView view
     ) throws IOException {
-        float width = Math.max(170, pdfTextWidth(boldFont, 9, "Nome do Aluno") + 18);
+        float width = Math.max(170, pdfTextWidth(boldFont, 9, "Student name") + 18);
         for (GradeDocumentView.RowView row : view.getRows()) {
             width = Math.max(width, pdfTextWidth(bodyFont, 9, row.getStudentName()) + 18);
         }
@@ -1586,7 +1760,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         float width = right - left;
         float top = bottom + height;
         strokeRect(stream, left, bottom, width, height, Color.BLACK);
-        writeFittedPdfLine(stream, boldFont, 11, "Publicado em: ___ / ___ / _____", left + 10, top - 24, 190);
+        writeFittedPdfLine(stream, boldFont, 11, "Published on: ___ / ___ / _____", left + 10, top - 24, 190);
 
         float imageSize = 46;
         float imageY = top - 58;
@@ -1616,7 +1790,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         stream.stroke();
 
         drawCenteredFittedText(stream, boldFont, 18, view.getTitle(), left + width / 2, bottom + 18, 260);
-        writeFittedPdfLine(stream, boldFont, 10, "Periodo Letivo: " + view.getPeriodLabel(), right - 205, bottom + 17, 198);
+        writeFittedPdfLine(stream, boldFont, 10, "Academic period: " + view.getPeriodLabel(), right - 205, bottom + 17, 198);
     }
 
     private static String documentBrandTitle(GradeDocumentView view) {
@@ -1770,7 +1944,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         strokeRect(stream, left, y - rowHeight, idWidth, rowHeight, Color.BLACK);
         drawCenteredFittedText(stream, boldFont, 9, "ID", left + idWidth / 2, baseline, idWidth - 4);
         strokeRect(stream, left + idWidth, y - rowHeight, nameWidth, rowHeight, Color.BLACK);
-        drawCenteredFittedText(stream, boldFont, 9, "Nome do Aluno", left + idWidth + nameWidth / 2, baseline, nameWidth - 8);
+        drawCenteredFittedText(stream, boldFont, 9, "Student name", left + idWidth + nameWidth / 2, baseline, nameWidth - 8);
         float x = left + idWidth + nameWidth;
         if (view.getColumns().isEmpty()) {
             strokeRect(stream, x, y - rowHeight, valueWidth, rowHeight, Color.BLACK);
@@ -1786,7 +1960,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
             }
         }
         strokeRect(stream, x, y - rowHeight, finalWidth, rowHeight, Color.BLACK);
-        drawCenteredFittedText(stream, boldFont, 9, "Nota final", x + finalWidth / 2, baseline, finalWidth - 8);
+        drawCenteredFittedText(stream, boldFont, 9, "Final grade", x + finalWidth / 2, baseline, finalWidth - 8);
     }
 
     private static void drawGradeDocumentRow(
@@ -1875,7 +2049,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 .line{border-top:1px solid #000;display:block;height:1px;margin:18pt 0 0 auto;width:170pt}
                 </style>
                 <!--[if gte mso 9]><xml>
-                <x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Pauta</x:Name>
+                <x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Grade sheet</x:Name>
                 <x:WorksheetOptions><x:PageSetup><x:Layout x:Orientation="Landscape"/></x:PageSetup>
                 <x:FitToPage/><x:Print><x:FitHeight>1</x:FitHeight><x:FitWidth>1</x:FitWidth></x:Print>
                 </x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook>
@@ -1887,7 +2061,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         html.append("<table class=\"doc-head\" style=\"width:").append(tableWidthPt).append("pt\">")
                 .append(sharedColGroup)
                 .append("<tr>")
-                .append("<td class=\"posted\" colspan=\"2\">Publicado em: ___ / ___ / _____</td>")
+                .append("<td class=\"posted\" colspan=\"2\">Published on: ___ / ___ / _____</td>")
                 .append("<td class=\"logo\" colspan=\"").append(Math.max(1, totalColumns - 4)).append("\" rowspan=\"2\">")
                 .append("<img src=\"")
                 .append(htmlSafe(imageDataUri == null ? placeholderImageDataUri() : imageDataUri))
@@ -1900,11 +2074,11 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 .append(":</strong> ").append(htmlSafe(view.getEntityName())).append("</td>")
                 .append("<td class=\"title\" colspan=\"").append(Math.max(1, totalColumns - 4)).append("\">")
                 .append(htmlSafe(view.getTitle())).append("</td>")
-                .append("<td class=\"period\" colspan=\"2\">Periodo Letivo: ").append(htmlSafe(view.getPeriodLabel()))
+                .append("<td class=\"period\" colspan=\"2\">Academic period: ").append(htmlSafe(view.getPeriodLabel()))
                 .append("</td></tr></table>");
         html.append("<table class=\"sheet\" style=\"width:").append(tableWidthPt).append("pt\">")
                 .append(sharedColGroup)
-                .append("<tr><th>ID</th><th>Nome do Aluno</th>");
+                .append("<tr><th>ID</th><th>Student name</th>");
         if (view.getColumns().isEmpty()) {
             html.append("<th>Avaliacoes</th>");
         } else {
@@ -1912,7 +2086,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 html.append("<th>").append(htmlSafe(column.getHeaderLabel())).append("</th>");
             }
         }
-        html.append("<th>Nota final</th></tr>");
+        html.append("<th>Final grade</th></tr>");
         if (view.getRows().isEmpty()) {
             html.append("<tr><td class=\"empty\" colspan=\"").append(totalColumns).append("\">")
                     .append(htmlSafe(view.getEmptyMessage())).append("</td></tr>");
@@ -1931,7 +2105,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         if (view.isHasAlert()) {
             html.append("<div class=\"alert\">").append(htmlSafe(view.getAlert())).append("</div>");
         }
-        html.append("<div class=\"signature\">O(A) Responsavel<span class=\"line\"></span></div>");
+        html.append("<div class=\"signature\">Responsible person<span class=\"line\"></span></div>");
         html.append("</div></body></html>");
         return html.toString();
     }
@@ -1976,7 +2150,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
     }
 
     private static int gradeDocumentExcelNameColumnWidth(GradeDocumentView view) {
-        int width = excelColumnWidthPt("Nome do Aluno", 230);
+        int width = excelColumnWidthPt("Student name", 230);
         for (GradeDocumentView.RowView row : view.getRows()) {
             width = Math.max(width, excelColumnWidthPt(row.getStudentName(), 230));
         }
@@ -2085,15 +2259,15 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 float right = pageWidth - 26;
                 float top = pageHeight - 24;
                 strokeRect(stream, left, 470, right - left, 92, Color.BLACK);
-                writeFittedPdfLine(stream, boldFont, 9, "Afixada em: ____ / ____ / ______", left + 6, top - 24, 190);
+                writeFittedPdfLine(stream, boldFont, 9, "Posted on: ____ / ____ / ______", left + 6, top - 24, 190);
                 drawCenteredFittedText(stream, boldFont, 15, "GAPE", pageWidth / 2, top - 18, 160);
-                drawCenteredFittedText(stream, bodyFont, 8, "Gestão Académica e Pedagógica", pageWidth / 2, top - 31, 190);
+                drawCenteredFittedText(stream, bodyFont, 8, "Academic and Pedagogical Management", pageWidth / 2, top - 31, 190);
                 drawCenteredFittedText(stream, boldFont, 9, sheet.getCourseName(), pageWidth / 2, top - 62, 260);
-                drawCenteredFittedText(stream, boldFont, 16, "Pauta de Turma", pageWidth / 2, top - 82, 220);
-                writeFittedPdfLine(stream, bodyFont, 9, "Disciplina: " + sheet.getSubjectName(), left + 18, top - 78, 210);
-                writeFittedPdfLine(stream, boldFont, 9, "Curso: " + sheet.getCourseAcronym(), right - 156, top - 18, 150);
-                writeFittedPdfLine(stream, boldFont, 9, "Turma: " + sheet.getClassGroupCode(), right - 156, top - 50, 150);
-                writeFittedPdfLine(stream, boldFont, 9, "Escala: 0-" + sheet.getMaxGrade(), right - 156, top - 78, 150);
+                drawCenteredFittedText(stream, boldFont, 16, "Class group grade sheet", pageWidth / 2, top - 82, 220);
+                writeFittedPdfLine(stream, bodyFont, 9, "Subject: " + sheet.getSubjectName(), left + 18, top - 78, 210);
+                writeFittedPdfLine(stream, boldFont, 9, "Course: " + sheet.getCourseAcronym(), right - 156, top - 18, 150);
+                writeFittedPdfLine(stream, boldFont, 9, "Class group: " + sheet.getClassGroupCode(), right - 156, top - 50, 150);
+                writeFittedPdfLine(stream, boldFont, 9, "Scale: 0-" + sheet.getMaxGrade(), right - 156, top - 78, 150);
 
                 float tableTop = 452;
                 float tableBottom = 112;
@@ -2125,34 +2299,42 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                     }
                 }
                 strokeRect(stream, left, 24, right - left, 68, Color.BLACK);
-                writePdfLine(stream, boldFont, 8, "NOTAS:", left + 6, 78);
+                writePdfLine(stream, boldFont, 8, "NOTES:", left + 6, 78);
                 float noteY = 64;
                 float notesWidth = 216;
                 if (sheet.getAssessmentColumns().isEmpty()) {
-                    writeFittedPdfLine(stream, bodyFont, 8, "Sem avaliações configuradas.", left + 6, noteY, notesWidth);
+                    writeFittedPdfLine(stream, bodyFont, 8, "No assessments configured.", left + 6, noteY, notesWidth);
                 } else {
                     for (GradeSheetView.AssessmentColumnView column : sheet.getAssessmentColumns()) {
                         if (noteY < 32) {
                             break;
                         }
                         writeFittedPdfLine(stream, bodyFont, 8,
-                                column.getTitle() + " - " + column.getWeightLabel() + "% do peso na nota final",
+                                column.getTitle() + " - " + column.getWeightLabel() + "% of the final grade weight",
                                 left + 6,
                                 noteY,
                                 notesWidth);
                         noteY -= 10;
                     }
                 }
-                writePdfLine(stream, boldFont, 8, "Observações:", left + 250, 78);
-                if (sheet.isHasWeightAlert()) {
+                writePdfLine(stream, boldFont, 8, "Remarks:", left + 250, 78);
+                if (sheet.isHasRemarks()) {
                     float alertY = 64;
-                    for (String line : wrapText(sheet.getWeightAlert(), bodyFont, 8, 240, 3)) {
+                    for (String line : wrapText(sheet.getRemarks(), bodyFont, 8, 240, 3)) {
                         writePdfLine(stream, bodyFont, 8, line, left + 250, alertY);
                         alertY -= 11;
                     }
                 }
-                drawCenteredFittedText(stream, bodyFont, 8, "Lisboa, " + LocalDate.now(), right - 130, 78, 180);
-                drawCenteredFittedText(stream, boldFont, 8, "O Professor da Turma", right - 130, 58, 180);
+                drawCenteredFittedText(
+                        stream,
+                        bodyFont,
+                        8,
+                        "Lisbon, " + ApplicationDateTimeFormat.date(LocalDate.now(ApplicationClock.system())),
+                        right - 130,
+                        78,
+                        180
+                );
+                drawCenteredFittedText(stream, boldFont, 8, "Class group teacher", right - 130, 58, 180);
                 stream.moveTo(right - 220, 42);
                 stream.lineTo(right - 42, 42);
                 stream.stroke();
@@ -2180,11 +2362,11 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         strokeRect(stream, left + numberWidth, y - rowHeight, nameWidth, rowHeight, Color.BLACK);
         float baseline = centeredBaseline(y, rowHeight, 8);
         drawCenteredFittedText(stream, boldFont, 8, "N.", left + numberWidth / 2, baseline, numberWidth - 4);
-        drawCenteredFittedText(stream, boldFont, 8, "Nome do Aluno", left + numberWidth + nameWidth / 2, baseline, nameWidth - 8);
+        drawCenteredFittedText(stream, boldFont, 8, "Student name", left + numberWidth + nameWidth / 2, baseline, nameWidth - 8);
         float x = left + numberWidth + nameWidth;
         if (sheet.getAssessmentColumns().isEmpty()) {
             strokeRect(stream, x, y - rowHeight, assessmentWidth, rowHeight, Color.BLACK);
-            drawCenteredFittedText(stream, boldFont, 8, "Avaliações", x + assessmentWidth / 2, baseline, assessmentWidth - 8);
+            drawCenteredFittedText(stream, boldFont, 8, "Assessments", x + assessmentWidth / 2, baseline, assessmentWidth - 8);
             x += assessmentWidth;
         } else {
             float fontSize = assessmentWidth < 58 ? 6.5f : 8f;
@@ -2196,7 +2378,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
             }
         }
         strokeRect(stream, x, y - rowHeight, finalWidth, rowHeight, Color.BLACK);
-        drawCenteredFittedText(stream, boldFont, 8, "Nota final", x + finalWidth / 2, baseline, finalWidth - 8);
+        drawCenteredFittedText(stream, boldFont, 8, "Final grade", x + finalWidth / 2, baseline, finalWidth - 8);
     }
 
     private static void drawGradeSheetRow(
@@ -2252,7 +2434,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
     ) throws IOException {
         float totalWidth = numberWidth + nameWidth + assessmentWidth * assessmentCount + finalWidth;
         strokeRect(stream, left, y - rowHeight, totalWidth, rowHeight, Color.BLACK);
-        drawCenteredFittedText(stream, bodyFont, 8, "Sem registos de nota.", left + totalWidth / 2,
+        drawCenteredFittedText(stream, bodyFont, 8, "No grade records.", left + totalWidth / 2,
                 centeredBaseline(y, rowHeight, 8), totalWidth - 16);
     }
 
@@ -2269,34 +2451,24 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 fillRect(stream, 28, 648, 28, 150, teal);
                 fillRect(stream, 28, 292, 28, 318, teal);
                 fillRect(stream, 28, 96, 28, 150, teal);
-                fillRect(stream, 28, 36, 28, 28, teal);
 
                 float bodyX = 76;
                 float bodyW = 470;
                 stream.setNonStrokingColor(teal);
-                float titleBottom = writeWrappedPdfLines(stream, titleFont, 23,
-                        "Certificado de Conclusão do Curso de " + certificate.getCourseName(),
-                        bodyX, 764, bodyW, 28, 2);
+                float titleBottom = writeWrappedPdfLines(stream, titleFont, 25,
+                        "Course Completion Certificate for " + certificate.getCourseName(),
+                        bodyX, 764, bodyW, 30, 3);
                 stream.setNonStrokingColor(Color.BLACK);
 
-                float infoTop = Math.min(696, titleBottom - 28);
-                writePdfLine(stream, bodyFont, 11, "Certifica-se que", bodyX, infoTop);
-                writeFittedPdfLine(stream, boldFont, 11, certificate.getStudentName(), bodyX, infoTop - 20, 178);
-                writeFittedPdfLine(stream, bodyFont, 9, "Identificação Civil (CC/BI): " + certificate.getStudentEmail(),
-                        bodyX, infoTop - 38, 178);
-                writePdfLine(stream, bodyFont, 11, "natural de", bodyX + 198, infoTop);
-                writePdfLine(stream, bodyFont, 10, "Localidade", bodyX + 198, infoTop - 20);
-                writePdfLine(stream, bodyFont, 11, "nascido em", bodyX + 310, infoTop);
-                writePdfLine(stream, bodyFont, 10, "DD/MM/AAAA", bodyX + 310, infoTop - 20);
-                writePdfLine(stream, bodyFont, 11, "concluiu com aproveitamento o curso de", bodyX, infoTop - 66);
-                writeFittedPdfLine(stream, boldFont, 10, certificate.getCourseName(), bodyX, infoTop - 84, 470);
-                writePdfLine(stream, bodyFont, 11, "com a duração de", bodyX, infoTop - 118);
-                writeFittedPdfLine(stream, boldFont, 11, certificate.getCourseDurationLabel(), bodyX + 92, infoTop - 118, 90);
-                writePdfLine(stream, bodyFont, 11, "válido até DD/MM/AAAA", bodyX + 198, infoTop - 118);
-                writePdfLine(stream, bodyFont, 11, "Total ECTS: " + certificate.getCourseEctsLabel(), bodyX + 394, infoTop - 118);
+                float infoTop = Math.min(682, titleBottom - 36);
+                writePdfLine(stream, bodyFont, 11, "This is to certify that", bodyX, infoTop);
+                writeFittedPdfLine(stream, boldFont, 12, certificate.getStudentName(), bodyX, infoTop - 21, bodyW);
+                writeFittedPdfLine(stream, bodyFont, 10,
+                        "Civil identification (CC/BI): " + certificate.getStudentEmail(),
+                        bodyX, infoTop - 41, bodyW);
 
                 float tableX = 76;
-                float tableY = 542;
+                float tableY = Math.min(560, infoTop - 78);
                 float tableW = 470;
                 float subjectWidth = 300;
                 float ectsWidth = 80;
@@ -2304,21 +2476,22 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 float headerH = 50;
                 float finalH = 38;
                 int subjectRows = Math.max(1, certificate.getSubjectRows().size());
-                float rowH = Math.min(42, Math.max(24, (tableY - 190 - headerH - finalH) / subjectRows));
+                float rowH = Math.min(42, Math.max(24, (tableY - 214 - headerH - finalH) / subjectRows));
                 strokeRect(stream, tableX, tableY - headerH, tableW, headerH, Color.GRAY);
                 strokeRect(stream, tableX + subjectWidth, tableY - headerH, ectsWidth, headerH, Color.GRAY);
                 strokeRect(stream, tableX + subjectWidth + ectsWidth, tableY - headerH, gradeWidth, headerH, Color.GRAY);
-                drawCenteredFittedText(stream, boldFont, 10, "Unidades de Formação/Módulos/Outras Designações",
+                drawCenteredFittedText(stream, boldFont, 10,
+                        "Subjects",
                         tableX + subjectWidth / 2, tableY - 29, subjectWidth - 18);
                 drawCenteredFittedText(stream, boldFont, 10, "ECTS", tableX + subjectWidth + ectsWidth / 2,
                         tableY - 29, ectsWidth - 10);
-                drawCenteredFittedText(stream, boldFont, 10, "Classificação",
+                drawCenteredFittedText(stream, boldFont, 10, "Grade",
                         tableX + subjectWidth + ectsWidth + gradeWidth / 2, tableY - 22, gradeWidth - 12);
-                drawCenteredFittedText(stream, boldFont, 9, "0.." + certificateScale(certificate),
+                drawCenteredFittedText(stream, boldFont, 9, "0 - " + certificateScale(certificate),
                         tableX + subjectWidth + ectsWidth + gradeWidth / 2, tableY - 36, gradeWidth - 12);
                 float y = tableY - headerH;
                 for (CertificateView.CertificateSubjectRowView row : certificate.getSubjectRows()) {
-                    if (y - rowH < 180) {
+                    if (y - rowH < 204) {
                         break;
                     }
                     strokeRect(stream, tableX, y - rowH, tableW, rowH, Color.LIGHT_GRAY);
@@ -2335,36 +2508,36 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                     y -= rowH;
                 }
                 strokeRect(stream, tableX, y - finalH, tableW, finalH, Color.GRAY);
-                strokeRect(stream, tableX + 330, y - finalH, 140, finalH, Color.GRAY);
-                drawCenteredFittedText(stream, boldFont, 11, "Nota Final", tableX + 165,
-                        centeredBaseline(y, finalH, 11), 300);
-                drawCenteredFittedText(stream, boldFont, 11, certificate.getFinalGrade() + " valores", tableX + 400,
-                        centeredBaseline(y, finalH, 11), 126);
+                strokeRect(stream, tableX + subjectWidth + ectsWidth, y - finalH, gradeWidth, finalH, Color.GRAY);
+                drawCenteredFittedText(stream, boldFont, 11, "Final Grade", tableX + (subjectWidth + ectsWidth) / 2,
+                        centeredBaseline(y, finalH, 11), subjectWidth + ectsWidth - 16);
+                drawCenteredFittedText(stream, boldFont, 11, certificate.getFinalGrade() + " points",
+                        tableX + subjectWidth + ectsWidth + gradeWidth / 2,
+                        centeredBaseline(y, finalH, 11), gradeWidth - 12);
                 float afterTableY = y - finalH;
-                float statementY = Math.min(afterTableY - 24, 164);
-                String statement = "Comprova-se a conclusão, com aproveitamento, do curso "
-                        + certificate.getCourseName() + ", com " + certificate.getCourseDurationLabel()
-                        + " e " + certificate.getCourseEctsLabel() + " ECTS.";
+                float statementY = afterTableY - 28;
+                String statement = "This certificate confirms successful completion of the course "
+                        + certificate.getCourseName() + ", with a total duration of "
+                        + certificate.getCourseDurationLabel() + ", " + certificate.getCourseEctsLabel()
+                        + " ECTS and " + certificate.getSubjectCountLabel() + ".";
                 float statementBottom = writeWrappedPdfLines(stream, bodyFont, 11, statement, 76, statementY, 470, 17, 3);
-                float dateY = Math.max(86, statementBottom - 12);
-                writePdfLine(stream, bodyFont, 10, "Lisboa, " + LocalDate.now(), 76, dateY);
-                float signatureY = Math.max(38, dateY - 36);
-                writePdfLine(stream, bodyFont, 10, "O(A) Responsável pelo(a)", 76, signatureY);
-                stream.moveTo(76, signatureY - 12);
-                stream.lineTo(220, signatureY - 12);
+                float signatureY = Math.max(76, statementBottom - 48);
+                writePdfLine(stream, bodyFont, 10, "Responsible person", 76, signatureY);
+                stream.moveTo(76, signatureY - 28);
+                stream.lineTo(240, signatureY - 28);
                 stream.stroke();
-                writePdfLine(stream, bodyFont, 10, "Entidade Formadora, Lda.", 390, signatureY);
-                stream.moveTo(390, signatureY - 12);
-                stream.lineTo(535, signatureY - 12);
+                drawCenteredFittedText(stream, bodyFont, 8, "Signature and official seal or stamp",
+                        158, signatureY - 42, 164);
+                writePdfLine(stream, bodyFont, 10, "Training entity, Ltd.", 390, signatureY);
+                stream.moveTo(390, signatureY - 28);
+                stream.lineTo(535, signatureY - 28);
                 stream.stroke();
-                stream.setNonStrokingColor(teal);
-                writeFittedPdfLine(stream, boldFont, 9, "Certificado n.º " + certificate.getValidationCode(), 76, 31, 190);
-                writeFittedPdfLine(stream, boldFont, 9, "De acordo com o modelo publicado na Portaria n.º 474/2010",
-                        76, 19, 470);
-                stream.setNonStrokingColor(Color.BLACK);
-                drawCenteredFittedText(stream, bodyFont, 8,
-                        "N.º de Identificação Civil (CC/BI): " + certificate.getStudentEmail() + " - Página 1 de 1",
-                        390, 8, 300);
+                if (!certificate.getValidationCode().isBlank()) {
+                    stream.setNonStrokingColor(teal);
+                    writeFittedPdfLine(stream, boldFont, 9,
+                            "Certificate no. " + certificate.getValidationCode(), 76, 31, 240);
+                    stream.setNonStrokingColor(Color.BLACK);
+                }
             }
             document.save(output);
             return output.toByteArray();
@@ -2399,7 +2572,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 .notes{height:70px;vertical-align:top}
                 </style>
                 <!--[if gte mso 9]><xml>
-                <x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Pauta</x:Name>
+                <x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Grade sheet</x:Name>
                 <x:WorksheetOptions><x:PageSetup><x:Layout x:Orientation="Landscape"/></x:PageSetup>
                 <x:FitToPage/><x:Print><x:FitHeight>1</x:FitHeight><x:FitWidth>1</x:FitWidth></x:Print>
                 </x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook>
@@ -2412,39 +2585,39 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         for (int index = 0; index < assessmentColumns; index++) {
             String label = index < sheet.getAssessmentColumns().size()
                     ? sheet.getAssessmentColumns().get(index).getHeaderLabel()
-                    : "Avaliações";
+                    : "Assessments";
             html.append("<col style=\"width:")
                     .append(excelColumnWidthPt(label, assessmentColumns == 1 ? 300 : 112))
                     .append("pt\">");
         }
         html.append("<col style=\"width:120pt\">");
         html.append("<tr>")
-                .append("<td colspan=\"2\" class=\"box-top box-left bold\">Afixada em: ____ / ____ / ______</td>")
+                .append("<td colspan=\"2\" class=\"box-top box-left bold\">Posted on: ____ / ____ / ______</td>")
                 .append("<td colspan=\"").append(centerSpan).append("\" class=\"box-top brand\" align=\"center\" style=\"text-align:center;font-size:18pt;font-weight:bold\">GAPE</td>")
-                .append("<td class=\"box-top box-right bold center\" align=\"center\" style=\"text-align:center;white-space:nowrap\">Curso: ").append(htmlSafe(sheet.getCourseAcronym())).append("</td>")
+                .append("<td class=\"box-top box-right bold center\" align=\"center\" style=\"text-align:center;white-space:nowrap\">Course: ").append(htmlSafe(sheet.getCourseAcronym())).append("</td>")
                 .append("</tr>");
         html.append("<tr>")
                 .append("<td colspan=\"2\" class=\"box-left\">&nbsp;</td>")
-                .append("<td colspan=\"").append(centerSpan).append("\" class=\"center small\" align=\"center\" style=\"text-align:center\">Gestão Académica e Pedagógica</td>")
-                .append("<td class=\"box-right bold center\" align=\"center\" style=\"text-align:center;white-space:nowrap\">Turma: ").append(htmlSafe(sheet.getClassGroupCode())).append("</td>")
+                .append("<td colspan=\"").append(centerSpan).append("\" class=\"center small\" align=\"center\" style=\"text-align:center\">Academic and Pedagogical Management</td>")
+                .append("<td class=\"box-right bold center\" align=\"center\" style=\"text-align:center;white-space:nowrap\">Class group: ").append(htmlSafe(sheet.getClassGroupCode())).append("</td>")
                 .append("</tr>");
         html.append("<tr>")
-                .append("<td colspan=\"2\" class=\"box-left\">Disciplina: ").append(htmlSafe(sheet.getSubjectName())).append("</td>")
+                .append("<td colspan=\"2\" class=\"box-left\">Subject: ").append(htmlSafe(sheet.getSubjectName())).append("</td>")
                 .append("<td colspan=\"").append(centerSpan).append("\" class=\"center bold\" align=\"center\" style=\"text-align:center\">").append(htmlSafe(sheet.getCourseName())).append("</td>")
-                .append("<td class=\"box-right bold center\" align=\"center\" style=\"text-align:center;white-space:nowrap\">Escala: 0-").append(htmlSafe(sheet.getMaxGrade())).append("</td>")
+                .append("<td class=\"box-right bold center\" align=\"center\" style=\"text-align:center;white-space:nowrap\">Scale: 0-").append(htmlSafe(sheet.getMaxGrade())).append("</td>")
                 .append("</tr>");
         html.append("<tr><td colspan=\"").append(totalColumns)
-                .append("\" class=\"box-left box-right box-bottom title\" align=\"center\" style=\"text-align:center;font-size:20pt;font-weight:bold\">Pauta de Turma</td></tr>");
+                .append("\" class=\"box-left box-right box-bottom title\" align=\"center\" style=\"text-align:center;font-size:20pt;font-weight:bold\">Class group grade sheet</td></tr>");
         html.append("<tr><td colspan=\"").append(totalColumns).append("\" class=\"no-border\">&nbsp;</td></tr>");
-        html.append("<tr><th>N.</th><th>Nome do Aluno</th>");
+        html.append("<tr><th>N.</th><th>Student name</th>");
         if (sheet.getAssessmentColumns().isEmpty()) {
-            html.append("<th>Avaliações</th>");
+            html.append("<th>Assessments</th>");
         } else {
             for (GradeSheetView.AssessmentColumnView column : sheet.getAssessmentColumns()) {
                 html.append("<th>").append(htmlSafe(column.getHeaderLabel())).append("</th>");
             }
         }
-        html.append("<th>Nota final</th></tr>");
+        html.append("<th>Final grade</th></tr>");
         for (GradeSheetView.StudentGradeRowView row : sheet.getStudentRows()) {
             html.append("<tr><td class=\"name center\">").append(row.getNumber()).append("</td>")
                     .append("<td class=\"name\">").append(htmlSafe(row.getStudentName())).append("</td>");
@@ -2456,21 +2629,22 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
             html.append("<td class=\"center bold\">").append(htmlSafe(row.getFinalGrade())).append("</td></tr>");
         }
         html.append("<tr><td colspan=\"").append(totalColumns).append("\" class=\"no-border\">&nbsp;</td></tr>");
-        html.append("<tr><td colspan=\"2\" class=\"notes\"><span class=\"bold\">NOTAS:</span><br>");
+        html.append("<tr><td colspan=\"2\" class=\"notes\"><span class=\"bold\">NOTES:</span><br>");
         if (sheet.getAssessmentColumns().isEmpty()) {
-            html.append("Sem avaliações configuradas.<br>");
+            html.append("No assessments configured.<br>");
         } else {
             for (GradeSheetView.AssessmentColumnView column : sheet.getAssessmentColumns()) {
                 html.append(htmlSafe(column.getTitle())).append(" - ")
-                        .append(htmlSafe(column.getWeightLabel())).append("% do peso na nota final<br>");
+                        .append(htmlSafe(column.getWeightLabel())).append("% of the final grade weight<br>");
             }
         }
-        html.append("</td><td colspan=\"").append(centerSpan).append("\" class=\"notes\"><span class=\"bold\">Observações:</span><br>");
-        if (sheet.isHasWeightAlert()) {
-            html.append(htmlSafe(sheet.getWeightAlert()));
+        html.append("</td><td colspan=\"").append(centerSpan).append("\" class=\"notes\"><span class=\"bold\">Remarks:</span><br>");
+        if (sheet.isHasRemarks()) {
+            html.append(htmlSafe(sheet.getRemarks()));
         }
-        html.append("</td><td class=\"notes center\">Lisboa, ").append(LocalDate.now())
-                .append("<br><br><span class=\"bold\">O Professor da Turma</span><br><br>____________________</td></tr>");
+        html.append("</td><td class=\"notes center\">Lisbon, ")
+                .append(ApplicationDateTimeFormat.date(LocalDate.now(ApplicationClock.system())))
+                .append("<br><br><span class=\"bold\">Class group teacher</span><br><br>____________________</td></tr>");
         html.append("</table></div></body></html>");
         return html.toString();
     }
@@ -2496,7 +2670,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 .spacer{height:12px}.line{border-bottom:1px solid #000}
                 </style>
                 <!--[if gte mso 9]><xml>
-                <x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Certificado</x:Name>
+                <x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Certificate</x:Name>
                 <x:WorksheetOptions><x:PageSetup><x:Layout x:Orientation="Portrait"/></x:PageSetup>
                 <x:FitToPage/><x:Print><x:FitHeight>0</x:FitHeight><x:FitWidth>1</x:FitWidth></x:Print>
                 </x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook>
@@ -2504,43 +2678,37 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 """);
         html.append("<table class=\"layout\">")
                 .append("<col style=\"width:34pt\"><col style=\"width:18pt\"><col style=\"width:470pt\">")
-                .append("<tr><td class=\"rail\" rowspan=\"10\">&nbsp;</td><td></td><td class=\"title\">Certificado de Conclusão do Curso de ")
+                .append("<tr><td class=\"rail\" rowspan=\"8\">&nbsp;</td><td></td><td class=\"title\">Course Completion Certificate for ")
                 .append(htmlSafe(certificate.getCourseName())).append("</td></tr>")
                 .append("<tr><td></td><td class=\"spacer\">&nbsp;</td></tr>")
-                .append("<tr><td></td><td class=\"identity\">Certifica-se que <span class=\"bold\">")
+                .append("<tr><td></td><td class=\"identity\">This is to certify that <span class=\"bold\">")
                 .append(htmlSafe(certificate.getStudentName()))
-                .append("</span><br>Identificação Civil (CC/BI): ").append(htmlSafe(certificate.getStudentEmail()))
-                .append("<br>concluiu com aproveitamento o curso de <span class=\"bold\">")
-                .append(htmlSafe(certificate.getCourseName()))
-                .append("</span><br>com a duração de <span class=\"bold\">")
-                .append(htmlSafe(certificate.getCourseDurationLabel()))
-                .append("</span> e Total ECTS: <span class=\"bold\">")
-                .append(htmlSafe(certificate.getCourseEctsLabel()))
-                .append("</span>.</td></tr>")
+                .append("</span><br>Civil identification (CC/BI): ").append(htmlSafe(certificate.getStudentEmail()))
+                .append("</td></tr>")
                 .append("<tr><td></td><td>");
-        html.append("<table class=\"cert\"><col style=\"width:59%\"><col style=\"width:17%\"><col style=\"width:24%\"><tr><th class=\"head center\">Unidades de Formação/Módulos/Outras Designações</th><th class=\"head center\">ECTS</th><th class=\"head center\">Classificação<br>0..")
+        html.append("<table class=\"cert\"><col style=\"width:59%\"><col style=\"width:17%\"><col style=\"width:24%\"><tr><th class=\"head center\">Subjects</th><th class=\"head center\">ECTS</th><th class=\"head center\">Grade<br>0 - ")
                 .append(htmlSafe(certificateScale(certificate))).append("</th></tr>");
         for (CertificateView.CertificateSubjectRowView row : certificate.getSubjectRows()) {
             html.append("<tr><td>").append(htmlSafe(row.getSubjectLabel())).append("</td><td class=\"center\">")
                     .append(htmlSafe(row.getEctsLabel())).append("</td><td class=\"center\">")
                     .append(htmlSafe(row.getGradeLabel())).append("</td></tr>");
         }
-        html.append("<tr><td colspan=\"2\" class=\"center bold\">Nota Final</td><td class=\"center bold\">")
-                .append(htmlSafe(certificate.getFinalGrade())).append(" valores</td></tr></table>");
+        html.append("<tr><td colspan=\"2\" class=\"center bold\">Final Grade</td><td class=\"center bold\">")
+                .append(htmlSafe(certificate.getFinalGrade())).append(" points</td></tr></table>");
         html.append("</td></tr>")
-                .append("<tr><td></td><td>O presente certificado comprova a conclusão, com aproveitamento, do curso ")
+                .append("<tr><td></td><td>This certificate confirms successful completion of the course ")
+                .append("<span class=\"bold\">")
                 .append(htmlSafe(certificate.getCourseName()))
-                .append(", com duração total de ").append(htmlSafe(certificate.getCourseDurationLabel()))
+                .append("</span>, with a total duration of <span class=\"bold\">").append(htmlSafe(certificate.getCourseDurationLabel()))
                 .append(", ").append(htmlSafe(certificate.getCourseEctsLabel()))
-                .append(" ECTS, de acordo com os requisitos académicos definidos.</td></tr>")
-                .append("<tr><td></td><td>Lisboa, ").append(LocalDate.now()).append("</td></tr>")
-                .append("<tr><td></td><td>O(A) Responsável pelo(a) ____________________<br>Entidade Formadora, Lda. ____________________</td></tr>")
-                .append("<tr><td></td><td class=\"head\">Certificado n.º ").append(htmlSafe(certificate.getValidationCode()))
-                .append("</td></tr>")
-                .append("<tr><td></td><td class=\"head\">De acordo com o modelo publicado na Portaria n.º 474/2010</td></tr>")
-                .append("<tr><td></td><td>N.º de Identificação Civil (CC/BI): ")
-                .append(htmlSafe(certificate.getStudentEmail())).append(" - Página 1 de 1</td></tr>")
-                .append("</table></div></body></html>");
+                .append(" ECTS and ").append(htmlSafe(certificate.getSubjectCountLabel())).append("</span>.</td></tr>")
+                .append("<tr><td></td><td>Responsible person ____________________<br>Signature and official seal or stamp</td></tr>")
+                .append("<tr><td></td><td>Training entity, Ltd. ____________________</td></tr>");
+        if (!certificate.getValidationCode().isBlank()) {
+            html.append("<tr><td></td><td class=\"head\">Certificate no. ")
+                    .append(htmlSafe(certificate.getValidationCode())).append("</td></tr>");
+        }
+        html.append("</table></div></body></html>");
         return html.toString();
     }
 
@@ -2800,6 +2968,9 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
     private record GradeSheetStudentSeed(long studentUserId, String studentName) {
     }
 
+    private record SubjectOccurrenceKey(long subjectId, long courseOccurrenceId) {
+    }
+
     public static final class GradeSheetCourseGroupView {
 
         private final List<GradeSheetSubjectGroupView> subjects;
@@ -2840,12 +3011,28 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
             return primarySheet().getCourseContextTitle();
         }
 
-        public String getPeriodLabel() {
-            return primarySheet().getPeriodLabel();
+        public long getOrganizationId() {
+            return primarySheet().getOrganizationId();
         }
 
-        public GradeDocumentView getCourseDocument() {
-            return courseDocument(this);
+        public String getOrganizationLabel() {
+            return primarySheet().getOrganizationLabel();
+        }
+
+        public Long getOrganicUnitId() {
+            return primarySheet().getOrganicUnitId();
+        }
+
+        public String getOrganicUnitLabel() {
+            return primarySheet().getOrganicUnitLabel();
+        }
+
+        public Long getPrimaryClassGroupId() {
+            return primarySheet().getPrimaryClassGroupId();
+        }
+
+        public String getPeriodLabel() {
+            return primarySheet().getPeriodLabel();
         }
 
         public int getSubjectCount() {
@@ -2869,33 +3056,25 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         }
 
         public String getStateLabel() {
-            boolean hasDraft = false;
-            boolean hasPublished = false;
             for (GradeSheetSubjectGroupView subject : subjects) {
-                for (GradeSheetView sheet : subject.getSheets()) {
-                    hasDraft = hasDraft || sheet.isDraft();
-                    hasPublished = hasPublished || sheet.isPublished();
+                if ("Draft".equals(subject.getStateLabel())) {
+                    return "Draft";
                 }
             }
-            if (hasDraft) {
-                return "Draft";
-            }
-            return hasPublished ? "Published" : primarySheet().getStateLabel();
+            return subjects.stream().anyMatch(subject -> "Published".equals(subject.getStateLabel()))
+                    ? "Published"
+                    : primarySheet().getStateLabel();
         }
 
         public String getStateBadgeClass() {
-            boolean hasDraft = false;
-            boolean hasPublished = false;
             for (GradeSheetSubjectGroupView subject : subjects) {
-                for (GradeSheetView sheet : subject.getSheets()) {
-                    hasDraft = hasDraft || sheet.isDraft();
-                    hasPublished = hasPublished || sheet.isPublished();
+                if ("Draft".equals(subject.getStateLabel())) {
+                    return "bg-warning-50 text-warning-600";
                 }
             }
-            if (hasDraft) {
-                return "bg-warning-50 text-warning-600";
-            }
-            return hasPublished ? "bg-success-50 text-success-600" : primarySheet().getStateBadgeClass();
+            return subjects.stream().anyMatch(subject -> "Published".equals(subject.getStateLabel()))
+                    ? "bg-success-50 text-success-600"
+                    : primarySheet().getStateBadgeClass();
         }
 
         public boolean isPublished() {
@@ -2935,6 +3114,42 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
             return primarySheet().getCourseName();
         }
 
+        public long getCourseId() {
+            return primarySheet().getCourseId();
+        }
+
+        public String getCourseLabel() {
+            return primarySheet().getCourseLabel();
+        }
+
+        public long getOccurrenceId() {
+            return primarySheet().getCourseOccurrenceId();
+        }
+
+        public String getOccurrenceLabel() {
+            return primarySheet().getCourseOccurrenceLabel();
+        }
+
+        public String getOccurrenceDateRangeLabel() {
+            return primarySheet().getCourseOccurrenceDateRangeLabel();
+        }
+
+        public long getNewestSheetId() {
+            return sheets.stream()
+                    .mapToLong(GradeSheetView::getId)
+                    .max()
+                    .orElse(0L);
+        }
+
+        public boolean isClosed() {
+            List<GradeSheetView> classGroupSheets = getClassGroupSheets();
+            if (!classGroupSheets.isEmpty()) {
+                return classGroupSheets.stream().allMatch(GradeSheetView::isPrimaryClassGroupCompleted);
+            }
+            return primarySheet().isCourseOccurrenceCompleted()
+                    || "closed".equals(primarySheet().getStateValue());
+        }
+
         public String getSubjectPhoto() {
             return primarySheet().getSubjectPhoto();
         }
@@ -2960,9 +3175,24 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         }
 
         public String getWeightAlert() {
+            if (hasSubjectGradeSheet()) {
+                return primarySheet().isHasWeightAlert() ? primarySheet().getWeightAlert() : "";
+            }
             for (GradeSheetView sheet : sheets) {
                 if (sheet.isHasWeightAlert()) {
                     return sheet.getWeightAlert();
+                }
+            }
+            return "";
+        }
+
+        public String getRemarks() {
+            if (hasSubjectGradeSheet()) {
+                return primarySheet().getRemarks();
+            }
+            for (GradeSheetView sheet : sheets) {
+                if (sheet.isHasRemarks()) {
+                    return sheet.getRemarks();
                 }
             }
             return "";
@@ -2973,10 +3203,13 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         }
 
         public int getSheetCount() {
-            return sheets.size();
+            return getClassGroupSheets().size();
         }
 
         public String getStateLabel() {
+            if (hasSubjectGradeSheet()) {
+                return primarySheet().getStateLabel();
+            }
             boolean hasDraft = false;
             boolean hasPublished = false;
             for (GradeSheetView sheet : sheets) {
@@ -2990,6 +3223,9 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         }
 
         public String getStateBadgeClass() {
+            if (hasSubjectGradeSheet()) {
+                return primarySheet().getStateBadgeClass();
+            }
             boolean hasDraft = false;
             boolean hasPublished = false;
             for (GradeSheetView sheet : sheets) {
@@ -3002,8 +3238,24 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
             return hasPublished ? "bg-success-50 text-success-600" : primarySheet().getStateBadgeClass();
         }
 
+        public boolean isPublished() {
+            return "Published".equals(getStateLabel());
+        }
+
         public List<GradeSheetView> getSheets() {
             return sheets;
+        }
+
+        public List<GradeSheetView> getClassGroupSheets() {
+            return sheets.stream()
+                    // The consolidated subject-occurrence sheet is derived
+                    // from the single final sheet of each class group.  Other
+                    // valid class-group sheets (for example a supplementary
+                    // exam sheet) must not inflate this occurrence's source
+                    // count or affect its completed grouping.
+                    .filter(sheet -> !sheet.getClassGroupIds().isEmpty()
+                            && "final".equals(sheet.getTypeValue()))
+                    .toList();
         }
 
         public GradeSheetView getPrimarySheet() {
@@ -3011,7 +3263,14 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         }
 
         private GradeSheetView primarySheet() {
-            return sheets.get(0);
+            return sheets.stream()
+                    .filter(sheet -> sheet.getClassGroupIds().isEmpty())
+                    .findFirst()
+                    .orElse(sheets.get(0));
+        }
+
+        private boolean hasSubjectGradeSheet() {
+            return sheets.stream().anyMatch(sheet -> sheet.getClassGroupIds().isEmpty());
         }
     }
 
@@ -3055,6 +3314,11 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
 
         public List<CertificateView> getCertificates() {
             return certificates;
+        }
+
+        /** A student is published only when every certificate in this group is issued. */
+        public boolean isPublished() {
+            return !certificates.isEmpty() && certificates.stream().allMatch(CertificateView::isCompleted);
         }
 
         private CertificateView primaryCertificate() {
@@ -3112,7 +3376,6 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
     private static String certificateStateLabel(CertificateState state) {
         return switch (state) {
             case ISSUED -> "Published";
-            case REVOKED -> "Revoked";
             case ACTIVE -> "Active";
             case DRAFT -> "Draft";
         };

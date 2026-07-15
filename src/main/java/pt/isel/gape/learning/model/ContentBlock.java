@@ -9,9 +9,15 @@ public record ContentBlock(
         String name,
         String description,
         int orderNo,
-        ContentBlockAccessMode accessMode,
         ContentBlockState state,
-        LocalDateTime availableFrom,
-        LocalDateTime availableUntil
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {
+    public boolean isActive() {
+        return state == ContentBlockState.ACTIVE;
+    }
+
+    public boolean isInactive() {
+        return state == ContentBlockState.INACTIVE;
+    }
 }

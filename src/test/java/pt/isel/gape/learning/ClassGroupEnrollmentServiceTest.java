@@ -12,8 +12,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -39,28 +37,19 @@ class ClassGroupEnrollmentServiceTest {
     private ClassGroupEnrollmentService classGroupEnrollmentService;
     private EnrollmentService enrollmentService;
 
-    @BeforeAll
-    static void initializeDatabase() throws Exception {
-        DatabaseTestSupport.resetDatabaseWithBaseSeed();
-    }
-
     @BeforeEach
-    void setUp() throws SQLException {
-        DatabaseTestSupport.beginTestTransaction();
+    void setUp() throws Exception {
+        // The services under test commit their own units of work. Rebuilding
+        // the base fixture before every case keeps those commits from leaking
+        // into the next randomly ordered case in the full Maven suite.
+        DatabaseTestSupport.resetDatabaseWithBaseSeed();
         ConnectionProvider connectionProvider = DatabaseTestSupport::openConnection;
         classGroupEnrollmentService = new ClassGroupEnrollmentService(connectionProvider, FIXED_CLOCK);
         enrollmentService = new EnrollmentService(connectionProvider, FIXED_CLOCK);
     }
 
-    @AfterEach
-    void tearDown() throws SQLException {
-        DatabaseTestSupport.rollbackTestTransaction();
-    }
-
     @Test
-    void studentCanRequestSelfClassGroupEnrollmentWhenEnrolledInSubject() throws Exception {
-        insertSubjectEnrollment41();
-
+    void studentCanRequestSelfClassGroupEnrollmentWhenEnrolledInCourseOccurrence() {
         ClassGroupEnrollment enrollment = classGroupEnrollmentService.requestStudentInClassGroup(
                 4L,
                 null,
@@ -75,11 +64,58 @@ class ClassGroupEnrollmentServiceTest {
 
         assertEquals(EnrollmentState.PENDING, enrollment.state());
         assertEquals(52L, enrollment.classGroupId());
+        assertEquals(LocalDate.of(2026, 1, 1), enrollment.startDate());
+        assertEquals(LocalDate.of(2026, 6, 30), enrollment.endDate());
+    }
+
+    @Test
+    void classGroupEnrollmentPeriodIsDerivedEvenWhenTheCallerSuppliesOtherDates() {
+        ClassGroupEnrollment enrollment = classGroupEnrollmentService.requestStudentInClassGroup(
+                4L,
+                null,
+                new ClassGroupEnrollmentCommand(
+                        4L,
+                        52L,
+                        LocalDate.of(2026, 3, 1),
+                        LocalDate.of(2026, 3, 2)
+                ),
+                "127.0.0.1"
+        );
+
+        assertEquals(LocalDate.of(2026, 1, 1), enrollment.startDate());
+        assertEquals(LocalDate.of(2026, 6, 30), enrollment.endDate());
+    }
+
+    @Test
+    void approvalUsesTheClassGroupOccurrencePeriod() {
+        classGroupEnrollmentService.requestStudentInClassGroup(
+                4L,
+                null,
+                new ClassGroupEnrollmentCommand(
+                        4L,
+                        52L,
+                        LocalDate.of(2026, 3, 1),
+                        LocalDate.of(2026, 3, 2)
+                ),
+                "127.0.0.1"
+        );
+
+        ClassGroupEnrollment enrollment = classGroupEnrollmentService.approveClassGroupEnrollment(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                4L,
+                52L,
+                "127.0.0.1"
+        );
+
+        assertEquals(EnrollmentState.ACTIVE, enrollment.state());
+        assertEquals(LocalDate.of(2026, 1, 1), enrollment.startDate());
+        assertEquals(LocalDate.of(2026, 6, 30), enrollment.endDate());
     }
 
     @Test
     void classGroupRequestIsAutoApprovedWhenPolicyIsAutoApprove() throws Exception {
-        insertSubjectEnrollment41();
         classGroupEnrollmentService.updateClassGroupEnrollmentPolicy(
                 1L,
                 null,
@@ -107,7 +143,9 @@ class ClassGroupEnrollmentServiceTest {
     }
 
     @Test
-    void classGroupEnrollmentRequiresSubjectEnrollment() {
+    void classGroupEnrollmentRequiresCourseOccurrenceEnrollment() throws Exception {
+        insertDataAnalysisClassGroup();
+
         assertThrows(
                 IllegalStateException.class,
                 () -> classGroupEnrollmentService.requestStudentInClassGroup(
@@ -115,7 +153,7 @@ class ClassGroupEnrollmentServiceTest {
                         null,
                         new ClassGroupEnrollmentCommand(
                                 4L,
-                                52L,
+                                96L,
                                 LocalDate.of(2026, 3, 1),
                                 null
                         ),
@@ -126,8 +164,7 @@ class ClassGroupEnrollmentServiceTest {
 
     @Test
     void classGroupEnrollmentCannotExceedCapacity() throws Exception {
-        insertSubjectEnrollment41();
-        setClassGroupCapacityToZero(52L);
+        fillClassGroupToCapacity(52L);
 
         assertThrows(
                 IllegalStateException.class,
@@ -148,7 +185,6 @@ class ClassGroupEnrollmentServiceTest {
 
     @Test
     void assignedTeacherCanEnrollStudentInClassGroup() throws Exception {
-        insertSubjectEnrollment41();
         assignTeacherToClassGroup52();
 
         ClassGroupEnrollment enrollment = classGroupEnrollmentService.enrollStudentInClassGroup(
@@ -207,8 +243,6 @@ class ClassGroupEnrollmentServiceTest {
 
     @Test
     void studentCannotEnrollAnotherStudentInClassGroup() throws Exception {
-        insertSubjectEnrollment41();
-
         assertThrows(
                 SecurityException.class,
                 () -> classGroupEnrollmentService.requestStudentInClassGroup(
@@ -233,63 +267,121 @@ class ClassGroupEnrollmentServiceTest {
                 AccessProfileType.STUDENT,
                 4L,
                 50L,
-                LocalDate.of(2026, 5, 31),
                 "127.0.0.1"
         );
 
         assertEquals(EnrollmentState.WITHDRAWN, enrollment.state());
         assertEquals("withdrawn", classGroupEnrollmentState(4L, 50L));
+        assertEquals(LocalDate.of(2026, 6, 4), enrollment.endDate());
     }
 
     @Test
-    void withdrawingSubjectWithdrawsActiveClassGroupEnrollments() throws Exception {
-        enrollmentService.withdrawStudentFromSubject(
+    void databaseGuardDerivesTheClassGroupOccurrencePeriod() throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     INSERT INTO enroll_class_group (
+                         id_student_user, id_class_group, state, start_date, end_date
+                     ) VALUES (4, 52, 'pending', '2026-03-01', '2026-03-02')
+                     """)) {
+            statement.executeUpdate();
+        }
+
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT start_date, end_date
+                     FROM enroll_class_group
+                     WHERE id_student_user = 4 AND id_class_group = 52
+                     """)) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                assertEquals(LocalDate.of(2026, 1, 1), resultSet.getDate("start_date").toLocalDate());
+                assertEquals(LocalDate.of(2026, 6, 30), resultSet.getDate("end_date").toLocalDate());
+            }
+        }
+    }
+
+    @Test
+    void withdrawingCourseWithdrawsActiveClassGroupEnrollments() throws Exception {
+        enrollmentService.withdrawStudentFromCourse(
                 1L,
                 null,
                 AccessProfileType.ADMINISTRATOR,
                 4L,
                 30L,
-                40L,
-                LocalDate.of(2026, 5, 31),
+                300L,
                 "127.0.0.1"
         );
 
         assertEquals("withdrawn", classGroupEnrollmentState(4L, 50L));
-    }
-
-    private static void insertSubjectEnrollment41() throws Exception {
-        try (Connection connection = DatabaseTestSupport.openConnection();
-             PreparedStatement statement = connection.prepareStatement("""
-                     INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date)
-                     VALUES (4, 30, 41, 'active', '2026-02-01', NULL)
-                     """)) {
-            statement.executeUpdate();
-        }
     }
 
     private static void insertPrjParallelClassGroup() throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement("""
                      INSERT INTO class_group (
-                         id_class_group, id_subject, id_course, cod_class_group, modality, state,
+                         id_class_group, id_subject, id_course, id_course_occurrence, id_course_occurrence_period,
+                         cod_class_group, modality, state,
                          min_students, max_students, starts_at, ends_at, shift
-                     ) VALUES (95, 40, 30, 'PRJ-T2', 'onsite', 'active', 0, 30,
-                               '2026-02-01', '2026-06-30', 'afternoon')
+                      ) VALUES (95, 40, 30, 300, 3001, 'PRJ-T2', 'onsite', 'active', 1, 30,
+                               '2026-01-01', '2026-06-30', 'afternoon')
                      """)) {
             statement.executeUpdate();
         }
     }
 
-    private static void setClassGroupCapacityToZero(long classGroupId) throws Exception {
+    private static void insertDataAnalysisClassGroup() throws Exception {
         try (Connection connection = DatabaseTestSupport.openConnection();
              PreparedStatement statement = connection.prepareStatement("""
-                     UPDATE class_group
-                     SET min_students = 0,
-                         max_students = 0
-                     WHERE id_class_group = ?
+                     INSERT INTO class_group (
+                         id_class_group, id_subject, id_course, id_course_occurrence, id_course_occurrence_period,
+                         cod_class_group, modality, state,
+                         min_students, max_students, starts_at, ends_at, shift
+                      ) VALUES (96, 41, 31, 310, 3101, 'MAT-AD-T1', 'online', 'active', 1, 30,
+                               '2026-01-01', '2026-06-30', 'morning')
                      """)) {
+            statement.executeUpdate();
+        }
+    }
+
+    private static void fillClassGroupToCapacity(long classGroupId) throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                      UPDATE class_group
+                      SET min_students = 1,
+                          max_students = 2
+                      WHERE id_class_group = ?
+                      """)) {
             statement.setLong(1, classGroupId);
             statement.executeUpdate();
+        }
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     UPDATE user_account
+                     SET state = 'active'
+                     WHERE id_user = 5
+                     """)) {
+            statement.executeUpdate();
+        }
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement courseEnrollment = connection.prepareStatement("""
+                     INSERT INTO enroll_course (
+                         id_student_user, id_course, id_course_occurrence, state, start_date, end_date
+                     ) VALUES (5, 30, 300, 'active', '2026-01-01', '2026-12-31')
+                     ON DUPLICATE KEY UPDATE state = 'active', start_date = VALUES(start_date), end_date = VALUES(end_date)
+                     """)) {
+            courseEnrollment.executeUpdate();
+        }
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement classGroupEnrollment = connection.prepareStatement("""
+                     INSERT INTO enroll_class_group (
+                         id_student_user, id_class_group, state, start_date, end_date
+                     ) VALUES
+                         (4, ?, 'active', '2026-01-01', '2026-06-30'),
+                         (5, ?, 'active', '2026-01-01', '2026-06-30')
+                     """)) {
+            classGroupEnrollment.setLong(1, classGroupId);
+            classGroupEnrollment.setLong(2, classGroupId);
+            classGroupEnrollment.executeUpdate();
         }
     }
 

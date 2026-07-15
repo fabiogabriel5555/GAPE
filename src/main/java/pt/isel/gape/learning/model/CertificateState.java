@@ -5,8 +5,7 @@ import java.util.Locale;
 public enum CertificateState {
     DRAFT("draft"),
     ACTIVE("active"),
-    ISSUED("issued"),
-    REVOKED("revoked");
+    ISSUED("issued");
 
     private final String databaseValue;
 

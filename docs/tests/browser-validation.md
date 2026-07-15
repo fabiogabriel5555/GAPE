@@ -2,7 +2,13 @@
 
 This file records the fastest known local setup for Maven and browser validation in this workspace.
 
-Last confirmed locally: 2026-06-26.
+Last confirmed locally: 13-07-2026.
+
+## Browser driver rule
+
+Do not use the integrated Codex Browser / in-app Browser (`iab`) for this workspace. It has consistently failed locally with `Browser is not available: iab`.
+
+Always use the local Brave browser through Playwright or the CDP helper scripts in `docs/dev/scripts`. In this document, "Browser Tomcat" only means the local Tomcat validation instance under `target/browser-tomcat10`; it does not mean the Codex in-app Browser.
 
 ## Cleanup rule
 
@@ -20,6 +26,17 @@ Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'mvn|surefi
 
 The port check should return no listener unless the server was already owned by the user before the validation started.
 
+## Backend data-conformance rule
+
+Every backend, schema, migration or domain-rule change must include a data-conformance audit. Historical data is not an exemption for invalid records: update the migration and seed/demo data so every persisted record satisfies the new rule, or make the record explicitly valid under the new lifecycle (for example, an association closed as `historical`). A historical state is valid only when it has its required lifecycle data (such as `ended_at`) and no longer breaks an active invariant; it is never a compatibility flag for legacy garbage.
+
+Before calling backend work complete:
+
+1. Identify every existing record affected by the new invariant.
+2. Normalize persisted and seed/demo data; never leave legacy rows that only work because old code tolerated them. For a temporal or lifecycle rule, normalize the parent record, its persisted derived state, every dependent enrollment, assignment, assessment, grade sheet and historical event-recipient snapshot.
+3. Add or update an automated conformance test that fails when the invariant is violated.
+4. Rebuild/reseed the validation database when schema, migration or seed data changed, then perform the relevant visual validation.
+
 ## Fast visual QA loop for frontend changes
 
 For small JSP/CSS/JS layout fixes, use this order. It is intentionally optimized to avoid the slow pattern of package, start Tomcat, capture, stop, edit, repeat.
@@ -35,6 +52,55 @@ For small JSP/CSS/JS layout fixes, use this order. It is intentionally optimized
    - do not rebuild/reset the database unless schema, seed/demo data, migrations or the test scenario itself changed.
 7. Take final screenshots only after the fast DOM checks pass.
 8. Stop Browser Tomcat once in `finally`.
+
+### Fast path for interaction-layout regressions
+
+Use this path for a defect that only appears after an interaction, such as
+opening a modal, expanding an accordion, opening a Select2 menu, or choosing
+an option. The final code change may be small, so the investigation must stay
+small too.
+
+1. Reproduce the exact interaction once and capture three DOM states in the
+   same authenticated Brave/Playwright session: **before interaction**, **open
+   state**, and **after one real choice/click**.
+2. Measure only the boxes that can explain the regression. For a modal/select
+   issue, record the modal content rectangle, `clientHeight`/`scrollHeight` of
+   the modal root, the visible selection rectangle, and the dropdown rectangle.
+   This distinguishes a modal reflow from a wrongly positioned dropdown without
+   repeated screenshots or guesswork.
+3. Apply one narrow source change, hot-sync the changed web file, then rerun
+   the same interaction measurement. Do not restart Tomcat, rebuild Maven, or
+   repeat login/browser setup for a JSP/CSS/JS-only iteration.
+4. Once the metrics pass, make one real selection/click to prove the interaction
+   still works. Then take the final desktop and mobile screenshots and stop the
+   validation server.
+
+Do not repeat an exploratory browser run unless the source changed or the
+previous run produced new evidence. A generic route check proves that the page
+loads; it does **not** prove geometry that only exists while a control is open.
+
+For fixed dialogs, use a viewport screenshot for the final visual inspection.
+`fullPage` screenshots can render a fixed overlay at a document-relative
+position and therefore misrepresent its real viewport position.
+
+#### Modal and Select2 triage
+
+- If opening a menu increases the modal root's `scrollHeight` or introduces a
+  scrollbar, the dropdown is participating in the modal's scrollable layout.
+  Render it in a positioned portal outside that scrollable flow, while keeping
+  it in the modal stacking context and accessible to pointer input.
+- If the modal remains stable but there is a vertical gap below a Select2
+  selection, compare the visible selection height with the outer Select2
+  container height. Inspect internal helper/wrapper elements before adding a
+  visual offset; an invisible wrapper can be included in Select2's placement
+  calculation.
+- Preserve the original dialog geometry when correcting Select2 internals. If
+  removing an internal spacing element changes the form height, move that
+  spacing to the field wrapper rather than allowing the dialog to resize.
+- A successful check requires all of the following: the dialog rectangle is
+  unchanged before/open/after selection, the modal root does not gain overflow,
+  the menu begins directly below the visible field, the option can be selected,
+  and there are no new console, page, or network errors.
 
 Do not use `-Prepare` on every `browser-check-flow.ps1` call. `-Prepare` runs `browser-prepare.ps1`, and `browser-prepare.ps1` intentionally stops any existing Browser Tomcat before redeploying. For multiple routes in the same QA pass, prepare once and then call `browser-check-flow.ps1` without `-Prepare`.
 
@@ -100,7 +166,9 @@ function Sync-WebappFile {
 
     $webappRoot = (Resolve-Path -LiteralPath "src\main\webapp").Path
     $source = (Resolve-Path -LiteralPath $Path).Path
-    if (-not $source.StartsWith($webappRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+    $insideWebapp = $source.Equals($webappRoot, [System.StringComparison]::OrdinalIgnoreCase) -or
+        $source.StartsWith($webappRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+    if (-not $insideWebapp) {
         throw "Only files under src\main\webapp can be hot-synced: $source"
     }
 
@@ -145,7 +213,7 @@ Only rebuild/reseed a database when at least one of these is true:
 
 When a visual check fails, prefer cheap signals before taking more screenshots:
 
-- read `browser-check-flow.ps1` JSON first: `pageOverflowX`, `browserErrors`, `missingText`, `rejectedTextFound`;
+- read `browser-check-flow.ps1` JSON first: `networkErrors`, `consoleErrors`, `browserErrors`, `brokenImages`, `accessibilityIssues`, `pageOverflowX`, `missingText` and `rejectedTextFound`;
 - if `pageOverflowX=true`, inspect the latest screenshot once, then fix the most likely wide container/table/flex item;
 - if the screenshot does not show the relevant area, rerun with a taller viewport once instead of many small repeated captures;
 - do not repeatedly open and close Tomcat while debugging CSS/JSP.
@@ -160,7 +228,7 @@ mvn -q test
 
 Local timing observed on this machine:
 
-- last successful full run: about 144 seconds;
+- historical full-run timing on this machine: about 144 seconds; measure the current run instead of treating this as a result;
 - use a command timeout of at least 15 minutes (`900000` ms) for the full suite;
 - do not treat the Java/WebP native-access warning as a failure when Maven exits with code `0`.
 
@@ -188,13 +256,14 @@ mvn -q -DskipTests package
 
 ## Browser defaults in this workspace
 
-The integrated Codex Browser is not a useful default in this local setup. It has repeatedly failed with:
+The integrated Codex Browser / in-app Browser (`iab`) is disabled for practical validation in this local setup. It has repeatedly failed with:
 
 ```text
+Browser is not available: iab
 No browser is available
 ```
 
-Do not spend time retrying the integrated Browser for this project. Use Playwright/CDP with the locally installed Brave browser.
+Do not attempt, retry, or debug `iab` for this project. Use Playwright/CDP with the locally installed Brave browser from the start of every browser validation pass.
 
 Primary browser executable:
 
@@ -217,7 +286,7 @@ try {
 }
 ```
 
-The helper scripts under `docs/dev/scripts` already search Brave first, then Edge/Chrome. Prefer them for repeatable checks.
+The helper scripts under `docs/dev/scripts` already search Brave first, then Edge/Chrome. Prefer them for repeatable checks. If writing a one-off Playwright script, launch Brave explicitly with the executable path above.
 
 ## Tomcat setup for browser validation
 
@@ -228,6 +297,12 @@ Fixed local target:
 - shutdown port: `18085`
 - Tomcat base: `target/browser-tomcat10`
 - default account: `admin@gape.local` / `Password#2026`
+
+Tomcat is provisioned outside `target`, under `docs/dev/.tools/apache-tomcat-10.1.24`. On first use, `browser-prepare.ps1` downloads the official Windows archive and its SHA-512 file, verifies the archive and installs it. It can also be installed explicitly:
+
+```powershell
+.\docs\dev\scripts\tomcat-install.ps1
+```
 
 Fast setup after building the app:
 
@@ -281,10 +356,42 @@ Useful options:
 
 - `-ClickSelector ".some-button"`: click one or more CSS selectors.
 - `-ClickText "New Block"`: click a button/link by visible text.
+- `-HoverSelector ".some-row"`: move the real browser pointer over a visible element before the screenshot; use this for hover-state visual checks.
 - `-ExpectText "Loaded"`: require visible page text.
-- `-ExpectSelector ".modal.show"`: require a DOM selector.
+- `-ExpectSelector ".modal.show"`: require a DOM selector that is visibly rendered.
+- `-InspectSelector ".some-panel"`: include the rendered rectangle, client/scroll width and computed width in the JSON evidence; use it to verify transitions and column geometry.
+- `-ExpectBadgeAtParentTopLeft "[data-sidebar-learning-pending-badge]"`: require at least one visible selected badge; its literal top-left corner must coincide (within half a CSS pixel) with the top-left corner of its `.gape-sidebar-badged-item` link, and it must not be clipped by an overflow ancestor.
+- `-NetworkLatencyMs 1500`: deliberately add bounded CDP latency when a loading state must be captured; pair it with a short `-WaitAfterActionMs` and assert both the spinner and the static card content.
 - `-RejectText "Exception"`: fail if text is present.
 - `-NoScreenshot`: run faster when DOM/layout proof is enough.
+- `-AllowNetworkErrors`, `-AllowConsoleErrors`, `-AllowBrokenImages`, `-AllowAccessibilityIssues`: temporary diagnostic opt-outs; do not use them for final evidence.
+
+By default the helper fails on HTTP 4xx/5xx responses, failed resource loads, `console.error`, uncaught JavaScript errors, visible broken images, duplicate IDs, missing document language, visible images without `alt`, and visible controls/actions without an accessible name.
+
+### Visual regression baseline
+
+Create or intentionally update a baseline only after the DOM, network and accessibility checks pass:
+
+```powershell
+.\docs\dev\scripts\browser-check-flow.ps1 `
+  -Route "/admin/organizations" `
+  -Out "target\browser-screenshots\organizations-current.png" `
+  -Baseline "docs\tests\browser-baselines\organizations-1920x1200.png" `
+  -UpdateBaseline
+```
+
+Compare a later render against it:
+
+```powershell
+.\docs\dev\scripts\browser-check-flow.ps1 `
+  -Route "/admin/organizations" `
+  -Out "target\browser-screenshots\organizations-current.png" `
+  -Baseline "docs\tests\browser-baselines\organizations-1920x1200.png" `
+  -MaxPixelDifferencePercent 0.25 `
+  -PixelColorTolerance 20
+```
+
+The baseline and current PNG must have identical dimensions. A changed baseline is review evidence and must be committed only when the visual change is intentional.
 
 For Class Group Detail changes around the Add Content modal:
 
@@ -298,9 +405,9 @@ mvn -q -DskipTests package
 .\docs\dev\scripts\browser-stop.ps1
 ```
 
-## Screenshot fallback
+## Screenshots
 
-When a screenshot is needed, prefer the local Brave/CDP scripts instead of the integrated Browser screenshot path:
+When a screenshot is needed, use the local Brave/CDP scripts instead of the integrated Browser screenshot path:
 
 ```powershell
 .\docs\dev\scripts\browser-screenshot.ps1 `
@@ -316,11 +423,20 @@ When a screenshot is needed, prefer the local Brave/CDP scripts instead of the i
 
 - Desktop and mobile viewport for the changed screens.
 - No JSP stack trace or internal server error.
-- No console errors caused by the change.
+- No failed HTTP/resource requests, browser log errors or console errors caused by the change.
 - Menus and action buttons match the current user's permissions.
 - Text does not overlap or overflow on mobile.
+- User-facing dates and times use `DD-MM-AAAA` and `HH-MM-SS` in `Europe/Lisbon`; native input values and other ISO technical values are not display evidence.
 - Images/profile assets load or use their intended fallback.
 - Any server/browser process started for QA is stopped before finishing.
+
+## Upload smoke validation
+
+The upload helper uses valid PDF, image, M4A and MP4 fixtures with their real MIME types, verifies processed output, checks invalid PDF/image rejection, reuses a repository file, and removes the records/files it creates in a `finally` block. Cleanup is verified by probing every created content ID and checking that its storage directory is gone:
+
+```powershell
+.\docs\dev\scripts\browser-check-upload.ps1 -ClassGroupId 53
+```
 
 ## Useful seed accounts
 

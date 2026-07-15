@@ -3,15 +3,40 @@
 <html lang="en">
 <head>
     <base href="${pageContext.request.contextPath}/">
-    <title>GAPE - Class Group Detail</title>
+    <title>GAPE - Class Group Details</title>
     <%@ include file="/WEB-INF/fragments/template-base-head.jspf" %>
     <style>
         .cg-shell {
             --cg-primary: #00a991;
             --cg-primary-dark: #008a78;
+            --cg-primary-soft: #ecfdf5;
+            --cg-primary-surface: #f2fffc;
+            --cg-primary-rgb: 0, 169, 145;
+            --cg-primary-highlight-rgb: 16, 185, 129;
+            --cg-secondary: #00a991;
+            --cg-secondary-dark: #008a78;
+            --cg-secondary-soft: #ecfdf5;
+            --cg-secondary-surface: #f2fffc;
+            --cg-secondary-rgb: 0, 169, 145;
+            --cg-secondary-highlight-rgb: 16, 185, 129;
             --cg-border: #e6edf0;
             --cg-muted: #64748b;
             --cg-ink: #172033;
+        }
+
+        .cg-shell--completed {
+            --cg-primary: #dc2626;
+            --cg-primary-dark: #b91c1c;
+            --cg-primary-soft: #fef2f2;
+            --cg-primary-surface: #fffafa;
+            --cg-primary-rgb: 220, 38, 38;
+            --cg-primary-highlight-rgb: 248, 113, 113;
+            --cg-secondary: #dc2626;
+            --cg-secondary-dark: #b91c1c;
+            --cg-secondary-soft: #fef2f2;
+            --cg-secondary-surface: #fffafa;
+            --cg-secondary-rgb: 220, 38, 38;
+            --cg-secondary-highlight-rgb: 248, 113, 113;
         }
 
         .cg-surface {
@@ -22,13 +47,13 @@
         }
 
         .cg-hero {
-            background: linear-gradient(135deg, rgba(0, 169, 145, 0.12), rgba(39, 134, 245, 0.06)), #fff;
+            background: linear-gradient(135deg, rgba(var(--cg-primary-rgb), 0.12), rgba(var(--cg-primary-highlight-rgb), 0.06)), #fff;
         }
 
         .cg-mode-grid {
             display: grid;
             gap: 16px;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
         }
 
         .cg-mode-card {
@@ -37,23 +62,77 @@
             border-radius: 8px;
             color: var(--cg-ink);
             cursor: pointer;
-            min-height: 132px;
+            min-height: 144px;
             padding: 20px;
+            position: relative;
             text-align: left;
             transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
             width: 100%;
         }
 
         .cg-mode-card.is-active {
-            background: linear-gradient(135deg, rgba(0, 169, 145, 0.16), rgba(0, 169, 145, 0.06)), #f2fffc;
-            border-color: rgba(0, 169, 145, 0.75);
-            box-shadow: 0 16px 36px rgba(0, 169, 145, 0.12);
+            background: linear-gradient(135deg, rgba(var(--cg-primary-rgb), 0.14), rgba(var(--cg-primary-highlight-rgb), 0.06)), var(--cg-primary-surface);
+            border-color: rgba(var(--cg-primary-rgb), 0.65);
+            box-shadow: 0 16px 36px rgba(var(--cg-primary-rgb), 0.12);
             transform: translateY(-1px);
+        }
+
+        .cg-mode-card--structure.is-active {
+            background: linear-gradient(135deg, rgba(var(--cg-secondary-rgb), 0.16), rgba(var(--cg-secondary-rgb), 0.06)), var(--cg-secondary-surface);
+            border-color: rgba(var(--cg-secondary-rgb), 0.75);
+            box-shadow: 0 16px 36px rgba(var(--cg-secondary-rgb), 0.12);
         }
 
         .cg-mode-card.is-active .cg-mode-icon {
             background: var(--cg-primary) !important;
             color: #fff !important;
+        }
+
+        .cg-pending-corner-badge {
+            align-items: center;
+            background: #dc2626;
+            border: 2px solid #fff;
+            border-radius: 999px;
+            color: #fff;
+            display: inline-flex;
+            font-size: 11px;
+            font-weight: 700;
+            justify-content: center;
+            left: -8px;
+            line-height: 1;
+            min-height: 22px;
+            min-width: 22px;
+            padding: 3px 6px;
+            position: absolute;
+            top: -8px;
+            z-index: 2;
+        }
+
+        .cg-mode-card--structure.is-active .cg-mode-icon {
+            background: var(--cg-secondary) !important;
+        }
+
+        .cg-soft-badge {
+            background: var(--cg-primary-soft);
+            color: var(--cg-primary);
+        }
+
+        .cg-count-text {
+            color: var(--cg-primary);
+        }
+
+        .cg-structure-mode-icon {
+            background: var(--cg-secondary-soft) !important;
+            color: var(--cg-secondary) !important;
+        }
+
+        .cg-structure-count {
+            color: var(--cg-secondary);
+        }
+
+        .cg-structure-badge {
+            background: var(--cg-primary-soft);
+            color: var(--cg-primary);
         }
 
         .cg-mode-icon,
@@ -184,7 +263,7 @@
         }
 
         .cg-outline-button:hover {
-            border-color: rgba(0, 169, 145, 0.45);
+            border-color: rgba(var(--cg-primary-rgb), 0.45);
             color: var(--cg-primary-dark);
         }
 
@@ -196,10 +275,50 @@
         }
 
         .cg-warning-button {
-            background: #f97316;
-            border: 1px solid #f97316;
-            color: #fff;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #c2410c;
             padding: 10px 16px;
+        }
+
+        .cg-danger-button:hover {
+            background: #b91c1c;
+            border-color: #b91c1c;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .cg-warning-button:hover {
+            background: #ffedd5;
+            border-color: #fdba74;
+            color: #9a3412;
+            transform: translateY(-1px);
+        }
+
+        .cg-structure-theme {
+            --cg-primary: var(--cg-secondary);
+            --cg-primary-dark: var(--cg-secondary-dark);
+            --cg-primary-soft: var(--cg-secondary-soft);
+            --cg-primary-surface: var(--cg-secondary-surface);
+            --cg-primary-rgb: var(--cg-secondary-rgb);
+            --cg-primary-highlight-rgb: var(--cg-secondary-highlight-rgb);
+        }
+
+        .cg-lazy-loading-spinner {
+            align-items: center;
+            display: inline-flex;
+            justify-content: center;
+            min-height: 1.2em;
+            min-width: 1.2em;
+        }
+
+        .cg-lazy-loading-spinner > i {
+            animation: cg-lazy-loading-spin 0.8s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes cg-lazy-loading-spin {
+            to { transform: rotate(360deg); }
         }
 
         .cg-icon-button {
@@ -242,8 +361,13 @@
             padding: 22px 20px 20px;
         }
 
-        .cg-block.is-archived {
+        .cg-block.is-inactive {
             border-left-color: #f43f5e;
+        }
+
+        .cg-block.is-inactive .cg-block-header {
+            background: linear-gradient(180deg, #ffffff 0%, #fff5f7 100%);
+            border-bottom-color: rgba(244, 63, 94, 0.18);
         }
 
         .cg-block-number {
@@ -256,7 +380,7 @@
             text-align: center;
         }
 
-        .cg-block.is-archived .cg-block-number {
+        .cg-block.is-inactive .cg-block-number {
             color: rgba(244, 63, 94, 0.28);
         }
 
@@ -293,6 +417,12 @@
         .cg-content-icon {
             height: 44px;
             width: 44px;
+        }
+
+        .cg-content-event-count-anchor {
+            display: inline-flex;
+            flex: 0 0 auto;
+            position: relative;
         }
 
         .cg-content-thumb-wrap {
@@ -350,6 +480,66 @@
             padding: 16px;
         }
 
+        /* Match the fixed dialog contract used by Subject Details.  Every
+           Class Group Details modal keeps the geometry it had when opened;
+           only the body may scroll, so form changes and Select2 never move
+           the dialog or change its size. */
+        .modal.gape-class-group-modal-root {
+            overflow: hidden;
+        }
+
+        .gape-class-group-modal-root .gape-class-group-select2-modal-portal {
+            inset: 0;
+            overflow: visible;
+            pointer-events: none;
+            position: fixed;
+            z-index: 1;
+        }
+
+        .gape-class-group-modal-root .gape-class-group-select2-modal-portal > .select2-container {
+            pointer-events: auto;
+        }
+
+        .gape-class-group-modal-root .gape-select-field {
+            padding-bottom: 24px;
+        }
+
+        .gape-class-group-modal-root .gape-select-field .select2-container > .dropdown-wrapper {
+            display: none;
+        }
+
+        .modal-dialog.gape-class-group-modal-dialog {
+            max-height: calc(100vh - 2rem);
+        }
+
+        .modal-dialog.gape-class-group-modal-dialog .modal-content {
+            display: flex;
+            flex-direction: column;
+            height: var(--gape-class-group-modal-open-height, auto);
+            max-height: calc(100vh - 2rem);
+        }
+
+        .modal-dialog.gape-class-group-modal-dialog .modal-content > form {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .modal-dialog.gape-class-group-modal-dialog .modal-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            scrollbar-gutter: stable;
+        }
+
+        .modal-dialog.gape-class-group-modal-dialog .modal-footer,
+        .modal-dialog.gape-class-group-modal-dialog .modal-header {
+            flex: 0 0 auto;
+        }
+
         .cg-activity-modal .modal-dialog {
             max-width: 1180px;
             width: min(1180px, calc(100vw - 32px));
@@ -357,6 +547,305 @@
 
         .cg-activity-modal .modal-content {
             height: min(860px, calc(100vh - 32px));
+        }
+
+        .cg-activity-modal .modal-dialog.gape-class-group-modal-dialog .modal-content {
+            height: min(860px, calc(100vh - 32px));
+        }
+
+        .cg-grade-sheet-modal {
+            width: min(1180px, calc(100vw - 32px));
+            max-width: 1180px;
+        }
+
+        .modal-dialog.cg-grade-sheet-modal.gape-class-group-modal-dialog .modal-content {
+            height: min(860px, calc(100vh - 32px));
+        }
+
+        /* The class-group document uses the same formal grade-sheet layout as
+           Subject Details.  Keeping this styling here is important because
+           the grade sheet is loaded lazily as an independent fragment. */
+        .aac-grade-doc {
+            background: #fff;
+            color: #000;
+            font-family: Arial, sans-serif;
+            max-width: 100%;
+            min-width: 0;
+            overflow: hidden;
+            padding: 0;
+            width: 100%;
+        }
+
+        .cd-grade-sheet-doc {
+            border: 1px solid var(--cg-border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .aac-grade-doc__head {
+            border: 1px solid #000;
+            display: grid;
+            gap: 0 18px;
+            grid-template-areas:
+                "posted institution institution"
+                "blank institution institution"
+                "entity title period";
+            grid-template-columns: 310px minmax(330px, 1fr) 300px;
+            margin-bottom: 12px;
+            min-height: 184px;
+            padding: 12px;
+            position: relative;
+        }
+
+        .aac-grade-doc__posted {
+            align-self: start;
+            font-size: 18px;
+            font-weight: 700;
+            grid-area: posted;
+            line-height: 1.2;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .aac-grade-doc__institution {
+            align-items: flex-start;
+            display: flex;
+            grid-area: institution;
+            justify-content: flex-start;
+            min-width: 0;
+        }
+
+        .aac-grade-doc__media {
+            align-items: flex-start;
+            display: flex;
+            flex: 0 0 150px;
+            justify-content: center;
+            min-width: 0;
+        }
+
+        .aac-grade-doc__image,
+        .aac-grade-doc__placeholder {
+            border-radius: 8px;
+            height: 58px;
+            width: 58px;
+        }
+
+        .aac-grade-doc__image {
+            display: block;
+            object-fit: cover;
+        }
+
+        .aac-grade-doc__placeholder {
+            align-items: center;
+            background: #eef2f7;
+            border: 1px solid #d8e0ea;
+            color: #1f3b57;
+            display: inline-flex;
+            flex-shrink: 0;
+            font-size: 24px;
+            justify-content: center;
+        }
+
+        .aac-grade-doc__brand {
+            align-self: start;
+            border-left: 2px solid #000;
+            display: block;
+            flex: 1 1 auto;
+            font-size: 11px;
+            font-weight: 400;
+            line-height: 1.25;
+            min-height: 72px;
+            overflow: hidden;
+            overflow-wrap: anywhere;
+            padding-left: 20px;
+            text-align: left;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .aac-grade-doc__brand strong {
+            display: inline;
+            font-size: 12px;
+            font-weight: 800;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        .aac-grade-doc__brand strong::after {
+            content: " | ";
+            font-weight: 400;
+        }
+
+        .aac-grade-doc__brand span {
+            display: inline;
+        }
+
+        .aac-grade-doc .gape-acronym-token {
+            border-bottom: 0 !important;
+            color: inherit !important;
+            cursor: default !important;
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            padding: 0 !important;
+            text-decoration: none !important;
+            text-overflow: ellipsis;
+            vertical-align: bottom;
+            white-space: nowrap;
+        }
+
+        .aac-grade-doc__entity {
+            align-self: end;
+            border-bottom: 1px solid #000;
+            font-size: 16px;
+            grid-area: entity;
+            line-height: 1.25;
+            padding-bottom: 5px;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        .aac-grade-doc__head h3 {
+            align-self: end;
+            color: #000;
+            font-size: 30px;
+            font-weight: 800;
+            grid-area: title;
+            line-height: 1.1;
+            margin: 0;
+            text-align: center;
+        }
+
+        .aac-grade-doc__period {
+            align-self: end;
+            font-size: 16px;
+            font-weight: 700;
+            grid-area: period;
+            line-height: 1.25;
+            text-align: right;
+        }
+
+        .aac-grade-doc__table-wrap {
+            max-width: 100%;
+            min-width: 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 8px;
+            scrollbar-color: #94a3b8 #eef2f7;
+            scrollbar-gutter: stable;
+            scrollbar-width: thin;
+        }
+
+        .aac-grade-doc__table-wrap::-webkit-scrollbar {
+            display: block;
+            height: 8px;
+        }
+
+        .aac-grade-doc__table-wrap::-webkit-scrollbar-track {
+            background: #eef2f7;
+            border-radius: 999px;
+        }
+
+        .aac-grade-doc__table-wrap::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 999px;
+        }
+
+        .aac-grade-doc__table {
+            border-collapse: collapse;
+            margin: 0;
+            min-width: var(--aac-grade-doc-min-width, 720px);
+            table-layout: fixed;
+            width: max(100%, var(--aac-grade-doc-min-width, 720px));
+        }
+
+        .aac-grade-doc__number-col {
+            width: 70px;
+        }
+
+        .aac-grade-doc__name-col {
+            width: 300px;
+        }
+
+        .aac-grade-doc__assessment-col {
+            width: 118px;
+        }
+
+        .aac-grade-doc__final-col {
+            width: 116px;
+        }
+
+        .aac-grade-doc__table th,
+        .aac-grade-doc__table td {
+            border: 1px solid #000;
+            color: #000;
+            font-size: 15px;
+            line-height: 1.25;
+            overflow: hidden;
+            overflow-wrap: anywhere;
+            padding: 7px 8px;
+            text-align: center;
+            text-overflow: ellipsis;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .aac-grade-doc__table th:nth-child(2),
+        .aac-grade-doc__table td:nth-child(2) {
+            min-width: 300px;
+            text-align: left;
+            white-space: normal;
+        }
+
+        .aac-grade-doc__table th {
+            background: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            white-space: normal;
+        }
+
+        .aac-grade-doc__table th .gape-acronym-token {
+            display: block;
+            overflow-wrap: anywhere;
+            text-overflow: clip;
+            white-space: normal;
+        }
+
+        .aac-grade-doc__grade,
+        .aac-grade-doc__final {
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .aac-grade-doc__alert {
+            color: #6b4e00;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .aac-grade-doc__footer {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 34px;
+            min-height: 84px;
+        }
+
+        .aac-grade-doc__footer > div:not(.aac-grade-doc__signature) {
+            display: none;
+        }
+
+        .aac-grade-doc__signature {
+            font-size: 18px;
+            text-align: center;
+            width: 300px;
+        }
+
+        .aac-grade-doc__signature em {
+            border-bottom: 2px solid #000;
+            display: block;
+            height: 34px;
+            margin-top: 10px;
+            width: 100%;
         }
 
         .cg-activity-modal .modal-header,
@@ -601,6 +1090,172 @@
             padding: 12px;
         }
 
+        /* Shared Subject Details panel composition, recoloured through the
+           Class Group green palette. */
+        .cg-detail-panel {
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            padding: 0;
+        }
+
+        .cg-detail-panel-content {
+            padding: 0 !important;
+        }
+
+        .cg-detail-panel-header {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .cg-detail-panel-heading { min-width: 0; }
+
+        .cg-detail-panel-actions {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .cg-sort-toggle {
+            align-items: center;
+            background: #fff;
+            border: 1px solid var(--cg-border);
+            border-radius: 12px;
+            color: #334155;
+            display: inline-flex;
+            font-weight: 600;
+            gap: 8px;
+            padding: 12px 20px;
+            transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+        }
+
+        .cg-sort-toggle:hover,
+        .cg-sort-toggle.is-active {
+            background: var(--cg-primary-soft);
+            border-color: rgba(var(--cg-primary-rgb), .34);
+            color: var(--cg-primary-dark);
+        }
+
+        .cg-structure-list-header,
+        .cg-structure-row {
+            align-items: center;
+            display: grid;
+            gap: 14px;
+            grid-template-columns: minmax(280px, 1.7fr) minmax(120px, .55fr) minmax(120px, .55fr) minmax(120px, .55fr) minmax(150px, auto);
+        }
+
+        .cg-structure-list-header {
+            color: #475569;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 0 16px 12px;
+        }
+
+        .cg-assignment-list-header,
+        .cg-assignment-row {
+            grid-template-columns: minmax(250px, 1.25fr) minmax(220px, 1.05fr) minmax(135px, .55fr) minmax(92px, auto);
+        }
+
+        .cg-structure-node {
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .cg-structure-node:hover {
+            border-color: rgba(var(--cg-primary-rgb), .28) !important;
+            box-shadow: 0 10px 26px rgba(15, 23, 42, .05);
+        }
+
+        .cg-element-count {
+            color: var(--cg-ink);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .cg-node-meta {
+            color: #64748b;
+            display: block;
+            line-height: 1.35;
+        }
+
+        .cg-detail-action {
+            background: transparent;
+            border: 0;
+            color: #64748b;
+            font-size: 20px;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .cg-detail-action:hover { color: var(--cg-primary-dark); }
+        .cg-detail-action--danger:hover { color: #dc2626; }
+
+        .cg-enrollment-tabs {
+            border-bottom: 1px solid var(--cg-border);
+            display: grid;
+            gap: 10px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+        }
+
+        .cg-enrollment-tab {
+            align-items: center;
+            background: #fff;
+            border: 1px solid var(--cg-border);
+            border-radius: 8px;
+            color: var(--cg-ink);
+            display: flex;
+            font-size: 14px;
+            font-weight: 600;
+            gap: 10px;
+            justify-content: center;
+            min-height: 46px;
+            padding: 10px 14px;
+            transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+        }
+
+        .cg-enrollment-tab:hover,
+        .cg-enrollment-tab.is-active {
+            background: var(--cg-primary-soft);
+            border-color: rgba(var(--cg-primary-rgb), .55);
+            color: var(--cg-primary-dark);
+        }
+
+        .cg-enrollment-tab-panel[hidden] { display: none !important; }
+
+        .cg-critical-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .cg-critical-card {
+            background: #fff;
+            border: 1px solid var(--cg-border);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .cg-critical-card--archive { border-color: #fed7aa; }
+        .cg-critical-card--delete { border-color: #fecaca; }
+
+        .cg-critical-icon {
+            align-items: center;
+            border-radius: 8px;
+            display: inline-flex;
+            height: 44px;
+            justify-content: center;
+            width: 44px;
+        }
+
+        .cg-critical-icon--archive { background: #fff7ed; color: #c2410c; }
+        .cg-critical-icon--delete { background: #fef2f2; color: #dc2626; }
+
         .dashbord-body {
             min-width: 0;
         }
@@ -634,6 +1289,10 @@
             .cg-repository-list {
                 grid-template-columns: 1fr;
             }
+
+            .cg-structure-list-header { display: none; }
+            .cg-structure-row,
+            .cg-assignment-row { grid-template-columns: 1fr; }
         }
 
         @media (max-width: 767.98px) {
@@ -645,6 +1304,9 @@
             .cg-content-row .text-end {
                 text-align: left !important;
             }
+
+            .cg-critical-grid,
+            .cg-enrollment-tabs { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -659,24 +1321,29 @@
         <%@ include file="/WEB-INF/fragments/dashboard-sidebar.jspf" %>
         <div class="dashbord-body flex-grow-1 d-flex flex-column min-vh-100">
             <%@ include file="/WEB-INF/fragments/dashboard-topbar.jspf" %>
-            <div class="cg-shell px-24 py-24 flex-grow-1">
+            <div id="classGroupDetailLiveRoot" class="cg-shell ${classGroup.completed ? 'cg-shell--completed' : ''} px-24 py-24 flex-grow-1" data-class-group-detail-live-root>
                 <%@ include file="/WEB-INF/fragments/flash-messages.jspf" %>
 
                 <section class="cg-surface cg-hero px-24 py-24 mb-20">
                     <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap">
-                        <div class="min-w-0">
-                            <div class="d-flex align-items-center gap-10 flex-wrap mb-10">
-                                <span class="${classGroup.stateBadgeClass} px-14 py-7 border-neutral-30 border rounded-pill text-13">
-                                    <c:out value="${classGroup.stateLabel}"/>
-                                </span>
-                                <span class="bg-main-50 text-main-600 px-14 py-7 rounded-pill text-13">
-                                    <i class="ph ph-clock me-6"></i><c:out value="${classGroup.shift}"/>
+                        <div class="d-flex align-items-center gap-16 min-w-0">
+                            <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--learning-detail" aria-label="Class group">
+                                <i class="ph ph-users-three"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <div class="d-flex align-items-center gap-10 flex-wrap mb-10">
+                                    <span class="${classGroup.stateBadgeClass} px-14 py-7 border-neutral-30 border rounded-pill text-13">
+                                        <c:out value="${classGroup.stateLabel}"/>
+                                    </span>
+                                    <span class="cg-soft-badge px-14 py-7 rounded-pill text-13">
+                                        <i class="ph ph-clock me-6"></i><c:out value="${classGroup.shift}"/>
+                                    </span>
+                                </div>
+                                <h2 class="text-28 fw-semibold text-neutral-800 mb-8"><c:out value="${classGroup.code}"/></h2>
+                                <span class="text-14 text-neutral-500" title="<c:out value='${classGroup.contextTitle}'/>">
+                                    <c:out value="${classGroup.contextHtml}" escapeXml="false"/>
                                 </span>
                             </div>
-                            <h2 class="text-28 fw-semibold text-neutral-800 mb-8"><c:out value="${classGroup.code}"/></h2>
-                            <span class="text-14 text-neutral-500" title="<c:out value='${classGroup.contextTitle}'/>">
-                                <c:out value="${classGroup.contextHtml}" escapeXml="false"/>
-                            </span>
                         </div>
                         <div class="d-flex align-items-center gap-10 flex-wrap">
                             <a href="${classGroupBackHref}" class="cg-outline-button">
@@ -702,36 +1369,45 @@
                 </c:if>
 
                 <div class="cg-mode-grid mb-20" role="tablist" aria-label="Class group detail views">
-                    <button type="button" class="cg-mode-card is-active" data-cg-tab="structure" aria-selected="true">
-                        <span class="cg-mode-icon bg-main-50 text-main-600 text-24 mb-14"><i class="ph ph-stack"></i></span>
-                        <span class="text-20 fw-semibold text-neutral-800 d-block mb-8">Learning Plan</span>
-                        <span class="text-14 text-neutral-500 d-block mb-12">Pedagogical blocks, contents and critical actions.</span>
-                        <span class="text-13 text-main-600 fw-semibold"><c:out value="${classGroup.blockCount}"/> blocks | <c:out value="${blockContentCount}"/> contents | <c:out value="${lessonCount}"/> lessons | <c:out value="${assessmentCount}"/> assessments</span>
+                    <button type="button" class="cg-mode-card cg-mode-card--structure" data-cg-tab="structure" aria-selected="false">
+                        <c:if test="${classGroupDetailPendingCorrectionCount > 0}"><span class="cg-pending-corner-badge" data-class-group-learning-plan-pending-badge title="${classGroupDetailPendingCorrectionCount} pending correction(s)"><c:out value="${classGroupDetailPendingCorrectionCount}"/></span></c:if>
+                        <span class="cg-mode-icon cg-structure-mode-icon text-24 mb-14"><i class="ph ph-stack"></i></span>
+                        <span class="text-20 fw-semibold text-neutral-800 d-block mb-12 cg-mode-card__title">Learning Plan</span>
+                        <span class="text-13 cg-structure-count fw-semibold"><c:out value="${classGroup.blockCount}"/> blocks</span>
                     </button>
                     <button type="button" class="cg-mode-card" data-cg-tab="info" aria-selected="false">
+                        <c:if test="${classGroupDetailPendingEnrollmentCount > 0}"><span class="cg-pending-corner-badge" data-class-group-enrollment-card-pending-badge><c:out value="${classGroupDetailPendingEnrollmentCount}"/></span></c:if>
                         <span class="cg-mode-icon bg-success-50 text-success-600 text-24 mb-14"><i class="ph ph-users-three"></i></span>
-                        <span class="text-20 fw-semibold text-neutral-800 d-block mb-8">Enrollments</span>
-                        <span class="text-14 text-neutral-500 d-block mb-12">Student access and enrollment state.</span>
-                        <span class="text-13 text-success-600 fw-semibold"><c:out value="${classGroup.activeEnrollmentCountLabel}"/> | ${fn:length(pendingClassGroupEnrollments)} pending</span>
+                        <span class="text-20 fw-semibold text-neutral-800 d-block mb-12 cg-mode-card__title">Enrollments</span>
+                        <span class="d-flex align-items-center gap-8 flex-wrap"><span class="text-13 cg-count-text fw-semibold"><c:out value="${classGroup.activeEnrollmentCountLabel}"/></span></span>
                     </button>
                     <button type="button" class="cg-mode-card" data-cg-tab="teachers" aria-selected="false">
                         <span class="cg-mode-icon bg-info-50 text-info-600 text-24 mb-14"><i class="ph ph-chalkboard-teacher"></i></span>
-                        <span class="text-20 fw-semibold text-neutral-800 d-block mb-8">Teachers</span>
-                        <span class="text-14 text-neutral-500 d-block mb-12">Teaching assignments for this class group.</span>
-                        <span class="text-13 text-main-600 fw-semibold"><c:out value="${classGroup.teacherCountLabel}"/></span>
+                        <span class="text-20 fw-semibold text-neutral-800 d-block mb-12 cg-mode-card__title">Teachers</span>
+                        <span class="text-13 cg-count-text fw-semibold"><c:out value="${classGroup.teacherCountLabel}"/></span>
+                    </button>
+                    <button type="button" class="cg-mode-card" data-cg-tab="grade-sheet" aria-selected="false">
+                        <span class="cg-mode-icon bg-warning-50 text-warning-600 text-24 mb-14"><i class="ph ph-seal-check"></i></span>
+                        <span class="text-20 fw-semibold text-neutral-800 d-block mb-12 cg-mode-card__title">Grade sheet</span>
+                        <span class="text-13 cg-count-text fw-semibold">On demand</span>
                     </button>
                 </div>
 
                 <main class="min-w-0">
-                    <div class="cg-tab-panel" data-cg-panel="structure">
-                        <section id="pedagogical-blocks" class="cg-surface mb-20">
+                    <div class="cg-tab-panel" data-cg-panel="structure" hidden>
+                        <div data-cg-lazy-panel="structure"
+                             data-cg-lazy-url="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/structure"
+                             aria-busy="false"<c:if test="${classGroupDetailStructureLoaded}"> data-cg-lazy-loaded="true"</c:if>>
+                            <c:choose>
+                                <c:when test="${classGroupDetailStructureLoaded}">
+                        <section id="pedagogical-blocks" class="cg-surface cg-structure-theme mb-20">
                             <div class="px-22 py-22 d-flex align-items-start justify-content-between gap-16 flex-wrap">
                                 <div>
                                     <h3 class="text-20 fw-semibold text-neutral-800 mb-6">Structure</h3>
                                     <span class="text-14 text-neutral-500">Blocks, learning resources and assessments in their class order.</span>
                                 </div>
                                 <div class="d-flex align-items-center gap-10 flex-wrap">
-                                    <span class="bg-main-50 text-main-600 px-14 py-8 rounded-pill text-13">
+                                    <span class="cg-structure-badge px-14 py-8 rounded-pill text-13">
                                         <i class="ph ph-files me-6"></i><c:out value="${blockContentCount}"/> contents
                                     </span>
                                     <span class="bg-warning-50 text-warning-600 px-14 py-8 rounded-pill text-13">
@@ -750,30 +1426,21 @@
                                         </c:otherwise>
                                     </c:choose>
                                     <c:if test="${canManageClassGroupStructure}">
-                                        <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/new" class="cg-primary-button">
+                                        <button type="button" class="cg-primary-button" data-bs-toggle="modal" data-bs-target="#createPedagogicalBlock">
                                             <i class="ph ph-plus-circle me-8"></i>New Block
-                                        </a>
+                                        </button>
                                     </c:if>
                                 </div>
                             </div>
 
                             <div class="d-flex flex-column gap-16 px-18 pb-18" data-class-group-structure data-block-reorder-url="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/reorder" data-content-reorder-url="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/contents/reorder" data-csrf-token="${sessionScope['gape.auth.csrfToken']}">
-                                <c:set var="activeBlockNumber" value="${0}"/>
                                 <c:forEach var="block" items="${contentBlocks}" varStatus="blockLoop">
-                                    <c:choose>
-                                        <c:when test="${block.archived}">
-                                            <c:set var="displayBlockNumber" value="${activeBlockNumber + 1}"/>
-                                        </c:when>
-                                        <c:otherwise>
-                                            <c:set var="activeBlockNumber" value="${activeBlockNumber + 1}"/>
-                                            <c:set var="displayBlockNumber" value="${activeBlockNumber}"/>
-                                        </c:otherwise>
-                                    </c:choose>
-                                    <article id="block-${block.id}" class="cg-surface cg-block ${block.archived ? 'is-archived' : ''}" data-block-card data-block-id="${block.id}" draggable="${canManageClassGroupStructure and not block.archived}">
+                                    <c:set var="displayBlockNumber" value="${blockLoop.count}"/>
+                                    <article id="block-${block.id}" class="cg-surface cg-block${block.inactive ? ' is-inactive' : ''}" data-block-card data-block-id="${block.id}" draggable="${canManageClassGroupStructure}">
                                         <div class="cg-block-header">
                                             <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap">
                                                 <div class="d-flex align-items-start gap-16 min-w-0">
-                                                    <c:if test="${canManageClassGroupStructure and not block.archived}">
+                                                    <c:if test="${canManageClassGroupStructure}">
                                                         <button type="button" class="cg-icon-button cg-drag-handle" data-block-drag-handle draggable="true" title="Move block" aria-label="Move block">
                                                             <i class="ph ph-dots-six-vertical text-20"></i>
                                                         </button>
@@ -787,42 +1454,18 @@
                                                     <div class="min-w-0">
                                                         <div class="d-flex align-items-center gap-8 flex-wrap mb-6">
                                                             <h4 class="text-18 fw-semibold text-neutral-800 mb-0"><c:out value="${block.name}"/></h4>
-                                                            <span class="${block.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
-                                                                <c:out value="${block.stateLabel}"/>
-                                                            </span>
+                                                            <span class="${block.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${block.stateLabel}"/></span>
                                                         </div>
-                                                        <c:if test="${not empty block.availableFrom or not empty block.availableUntil}">
-                                                            <div class="d-flex align-items-center gap-8 flex-wrap">
-                                                                <c:if test="${not empty block.availableFrom}">
-                                                                    <span class="bg-main-50 text-main-600 px-10 py-5 rounded-pill text-12">Available From <c:out value="${block.availableFrom}"/></span>
-                                                                </c:if>
-                                                                <c:if test="${not empty block.availableUntil}">
-                                                                    <span class="bg-main-50 text-main-600 px-10 py-5 rounded-pill text-12">Available Until <c:out value="${block.availableUntil}"/></span>
-                                                                </c:if>
-                                                            </div>
-                                                        </c:if>
                                                     </div>
                                                 </div>
-                                                <c:if test="${canManageClassGroup}">
+                                                <c:if test="${canManageClassGroupContent}">
                                                     <div class="d-flex align-items-center gap-8 flex-wrap">
-                                                        <c:choose>
-                                                            <c:when test="${block.archived}">
-                                                                <button type="button" class="cg-icon-button" title="Restore block" data-bs-toggle="modal" data-bs-target="#unarchiveBlock${block.id}">
-                                                                    <i class="ph ph-arrow-counter-clockwise text-20"></i>
-                                                                </button>
-                                                            </c:when>
-                                                            <c:otherwise>
-                                                                <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/edit" class="cg-icon-button" title="Edit block">
-                                                                    <i class="ph ph-pencil-simple-line text-20"></i>
-                                                                </a>
-                                                                <button type="button" class="cg-icon-button" title="Deactivate block" data-bs-toggle="modal" data-bs-target="#archiveBlock${block.id}">
-                                                                    <i class="ph ph-archive-box text-20"></i>
-                                                                </button>
-                                                                <button type="button" class="cg-icon-button" title="Delete block" data-bs-toggle="modal" data-bs-target="#deleteBlock${block.id}">
-                                                                    <i class="ph ph-trash text-20"></i>
-                                                                </button>
-                                                            </c:otherwise>
-                                                        </c:choose>
+                                                        <button type="button" class="cg-icon-button" title="Edit block" data-bs-toggle="modal" data-bs-target="#editPedagogicalBlock${block.id}">
+                                                            <i class="ph ph-pencil-simple-line text-20"></i>
+                                                        </button>
+                                                        <button type="button" class="cg-icon-button" title="Delete block" data-bs-toggle="modal" data-bs-target="#deleteBlock${block.id}">
+                                                            <i class="ph ph-trash text-20"></i>
+                                                        </button>
                                                     </div>
                                                 </c:if>
                                             </div>
@@ -853,9 +1496,9 @@
                                                                     <c:param name="disposition" value="inline"/>
                                                                 </c:url>
                                                                 <c:url var="contentDownloadUrl" value="/contents/download/${content.id}"/>
-                                                                <div class="cg-content-row" data-content-row data-source-block-id="${block.id}" data-content-id="${content.id}" data-item-kind="content" data-item-id="${content.id}" draggable="${canManageClassGroupStructure and not block.archived}">
+                                                                <div class="cg-content-row" data-content-row data-source-block-id="${block.id}" data-content-id="${content.id}" data-item-kind="content" data-item-id="${content.id}" draggable="${canManageClassGroupStructure}">
                                                                     <div class="d-flex align-items-start gap-14 min-w-0">
-                                                                        <c:if test="${canManageClassGroupStructure and not block.archived}">
+                                                                        <c:if test="${canManageClassGroupStructure}">
                                                                             <button type="button" class="cg-icon-button cg-drag-handle flex-shrink-0" data-content-drag-handle draggable="true" title="Move content" aria-label="Move content">
                                                                                 <i class="ph ph-dots-six-vertical text-20"></i>
                                                                             </button>
@@ -915,7 +1558,7 @@
                                                                                 </span>
                                                                             </c:otherwise>
                                                                         </c:choose>
-                                                                        <c:if test="${canManageClassGroup and not block.archived}">
+                                                                        <c:if test="${canManageClassGroupContent}">
                                                                             <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/contents/${content.id}/delete" method="post" class="m-0">
                                                                                 <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                                                                 <button type="submit" class="cg-icon-button" title="Delete content">
@@ -928,9 +1571,9 @@
                                                             </c:when>
                                                             <c:when test="${activity.lessonActivity}">
                                                                 <c:set var="lesson" value="${activity.lesson}"/>
-                                                                <div class="cg-content-row" data-content-row data-source-block-id="${block.id}" data-item-kind="lesson" data-item-id="${lesson.id}" draggable="${canManageClassGroupStructure and not block.archived}">
+                                                                <div class="cg-content-row" data-content-row data-source-block-id="${block.id}" data-item-kind="lesson" data-item-id="${lesson.id}" draggable="${canManageClassGroupStructure}">
                                                                     <div class="d-flex align-items-start gap-14 min-w-0">
-                                                                        <c:if test="${canManageClassGroupStructure and not block.archived}">
+                                                                        <c:if test="${canManageClassGroupStructure}">
                                                                             <button type="button" class="cg-icon-button cg-drag-handle flex-shrink-0" data-content-drag-handle draggable="true" title="Move lesson" aria-label="Move lesson">
                                                                                 <i class="ph ph-dots-six-vertical text-20"></i>
                                                                             </button>
@@ -943,7 +1586,7 @@
                                                                                 <h5 class="text-15 fw-semibold text-neutral-800 mb-0"><c:out value="${lesson.title}"/></h5>
                                                                                 <span class="${lesson.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${lesson.stateLabel}"/></span>
                                                                             </div>
-                                                                            <p class="text-13 text-neutral-500 mb-0">
+                                                                            <p class="text-13 text-neutral-500 mb-0" data-gape-datetime-display>
                                                                                 <c:out value="${lesson.startsAt}"/> to <c:out value="${lesson.endsAt}"/> | <c:out value="${lesson.typeLabel}"/>
                                                                                 <c:if test="${lesson.hasRoom}"> | Room <c:out value="${lesson.physicalRoomCode}"/></c:if>
                                                                                 <c:if test="${lesson.hasMeetingLink}"> | Meeting link</c:if>
@@ -951,11 +1594,11 @@
                                                                         </div>
                                                                     </div>
                                                                     <div class="d-flex align-items-center justify-content-end gap-8 flex-wrap">
-                                                                        <a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}" class="cg-outline-button text-13 px-12 py-8" title="View lesson">
+                                                                        <a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}" class="cg-outline-button text-13 px-12 py-8" title="Detail Lesson" data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/${lesson.id}" data-lesson-modal-title="Lesson Details">
                                                                             <i class="ph ph-eye"></i>
                                                                         </a>
-                                                                        <c:if test="${canManageLessons and not block.archived}">
-                                                                            <a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/edit?returnTo=${currentReturnToParam}" class="cg-icon-button" title="Edit lesson">
+                                                                        <c:if test="${canManageLessons}">
+                                                                            <a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/edit?returnTo=${currentReturnToParam}" class="cg-icon-button" title="Edit Lesson" data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/edit?returnTo=${currentReturnToParam}" data-lesson-modal-title="Edit Lesson">
                                                                                 <i class="ph ph-pencil-simple-line text-20"></i>
                                                                             </a>
                                                                             <form action="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/delete" method="post" class="m-0">
@@ -970,15 +1613,21 @@
                                                             </c:when>
                                                             <c:when test="${activity.assessmentActivity}">
                                                                 <c:set var="assessmentItem" value="${activity.assessment}"/>
-                                                                <div class="cg-content-row" data-content-row data-source-block-id="${block.id}" data-item-kind="assessment" data-item-id="${assessmentItem.id}" draggable="${canManageClassGroupStructure and not block.archived}">
+                                                                <c:set var="assessmentPendingEnrollmentCount" value="${classGroupAssessmentPendingEnrollmentCountById[assessmentItem.id]}"/>
+                                                                <c:set var="assessmentPendingCorrectionCount" value="${classGroupAssessmentPendingCorrectionCountById[assessmentItem.id]}"/>
+                                                                <c:set var="assessmentPendingEventCount" value="${assessmentPendingEnrollmentCount + assessmentPendingCorrectionCount}"/>
+                                                                <div class="cg-content-row" data-content-row data-source-block-id="${block.id}" data-item-kind="assessment" data-item-id="${assessmentItem.id}" draggable="${canManageClassGroupStructure}">
                                                                     <div class="d-flex align-items-start gap-14 min-w-0">
-                                                                        <c:if test="${canManageClassGroupStructure and not block.archived}">
+                                                                        <c:if test="${canManageClassGroupStructure}">
                                                                             <button type="button" class="cg-icon-button cg-drag-handle flex-shrink-0" data-content-drag-handle draggable="true" title="Move assessment" aria-label="Move assessment">
                                                                                 <i class="ph ph-dots-six-vertical text-20"></i>
                                                                             </button>
                                                                         </c:if>
-                                                                        <span class="cg-content-icon ${assessmentItem.softClass} text-22">
-                                                                            <i class="${assessmentItem.iconClass}"></i>
+                                                                        <span class="cg-content-event-count-anchor">
+                                                                            <c:if test="${assessmentPendingEventCount > 0}"><span class="cg-pending-corner-badge" data-class-group-assessment-pending-badge title="${assessmentPendingEnrollmentCount} pending enrollment request(s) and ${assessmentPendingCorrectionCount} pending correction(s)"><c:out value="${assessmentPendingEventCount}"/></span></c:if>
+                                                                            <span class="cg-content-icon ${assessmentItem.softClass} text-22">
+                                                                                <i class="${assessmentItem.iconClass}"></i>
+                                                                            </span>
                                                                         </span>
                                                                         <div class="min-w-0">
                                                                             <div class="d-flex align-items-center gap-8 flex-wrap mb-6">
@@ -995,13 +1644,15 @@
                                                                         <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}" class="cg-outline-button text-13 px-12 py-8" title="Detail">
                                                                             <i class="ph ph-eye"></i>
                                                                         </a>
-                                                                        <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}/edit" class="cg-icon-button" title="Edit">
-                                                                            <i class="ph ph-pencil-simple-line text-20"></i>
-                                                                        </a>
+                                                                        <c:if test="${canManageClassGroupContent}">
+                                                                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}/edit" class="cg-icon-button" title="Edit">
+                                                                                <i class="ph ph-pencil-simple-line text-20"></i>
+                                                                            </a>
+                                                                        </c:if>
                                                                         <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}/pdf" class="cg-primary-button text-13 px-12 py-8" title="Download">
                                                                             <i class="ph ph-download-simple"></i>
                                                                         </a>
-                                                                        <c:if test="${canManageClassGroup and not block.archived}">
+                                                                        <c:if test="${canManageClassGroupContent}">
                                                                             <form action="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}/delete" method="post" class="m-0">
                                                                                 <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                                                                 <input type="hidden" name="returnTo" value="/learning/class-groups/${classGroup.id}#block-${block.id}">
@@ -1019,8 +1670,14 @@
                                             </c:choose>
                                         </div>
 
-                                        <c:if test="${canManageClassGroup and not block.archived}">
+                                        <c:if test="${canManageClassGroupContent}">
                                             <div class="cg-block-toolbar">
+                                                <a href="${pageContext.request.contextPath}/learning/lessons/new?classGroupId=${classGroup.id}&contentBlockId=${block.id}"
+                                                   class="cg-outline-button"
+                                                   data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/new?classGroupId=${classGroup.id}&contentBlockId=${block.id}"
+                                                   data-lesson-modal-title="Create Lesson">
+                                                    <i class="ph ph-chalkboard-teacher me-8"></i>New Lesson
+                                                </a>
                                                 <button type="button" class="cg-primary-button" data-bs-toggle="modal" data-bs-target="#addContent${block.id}">
                                                     <i class="ph ph-plus-circle me-8"></i>Add Content
                                                 </button>
@@ -1029,7 +1686,7 @@
 
                                     </article>
 
-                                    <c:if test="${canManageClassGroup and not block.archived}">
+                                    <c:if test="${canManageClassGroupContent}">
                                         <div class="modal fade cg-activity-modal" id="addContent${block.id}" tabindex="-1" aria-hidden="true">
                                             <div class="modal-dialog modal-dialog-centered modal-xl">
                                                 <div class="modal-content rounded-8 border-0">
@@ -1040,17 +1697,15 @@
                                                         </div>
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                     </div>
-                                                    <form id="contentUploadForm${block.id}" action="${pageContext.request.contextPath}/contents/upload" method="post" enctype="multipart/form-data" data-content-upload-form data-content-upload-action="${pageContext.request.contextPath}/contents/upload" data-lesson-action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/lessons" data-assessment-action="${pageContext.request.contextPath}/learning/assessments" data-assessment-return-anchor="block-${block.id}">
+                                                    <form id="contentUploadForm${block.id}" action="${pageContext.request.contextPath}/contents/upload" method="post" enctype="multipart/form-data" data-content-upload-form data-content-upload-action="${pageContext.request.contextPath}/contents/upload" data-lesson-action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/lessons" data-assessment-action="${pageContext.request.contextPath}/learning/assessments" data-assessment-return-anchor="block-${block.id}" data-class-group-start="${classGroup.startsAt}" data-class-group-end="${classGroup.endsAt}">
                                                         <div class="cg-activity-shell">
                                                             <div class="cg-activity-side">
-                                                                <input type="search" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 mb-14" placeholder="Search activity" data-activity-search>
+                                                                <input type="search" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 mb-14" placeholder="Search activity" aria-label="Search activities" data-activity-search>
                                                                 <div class="d-flex flex-column gap-4">
-                                                                    <button type="button" class="cg-activity-category is-active" data-content-category="multimedia"><i class="ph ph-monitor-play"></i>Multimedia</button>
                                                                     <button type="button" class="cg-activity-category" data-content-category="repository"><i class="ph ph-folder-open"></i>Repository</button>
+                                                                    <button type="button" class="cg-activity-category is-active" data-content-category="multimedia"><i class="ph ph-monitor-play"></i>Multimedia</button>
                                                                     <button type="button" class="cg-activity-category" data-content-category="class"><i class="ph ph-chalkboard-teacher"></i>Class</button>
                                                                     <button type="button" class="cg-activity-category" data-content-category="assessment"><i class="ph ph-eye"></i>Assessment</button>
-                                                                    <button type="button" class="cg-activity-category" data-content-category="grade_sheet"><i class="ph ph-table"></i>Grade Sheet</button>
-                                                                    <button type="button" class="cg-activity-category" data-content-category="embed"><i class="ph ph-code"></i>Embed</button>
                                                                 </div>
                                                             </div>
                                                             <div class="cg-activity-main">
@@ -1236,26 +1891,6 @@
                                                                             <span class="text-13 text-neutral-500">Form, test or exam delivered in the classroom.</span>
                                                                         </span>
                                                                     </button>
-                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="grade_sheet" data-supported="false" data-format="other" data-role="grade_sheet" data-source-kind="grade" data-title="Grade Sheet">
-                                                                        <span class="cg-activity-icon bg-info-600"><i class="ph ph-table"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Grade Sheet</strong><span class="text-13 text-neutral-500">Excel grade file.</span></span>
-                                                                    </button>
-                                                                    <button type="button" class="cg-activity-option is-planned" data-content-option data-category="grade_sheet" data-supported="false" data-format="other" data-role="exam_results" data-source-kind="grade" data-title="Exam Results">
-                                                                        <span class="cg-activity-icon bg-info-600"><i class="ph ph-chart-bar"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Exam Results</strong><span class="text-13 text-neutral-500">Result file.</span></span>
-                                                                    </button>
-                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="embed" data-supported="true" data-format="url" data-role="external_link" data-source-kind="url" data-title="External link" data-submit-label="Create Link">
-                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-link"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">External link</strong><span class="text-13 text-neutral-500">Web resource.</span></span>
-                                                                    </button>
-                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="embed" data-supported="true" data-format="embed" data-role="embed" data-source-kind="embed" data-title="Embed" data-submit-label="Create Embed">
-                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-code"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Embed</strong><span class="text-13 text-neutral-500">Embed code.</span></span>
-                                                                    </button>
-                                                                    <button type="button" class="cg-activity-option" data-content-option data-category="embed" data-supported="true" data-format="embed" data-role="embed" data-source-kind="url" data-title="Slideshare" data-submit-label="Create Embed">
-                                                                        <span class="cg-activity-icon bg-warning-600"><i class="ph ph-projector-screen"></i></span>
-                                                                        <span><strong class="text-15 text-neutral-800 d-block mb-4">Slideshare</strong><span class="text-13 text-neutral-500">Presentation URL.</span></span>
-                                                                    </button>
                                                                     </div>
                                                                     <div class="cg-selected-repository-file d-none" data-selected-repository-file>
                                                                         <div class="d-flex align-items-start justify-content-between gap-12">
@@ -1335,13 +1970,19 @@
                                                                                     <option value="form" selected>Form</option>
                                                                                 </select>
                                                                             </div>
-                                                                            <div class="col-lg-6">
+                                                                            <div class="col-lg-6 gape-context-date-field">
                                                                                 <label for="assessmentAvailableFrom${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Available From</label>
-                                                                                <input id="assessmentAvailableFrom${block.id}" type="datetime-local" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="availableFrom" disabled>
+                                                                                <div class="gape-context-date-control">
+                                                                                    <i class="ph ph-calendar-dots"></i>
+                                                                                    <input id="assessmentAvailableFrom${block.id}" type="datetime-local" required class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="availableFrom" disabled>
+                                                                                </div>
                                                                             </div>
-                                                                            <div class="col-lg-6">
+                                                                            <div class="col-lg-6 gape-context-date-field">
                                                                                 <label for="assessmentAvailableUntil${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Available Until</label>
-                                                                                <input id="assessmentAvailableUntil${block.id}" type="datetime-local" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="availableUntil" disabled>
+                                                                                <div class="gape-context-date-control">
+                                                                                    <i class="ph ph-calendar-check"></i>
+                                                                                    <input id="assessmentAvailableUntil${block.id}" type="datetime-local" required class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-assessment-field="availableUntil" disabled>
+                                                                                </div>
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -1386,13 +2027,19 @@
                                                                         <label class="fw-medium text-base text-neutral-800 mb-10 d-block">State</label>
                                                                         <span class="d-inline-flex align-items-center gap-8 px-14 py-11 bg-neutral-20 border border-neutral-30 rounded-8 text-14 fw-semibold text-neutral-700" data-lesson-state-display>Draft</span>
                                                                     </div>
-                                                                    <div class="col-md-4 d-none" data-lesson-schedule-wrapper>
+                                                                    <div class="col-md-4 d-none gape-context-date-field" data-lesson-schedule-wrapper>
                                                                         <label for="lessonStartsAt${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Starts At</label>
-                                                                        <input id="lessonStartsAt${block.id}" name="startsAt" type="datetime-local" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-lesson-starts-at>
+                                                                        <div class="gape-context-date-control">
+                                                                            <i class="ph ph-calendar-dots"></i>
+                                                                            <input id="lessonStartsAt${block.id}" name="startsAt" type="datetime-local" required class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-lesson-starts-at>
+                                                                        </div>
                                                                     </div>
-                                                                    <div class="col-md-4 d-none" data-lesson-schedule-wrapper>
+                                                                    <div class="col-md-4 d-none gape-context-date-field" data-lesson-schedule-wrapper>
                                                                         <label for="lessonEndsAt${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Ends At</label>
-                                                                        <input id="lessonEndsAt${block.id}" name="endsAt" type="datetime-local" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-lesson-ends-at>
+                                                                        <div class="gape-context-date-control">
+                                                                            <i class="ph ph-calendar-check"></i>
+                                                                            <input id="lessonEndsAt${block.id}" name="endsAt" type="datetime-local" required class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" data-lesson-ends-at>
+                                                                        </div>
                                                                     </div>
                                                                     <div class="col-md-4 d-none" data-lesson-meeting-wrapper>
                                                                         <label for="lessonProvider${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Provider</label>
@@ -1443,23 +2090,47 @@
                                             </div>
                                         </div>
 
-                                        <div class="modal fade" id="archiveBlock${block.id}" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal fade" id="editPedagogicalBlock${block.id}" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg">
                                                 <div class="modal-content rounded-8 border-0">
                                                     <div class="modal-header border-neutral-30">
-                                                        <h5 class="modal-title text-18 fw-semibold">Deactivate Content Block</h5>
+                                                        <div>
+                                                            <h5 class="modal-title text-18 fw-semibold">Edit Pedagogical Block</h5>
+                                                            <span class="text-13 text-neutral-500"><c:out value="${classGroup.code}"/> | <c:out value="${block.code}"/></span>
+                                                        </div>
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                                     </div>
-                                                    <div class="modal-body">
-                                                        <p class="text-14 text-neutral-600 mb-0">Confirm archiving <strong><c:out value="${block.name}"/></strong>?</p>
-                                                    </div>
-                                                    <div class="modal-footer border-neutral-30">
-                                                        <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
-                                                        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/archive" method="post" class="m-0">
+                                                    <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}" method="post" data-class-group-live-form>
+                                                        <div class="modal-body">
                                                             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                            <button type="submit" class="cg-warning-button">Deactivate</button>
-                                                        </form>
-                                                    </div>
+                                                            <input type="hidden" name="returnTo" value="/learning/class-groups/${classGroup.id}#block-${block.id}">
+                                                            <input type="hidden" name="classGroupId" value="${classGroup.id}">
+                                                            <input type="hidden" name="code" value="<c:out value='${block.code}'/>">
+                                                            <input type="hidden" name="orderNo" value="<c:out value='${block.orderNo}'/>">
+                                                            <div class="row gy-4">
+                                                                <div class="col-md-8">
+                                                                    <label for="editBlockName${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Name</label>
+                                                                    <input id="editBlockName${block.id}" name="name" type="text" value="<c:out value='${block.name}'/>" required pattern="[^|]*" title="Names cannot contain |" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
+                                                                </div>
+                                                                <div class="col-md-4 gape-select-field">
+                                                                    <label for="editBlockState${block.id}" class="fw-medium text-base text-neutral-800 mb-10">State</label>
+                                                                    <select id="editBlockState${block.id}" name="state" required class="form-select px-18 py-11 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                                                        <option value="ACTIVE" ${block.state == 'ACTIVE' ? 'selected' : ''}>Active</option>
+                                                                        <option value="INACTIVE" ${block.state == 'INACTIVE' ? 'selected' : ''}>Inactive</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-12">
+                                                                    <label for="editBlockDescription${block.id}" class="fw-medium text-base text-neutral-800 mb-10">Description</label>
+                                                                    <textarea id="editBlockDescription${block.id}" name="description" rows="4" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600"><c:out value="${block.description}"/></textarea>
+                                                                </div>
+                                                            </div>
+                                                            <p class="text-13 text-danger-600 mt-14 mb-0 d-none" data-class-group-live-error aria-live="polite"></p>
+                                                        </div>
+                                                        <div class="modal-footer border-neutral-30">
+                                                            <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
+                                                            <button type="submit" class="cg-primary-button" data-class-group-live-submit>Save</button>
+                                                        </div>
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
@@ -1485,28 +2156,6 @@
                                             </div>
                                         </div>
                                     </c:if>
-                                    <c:if test="${canManageClassGroup and block.archived}">
-                                        <div class="modal fade" id="unarchiveBlock${block.id}" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog modal-dialog-centered">
-                                                <div class="modal-content rounded-8 border-0">
-                                                    <div class="modal-header border-neutral-30">
-                                                        <h5 class="modal-title text-18 fw-semibold">Restore Content Block</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <p class="text-14 text-neutral-600 mb-0">Restore <strong><c:out value="${block.name}"/></strong> to the active pedagogical structure?</p>
-                                                    </div>
-                                                    <div class="modal-footer border-neutral-30">
-                                                        <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
-                                                        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks/${block.id}/unarchive" method="post" class="m-0">
-                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                            <button type="submit" class="cg-primary-button">Restore</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </c:if>
                                 </c:forEach>
 
                                 <c:if test="${empty contentBlocks}">
@@ -1518,22 +2167,65 @@
                         </section>
 
                         <c:if test="${canManageClassGroupStructure}">
-                            <section class="cg-surface px-22 py-22 mb-20">
-                                <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap">
-                                    <div>
-                                        <h3 class="text-18 fw-semibold text-neutral-800 mb-6">Critical Actions</h3>
-                                        <span class="text-14 text-neutral-500">Complete or delete this class group when its lifecycle ends.</span>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-10 flex-wrap">
-                                        <button type="button" class="cg-warning-button" data-bs-toggle="modal" data-bs-target="#archiveClassGroup">Complete</button>
-                                        <button type="button" class="cg-danger-button" data-bs-toggle="modal" data-bs-target="#deleteClassGroup">Delete</button>
+                            <div class="modal fade" id="createPedagogicalBlock" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered modal-lg">
+                                    <div class="modal-content rounded-8 border-0">
+                                        <div class="modal-header border-neutral-30">
+                                            <div>
+                                                <h5 class="modal-title text-18 fw-semibold">Create Pedagogical Block</h5>
+                                                <span class="text-13 text-neutral-500"><c:out value="${classGroup.code}"/> | new block</span>
+                                            </div>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/blocks" method="post" data-class-group-live-form>
+                                            <div class="modal-body">
+                                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                <input type="hidden" name="returnTo" value="/learning/class-groups/${classGroup.id}#pedagogical-blocks">
+                                                <input type="hidden" name="classGroupId" value="${classGroup.id}">
+                                                <div class="row gy-4">
+                                                    <div class="col-md-8">
+                                                        <label for="createBlockName" class="fw-medium text-base text-neutral-800 mb-10">Name</label>
+                                                        <input id="createBlockName" name="name" type="text" required pattern="[^|]*" title="Names cannot contain |" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
+                                                    </div>
+                                                    <div class="col-md-4 gape-select-field">
+                                                        <label for="createBlockState" class="fw-medium text-base text-neutral-800 mb-10">State</label>
+                                                        <select id="createBlockState" name="state" required class="form-select px-18 py-11 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                                            <option value="ACTIVE" selected>Active</option>
+                                                            <option value="INACTIVE">Inactive</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-12">
+                                                        <label for="createBlockDescription" class="fw-medium text-base text-neutral-800 mb-10">Description</label>
+                                                        <textarea id="createBlockDescription" name="description" rows="4" class="form-control px-18 py-11 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600"></textarea>
+                                                    </div>
+                                                </div>
+                                                <p class="text-13 text-danger-600 mt-14 mb-0 d-none" data-class-group-live-error aria-live="polite"></p>
+                                            </div>
+                                            <div class="modal-footer border-neutral-30">
+                                                <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="cg-primary-button" data-class-group-live-submit>Create</button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
-                            </section>
+                            </div>
                         </c:if>
+
+                                </c:when>
+                                <c:otherwise>
+                                    <div class="cg-surface px-22 py-22 text-center text-14 text-neutral-500">Open this tab to load the learning plan.</div>
+                                </c:otherwise>
+                            </c:choose>
+                        </div>
                     </div>
 
                     <div class="cg-tab-panel" data-cg-panel="info" hidden>
+                        <div data-cg-lazy-panel="info"
+                             data-cg-lazy-url="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments"
+                             aria-busy="false">
+                            <div class="cg-surface px-22 py-22 text-center text-14 text-neutral-500">Open this tab to load enrollments.</div>
+                        </div>
+                        <c:if test="${classGroupDetailInfoContentLoaded}">
                         <section id="class-setup" class="d-none">
                             <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-18">
                                 <div>
@@ -1550,7 +2242,7 @@
                                 <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Capacity</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.capacityLabel}"/></strong></div>
                                 <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Shift</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.shift}"/></strong></div>
                                 <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Modality</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.modalityLabel}"/></strong></div>
-                                <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Dates</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.dateRangeLabel}"/></strong></div>
+                                <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Dates</span><strong class="text-14 text-neutral-800" data-gape-datetime-display><c:out value="${classGroup.dateRangeLabel}"/></strong></div>
                                 <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Students</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.activeEnrollmentCountLabel}"/></strong></div>
                                 <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Teachers</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.teacherCountLabel}"/></strong></div>
                             </div>
@@ -1592,10 +2284,6 @@
                                                 </c:forEach>
                                             </select>
                                         </div>
-                                        <div class="col-lg-4">
-                                            <label for="enrollmentEndDate" class="fw-medium text-base text-neutral-800 mb-12">End</label>
-                                            <input id="enrollmentEndDate" name="endDate" type="date" class="form-control px-20 py-12 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
-                                        </div>
                                         <div class="col-12">
                                             <button type="submit" class="cg-primary-button">Enroll Student</button>
                                         </div>
@@ -1619,7 +2307,7 @@
                                                 <span class="fw-medium text-14 text-neutral-700"><c:out value="${enrollment.studentName}"/></span>
                                                 <span class="d-block text-12 text-neutral-500"><c:out value="${enrollment.studentEmail}"/></span>
                                             </td>
-                                            <td class="py-16 px-16 text-14 text-neutral-500"><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></td>
+                                            <td class="py-16 px-16 text-14 text-neutral-500" data-gape-datetime-display><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></td>
                                             <td class="py-16 px-16">
                                                 <span class="${enrollment.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
                                                     <c:out value="${enrollment.stateLabel}"/>
@@ -1641,7 +2329,6 @@
                                                 <c:if test="${canManageClassGroupEnrollments and enrollment.active}">
                                                     <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments/${enrollment.studentUserId}/withdraw" method="post" class="m-0 d-inline-flex align-items-center gap-8 flex-wrap justify-content-end">
                                                         <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                        <input name="endDate" type="date" class="form-control px-12 py-8 fw-normal text-13 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" style="min-width: 150px;">
                                                         <button type="submit" class="cg-outline-button px-12 py-8 text-13">Remove</button>
                                                     </form>
                                                 </c:if>
@@ -1657,9 +2344,16 @@
                                 </table>
                             </div>
                         </section>
+                        </c:if>
                     </div>
 
                     <div class="cg-tab-panel" data-cg-panel="teachers" hidden>
+                        <div data-cg-lazy-panel="teachers"
+                             data-cg-lazy-url="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/teachers"
+                             aria-busy="false">
+                            <div class="cg-surface px-22 py-22 text-center text-14 text-neutral-500">Open this tab to load teachers.</div>
+                        </div>
+                        <c:if test="${classGroupDetailTeachersContentLoaded}">
                         <section id="teachers" class="cg-surface px-22 py-22 mb-20">
                             <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-18">
                                 <div>
@@ -1682,14 +2376,6 @@
                                                     <option value="${teacher.id}"><c:out value="${teacher.name}"/> - <c:out value="${teacher.email}"/></option>
                                                 </c:forEach>
                                             </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label for="teacherStartDate" class="fw-medium text-base text-neutral-800 mb-12">Start</label>
-                                            <input id="teacherStartDate" name="startDate" type="date" class="form-control px-20 py-12 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label for="teacherEndDate" class="fw-medium text-base text-neutral-800 mb-12">End</label>
-                                            <input id="teacherEndDate" name="endDate" type="date" class="form-control px-20 py-12 fw-normal text-14 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600">
                                         </div>
                                         <div class="col-12">
                                             <button type="submit" class="cg-primary-button">Assign Teacher</button>
@@ -1714,7 +2400,7 @@
                                                 <span class="fw-medium text-14 text-neutral-700"><c:out value="${teacherAssignment.teacherName}"/></span>
                                                 <span class="d-block text-12 text-neutral-500"><c:out value="${teacherAssignment.teacherEmail}"/></span>
                                             </td>
-                                            <td class="py-16 px-16 text-14 text-neutral-500"><c:out value="${teacherAssignment.startDate}"/> to <c:out value="${teacherAssignment.endDate}"/></td>
+                                            <td class="py-16 px-16 text-14 text-neutral-500" data-gape-datetime-display><c:out value="${teacherAssignment.startDate}"/> to <c:out value="${teacherAssignment.endDate}"/></td>
                                             <td class="py-16 px-16">
                                                 <span class="${teacherAssignment.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
                                                     <c:out value="${teacherAssignment.stateLabel}"/>
@@ -1724,7 +2410,6 @@
                                                 <c:if test="${canManageTeacherAssignments and teacherAssignment.active}">
                                                     <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/teachers/${teacherAssignment.teacherUserId}/remove" method="post" class="m-0 d-inline-flex align-items-center gap-8 flex-wrap justify-content-end">
                                                         <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                        <input name="endDate" type="date" class="form-control px-12 py-8 fw-normal text-13 text-neutral-700 bg-neutral-20 border-neutral-30 border rounded-8 focus-visible-outline focus-border-main-600" style="min-width: 150px;">
                                                         <button type="submit" class="cg-outline-button px-12 py-8 text-13">Remove</button>
                                                     </form>
                                                 </c:if>
@@ -1740,25 +2425,147 @@
                                 </table>
                             </div>
                         </section>
-                    </div>
-
-                    <div class="cg-tab-panel" data-cg-panel="info" hidden>
-                        <c:if test="${canManageClassGroupStructure}">
-                            <section class="cg-surface px-22 py-22">
-                                <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap">
-                                    <div>
-                                        <h3 class="text-18 fw-semibold text-neutral-800 mb-6">Critical Actions</h3>
-                                        <span class="text-14 text-neutral-500">Complete or delete this class group when its lifecycle ends.</span>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-10 flex-wrap">
-                                        <button type="button" class="cg-warning-button" data-bs-toggle="modal" data-bs-target="#archiveClassGroup">Complete</button>
-                                        <button type="button" class="cg-danger-button" data-bs-toggle="modal" data-bs-target="#deleteClassGroup">Delete</button>
-                                    </div>
-                                </div>
-                            </section>
                         </c:if>
                     </div>
+
+                    <div class="cg-tab-panel" data-cg-panel="grade-sheet" hidden>
+                        <div data-cg-lazy-panel="grade-sheet"
+                             data-cg-lazy-url="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/grade-sheet"
+                             aria-busy="false">
+                            <div class="cg-surface px-22 py-22 text-center text-14 text-neutral-500">Open this tab to load the grade sheet.</div>
+                        </div>
+                        <c:if test="${classGroupDetailGradeSheetContentLoaded}">
+                        <section id="class-group-grade-sheet" class="cg-surface px-22 py-22 mb-20">
+                            <c:choose>
+                                <c:when test="${classGroupGradeSheetAvailable}">
+                                    <c:set var="doc" value="${classGroupGradeDocument}"/>
+                                    <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-18">
+                                        <div>
+                                            <h3 class="text-20 fw-semibold text-neutral-800 mb-6">Grade sheet</h3>
+                                            <span class="text-14 text-neutral-500">
+                                                <c:out value="${classGroupGradeSheet.courseOccurrenceLabel}"/> &middot;
+                                                <c:out value="${fn:length(doc.rows)}"/> students
+                                            </span>
+                                        </div>
+                                        <span class="${classGroupGradeSheet.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13">
+                                            <c:out value="${classGroupGradeSheet.stateLabel}"/>
+                                        </span>
+                                    </div>
+                                    <div class="aac-grade-doc cd-grade-sheet-doc">
+                                        <div class="aac-grade-doc__head">
+                                            <div class="aac-grade-doc__posted">Published on: ___ / ___ / _____</div>
+                                            <div class="aac-grade-doc__institution">
+                                                <div class="aac-grade-doc__media">
+                                                    <c:choose>
+                                                        <c:when test="${doc.hasImage}">
+                                                            <img src="${pageContext.request.contextPath}/media/${doc.imagePath}?v=${mediaCacheVersion}" alt="" class="aac-grade-doc__image" onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
+                                                            <span class="aac-grade-doc__placeholder d-none"><i class="${doc.fallbackIconClass}"></i></span>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <span class="aac-grade-doc__placeholder"><i class="${doc.fallbackIconClass}"></i></span>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                </div>
+                                                <div class="aac-grade-doc__brand" title="<c:out value='${doc.contextTitle}'/>"><c:out value="${doc.contextHtml}" escapeXml="false"/></div>
+                                            </div>
+                                            <div class="aac-grade-doc__entity"><strong><c:out value="${doc.entityLabel}"/>:</strong> <c:out value="${doc.entityName}"/></div>
+                                            <h3><c:out value="${doc.title}"/></h3>
+                                            <div class="aac-grade-doc__period" data-gape-datetime-display>Academic period: <c:out value="${doc.periodLabel}"/></div>
+                                        </div>
+                                        <div class="aac-grade-doc__table-wrap" style="--aac-grade-doc-columns: ${doc.variableColumnCount}; --aac-grade-doc-min-width: ${doc.tableMinWidthPx}px;">
+                                            <table class="aac-grade-doc__table">
+                                                <colgroup>
+                                                    <col class="aac-grade-doc__number-col">
+                                                    <col class="aac-grade-doc__name-col">
+                                                    <c:choose>
+                                                        <c:when test="${empty doc.columns}">
+                                                            <col class="aac-grade-doc__assessment-col">
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <c:forEach var="column" items="${doc.columns}">
+                                                                <col class="aac-grade-doc__assessment-col">
+                                                            </c:forEach>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                    <col class="aac-grade-doc__final-col">
+                                                </colgroup>
+                                                <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Student name</th>
+                                                    <c:choose>
+                                                        <c:when test="${empty doc.columns}">
+                                                            <th>Assessments</th>
+                                                        </c:when>
+                                                        <c:otherwise>
+                                                            <c:forEach var="column" items="${doc.columns}">
+                                                                <th title="<c:out value='${column.headerTitle}'/>"><span class="gape-acronym-token"><c:out value="${column.headerLabel}"/></span></th>
+                                                            </c:forEach>
+                                                        </c:otherwise>
+                                                    </c:choose>
+                                                    <th>Final grade</th>
+                                                </tr>
+                                                </thead>
+                                                <tbody>
+                                                <c:forEach var="row" items="${doc.rows}">
+                                                    <tr>
+                                                        <td><c:out value="${row.studentId}"/></td>
+                                                        <td class="text-start"><c:out value="${row.studentName}"/></td>
+                                                        <c:choose>
+                                                            <c:when test="${empty doc.columns}">
+                                                                <td class="aac-grade-doc__grade">-</td>
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <c:forEach var="value" items="${row.values}">
+                                                                    <td class="aac-grade-doc__grade"><c:out value="${value}"/></td>
+                                                                </c:forEach>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                        <td class="aac-grade-doc__final"><c:out value="${row.finalGrade}"/></td>
+                                                    </tr>
+                                                </c:forEach>
+                                                <c:if test="${empty doc.rows}">
+                                                    <tr>
+                                                        <td colspan="${doc.documentColumnCount}" class="py-24 text-center text-neutral-500"><c:out value="${doc.emptyMessage}"/></td>
+                                                    </tr>
+                                                </c:if>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <c:if test="${doc.hasAlert}">
+                                            <div class="aac-grade-doc__alert"><c:out value="${doc.alert}"/></div>
+                                        </c:if>
+                                    </div>
+                                </c:when>
+                                <c:otherwise>
+                                    <div class="border border-neutral-30 rounded-8 px-20 py-32 text-center text-14 text-neutral-500 bg-white">
+                                        No grade sheet is available for this class group.
+                                    </div>
+                                </c:otherwise>
+                            </c:choose>
+                        </section>
+                        </c:if>
+                    </div>
+
                 </main>
+
+                <c:if test="${canDeleteClassGroup}">
+                    <section class="cg-surface px-22 py-22 mb-20" id="class-group-critical-actions">
+                        <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-18">
+                            <div>
+                                <h3 class="text-20 fw-semibold text-neutral-800 mb-6">Critical Actions</h3>
+                                <span class="text-14 text-neutral-500">Restricted lifecycle operations for this class group.</span>
+                            </div>
+                            <span class="bg-warning-50 text-warning-600 px-14 py-8 rounded-pill text-13"><i class="ph ph-lock-key me-6"></i>Requires confirmation</span>
+                        </div>
+                        <div class="cg-critical-grid">
+                            <article class="cg-critical-card cg-critical-card--delete">
+                                <div class="d-flex align-items-start gap-14 mb-16"><span class="cg-critical-icon cg-critical-icon--delete text-22"><i class="ph ph-trash"></i></span><div><h4 class="text-16 fw-semibold text-neutral-800 mb-6">Delete Class Group</h4><p class="text-14 text-neutral-500 mb-0">Permanently removes this item when the database allows it.</p></div></div>
+                                <button type="button" class="cg-danger-button" data-bs-toggle="modal" data-bs-target="#deleteClassGroup">Delete</button>
+                            </article>
+                        </div>
+                    </section>
+                </c:if>
             </div>
             <%@ include file="/WEB-INF/fragments/dashboard-footer.jspf" %>
         </div>
@@ -1790,7 +2597,7 @@
                     <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Capacity</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.capacityLabel}"/></strong></div>
                     <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Shift</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.shift}"/></strong></div>
                     <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Modality</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.modalityLabel}"/></strong></div>
-                    <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Dates</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.dateRangeLabel}"/></strong></div>
+                    <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Dates</span><strong class="text-14 text-neutral-800" data-gape-datetime-display><c:out value="${classGroup.dateRangeLabel}"/></strong></div>
                     <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Students</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.activeEnrollmentCountLabel}"/></strong></div>
                     <div class="cg-info-cell"><span class="text-12 text-neutral-500 d-block mb-6">Teachers</span><strong class="text-14 text-neutral-800"><c:out value="${classGroup.teacherCountLabel}"/></strong></div>
                 </div>
@@ -1799,28 +2606,7 @@
     </div>
 </div>
 
-<c:if test="${canManageClassGroupStructure}">
-<div class="modal fade" id="archiveClassGroup" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-8 border-0">
-            <div class="modal-header border-neutral-30">
-                <h5 class="modal-title text-18 fw-semibold">Complete Class Group</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p class="text-14 text-neutral-600 mb-0">Confirm archiving <strong><c:out value="${classGroup.code}"/></strong>?</p>
-            </div>
-            <div class="modal-footer border-neutral-30">
-                <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
-                <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/archive" method="post" class="m-0">
-                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                    <button type="submit" class="cg-warning-button">Complete</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
+<c:if test="${canDeleteClassGroup}">
 <div class="modal fade" id="deleteClassGroup" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content rounded-8 border-0">
@@ -1833,7 +2619,7 @@
             </div>
             <div class="modal-footer border-neutral-30">
                 <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
-                <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/delete" method="post" class="m-0">
+                <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/delete" method="post" class="m-0" data-class-group-live-form data-class-group-live-panel="structure">
                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                     <button type="submit" class="cg-danger-button">Delete</button>
                 </form>
@@ -1846,6 +2632,604 @@
 <%@ include file="/WEB-INF/fragments/template-base-scripts.jspf" %>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        window.GapeClassGroupModalSelect2Portal = {
+            dropdownParent: function (modal) {
+                if (!modal || !modal.classList.contains('gape-class-group-modal-root')) {
+                    return null;
+                }
+                var portal = modal.querySelector('[data-gape-class-group-select2-modal-portal]');
+                if (!portal) {
+                    portal = document.createElement('div');
+                    portal.className = 'gape-class-group-select2-modal-portal';
+                    portal.setAttribute('data-gape-class-group-select2-modal-portal', '');
+                    modal.appendChild(portal);
+                }
+                return portal;
+            }
+        };
+
+        function classGroupDetailRoot() {
+            return document.querySelector('[data-class-group-detail-live-root]');
+        }
+
+        function withCurrentClassGroupSession(url) {
+            var target = new URL(url, window.location.href);
+            var match = window.location.pathname.match(/^(\/[^/]+)(;jsessionid=[^/]+)/i);
+            if (match && target.origin === window.location.origin && target.pathname.indexOf(match[2]) === -1
+                    && target.pathname.indexOf(match[1] + '/') === 0) {
+                target.pathname = match[1] + match[2] + target.pathname.substring(match[1].length);
+            }
+            return target.toString();
+        }
+
+        function prepareClassGroupDetailModals(scope) {
+            Array.prototype.slice.call((scope || document).querySelectorAll('.modal')).forEach(function (modal) {
+                modal.classList.add('gape-class-group-modal-root');
+                var dialog = modal.querySelector('.modal-dialog');
+                if (dialog) {
+                    dialog.classList.add('gape-class-group-modal-dialog');
+                }
+            });
+        }
+
+        function classGroupModalContent(modal) {
+            if (!modal || !modal.classList.contains('gape-class-group-modal-root')) {
+                return null;
+            }
+            return modal.querySelector('.modal-content');
+        }
+
+        function lockClassGroupModalGeometry(modal) {
+            var content = classGroupModalContent(modal);
+            if (!content) {
+                return;
+            }
+            var height = Math.round(content.getBoundingClientRect().height);
+            if (height > 0) {
+                content.style.setProperty('--gape-class-group-modal-open-height', height + 'px');
+            }
+        }
+
+        function unlockClassGroupModalGeometry(modal) {
+            var content = classGroupModalContent(modal);
+            if (content) {
+                content.style.removeProperty('--gape-class-group-modal-open-height');
+            }
+        }
+
+        function closeClassGroupModal(modal) {
+            if (!modal || typeof bootstrap === 'undefined' || !bootstrap.Modal) {
+                return;
+            }
+            var instance = bootstrap.Modal.getInstance(modal) || bootstrap.Modal.getOrCreateInstance(modal);
+            instance.hide();
+        }
+
+        function clearModalBackdrops() {
+            document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
+                backdrop.remove();
+            });
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+        }
+
+        function syncClassGroupTab(tab) {
+            if (!tab) {
+                return;
+            }
+            var root = classGroupDetailRoot();
+            if (!root || !root.contains(tab)) {
+                return;
+            }
+            var target = tab.getAttribute('data-cg-tab');
+                root.querySelectorAll('[data-cg-tab]').forEach(function (item) {
+                    var active = item === tab;
+                    item.classList.toggle('is-active', active);
+                    item.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            root.querySelectorAll('[data-cg-panel]').forEach(function (panel) {
+                panel.hidden = panel.getAttribute('data-cg-panel') !== target;
+            });
+        }
+
+        function currentClassGroupPanel() {
+            var root = classGroupDetailRoot();
+            var active = root ? root.querySelector('[data-cg-tab].is-active') : null;
+            return active ? active.getAttribute('data-cg-tab') : 'structure';
+        }
+
+        function classGroupLazyLoadingMarkup() {
+            return '<span class="cg-lazy-loading-spinner" role="status" aria-label="Loading">'
+                    + '<i class="ph ph-spinner-gap" aria-hidden="true"></i>'
+                    + '<span class="visually-hidden">Loading</span>'
+                    + '</span>';
+        }
+
+        /* Keep action controls on the same live-loading contract as Subject
+           Details: only the button interior changes while work is pending. */
+        function setClassGroupControlLoading(control, busy) {
+            if (!control || control.tagName !== 'BUTTON') {
+                return;
+            }
+            if (busy) {
+                if (control.dataset.classGroupLoadingOriginalHtml === undefined) {
+                    control.dataset.classGroupLoadingOriginalHtml = control.innerHTML;
+                    control.dataset.classGroupLoadingOriginalTitle = control.getAttribute('title') || '';
+                    control.dataset.classGroupLoadingOriginalAriaLabel = control.getAttribute('aria-label') || '';
+                    control.dataset.classGroupPreviousDisabled = control.disabled ? 'true' : 'false';
+                }
+                control.innerHTML = classGroupLazyLoadingMarkup();
+                control.setAttribute('title', 'Loading');
+                control.setAttribute('aria-label', 'Loading');
+                control.setAttribute('aria-busy', 'true');
+                control.disabled = true;
+                return;
+            }
+            if (control.dataset.classGroupLoadingOriginalHtml === undefined) {
+                return;
+            }
+            control.innerHTML = control.dataset.classGroupLoadingOriginalHtml;
+            if (control.dataset.classGroupLoadingOriginalTitle) {
+                control.setAttribute('title', control.dataset.classGroupLoadingOriginalTitle);
+            } else {
+                control.removeAttribute('title');
+            }
+            if (control.dataset.classGroupLoadingOriginalAriaLabel) {
+                control.setAttribute('aria-label', control.dataset.classGroupLoadingOriginalAriaLabel);
+            } else {
+                control.removeAttribute('aria-label');
+            }
+            control.removeAttribute('aria-busy');
+            control.disabled = control.dataset.classGroupPreviousDisabled === 'true';
+            delete control.dataset.classGroupLoadingOriginalHtml;
+            delete control.dataset.classGroupLoadingOriginalTitle;
+            delete control.dataset.classGroupLoadingOriginalAriaLabel;
+            delete control.dataset.classGroupPreviousDisabled;
+        }
+
+        function setClassGroupTabLoading(name, busy) {
+            var root = classGroupDetailRoot();
+            var tab = root ? root.querySelector('[data-cg-tab="' + name + '"]') : null;
+            var title = tab ? tab.querySelector('.cg-mode-card__title') : null;
+            if (!tab || !title) {
+                return;
+            }
+            if (busy) {
+                if (title.dataset.classGroupLoadingOriginalHtml === undefined) {
+                    title.dataset.classGroupLoadingOriginalHtml = title.innerHTML;
+                }
+                title.innerHTML = classGroupLazyLoadingMarkup();
+                tab.setAttribute('aria-busy', 'true');
+                tab.disabled = true;
+                return;
+            }
+            if (title.dataset.classGroupLoadingOriginalHtml !== undefined) {
+                title.innerHTML = title.dataset.classGroupLoadingOriginalHtml;
+                delete title.dataset.classGroupLoadingOriginalHtml;
+            }
+            tab.removeAttribute('aria-busy');
+            tab.disabled = false;
+        }
+
+        function configureClassGroupDetailSorting(scope) {
+            var roots = Array.prototype.slice.call((scope || document).querySelectorAll('[data-cg-detail-sort-root]'));
+            roots.forEach(function (root) {
+                if (root.dataset.cgDetailSortInitialized === 'true') {
+                    return;
+                }
+                root.dataset.cgDetailSortInitialized = 'true';
+                var lists = Array.prototype.slice.call(root.querySelectorAll('[data-cg-detail-sort-list]'));
+                var options = Array.prototype.slice.call(root.querySelectorAll('[data-cg-detail-sort-option]'));
+                var toggle = root.querySelector('[data-cg-detail-sort-toggle]');
+                if (!lists.length || !options.length) {
+                    return;
+                }
+
+                function datasetKey(field) {
+                    return 'sort' + field.charAt(0).toUpperCase() + field.slice(1);
+                }
+
+                function oppositeDirection(direction) {
+                    return direction === 'asc' ? 'desc' : 'asc';
+                }
+
+                var listGroups = lists.map(function (list) {
+                    var rows = Array.prototype.slice.call(list.children).filter(function (child) {
+                        return child.hasAttribute('data-cg-detail-sort-row');
+                    });
+                    return {
+                        list: list,
+                        rows: rows.map(function (row, index) {
+                            if (!row.dataset.sortIndex) {
+                                row.dataset.sortIndex = String(index);
+                            }
+                            return { row: row, index: index };
+                        })
+                    };
+                });
+                var collator = new Intl.Collator(document.documentElement.lang || undefined, {
+                    numeric: true,
+                    sensitivity: 'base'
+                });
+                var activeField = null;
+                var activeDirection = null;
+
+                function originalIndex(group) {
+                    return Number(group.row.dataset.sortIndex || group.index || '0');
+                }
+
+                function sortValue(group, field) {
+                    return group.row.dataset[datasetKey(field)] || '';
+                }
+
+                function compareGroups(first, second) {
+                    if (!activeField || !activeDirection) {
+                        return originalIndex(first) - originalIndex(second);
+                    }
+                    var firstValue = sortValue(first, activeField);
+                    var secondValue = sortValue(second, activeField);
+                    var result = activeField === 'date'
+                        ? Number(firstValue || '0') - Number(secondValue || '0')
+                        : collator.compare(firstValue, secondValue);
+                    if (result === 0) {
+                        result = originalIndex(first) - originalIndex(second);
+                    }
+                    return activeDirection === 'desc' ? -result : result;
+                }
+
+                function renderRows() {
+                    listGroups.forEach(function (listGroup) {
+                        var sorted = listGroup.rows.slice().sort(compareGroups);
+                        listGroup.rows.forEach(function (group) {
+                            group.row.remove();
+                        });
+                        sorted.forEach(function (group) {
+                            listGroup.list.appendChild(group.row);
+                        });
+                    });
+                }
+
+                function updateOptionStates() {
+                    if (toggle) {
+                        toggle.classList.toggle('is-active', activeField !== null);
+                    }
+                    options.forEach(function (option) {
+                        var field = option.dataset.sortField;
+                        var normalDirection = option.dataset.sortNormal;
+                        var state = 'none';
+                        if (activeField === field) {
+                            state = activeDirection === normalDirection ? 'normal' : 'reverse';
+                        }
+                        option.dataset.sortState = state;
+                        option.classList.toggle('is-active', state !== 'none');
+                        option.setAttribute('aria-pressed', String(state !== 'none'));
+                    });
+                }
+
+                function closeDropdown() {
+                    if (toggle && window.bootstrap && window.bootstrap.Dropdown) {
+                        window.bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
+                    }
+                }
+
+                if (toggle) {
+                    toggle.addEventListener('click', function (event) {
+                        if (!activeField) {
+                            return;
+                        }
+                        event.preventDefault();
+                        event.stopPropagation();
+                        activeField = null;
+                        activeDirection = null;
+                        updateOptionStates();
+                        renderRows();
+                        closeDropdown();
+                    });
+                }
+
+                options.forEach(function (option) {
+                    option.addEventListener('click', function () {
+                        var field = option.dataset.sortField;
+                        var normal = option.dataset.sortNormal;
+                        var currentState = option.dataset.sortState;
+                        if (activeField !== field || currentState === 'none') {
+                            activeField = field;
+                            activeDirection = normal;
+                        } else if (currentState === 'normal') {
+                            activeDirection = oppositeDirection(normal);
+                        } else {
+                            activeField = null;
+                            activeDirection = null;
+                        }
+                        updateOptionStates();
+                        renderRows();
+                    });
+                });
+
+                updateOptionStates();
+            });
+        }
+
+        function syncClassGroupEnrollmentTab(name, scope) {
+            var root = scope || classGroupDetailRoot();
+            if (!root || !name) {
+                return;
+            }
+            root.querySelectorAll('[data-cg-enrollment-tab]').forEach(function (tab) {
+                var active = tab.getAttribute('data-cg-enrollment-tab') === name;
+                tab.classList.toggle('is-active', active);
+                tab.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            root.querySelectorAll('[data-cg-enrollment-panel]').forEach(function (panel) {
+                panel.hidden = panel.getAttribute('data-cg-enrollment-panel') !== name;
+            });
+        }
+
+        function currentClassGroupEnrollmentTab() {
+            var root = classGroupDetailRoot();
+            var active = root ? root.querySelector('[data-cg-enrollment-tab].is-active') : null;
+            return active ? active.getAttribute('data-cg-enrollment-tab') : 'enrollments';
+        }
+
+        function initializeClassGroupEnrollmentTabs(scope) {
+            var root = scope || classGroupDetailRoot();
+            if (root && root.querySelector('[data-cg-enrollment-tab].is-active')) {
+                syncClassGroupEnrollmentTab(currentClassGroupEnrollmentTab(), root);
+            }
+        }
+
+        function initializeClassGroupLazyPanel(scope) {
+            prepareClassGroupDetailModals(scope);
+            configureClassGroupDetailSorting(scope);
+            initializeClassGroupEnrollmentTabs(scope);
+            if (!scope || !window.jQuery || !window.jQuery.fn || !window.jQuery.fn.select2) {
+                return;
+            }
+            window.jQuery(scope).find('.js-example-basic-single').each(function () {
+                var select = window.jQuery(this);
+                if (!select.hasClass('select2-hidden-accessible')) {
+                    var modalParent = this.closest('.modal');
+                    var options = { width: '100%' };
+                    if (modalParent) {
+                        var portal = window.GapeClassGroupModalSelect2Portal.dropdownParent(modalParent);
+                        options.dropdownParent = window.jQuery(portal || modalParent);
+                    }
+                    select.select2(options);
+                }
+            });
+        }
+
+        async function loadClassGroupLazyPanel(name) {
+            var root = classGroupDetailRoot();
+            var panel = root ? root.querySelector('[data-cg-lazy-panel="' + name + '"]') : null;
+            if (!panel || panel.dataset.cgLazyLoaded === 'true') {
+                return true;
+            }
+            if (panel.dataset.cgLazyLoading === 'true') {
+                return false;
+            }
+            var url = panel.dataset.cgLazyUrl;
+            if (!url) {
+                return false;
+            }
+            panel.dataset.cgLazyLoading = 'true';
+            panel.setAttribute('aria-busy', 'true');
+            setClassGroupTabLoading(name, true);
+            panel.innerHTML = '<div class="cg-surface px-22 py-22 text-center text-14 text-neutral-500">Loading&hellip;</div>';
+            try {
+                var response = await fetch(withCurrentClassGroupSession(url), {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'text/html',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('The panel could not be loaded.');
+                }
+                var html = await response.text();
+                if (name === 'structure') {
+                    var documentFragment = new DOMParser().parseFromString(html, 'text/html');
+                    var structurePanel = documentFragment.querySelector('[data-cg-lazy-panel="structure"]');
+                    if (!structurePanel) {
+                        throw new Error('The learning plan could not be loaded.');
+                    }
+                    panel.innerHTML = structurePanel.innerHTML;
+                } else {
+                    panel.innerHTML = html;
+                }
+                panel.dataset.cgLazyLoaded = 'true';
+                initializeClassGroupLazyPanel(panel);
+                return true;
+            } catch (error) {
+                panel.innerHTML = '<div class="cg-surface px-22 py-22 text-center text-14 text-danger-600">Unable to load this section. Please try again.</div>';
+                return false;
+            } finally {
+                delete panel.dataset.cgLazyLoading;
+                panel.setAttribute('aria-busy', 'false');
+                setClassGroupTabLoading(name, false);
+            }
+        }
+
+        async function activateClassGroupPanel(tab) {
+            if (!tab) {
+                return;
+            }
+            var target = tab.getAttribute('data-cg-tab');
+            var loaded = await loadClassGroupLazyPanel(target);
+            if (!loaded) {
+                return;
+            }
+            syncClassGroupTab(tab);
+        }
+
+        function hydrateClassGroupBasics(scope) {
+            var root = scope || document;
+            root.querySelectorAll('[data-content-thumbnail] img:not([data-cg-thumbnail-bound])').forEach(function (image) {
+                image.setAttribute('data-cg-thumbnail-bound', 'true');
+                image.addEventListener('error', function () {
+                    showContentThumbnailFallback(image);
+                }, { once: true });
+                if (image.dataset.thumbnailFailed === 'true') {
+                    showContentThumbnailFallback(image);
+                }
+            });
+        }
+
+        function scrollToClassGroupAnchor(anchor) {
+            if (!anchor) {
+                return;
+            }
+            var root = classGroupDetailRoot();
+            var target = root ? root.querySelector(anchor) : null;
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            history.replaceState(null, '', window.location.pathname + window.location.search + anchor);
+        }
+
+        function initClassGroupDetail(preferredPanel, anchor) {
+            var root = classGroupDetailRoot();
+            if (!root) {
+                return Promise.resolve(false);
+            }
+            // Keep the preloaded Structure panel on the same initialization path as
+            // panels fetched after a card is selected.  In particular, its Sort by
+            // controls must be ready before the user opens any other card.
+            initializeClassGroupLazyPanel(root);
+            hydrateClassGroupBasics(root);
+            var target = preferredPanel || currentClassGroupPanel() || 'structure';
+            var tab = root.querySelector('[data-cg-tab="' + target + '"]');
+            if (!tab) {
+                return Promise.resolve(false);
+            }
+            return activateClassGroupPanel(tab).then(function () {
+                scrollToClassGroupAnchor(anchor);
+                return true;
+            });
+        }
+
+        function syncClassGroupSidebarPendingBadges(parsedDocument) {
+            if (!parsedDocument) {
+                return;
+            }
+            var incomingBadge = parsedDocument.querySelector('[data-sidebar-class-group-pending-badge]');
+            var pendingCount = incomingBadge ? Number(incomingBadge.textContent.trim()) || 0 : 0;
+            document.querySelectorAll('[data-sidebar-class-group-pending-badge]').forEach(function (badge) {
+                badge.textContent = String(pendingCount);
+                badge.classList.toggle('d-none', pendingCount <= 0);
+            });
+            var incomingEventBadge = parsedDocument.querySelector('[data-sidebar-event-badge]');
+            var eventCount = incomingEventBadge ? Number(incomingEventBadge.textContent.trim()) || 0 : 0;
+            document.querySelectorAll('[data-sidebar-event-badge]').forEach(function (badge) {
+                badge.textContent = String(eventCount);
+                badge.classList.toggle('d-none', eventCount <= 0);
+            });
+        }
+
+        function replaceClassGroupDetailRoot(html, anchor, requestedEnrollmentTab) {
+            var parsed = new DOMParser().parseFromString(html, 'text/html');
+            var incomingRoot = parsed.querySelector('[data-class-group-detail-live-root]');
+            var currentRoot = classGroupDetailRoot();
+            if (!incomingRoot || !currentRoot) {
+                throw new Error('Updated class group detail could not be loaded.');
+            }
+            var activePanel = currentClassGroupPanel();
+            var activeEnrollmentTab = requestedEnrollmentTab || currentClassGroupEnrollmentTab();
+            syncClassGroupSidebarPendingBadges(parsed);
+            currentRoot.innerHTML = incomingRoot.innerHTML;
+            clearModalBackdrops();
+            return initClassGroupDetail(activePanel, anchor).then(function () {
+                syncClassGroupEnrollmentTab(activeEnrollmentTab);
+            });
+        }
+
+        document.addEventListener('click', function (event) {
+            var enrollmentTab = event.target.closest('[data-cg-enrollment-tab]');
+            var root = classGroupDetailRoot();
+            if (enrollmentTab && root && root.contains(enrollmentTab)) {
+                syncClassGroupEnrollmentTab(enrollmentTab.getAttribute('data-cg-enrollment-tab'));
+                return;
+            }
+            var tab = event.target.closest('[data-cg-tab]');
+            if (tab && root && root.contains(tab)) {
+                activateClassGroupPanel(tab);
+            }
+        });
+
+        document.addEventListener('shown.bs.modal', function (event) {
+            lockClassGroupModalGeometry(event.target);
+        });
+
+        document.addEventListener('hidden.bs.modal', function (event) {
+            unlockClassGroupModalGeometry(event.target);
+        });
+
+        document.addEventListener('submit', async function (event) {
+            var form = event.target.closest('[data-class-group-live-form]');
+            if (!form) {
+                return;
+            }
+            event.preventDefault();
+            if (!form.reportValidity()) {
+                return;
+            }
+            var submitButton = form.querySelector('[data-class-group-live-submit]');
+            var status = form.querySelector('[data-class-group-live-error]');
+            var modal = form.closest('.modal');
+            var returnTo = form.querySelector('input[name="returnTo"]');
+            var anchor = '';
+            if (returnTo && returnTo.value) {
+                try {
+                    anchor = new URL(returnTo.value, window.location.origin).hash;
+                } catch (ignored) {
+                    anchor = '';
+                }
+            }
+            if (status) {
+                status.classList.add('d-none');
+                status.textContent = '';
+            }
+            setClassGroupControlLoading(submitButton, true);
+            var requestedEnrollmentTab = form.hasAttribute('data-class-group-live-enrollment-request-action')
+                    ? 'requests'
+                    : null;
+            try {
+                var response = await fetch(withCurrentClassGroupSession(form.action), {
+                    method: form.method || 'POST',
+                    body: new FormData(form),
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                var html = await response.text();
+                if (!response.ok) {
+                    throw new Error(readableUploadError(html, response.headers.get('content-type') || ''));
+                }
+                closeClassGroupModal(modal);
+                try {
+                    await replaceClassGroupDetailRoot(html, anchor, requestedEnrollmentTab);
+                } catch (error) {
+                    window.location.assign(withCurrentClassGroupSession(response.url || form.action));
+                }
+            } catch (error) {
+                if (status) {
+                    status.textContent = error.message || 'The block could not be saved.';
+                    status.classList.remove('d-none');
+                } else {
+                    alert(error.message || 'The block could not be saved.');
+                }
+            } finally {
+                setClassGroupControlLoading(submitButton, false);
+            }
+        });
+
+        prepareClassGroupDetailModals(document);
+        hydrateClassGroupBasics(document);
+
         function uploadButtonLabel(button) {
             if (!button) {
                 return '';
@@ -1935,20 +3319,6 @@
             if (image.dataset.thumbnailFailed === 'true') {
                 showContentThumbnailFallback(image);
             }
-        });
-
-        document.querySelectorAll('[data-cg-tab]').forEach(function (tab) {
-            tab.addEventListener('click', function () {
-                var target = tab.getAttribute('data-cg-tab');
-                document.querySelectorAll('[data-cg-tab]').forEach(function (item) {
-                    var active = item === tab;
-                    item.classList.toggle('is-active', active);
-                    item.setAttribute('aria-selected', active ? 'true' : 'false');
-                });
-                document.querySelectorAll('[data-cg-panel]').forEach(function (panel) {
-                    panel.hidden = panel.getAttribute('data-cg-panel') !== target;
-                });
-            });
         });
 
         document.querySelectorAll('.cg-activity-modal').forEach(function (modal) {
@@ -2233,10 +3603,18 @@
                     lessonAttendanceWrapper.classList.toggle('d-none', !expectsLesson);
                 }
                 if (lessonStartsAtInput) {
-                    lessonStartsAtInput.required = false;
+                    lessonStartsAtInput.required = expectsLesson;
+                    lessonStartsAtInput.disabled = !expectsLesson;
+                    if (!expectsLesson) {
+                        lessonStartsAtInput.value = '';
+                    }
                 }
                 if (lessonEndsAtInput) {
-                    lessonEndsAtInput.required = false;
+                    lessonEndsAtInput.required = expectsLesson;
+                    lessonEndsAtInput.disabled = !expectsLesson;
+                    if (!expectsLesson) {
+                        lessonEndsAtInput.value = '';
+                    }
                 }
                 if (lessonAccessUrlInput) {
                     lessonAccessUrlInput.required = expectsLesson && (lessonType === 'online' || lessonType === 'hybrid');
@@ -2309,18 +3687,166 @@
                 }
             }
 
+            function maxDateTime(first, second) {
+                if (!first) {
+                    return second || '';
+                }
+                if (!second) {
+                    return first;
+                }
+                return first > second ? first : second;
+            }
+
+            function classGroupWindow() {
+                return {
+                    start: form ? (form.getAttribute('data-class-group-start') || '') : '',
+                    end: form ? (form.getAttribute('data-class-group-end') || '') : ''
+                };
+            }
+
+            function dayStart(dateValue) {
+                return dateValue ? dateValue + 'T00:00' : '';
+            }
+
+            function dayEnd(dateValue) {
+                return dateValue ? dateValue + 'T23:59' : '';
+            }
+
+            function formatDateTimeLabel(value) {
+                if (!value) {
+                    return 'not set';
+                }
+                if (window.GapeDateTimeFormat) {
+                    return window.GapeDateTimeFormat.formatTechnicalDateTime(value);
+                }
+                var normalized = value.replace('T', ' ');
+                var date = normalized.substring(0, 10).split('-');
+                var time = normalized.substring(11, 16);
+                return date.length === 3 ? date[2] + '-' + date[1] + '-' + date[0] + (time ? ' ' + time.replace(':', '-') + '-00' : '') : value;
+            }
+
+            function minDateTime(first, second) {
+                if (!first) {
+                    return second || '';
+                }
+                if (!second) {
+                    return first;
+                }
+                return first < second ? first : second;
+            }
+
+            function addMinutes(value, minutes) {
+                if (!value) {
+                    return '';
+                }
+                var date = new Date(value);
+                if (Number.isNaN(date.getTime())) {
+                    return value;
+                }
+                date.setMinutes(date.getMinutes() + minutes);
+                var month = String(date.getMonth() + 1).padStart(2, '0');
+                var day = String(date.getDate()).padStart(2, '0');
+                var hours = String(date.getHours()).padStart(2, '0');
+                var mins = String(date.getMinutes()).padStart(2, '0');
+                return date.getFullYear() + '-' + month + '-' + day + 'T' + hours + ':' + mins;
+            }
+
+            function syncModalDateContext(selector, copyPrefix, lowerBound, upperBound) {
+                var panel = modal.querySelector(selector);
+                if (!panel) {
+                    return;
+                }
+                var copy = panel.querySelector('[data-date-context-copy]');
+                var dateWindow = classGroupWindow();
+                var hasWindow = !!(dateWindow.start && dateWindow.end);
+                var usable = hasWindow && (!lowerBound || !upperBound || lowerBound <= upperBound);
+                if (copy) {
+                    copy.textContent = hasWindow
+                            ? copyPrefix + ' ' + formatDateTimeLabel(lowerBound || dayStart(dateWindow.start)) + ' to ' + formatDateTimeLabel(upperBound)
+                            : 'This class group has no date window.';
+                }
+                panel.querySelectorAll('[data-lesson-date-action], [data-assessment-date-action]').forEach(function (button) {
+                    button.disabled = !usable;
+                });
+            }
+
+            function applyLessonDateAction(action) {
+                if (!lessonStartsAtInput || !lessonEndsAtInput || lessonStartsAtInput.disabled) {
+                    return;
+                }
+                var now = localMinuteValue();
+                var dateWindow = classGroupWindow();
+                var lowerBound = maxDateTime(now, dayStart(dateWindow.start));
+                var upperBound = dayEnd(dateWindow.end);
+                if (!dateWindow.start || !dateWindow.end || lowerBound > upperBound) {
+                    validateLessonSchedule();
+                    return;
+                }
+                if (action === 'fill-start') {
+                    lessonStartsAtInput.value = lowerBound;
+                } else if (action === 'fill-end') {
+                    lessonEndsAtInput.value = upperBound;
+                } else if (action === 'fill-slot') {
+                    lessonStartsAtInput.value = lowerBound;
+                    lessonEndsAtInput.value = minDateTime(addMinutes(lowerBound, 90), upperBound);
+                }
+                validateLessonSchedule();
+            }
+
+            function applyAssessmentDateAction(action) {
+                var availableFrom = modal.querySelector('[data-assessment-field="availableFrom"]');
+                var availableUntil = modal.querySelector('[data-assessment-field="availableUntil"]');
+                if (!availableFrom || !availableUntil || availableFrom.disabled || availableUntil.disabled) {
+                    return;
+                }
+                var now = localMinuteValue();
+                var dateWindow = classGroupWindow();
+                var lowerBound = maxDateTime(now, dayStart(dateWindow.start));
+                var upperBound = dayEnd(dateWindow.end);
+                if (!dateWindow.start || !dateWindow.end || lowerBound > upperBound) {
+                    validateAssessmentForm(form);
+                    return;
+                }
+                if (action === 'fill-start') {
+                    availableFrom.value = lowerBound;
+                } else if (action === 'fill-end') {
+                    availableUntil.value = upperBound;
+                } else if (action === 'fill-window') {
+                    availableFrom.value = lowerBound;
+                    availableUntil.value = upperBound;
+                }
+                validateAssessmentForm(form);
+                updateAssessmentStateDisplay();
+            }
+
             function validateLessonSchedule() {
                 if (!lessonStartsAtInput || !lessonEndsAtInput) {
                     return;
                 }
                 var now = localMinuteValue();
-                lessonStartsAtInput.required = false;
-                lessonStartsAtInput.min = now;
-                lessonEndsAtInput.min = lessonStartsAtInput.value || now;
+                var dateWindow = classGroupWindow();
+                var lowerBound = maxDateTime(now, dayStart(dateWindow.start));
+                var upperBound = dayEnd(dateWindow.end);
+                if (lessonStartsAtInput.disabled || lessonEndsAtInput.disabled) {
+                    syncModalDateContext('[data-lesson-date-context]', 'Schedule window:', lowerBound, upperBound);
+                    return;
+                }
+                lessonStartsAtInput.required = true;
+                lessonStartsAtInput.min = lowerBound;
+                lessonStartsAtInput.max = upperBound;
+                lessonEndsAtInput.required = true;
+                lessonEndsAtInput.min = maxDateTime(lessonStartsAtInput.value || lowerBound, dayStart(dateWindow.start));
+                lessonEndsAtInput.max = upperBound;
                 lessonStartsAtInput.setCustomValidity('');
                 lessonEndsAtInput.setCustomValidity('');
-                if (lessonEndsAtInput.value && !lessonStartsAtInput.value) {
-                    lessonStartsAtInput.setCustomValidity('Start date is required when an end date is set.');
+                if (dateWindow.start && dateWindow.end && lowerBound > upperBound) {
+                    lessonStartsAtInput.setCustomValidity('The selected class group has no available schedule window.');
+                }
+                if (!lessonStartsAtInput.value) {
+                    lessonStartsAtInput.setCustomValidity('Lesson start date is required.');
+                }
+                if (!lessonEndsAtInput.value) {
+                    lessonEndsAtInput.setCustomValidity('Lesson end date is required.');
                 }
                 if (lessonStartsAtInput.value && lessonStartsAtInput.value < now) {
                     lessonStartsAtInput.setCustomValidity('Start date cannot be in the past.');
@@ -2328,9 +3854,22 @@
                 if (lessonEndsAtInput.value && lessonEndsAtInput.value < now) {
                     lessonEndsAtInput.setCustomValidity('End date cannot be in the past.');
                 }
+                if (dateWindow.start && lessonStartsAtInput.value && lessonStartsAtInput.value < dayStart(dateWindow.start)) {
+                    lessonStartsAtInput.setCustomValidity('Start date cannot be before the class group start date.');
+                }
+                if (dateWindow.end && lessonStartsAtInput.value && lessonStartsAtInput.value > dayEnd(dateWindow.end)) {
+                    lessonStartsAtInput.setCustomValidity('Start date cannot be after the class group end date.');
+                }
+                if (dateWindow.start && lessonEndsAtInput.value && lessonEndsAtInput.value < dayStart(dateWindow.start)) {
+                    lessonEndsAtInput.setCustomValidity('End date cannot be before the class group start date.');
+                }
+                if (dateWindow.end && lessonEndsAtInput.value && lessonEndsAtInput.value > dayEnd(dateWindow.end)) {
+                    lessonEndsAtInput.setCustomValidity('End date cannot be after the class group end date.');
+                }
                 if (lessonStartsAtInput.value && lessonEndsAtInput.value && lessonEndsAtInput.value <= lessonStartsAtInput.value) {
                     lessonEndsAtInput.setCustomValidity('End date must be after start date.');
                 }
+                syncModalDateContext('[data-lesson-date-context]', 'Schedule window:', lowerBound, upperBound);
                 updateLessonStateDisplay();
             }
 
@@ -2562,6 +4101,16 @@
             if (lessonEndsAtInput) {
                 lessonEndsAtInput.addEventListener('input', validateLessonSchedule);
             }
+            modal.querySelectorAll('[data-lesson-date-action]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    applyLessonDateAction(button.getAttribute('data-lesson-date-action'));
+                });
+            });
+            modal.querySelectorAll('[data-assessment-date-action]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    applyAssessmentDateAction(button.getAttribute('data-assessment-date-action'));
+                });
+            });
             repositoryMetadataChoices.forEach(function (choice) {
                 choice.addEventListener('change', applyRepositoryMetadataMode);
             });
@@ -2608,6 +4157,63 @@
             return now.getFullYear() + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
         }
 
+        function maxDateTimeValue(first, second) {
+            if (!first) {
+                return second || '';
+            }
+            if (!second) {
+                return first;
+            }
+            return first > second ? first : second;
+        }
+
+        function classGroupDateWindow(form) {
+            return {
+                start: form ? (form.getAttribute('data-class-group-start') || '') : '',
+                end: form ? (form.getAttribute('data-class-group-end') || '') : ''
+            };
+        }
+
+        function classGroupDayStart(dateValue) {
+            return dateValue ? dateValue + 'T00:00' : '';
+        }
+
+        function classGroupDayEnd(dateValue) {
+            return dateValue ? dateValue + 'T23:59' : '';
+        }
+
+        function formatDateTimeValue(value) {
+            if (!value) {
+                return 'not set';
+            }
+            if (window.GapeDateTimeFormat) {
+                return window.GapeDateTimeFormat.formatTechnicalDateTime(value);
+            }
+            var normalized = value.replace('T', ' ');
+            var date = normalized.substring(0, 10).split('-');
+            var time = normalized.substring(11, 16);
+            return date.length === 3 ? date[2] + '-' + date[1] + '-' + date[0] + (time ? ' ' + time.replace(':', '-') + '-00' : '') : value;
+        }
+
+        function syncFormDateContext(form, selector, copyPrefix, lowerBound, upperBound) {
+            var panel = form ? form.querySelector(selector) : null;
+            if (!panel) {
+                return;
+            }
+            var copy = panel.querySelector('[data-date-context-copy]');
+            var dateWindow = classGroupDateWindow(form);
+            var hasWindow = !!(dateWindow.start && dateWindow.end);
+            var usable = hasWindow && (!lowerBound || !upperBound || lowerBound <= upperBound);
+            if (copy) {
+                copy.textContent = hasWindow
+                        ? copyPrefix + ' ' + formatDateTimeValue(lowerBound || classGroupDayStart(dateWindow.start)) + ' to ' + formatDateTimeValue(upperBound)
+                        : 'This class group has no date window.';
+            }
+            panel.querySelectorAll('[data-lesson-date-action], [data-assessment-date-action]').forEach(function (button) {
+                button.disabled = !usable;
+            });
+        }
+
         function lessonHostMatches(host, expectedHost) {
             return host === expectedHost || host.endsWith('.' + expectedHost);
         }
@@ -2619,13 +4225,25 @@
             var accessUrl = form.querySelector('[data-lesson-access-url]');
             if (startsAt && endsAt) {
                 var now = currentLocalMinuteValue();
-                startsAt.required = false;
-                startsAt.min = now;
-                endsAt.min = startsAt.value || now;
+                var dateWindow = classGroupDateWindow(form);
+                var lowerBound = maxDateTimeValue(now, classGroupDayStart(dateWindow.start));
+                var upperBound = classGroupDayEnd(dateWindow.end);
+                startsAt.required = true;
+                startsAt.min = lowerBound;
+                startsAt.max = upperBound;
+                endsAt.required = true;
+                endsAt.min = maxDateTimeValue(startsAt.value || lowerBound, classGroupDayStart(dateWindow.start));
+                endsAt.max = upperBound;
                 startsAt.setCustomValidity('');
                 endsAt.setCustomValidity('');
-                if (endsAt.value && !startsAt.value) {
-                    startsAt.setCustomValidity('Start date is required when an end date is set.');
+                if (dateWindow.start && dateWindow.end && lowerBound > upperBound) {
+                    startsAt.setCustomValidity('The selected class group has no available schedule window.');
+                }
+                if (!startsAt.value) {
+                    startsAt.setCustomValidity('Lesson start date is required.');
+                }
+                if (!endsAt.value) {
+                    endsAt.setCustomValidity('Lesson end date is required.');
                 }
                 if (startsAt.value && startsAt.value < now) {
                     startsAt.setCustomValidity('Start date cannot be in the past.');
@@ -2633,9 +4251,22 @@
                 if (endsAt.value && endsAt.value < now) {
                     endsAt.setCustomValidity('End date cannot be in the past.');
                 }
+                if (dateWindow.start && startsAt.value && startsAt.value < classGroupDayStart(dateWindow.start)) {
+                    startsAt.setCustomValidity('Start date cannot be before the class group start date.');
+                }
+                if (dateWindow.end && startsAt.value && startsAt.value > classGroupDayEnd(dateWindow.end)) {
+                    startsAt.setCustomValidity('Start date cannot be after the class group end date.');
+                }
+                if (dateWindow.start && endsAt.value && endsAt.value < classGroupDayStart(dateWindow.start)) {
+                    endsAt.setCustomValidity('End date cannot be before the class group start date.');
+                }
+                if (dateWindow.end && endsAt.value && endsAt.value > classGroupDayEnd(dateWindow.end)) {
+                    endsAt.setCustomValidity('End date cannot be after the class group end date.');
+                }
                 if (startsAt.value && endsAt.value && endsAt.value <= startsAt.value) {
                     endsAt.setCustomValidity('End date must be after start date.');
                 }
+                syncFormDateContext(form, '[data-lesson-date-context]', 'Schedule window:', lowerBound, upperBound);
             }
             if (provider && accessUrl && !accessUrl.disabled) {
                 accessUrl.setCustomValidity('');
@@ -2668,11 +4299,37 @@
             });
             var now = currentLocalMinuteValue();
             if (availableFrom && availableUntil) {
-                availableFrom.min = now;
-                availableUntil.min = availableFrom.value || now;
-            }
-            if (availableUntil && availableUntil.value && availableFrom && !availableFrom.value) {
-                availableFrom.setCustomValidity('Availability start is required when an end is set.');
+                var dateWindow = classGroupDateWindow(form);
+                var lowerBound = maxDateTimeValue(now, classGroupDayStart(dateWindow.start));
+                var upperBound = classGroupDayEnd(dateWindow.end);
+                availableFrom.required = true;
+                availableUntil.required = true;
+                availableFrom.min = lowerBound;
+                availableFrom.max = upperBound;
+                availableUntil.min = maxDateTimeValue(availableFrom.value || lowerBound, classGroupDayStart(dateWindow.start));
+                availableUntil.max = upperBound;
+                if (dateWindow.start && dateWindow.end && lowerBound > upperBound) {
+                    availableFrom.setCustomValidity('The selected context has no available assessment window.');
+                }
+                if (!availableFrom.value) {
+                    availableFrom.setCustomValidity('Assessment availability start is required.');
+                }
+                if (!availableUntil.value) {
+                    availableUntil.setCustomValidity('Assessment availability end is required.');
+                }
+                if (dateWindow.start && availableFrom.value && availableFrom.value < classGroupDayStart(dateWindow.start)) {
+                    availableFrom.setCustomValidity('Availability start cannot be before the class group start date.');
+                }
+                if (dateWindow.end && availableFrom.value && availableFrom.value > classGroupDayEnd(dateWindow.end)) {
+                    availableFrom.setCustomValidity('Availability start cannot be after the class group end date.');
+                }
+                if (dateWindow.start && availableUntil.value && availableUntil.value < classGroupDayStart(dateWindow.start)) {
+                    availableUntil.setCustomValidity('Availability end cannot be before the class group start date.');
+                }
+                if (dateWindow.end && availableUntil.value && availableUntil.value > classGroupDayEnd(dateWindow.end)) {
+                    availableUntil.setCustomValidity('Availability end cannot be after the class group end date.');
+                }
+                syncFormDateContext(form, '[data-assessment-date-context]', 'Availability window:', lowerBound, upperBound);
             }
             if (availableFrom && availableFrom.value && availableFrom.value < now) {
                 availableFrom.setCustomValidity('Availability start cannot be in the past.');
@@ -2886,7 +4543,7 @@
             var draggedContent = null;
 
             function postForm(url, formData) {
-                return fetch(url, {
+                return fetch(withCurrentClassGroupSession(url), {
                     method: 'POST',
                     body: formData,
                     credentials: 'same-origin',
@@ -3076,6 +4733,8 @@
             }
             return message.trim();
         }
+
+        initClassGroupDetail();
     });
 </script>
 </body>

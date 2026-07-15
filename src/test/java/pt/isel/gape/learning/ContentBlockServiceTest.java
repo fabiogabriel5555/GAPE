@@ -10,7 +10,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.AfterEach;
@@ -24,7 +23,6 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.ContentBlock;
-import pt.isel.gape.learning.model.ContentBlockAccessMode;
 import pt.isel.gape.learning.model.ContentBlockCreateCommand;
 import pt.isel.gape.learning.model.ContentBlockState;
 import pt.isel.gape.learning.model.ContentBlockUpdateCommand;
@@ -57,7 +55,7 @@ class ContentBlockServiceTest {
     }
 
     @Test
-    void assignedTeacherCanCreateScheduledContentBlock() {
+    void assignedTeacherCanCreateInactiveContentBlock() {
         ContentBlock block = contentBlockService.createContentBlock(
                 3L,
                 null,
@@ -68,44 +66,17 @@ class ContentBlockServiceTest {
                         "Planeamento",
                         "Planeamento do projeto",
                         2,
-                        ContentBlockAccessMode.SCHEDULED,
-                        ContentBlockState.ACTIVE,
-                        LocalDateTime.of(2026, 3, 1, 0, 0),
-                        LocalDateTime.of(2026, 4, 1, 23, 59)
-                ),
-                "127.0.0.1"
-        );
-
-        assertEquals(ContentBlockState.ACTIVE, block.state());
-        assertEquals(2, block.orderNo());
-    }
-
-    @Test
-    void inactiveContentBlockCanReuseOrderOfActiveBlock() {
-        ContentBlock block = contentBlockService.createContentBlock(
-                3L,
-                null,
-                AccessProfileType.TEACHER,
-                new ContentBlockCreateCommand(
-                        50L,
-                        "BLK-INACTIVE-ORDER",
-                        "Rascunho de ordem",
-                        null,
-                        1,
-                        ContentBlockAccessMode.OPEN,
-                        ContentBlockState.INACTIVE,
-                        null,
-                        null
+                        ContentBlockState.INACTIVE
                 ),
                 "127.0.0.1"
         );
 
         assertEquals(ContentBlockState.INACTIVE, block.state());
-        assertEquals(1, block.orderNo());
+        assertEquals(2, block.orderNo());
     }
 
     @Test
-    void activeContentBlockOrderMustBeUniqueInClassGroup() {
+    void contentBlockOrderMustBeUniqueInClassGroup() {
         assertThrows(
                 IllegalStateException.class,
                 () -> contentBlockService.createContentBlock(
@@ -118,82 +89,7 @@ class ContentBlockServiceTest {
                                 "Ordem duplicada",
                                 null,
                                 1,
-                                ContentBlockAccessMode.OPEN,
-                                ContentBlockState.ACTIVE,
-                                null,
-                                null
-                        ),
-                        "127.0.0.1"
-                )
-        );
-    }
-
-    @Test
-    void scheduledContentBlockRequiresAvailabilityStart() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> contentBlockService.createContentBlock(
-                        3L,
-                        null,
-                        AccessProfileType.TEACHER,
-                        new ContentBlockCreateCommand(
-                                50L,
-                                "BLK-NO-START",
-                                "Without start",
-                                null,
-                                2,
-                                ContentBlockAccessMode.SCHEDULED,
-                                ContentBlockState.ACTIVE,
-                                null,
-                                null
-                        ),
-                        "127.0.0.1"
-                )
-        );
-    }
-
-    @Test
-    void contentBlockAvailabilityEndRequiresStart() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> contentBlockService.createContentBlock(
-                        3L,
-                        null,
-                        AccessProfileType.TEACHER,
-                        new ContentBlockCreateCommand(
-                                50L,
-                                "BLK-END-NO-START",
-                                "End without start",
-                                null,
-                                2,
-                                ContentBlockAccessMode.OPEN,
-                                ContentBlockState.ACTIVE,
-                                null,
-                                LocalDateTime.of(2026, 4, 1, 23, 59)
-                        ),
-                        "127.0.0.1"
-                )
-        );
-    }
-
-    @Test
-    void contentBlockAvailabilityEndCannotBeBeforeStart() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> contentBlockService.createContentBlock(
-                        3L,
-                        null,
-                        AccessProfileType.TEACHER,
-                        new ContentBlockCreateCommand(
-                                50L,
-                                "BLK-BAD-RANGE",
-                                "Invalid interval",
-                                null,
-                                2,
-                                ContentBlockAccessMode.OPEN,
-                                ContentBlockState.ACTIVE,
-                                LocalDateTime.of(2026, 4, 1, 23, 59),
-                                LocalDateTime.of(2026, 3, 1, 0, 0)
+                                ContentBlockState.ACTIVE
                         ),
                         "127.0.0.1"
                 )
@@ -214,10 +110,7 @@ class ContentBlockServiceTest {
                                 "Codigo duplicado",
                                 null,
                                 2,
-                                ContentBlockAccessMode.OPEN,
-                                ContentBlockState.ACTIVE,
-                                null,
-                                null
+                                ContentBlockState.ACTIVE
                         ),
                         "127.0.0.1"
                 )
@@ -237,15 +130,13 @@ class ContentBlockServiceTest {
                         "Introducao atualizada",
                         "First block updated",
                         1,
-                        ContentBlockAccessMode.OPEN,
-                        ContentBlockState.ACTIVE,
-                        null,
-                        null
+                        ContentBlockState.INACTIVE
                 ),
                 "127.0.0.1"
         );
 
         assertEquals("Introducao atualizada", updated.name());
+        assertEquals(ContentBlockState.INACTIVE, updated.state());
     }
 
     @Test
@@ -263,62 +154,11 @@ class ContentBlockServiceTest {
                                 "Introducao atualizada",
                                 "First block",
                                 1,
-                                ContentBlockAccessMode.OPEN,
-                                ContentBlockState.ACTIVE,
-                                null,
-                                null
+                                ContentBlockState.ACTIVE
                         ),
                         "127.0.0.1"
                 )
         );
-    }
-
-    @Test
-    void archivedContentBlockCannotBeUpdated() {
-        contentBlockService.archiveContentBlock(
-                3L,
-                null,
-                AccessProfileType.TEACHER,
-                60L,
-                "127.0.0.1"
-        );
-
-        assertThrows(
-                IllegalStateException.class,
-                () -> contentBlockService.updateContentBlock(
-                        3L,
-                        null,
-                        AccessProfileType.TEACHER,
-                        60L,
-                        new ContentBlockUpdateCommand(
-                                50L,
-                                "BLK-01",
-                                "Introducao atualizada",
-                                "First block",
-                                1,
-                                ContentBlockAccessMode.OPEN,
-                                ContentBlockState.ACTIVE,
-                                LocalDateTime.of(2026, 2, 1, 0, 0),
-                                LocalDateTime.of(2026, 3, 1, 23, 59)
-                        ),
-                        "127.0.0.1"
-                )
-        );
-    }
-
-    @Test
-    void assignedTeacherCanArchiveContentBlock() throws Exception {
-        ContentBlock block = createStandaloneTeacherBlock("BLK-ARCH", 2);
-
-        contentBlockService.archiveContentBlock(
-                3L,
-                null,
-                AccessProfileType.TEACHER,
-                block.id(),
-                "127.0.0.1"
-        );
-
-        assertEquals("inactive", contentBlockState(block.id()));
     }
 
     @Test
@@ -361,28 +201,10 @@ class ContentBlockServiceTest {
                         "Block without dependencies",
                         null,
                         orderNo,
-                        ContentBlockAccessMode.OPEN,
-                        ContentBlockState.ACTIVE,
-                        null,
-                        null
+                        ContentBlockState.ACTIVE
                 ),
                 "127.0.0.1"
         );
-    }
-
-    private static String contentBlockState(long contentBlockId) throws Exception {
-        try (Connection connection = DatabaseTestSupport.openConnection();
-             PreparedStatement statement = connection.prepareStatement("""
-                     SELECT state
-                     FROM content_block
-                     WHERE id_content_block = ?
-                     """)) {
-            statement.setLong(1, contentBlockId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                resultSet.next();
-                return resultSet.getString("state");
-            }
-        }
     }
 
     private static boolean contentBlockExists(long contentBlockId) throws Exception {

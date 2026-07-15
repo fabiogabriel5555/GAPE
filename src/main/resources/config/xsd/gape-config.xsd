@@ -134,22 +134,6 @@
     </xs:restriction>
   </xs:simpleType>
 
-  <xs:simpleType name="draftActiveInactiveCodeType">
-    <xs:restriction base="xs:token">
-      <xs:enumeration value="draft"/>
-      <xs:enumeration value="active"/>
-      <xs:enumeration value="inactive"/>
-    </xs:restriction>
-  </xs:simpleType>
-
-  <xs:simpleType name="contentAccessModeCodeType">
-    <xs:restriction base="xs:token">
-      <xs:enumeration value="open"/>
-      <xs:enumeration value="restricted"/>
-      <xs:enumeration value="scheduled"/>
-    </xs:restriction>
-  </xs:simpleType>
-
   <xs:simpleType name="contentFormatCodeType">
     <xs:restriction base="xs:token">
       <xs:enumeration value="text"/>
@@ -227,7 +211,6 @@
       <xs:enumeration value="draft"/>
       <xs:enumeration value="active"/>
       <xs:enumeration value="issued"/>
-      <xs:enumeration value="revoked"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -340,16 +323,6 @@
   <xs:complexType name="classShiftEntryType">
     <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
     <xs:attribute name="code" type="classShiftCodeType" use="required"/>
-  </xs:complexType>
-
-  <xs:complexType name="contentBlockStateEntryType">
-    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
-    <xs:attribute name="code" type="draftActiveInactiveCodeType" use="required"/>
-  </xs:complexType>
-
-  <xs:complexType name="contentAccessModeEntryType">
-    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
-    <xs:attribute name="code" type="contentAccessModeCodeType" use="required"/>
   </xs:complexType>
 
   <xs:complexType name="contentFormatEntryType">
@@ -488,13 +461,8 @@
   </xs:element>
 
   <xs:element name="contentBlockStates">
-    <xs:complexType><xs:sequence><xs:element name="state" type="contentBlockStateEntryType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
+    <xs:complexType><xs:sequence><xs:element name="state" type="activeInactiveEntryType" minOccurs="2" maxOccurs="2"/></xs:sequence></xs:complexType>
     <xs:unique name="uniqueContentBlockStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
-  </xs:element>
-
-  <xs:element name="contentAccessModes">
-    <xs:complexType><xs:sequence><xs:element name="mode" type="contentAccessModeEntryType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
-    <xs:unique name="uniqueContentAccessModeCode"><xs:selector xpath="mode"/><xs:field xpath="@code"/></xs:unique>
   </xs:element>
 
   <xs:element name="contentFormats">
@@ -539,7 +507,7 @@
   </xs:element>
 
   <xs:element name="certificateStates">
-    <xs:complexType><xs:sequence><xs:element name="state" type="certificateStateEntryType" minOccurs="4" maxOccurs="4"/></xs:sequence></xs:complexType>
+    <xs:complexType><xs:sequence><xs:element name="state" type="certificateStateEntryType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
     <xs:unique name="uniqueCertificateStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
   </xs:element>
 

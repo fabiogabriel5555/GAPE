@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import pt.isel.gape.access.model.DeletionRequestState;
 import pt.isel.gape.access.service.DeletionRequestService;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.security.session.SessionUser;
 import pt.isel.gape.web.view.DeletionRequestView;
 
@@ -64,6 +65,7 @@ public final class AdminDeletionRequestServlet extends DashboardServletSupport {
     private void showRequests(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         SessionUser actor = requireCurrentUser(request);
+        markLearningEventsReadForCurrentUser(request, "/admin/deletion-requests", false);
         Long targetUserId = optionalLongParameter(request, "userId");
         List<DeletionRequestView> requests = (targetUserId == null
                         ? deletionRequestService.listRequests(actor.userId(), primaryProfile(actor))
@@ -92,7 +94,7 @@ public final class AdminDeletionRequestServlet extends DashboardServletSupport {
     }
 
     private static LocalDateTime processedAtFrom(String value) {
-        return value == null || value.isBlank() ? null : LocalDateTime.parse(value);
+        return value == null || value.isBlank() ? null : ApplicationDateTimeFormat.parseUserDateTime(value);
     }
 
     private static String required(String value, String message) {

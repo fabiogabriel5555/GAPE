@@ -56,10 +56,35 @@ INSERT INTO organic_unit (
     (22, 10, 'NPRJ', 'Project Center', 'NPRJ', 'section', 'active', 20);
 
 INSERT INTO course (
-    id_course, id_organization, id_organic_unit, name, acronym, photo, description, ects, duration, type, state
+    id_course, id_organization, id_organic_unit, name, acronym, photo, description, ects, duration, frequency, type, state
 ) VALUES
-    (30, 10, 20, 'Computer Engineering', 'LEI', NULL, 'Licenciatura em Computer Engineering', 180.00, '3', 'degree', 'active'),
-    (31, 10, 20, 'Data Analysis', 'AD', NULL, 'Data analysis course', 60.00, '1', 'short_course', 'active');
+    (30, 10, 20, 'Computer Engineering', 'LEI', NULL, 'Licenciatura em Computer Engineering', 180.00, '1', 'semester', 'degree', 'active'),
+    (31, 10, 20, 'Data Analysis', 'AD', NULL, 'Data analysis course', 60.00, '1', 'semester', 'short_course', 'active');
+
+INSERT INTO course_period_template (
+    id_course, curricular_year, term, starts_month, starts_day, ends_month, ends_day
+) VALUES
+    (30, 1, 'semester_1', 1, 1, 6, 30),
+    (30, 1, 'semester_2', 7, 1, 12, 31),
+    (31, 1, 'semester_1', 1, 1, 6, 30),
+    (31, 1, 'semester_2', 7, 1, 12, 31);
+
+INSERT INTO course_occurrence (
+    id_course_occurrence, id_course, reference_year, label, starts_at, ends_at, state
+) VALUES
+    (299, 30, 2025, '2025', '2025-01-01', '2025-12-31', 'completed'),
+    (300, 30, 2026, '2026', '2026-01-01', '2026-12-31', 'active'),
+    (310, 31, 2026, '2026', '2026-01-01', '2026-12-31', 'active');
+
+INSERT INTO course_occurrence_period (
+    id_course_occurrence_period, id_course_occurrence, curricular_year, term, starts_at, ends_at, state
+) VALUES
+    (2991, 299, 1, 'semester_1', '2025-01-01', '2025-06-30', 'completed'),
+    (2992, 299, 1, 'semester_2', '2025-07-01', '2025-12-31', 'completed'),
+    (3001, 300, 1, 'semester_1', '2026-01-01', '2026-06-30', 'active'),
+    (3002, 300, 1, 'semester_2', '2026-07-01', '2026-12-31', 'active'),
+    (3101, 310, 1, 'semester_1', '2026-01-01', '2026-06-30', 'active'),
+    (3102, 310, 1, 'semester_2', '2026-07-01', '2026-12-31', 'active');
 
 INSERT INTO subject (
     id_subject, id_organization, name, acronym, photo, description, ects, workload_hours, state
@@ -68,47 +93,44 @@ INSERT INTO subject (
     (41, 10, 'Applied Mathematics', 'MAT', NULL, 'Applied mathematics curricular unit', 6.00, 70, 'active');
 
 INSERT INTO integrate_subject (
-    id_course, id_subject, curricular_year, term, mandatory, state
+    id_course, id_subject, curricular_year, term, mandatory
 ) VALUES
-    (30, 40, 3, 'annual', 1, 'active'),
-    (30, 41, 1, 'semester_1', 1, 'active'),
-    (31, 41, 1, 'semester_1', 1, 'active');
+    (30, 40, 1, 'semester_1', 1),
+    (30, 41, 1, 'semester_1', 1),
+    (31, 41, 1, 'semester_1', 1);
 
-INSERT INTO coordinate_subject (id_coordinator_user, id_subject, state, start_date, end_date) VALUES
-    (2, 40, 'active', '2026-01-15', NULL);
+INSERT INTO coordinate_subject (id_coordinator_user, id_subject, state) VALUES
+    (2, 40, 'active');
 
 INSERT INTO class_group (
-    id_class_group, id_subject, id_course, cod_class_group, modality, state,
+    id_class_group, id_subject, id_course, id_course_occurrence, id_course_occurrence_period, cod_class_group, modality, state,
     min_students, max_students, starts_at, ends_at, shift
 ) VALUES
-    (50, 40, 30, 'PRJ-T1', 'onsite', 'active', 5, 30, '2026-02-01', '2026-06-30', 'evening'),
-    (52, 41, 30, 'MAT-T1', 'online', 'active', 10, 40, '2026-02-01', '2026-06-30', 'morning');
+    (50, 40, 30, 300, 3001, 'PRJ-T1', 'onsite', 'active', 5, 30, '2026-01-01', '2026-06-30', 'evening'),
+    (52, 41, 30, 300, 3001, 'MAT-T1', 'online', 'active', 10, 40, '2026-01-01', '2026-06-30', 'morning');
 
 INSERT INTO content_block (
     id_content_block, id_class_group, cod_content_block, name, description, order_no,
-    access_mode, state, available_from, available_until
+    state
 ) VALUES
-    (60, 50, 'BLK-01', 'Introduction', 'First block', 1, 'open', 'active', '2026-02-01 00:00:00', '2026-03-01 23:59:59'),
-    (62, 52, 'BLK-02', 'Reviews', 'Review block', 1, 'scheduled', 'active', '2026-03-01 00:00:00', '2026-04-01 23:59:59');
+    (60, 50, 'BLK-01', 'Introduction', 'First block', 1, 'active'),
+    (62, 52, 'BLK-02', 'Reviews', 'Review block', 1, 'active');
 
 INSERT INTO teach_class_group (id_teacher_user, id_class_group, state, start_date, end_date) VALUES
     (3, 50, 'active', '2026-02-01', NULL);
 
-INSERT INTO enroll_course (id_student_user, id_course, state, start_date, end_date) VALUES
-    (4, 30, 'active', '2026-02-01', NULL);
-
-INSERT INTO enroll_subject (id_student_user, id_course, id_subject, state, start_date, end_date) VALUES
-    (4, 30, 40, 'active', '2026-02-01', NULL);
+INSERT INTO enroll_course (id_student_user, id_course, id_course_occurrence, state, start_date, end_date) VALUES
+    (4, 30, 300, 'active', '2026-01-01', '2026-12-31');
 
 INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date) VALUES
-    (4, 50, 'active', '2026-02-01', NULL);
+    (4, 50, 'active', '2026-01-01', '2026-06-30');
 
 INSERT INTO content_item (
     id_content_item, author_user_id, title, description, format, source, state, created_at
 ) VALUES
     (70, 3, 'Course Unit Guide', 'Introductory guide', 'pdf', 'contents/guide-prj.pdf', 'active', '2026-02-02 10:00:00'),
     (71, 3, 'Notes', 'Support text', 'text', 'contents/full-lesson-text.txt', 'active', '2026-02-03 10:00:00'),
-    (72, 3, 'Archived Content', 'Must not be reused in new active contexts', 'pdf', 'contents/legacy.pdf', 'inactive', '2026-01-15 08:00:00');
+    (72, 3, 'Inactive Content', 'Must not be reused in new active contexts', 'pdf', 'contents/legacy.pdf', 'inactive', '2026-01-15 08:00:00');
 
 INSERT INTO associate_class_group_content (id_class_group, id_content_item, role) VALUES
     (50, 70, 'support');
@@ -119,8 +141,8 @@ INSERT INTO associate_block_content (id_content_block, id_content_item, order_no
 INSERT INTO physical_room (
     cod_physical_room, id_organization, id_organic_unit, name, description, capacity, location, state
 ) VALUES
-    ('SALA-A1', 10, 20, 'Sala A1', 'Main laboratory', 25, 'Building A', 'active'),
-    ('SALA-X1', 11, 21, 'Sala X1', 'External organization room', 12, 'Building X', 'active');
+    ('SALA-A1', 10, 20, 'Room A1', 'Main laboratory', 25, 'Building A', 'active'),
+    ('SALA-X1', 11, 21, 'Room X1', 'External organization room', 12, 'Building X', 'active');
 
 INSERT INTO lesson (
     id_lesson, id_class_group, id_content_block, cod_physical_room, title, description, type,
@@ -130,14 +152,14 @@ INSERT INTO lesson (
      '2026-02-05 18:00:00', '2026-02-05 20:00:00');
 
 INSERT INTO assessment (
-    id_assessment, id_subject, id_content_block, title, description, type, mode, correction_mode,
+    id_assessment, id_subject, id_content_block, cod_physical_room, title, description, type, mode, correction_mode,
     max_grade, passing_grade, final_grade_weight, attempts_limit, state, available_from, available_until
 ) VALUES
-    (90, 40, 60, 'Form 1', 'Formative assessment', 'form', 'online', 'automatic',
+    (90, 40, 60, NULL, 'Form 1', 'Formative assessment', 'form', 'online', 'automatic',
      20.00, 9.50, 50.00, 2, 'active', '2026-02-10 00:00:00', '2026-02-20 23:59:59'),
-    (91, 41, 62, 'Form 2', 'Mathematics assessment', 'form', 'online', 'automatic',
+    (91, 41, 62, NULL, 'Form 2', 'Mathematics assessment', 'form', 'online', 'automatic',
      20.00, 10.00, 100.00, 1, 'active', '2026-03-02 00:00:00', '2026-03-10 23:59:59'),
-    (92, 40, NULL, 'Final Exam', 'Final subject assessment', 'exam', 'onsite', 'manual',
+    (92, 40, NULL, 'SALA-A1', 'Final Exam', 'Final subject assessment', 'exam', 'onsite', 'manual',
      20.00, 9.50, 50.00, 1, 'draft', '2026-06-20 09:00:00', '2026-06-20 11:00:00');
 
 INSERT INTO assessment_class_group (id_assessment, id_class_group) VALUES
@@ -157,13 +179,13 @@ INSERT INTO question_option (
     (112, 101, 1, '4', 1),
     (113, 101, 2, '5', 0);
 
-INSERT INTO enroll_assessment (id_student_user, id_assessment, state) VALUES
-    (4, 90, 'active');
+INSERT INTO enroll_assessment (id_student_user, id_assessment, state, start_date, end_date) VALUES
+    (4, 90, 'active', '2026-02-10', '2026-02-20');
 
 INSERT INTO attempt (
     id_attempt, id_student_user, id_assessment, attempt_number, score, state, started_at, submitted_at
 ) VALUES
-    (120, 4, 90, 1, NULL, 'submitted', '2026-02-11 10:00:00', '2026-02-11 10:10:00');
+    (120, 4, 90, 1, 10.00, 'corrected', '2026-02-11 10:00:00', '2026-02-11 10:10:00');
 
 INSERT INTO response (
     id_response, id_attempt, id_question, cod_response, answer, attachment, score, answered_at
@@ -181,6 +203,7 @@ INSERT INTO schedule_event (
      '2026-02-05 18:00:00', '2026-02-05 20:00:00', 0, 1, 30, 'active');
 
 INSERT INTO receive_schedule_event (id_user, id_schedule_event) VALUES
+    (2, 140),
     (3, 140),
     (4, 140);
 
@@ -199,9 +222,9 @@ INSERT INTO absence_justification (
     (160, 150, 4, NULL, '2026-02-06 09:00:00', 'Transport delay', NULL, NULL, NULL, 'submitted');
 
 INSERT INTO grade_sheet (
-    id_grade_sheet, id_subject, title, type, released_at, state
+    id_grade_sheet, id_subject, id_course_occurrence, title, type, released_at, state
 ) VALUES
-    (170, 40, 'Midterm Grade Sheet', 'partial', NULL, 'draft');
+    (170, 40, 300, 'Midterm Grade Sheet', 'partial', NULL, 'draft');
 
 INSERT INTO associate_grade_sheet_class_group (id_grade_sheet, id_class_group) VALUES
     (170, 50);
@@ -212,19 +235,14 @@ INSERT INTO based_on_assessment (id_grade_sheet, id_assessment, weight) VALUES
 INSERT INTO grade_record (
     id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, state, recorded_at, notes
 ) VALUES
-    (180, 170, 4, 120, 'GR-001', 10.00, 'approved', 'archived', '2026-02-10 12:00:00',
-     'Archived seed record; active final grades are calculated automatically only after every weighted assessment has a corrected score.');
+    (180, 170, 4, 120, 'GR-001', 10.00, 'approved', 'inactive', '2026-02-10 12:00:00',
+     'Inactive seed record; active final grades are calculated automatically only after every weighted assessment has a corrected score.');
 
 INSERT INTO certificate (
-    id_certificate, id_course, id_user_student, title, notes, type, template, validation_code, issued_at, state, revoked_at, final_grade
+    id_certificate, id_course, id_course_occurrence, id_user_student, title, notes, type, template, validation_code, issued_at, state, final_grade
 ) VALUES
-    (191, 30, 4, 'Participation Certificate', 'Participation completed', 'attendance', 'template-v1',
-     NULL, NULL, 'draft', NULL, NULL),
-    (192, 31, 4, 'Alternative Certificate', 'Used for inconsistency tests', 'completion', 'template-v1',
-     'VAL-2026-0005', '2026-07-01 11:30:00', 'draft', NULL, NULL);
-
-INSERT INTO based_on_grade_sheet_certificate (id_certificate, id_grade_sheet) VALUES
-    (191, 170);
+    (191, 30, 300, 4, 'Participation Certificate', 'Participation completed', 'attendance', 'template-v1', NULL, NULL, 'draft', NULL),
+    (192, 31, 310, 4, 'Alternative Certificate', 'Used for inconsistency tests', 'completion', 'template-v1', NULL, NULL, 'draft', NULL);
 
 INSERT INTO channel (
     id_channel, title, type, visibility, created_at, state
@@ -237,6 +255,10 @@ INSERT INTO participate_channel (id_user, id_channel, role, joined_at, muted, st
     (4, 190, 'student', '2026-02-01 08:00:00', 0, 'active'),
     (3, 191, 'teacher', '2026-02-01 08:05:00', 0, 'active');
 
+INSERT INTO associate_channel_class_group (id_channel, id_class_group) VALUES
+    (190, 50),
+    (191, 50);
+
 INSERT INTO message (
     id_message, id_channel, id_user_sender, id_parent_message, id_schedule_event_origin,
     title, body, type, priority, attachment, created_at, updated_at, scheduled_at, sent_at, state
@@ -245,9 +267,9 @@ INSERT INTO message (
      'high', NULL, '2026-02-04 18:00:00', NULL, NULL, '2026-02-04 18:01:00', 'sent');
 
 INSERT INTO receive_message (
-    id_user, id_message, delivered_at, read_at, delivery_mode, state
+    id_user, id_message, delivered_at, read_at, state
 ) VALUES
-    (4, 222, '2026-02-04 18:01:10', '2026-02-04 18:30:00', 'internal', 'read');
+    (4, 222, '2026-02-04 18:01:10', '2026-02-04 18:30:00', 'read');
 
 INSERT INTO activity_log (
     id_activity_log, id_user, id_session, operation_type, affected_entity_type,

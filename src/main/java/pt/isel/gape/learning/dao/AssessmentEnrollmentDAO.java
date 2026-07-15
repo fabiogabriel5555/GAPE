@@ -1,11 +1,15 @@
 package pt.isel.gape.learning.dao;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import pt.isel.gape.common.config.ConnectionProvider;
@@ -13,7 +17,7 @@ import pt.isel.gape.learning.model.AssessmentEnrollment;
 import pt.isel.gape.learning.model.AssessmentEnrollmentCommand;
 import pt.isel.gape.learning.model.EnrollmentState;
 
-public final class AssessmentEnrollmentDAO {
+public final class AssessmentEnrollmentDAO implements pt.isel.gape.transversal.service.ApplicationReadService.AssessmentEnrollments {
 
     private final ConnectionProvider connectionProvider;
 
@@ -96,29 +100,6 @@ public final class AssessmentEnrollmentDAO {
         }
     }
 
-    public void updateEnrollment(
-            Connection connection,
-            long studentUserId,
-            long assessmentId,
-            EnrollmentState state
-    ) throws SQLException {
-        String sql = """
-                UPDATE enroll_assessment
-                SET state = ?
-                WHERE id_student_user = ?
-                  AND id_assessment = ?
-                """;
-
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, state.toDatabaseValue());
-            statement.setLong(2, studentUserId);
-            statement.setLong(3, assessmentId);
-            if (statement.executeUpdate() == 0) {
-                throw new SQLException("Assessment enrollment not found");
-            }
-        }
-    }
-
     public void withdraw(Connection connection, long studentUserId, long assessmentId)
             throws SQLException {
         String sql = """
@@ -161,7 +142,7 @@ public final class AssessmentEnrollmentDAO {
             long assessmentId
     ) throws SQLException {
         String sql = """
-                SELECT id_student_user, id_assessment, state
+                SELECT id_student_user, id_assessment, state, start_date, end_date
                 FROM enroll_assessment
                 WHERE id_student_user = ?
                   AND id_assessment = ?
@@ -195,7 +176,7 @@ public final class AssessmentEnrollmentDAO {
     public List<AssessmentEnrollment> findByAssessment(Connection connection, long assessmentId)
             throws SQLException {
         String sql = """
-                SELECT id_student_user, id_assessment, state
+                SELECT id_student_user, id_assessment, state, start_date, end_date
                 FROM enroll_assessment
                 WHERE id_assessment = ?
                 ORDER BY state, id_student_user
@@ -213,6 +194,51 @@ public final class AssessmentEnrollmentDAO {
         }
     }
 
+    public int countByAssessmentAndState(long assessmentId, EnrollmentState state) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM enroll_assessment WHERE id_assessment = ? AND state = ?";
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, assessmentId);
+            statement.setString(2, state.toDatabaseValue());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getInt(1);
+            }
+        }
+    }
+
+    public Map<Long, Integer> countByAssessmentIdsAndState(
+            Collection<Long> assessmentIds,
+            EnrollmentState state
+    ) throws SQLException {
+        if (assessmentIds == null || assessmentIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Long> ids = assessmentIds.stream().distinct().toList();
+        String placeholders = String.join(", ", java.util.Collections.nCopies(ids.size(), "?"));
+        String sql = """
+                SELECT id_assessment, COUNT(*) AS total
+                FROM enroll_assessment
+                WHERE state = ?
+                  AND id_assessment IN (%s)
+                GROUP BY id_assessment
+                """.formatted(placeholders);
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, state.toDatabaseValue());
+            for (int index = 0; index < ids.size(); index++) {
+                statement.setLong(index + 2, ids.get(index));
+            }
+            Map<Long, Integer> result = new LinkedHashMap<>();
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    result.put(resultSet.getLong("id_assessment"), resultSet.getInt("total"));
+                }
+            }
+            return result;
+        }
+    }
+
     public List<Long> findEligibleStudentIds(Connection connection, long assessmentId) throws SQLException {
         String sql = """
                 SELECT DISTINCT eligible.id_student_user
@@ -226,18 +252,14 @@ public final class AssessmentEnrollmentDAO {
                     WHERE a.id_assessment = ?
                       AND ecg.state = 'active'
                       AND u.state = 'active'
-                      AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                      AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
+                      AND ecg.start_date <= DATE(a.available_from)
+                      AND ecg.end_date >= DATE(a.available_until)
                     UNION
                     SELECT ecg.id_student_user
                     FROM assessment a
                     JOIN assessment_class_group acg ON acg.id_assessment = a.id_assessment
                     JOIN class_group cg ON cg.id_class_group = acg.id_class_group
                     JOIN enroll_class_group ecg ON ecg.id_class_group = cg.id_class_group
-                    JOIN enroll_subject es
-                      ON es.id_student_user = ecg.id_student_user
-                     AND es.id_subject = cg.id_subject
-                     AND es.id_course = cg.id_course
                     JOIN user_account u ON u.id_user = ecg.id_student_user
                     WHERE a.id_assessment = ?
                       AND a.id_content_block IS NULL
@@ -245,12 +267,9 @@ public final class AssessmentEnrollmentDAO {
                       AND cg.id_subject = a.id_subject
                       AND cg.state = 'active'
                       AND ecg.state = 'active'
-                      AND es.state = 'active'
                       AND u.state = 'active'
-                      AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                      AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
-                      AND (es.start_date IS NULL OR es.start_date <= CURRENT_DATE)
-                      AND (es.end_date IS NULL OR es.end_date >= CURRENT_DATE)
+                      AND ecg.start_date <= DATE(a.available_from)
+                      AND ecg.end_date >= DATE(a.available_until)
                 ) eligible
                 ORDER BY eligible.id_student_user
                 """;
@@ -289,18 +308,14 @@ public final class AssessmentEnrollmentDAO {
                       AND ecg.id_student_user = ?
                       AND ecg.state = 'active'
                       AND u.state = 'active'
-                      AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                      AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
+                      AND ecg.start_date <= DATE(a.available_from)
+                      AND ecg.end_date >= DATE(a.available_until)
                     UNION
                     SELECT ecg.id_student_user
                     FROM assessment a
                     JOIN assessment_class_group acg ON acg.id_assessment = a.id_assessment
                     JOIN class_group cg ON cg.id_class_group = acg.id_class_group
                     JOIN enroll_class_group ecg ON ecg.id_class_group = cg.id_class_group
-                    JOIN enroll_subject es
-                      ON es.id_student_user = ecg.id_student_user
-                     AND es.id_subject = cg.id_subject
-                     AND es.id_course = cg.id_course
                     JOIN user_account u ON u.id_user = ecg.id_student_user
                     WHERE a.id_assessment = ?
                       AND a.id_content_block IS NULL
@@ -309,12 +324,9 @@ public final class AssessmentEnrollmentDAO {
                       AND cg.id_subject = a.id_subject
                       AND cg.state = 'active'
                       AND ecg.state = 'active'
-                      AND es.state = 'active'
                       AND u.state = 'active'
-                      AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                      AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
-                      AND (es.start_date IS NULL OR es.start_date <= CURRENT_DATE)
-                      AND (es.end_date IS NULL OR es.end_date >= CURRENT_DATE)
+                      AND ecg.start_date <= DATE(a.available_from)
+                      AND ecg.end_date >= DATE(a.available_until)
                 ) eligible
                 """;
 
@@ -344,18 +356,14 @@ public final class AssessmentEnrollmentDAO {
                     WHERE a.id_assessment = ?
                       AND a.enrollment_mode = 'auto_approve'
                       AND ecg.state = 'active'
-                      AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                      AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
+                      AND ecg.start_date <= DATE(a.available_from)
+                      AND ecg.end_date >= DATE(a.available_until)
                     UNION
                     SELECT ecg.id_student_user
                     FROM assessment a
                     JOIN assessment_class_group acg ON acg.id_assessment = a.id_assessment
                     JOIN class_group cg ON cg.id_class_group = acg.id_class_group
                     JOIN enroll_class_group ecg ON ecg.id_class_group = cg.id_class_group
-                    JOIN enroll_subject es
-                      ON es.id_student_user = ecg.id_student_user
-                     AND es.id_subject = cg.id_subject
-                     AND es.id_course = cg.id_course
                     WHERE a.id_assessment = ?
                       AND a.id_content_block IS NULL
                       AND a.id_subject IS NOT NULL
@@ -363,11 +371,8 @@ public final class AssessmentEnrollmentDAO {
                       AND cg.id_subject = a.id_subject
                       AND cg.state = 'active'
                       AND ecg.state = 'active'
-                      AND es.state = 'active'
-                      AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                      AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
-                      AND (es.start_date IS NULL OR es.start_date <= CURRENT_DATE)
-                      AND (es.end_date IS NULL OR es.end_date >= CURRENT_DATE)
+                      AND ecg.start_date <= DATE(a.available_from)
+                      AND ecg.end_date >= DATE(a.available_until)
                 ) eligible
                 ON DUPLICATE KEY UPDATE
                     state = CASE
@@ -405,18 +410,14 @@ public final class AssessmentEnrollmentDAO {
                       AND a.state <> 'completed'
                       AND ecg.state = 'active'
                       AND u.state = 'active'
-                      AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                      AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
+                      AND ecg.start_date <= DATE(a.available_from)
+                      AND ecg.end_date >= DATE(a.available_until)
                     UNION
                     SELECT ecg.id_student_user, a.id_assessment
                     FROM assessment a
                     JOIN assessment_class_group acg ON acg.id_assessment = a.id_assessment
                     JOIN class_group cg ON cg.id_class_group = acg.id_class_group
                     JOIN enroll_class_group ecg ON ecg.id_class_group = cg.id_class_group
-                    JOIN enroll_subject es
-                      ON es.id_student_user = ecg.id_student_user
-                     AND es.id_subject = cg.id_subject
-                     AND es.id_course = cg.id_course
                     JOIN user_account u ON u.id_user = ecg.id_student_user
                     WHERE a.id_content_block IS NULL
                       AND a.id_subject IS NOT NULL
@@ -425,12 +426,9 @@ public final class AssessmentEnrollmentDAO {
                       AND cg.id_subject = a.id_subject
                       AND cg.state = 'active'
                       AND ecg.state = 'active'
-                      AND es.state = 'active'
                       AND u.state = 'active'
-                      AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
-                      AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
-                      AND (es.start_date IS NULL OR es.start_date <= CURRENT_DATE)
-                      AND (es.end_date IS NULL OR es.end_date >= CURRENT_DATE)
+                      AND ecg.start_date <= DATE(a.available_from)
+                      AND ecg.end_date >= DATE(a.available_until)
                 ) eligible
                 ON DUPLICATE KEY UPDATE
                     state = CASE
@@ -451,10 +449,14 @@ public final class AssessmentEnrollmentDAO {
     }
 
     private static AssessmentEnrollment mapEnrollment(ResultSet resultSet) throws SQLException {
+        Date start = resultSet.getDate("start_date");
+        Date end = resultSet.getDate("end_date");
         return new AssessmentEnrollment(
                 resultSet.getLong("id_student_user"),
                 resultSet.getLong("id_assessment"),
-                EnrollmentState.fromDatabaseValue(resultSet.getString("state"))
+                EnrollmentState.fromDatabaseValue(resultSet.getString("state")),
+                start == null ? null : start.toLocalDate(),
+                end == null ? null : end.toLocalDate()
         );
     }
 }

@@ -1,20 +1,14 @@
 package pt.isel.gape.web.view;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.AttendanceRecord;
 import pt.isel.gape.learning.model.AttendanceSource;
 import pt.isel.gape.learning.model.AttendanceState;
 import pt.isel.gape.learning.model.AttendanceStatus;
 
 public final class AttendanceRecordView {
-
-    private static final DateTimeFormatter DISPLAY_DATE_TIME =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("pt-PT"));
-    private static final DateTimeFormatter INPUT_DATE_TIME =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
 
     private final AttendanceRecord record;
     private final LessonView lesson;
@@ -66,8 +60,24 @@ public final class AttendanceRecordView {
         return lesson == null ? "Lesson " + record.lessonId() : lesson.getTitle();
     }
 
+    public String getActivityLabel() {
+        return "Lesson - " + getLessonTitle();
+    }
+
+    public String getActivityTypeLabel() {
+        return "Lesson";
+    }
+
+    public String getActivityScheduleLabel() {
+        return lesson == null ? "-" : lesson.getDateRangeLabel();
+    }
+
     public String getStudentName() {
         return studentName;
+    }
+
+    public String getStudentLabel() {
+        return record.studentUserId() + " - " + studentName;
     }
 
     public String getStudentEmail() {
@@ -138,6 +148,10 @@ public final class AttendanceRecordView {
         return format(record.checkOut());
     }
 
+    public String getTimeLabel() {
+        return "In: " + getCheckIn() + " | Out: " + getCheckOut();
+    }
+
     public String getCheckInValue() {
         return formatInput(record.checkIn());
     }
@@ -151,7 +165,18 @@ public final class AttendanceRecordView {
     }
 
     public String getPermanenceLabel() {
-        long minutes = record.permanenceMinutes();
+        return durationLabel(record.permanenceMinutes());
+    }
+
+    public long getPermanenceMinutes() {
+        return record.permanenceMinutes();
+    }
+
+    public LocalDateTime getActivityEndsAtRaw() {
+        return lesson == null ? null : lesson.getEndsAtRaw();
+    }
+
+    public static String durationLabel(long minutes) {
         if (minutes <= 0) {
             return "-";
         }
@@ -184,10 +209,10 @@ public final class AttendanceRecordView {
     }
 
     private static String format(LocalDateTime value) {
-        return value == null ? "-" : DISPLAY_DATE_TIME.format(value);
+        return value == null ? "-" : ApplicationDateTimeFormat.dateTime(value);
     }
 
     private static String formatInput(LocalDateTime value) {
-        return value == null ? "" : INPUT_DATE_TIME.format(value);
+        return value == null ? "" : ApplicationDateTimeFormat.TECHNICAL_DATE_TIME.format(value);
     }
 }

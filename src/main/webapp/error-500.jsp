@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <base href="${pageContext.request.contextPath}/">
     <!-- Title -->
-    <title>GAPE - Erro 500</title>
+    <title>GAPE - Error 500</title>
     <!-- Favicon -->
     <link rel="shortcut icon" href="assets/images/logo/favicon.png">
     <!-- Bootstrap -->
@@ -158,7 +158,7 @@
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="messages.jsp" class="nav-submenu__link hover-bg-neutral-30">Message</a>
+                <a href="messages.jsp" class="nav-submenu__link hover-bg-neutral-30">Messages</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
@@ -407,7 +407,7 @@
                 <a href="profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="messages.jsp" class="nav-submenu__link hover-bg-neutral-30">Message</a>
+                <a href="messages.jsp" class="nav-submenu__link hover-bg-neutral-30">Messages</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
@@ -534,7 +534,7 @@
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="breadcrumb__wrapper">
-                    <h1 class="breadcrumb__title display-4 fw-semibold text-center"> Erro interno</h1>
+                    <h1 class="breadcrumb__title display-4 fw-semibold text-center"> Internal error</h1>
                     <ul class="breadcrumb__list d-flex align-items-center justify-content-center gap-4">
                         <li class="breadcrumb__item">
                             <a href="index.jsp" class="breadcrumb__link text-neutral-500 hover-text-main-600 fw-medium">
@@ -567,11 +567,11 @@
                 <div class="col-lg-8">
                     <div class="bg-main-25 border border-neutral-30 rounded-16 p-40 text-center">
                         <span class="text-main-600 fw-semibold text-xl d-inline-block mb-16">500</span>
-                        <h3 class="mb-16 text-neutral-500">Erro interno</h3>
-                        <p class="text-neutral-500 mb-32">Ocorreu um erro inesperado ao processar to pagina. Esta vista permanece apenas como base visual nesta fase.</p>
+                        <h3 class="mb-16 text-neutral-500">Internal error</h3>
+                        <p class="text-neutral-500 mb-32">An unexpected error occurred while processing this page.</p>
                         <div class="d-flex justify-content-center gap-16 flex-wrap">
                             <a href="index.jsp" class="btn btn-main rounded-pill">Back to Home</a>
-                            <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="btn btn-outline-main rounded-pill">Abrir dashboard</a>
+                            <a href="${pageContext.request.contextPath}/admin/admin-dashbord.jsp" class="btn btn-outline-main rounded-pill">Open dashboard</a>
                         </div>
                     </div>
                 </div>

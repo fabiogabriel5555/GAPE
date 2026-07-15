@@ -5,7 +5,7 @@
     request.setAttribute("activeMenu", "subjects");
     request.setAttribute("pageTitle", request.getAttribute("subject") == null ? "Subject Detail" : "Subject Detail");
     request.setAttribute("studentPageTitle", request.getAttribute("subject") == null ? "Subject Detail" : "Subject Detail");
-    request.setAttribute("studentPageDescription", "Review subject details, enrollment state and available class groups.");
+    request.setAttribute("studentPageDescription", "Review curricular subject details and class groups in your active course occurrence.");
 %>
 <%@ include file="/WEB-INF/fragments/student-dashboard-start.jspf" %>
 
@@ -14,8 +14,7 @@
     <c:set var="subjectPhotoUrl" value="${pageContext.request.contextPath}/media/${subject.subject.photo}?v=${mediaCacheVersion}"/>
 </c:if>
 
-<section class="gape-student-panel bg-white rounded-10 px-24 py-24 border border-neutral-30 mb-24"
-         data-gape-enrollment-target="subject-${course.id}-${subject.subjectId}">
+<section class="gape-student-panel bg-white rounded-10 px-24 py-24 border border-neutral-30 mb-24">
     <div class="gape-student-course-summary">
         <div class="gape-student-course-visual-stack">
             <div class="gape-student-course-detail-thumb">
@@ -51,13 +50,8 @@
 
         <div>
             <div class="d-flex align-items-center gap-10 flex-wrap mb-16">
-                <span class="${subjectEnrollment.badgeClass} px-16 py-8 border-neutral-30 border rounded-pill text-14"
-                      data-gape-enrollment-badge
-                      data-gape-enrollment-badge-fixed="px-16 py-8 border-neutral-30 border rounded-pill text-14">
-                    <c:out value="${subjectEnrollment.stateLabel}"/>
-                </span>
-                <span class="${subject.stateBadgeClass} px-16 py-8 border-neutral-30 border rounded-pill text-14">
-                    <c:out value="${subject.stateLabel}"/>
+                <span class="${subject.subject.stateBadgeClass} px-16 py-8 border-neutral-30 border rounded-pill text-14">
+                    <c:out value="${subject.subject.stateLabel}"/>
                 </span>
             </div>
             <h2 class="text-24 fw-semibold text-neutral-800 mb-10"><c:out value="${subject.subjectName}"/></h2>
@@ -78,34 +72,10 @@
                 </div>
             </div>
 
-            <div class="gape-student-course-actions"
-                 data-gape-enrollment-actions
-                 data-gape-enrollment-actions-kind="subject-leave">
+            <div class="gape-student-course-actions">
                 <a href="${pageContext.request.contextPath}/student/subjects" class="border border-neutral-30 px-16 py-9 rounded-8 text-14 fw-semibold text-neutral-600 hover-bg-neutral-20 transition-03">
                     Back to Subjects
                 </a>
-                <span data-gape-enrollment-action-items class="d-flex align-items-center gap-10 flex-wrap">
-                <c:choose>
-                    <c:when test="${subject.activeEnrollment}">
-                        <form action="${pageContext.request.contextPath}/student/enrollments/courses/${course.id}/subjects/${subject.subjectId}/withdraw" method="post" class="m-0">
-                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                            <input type="hidden" name="returnTo" value="/student/subjects/${course.id}/${subject.subjectId}">
-                            <button type="submit" class="gape-student-card-icon-button gape-student-card-icon-button--danger" aria-label="Leave subject" title="Leave subject">
-                                <i class="ph ph-sign-out"></i>
-                            </button>
-                        </form>
-                    </c:when>
-                    <c:when test="${course.activeEnrollment and not subject.pendingEnrollment}">
-                        <form action="${pageContext.request.contextPath}/student/enrollments/courses/${course.id}/subjects/${subject.subjectId}" method="post" class="m-0">
-                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                            <input type="hidden" name="returnTo" value="/student/subjects/${course.id}/${subject.subjectId}">
-                            <button type="submit" class="gape-student-card-icon-button gape-student-card-icon-button--request" aria-label="Request enrollment" title="Request enrollment">
-                                <i class="ph ph-user-plus"></i>
-                            </button>
-                        </form>
-                    </c:when>
-                </c:choose>
-                </span>
             </div>
         </div>
     </div>

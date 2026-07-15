@@ -101,7 +101,7 @@ public final class PhysicalRoomView {
     public String getStateBadgeClass() {
         return switch (room.state()) {
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
             case UNAVAILABLE -> "bg-danger-50 text-danger-600";
         };
     }
@@ -110,7 +110,7 @@ public final class PhysicalRoomView {
         return room.state() == PhysicalRoomState.ACTIVE;
     }
 
-    public boolean isArchived() {
+    public boolean isInactive() {
         return room.state() == PhysicalRoomState.INACTIVE;
     }
 

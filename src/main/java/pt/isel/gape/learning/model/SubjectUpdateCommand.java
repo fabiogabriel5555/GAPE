@@ -3,6 +3,7 @@ package pt.isel.gape.learning.model;
 import java.math.BigDecimal;
 
 public record SubjectUpdateCommand(
+        Long organicUnitId,
         String name,
         String acronym,
         String photo,
@@ -20,9 +21,22 @@ public record SubjectUpdateCommand(
             String photo,
             String description,
             BigDecimal ects,
+            BigDecimal finalGradeMax,
             Integer workloadHours,
             SubjectState state
     ) {
-        this(name, acronym, photo, description, ects, DEFAULT_FINAL_GRADE_MAX, workloadHours, state);
+        this(null, name, acronym, photo, description, ects, finalGradeMax, workloadHours, state);
+    }
+
+    public SubjectUpdateCommand(
+            String name,
+            String acronym,
+            String photo,
+            String description,
+            BigDecimal ects,
+            Integer workloadHours,
+            SubjectState state
+    ) {
+        this(null, name, acronym, photo, description, ects, DEFAULT_FINAL_GRADE_MAX, workloadHours, state);
     }
 }

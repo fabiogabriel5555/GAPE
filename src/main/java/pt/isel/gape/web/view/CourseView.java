@@ -2,13 +2,18 @@ package pt.isel.gape.web.view;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseEnrollment;
+import pt.isel.gape.learning.model.CourseFrequency;
 import pt.isel.gape.learning.model.CourseState;
 import pt.isel.gape.learning.model.CourseType;
 import pt.isel.gape.learning.model.EnrollmentState;
 import pt.isel.gape.common.validation.MediaPathValidator;
+import pt.isel.gape.common.time.ApplicationClock;
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 
 public final class CourseView {
 
@@ -22,6 +27,7 @@ public final class CourseView {
     private final BigDecimal ects;
     private final BigDecimal certificateMaxGrade;
     private final String duration;
+    private final CourseFrequency frequency;
     private final CourseType type;
     private final CourseState state;
     private final String organizationName;
@@ -50,6 +56,7 @@ public final class CourseView {
         this.ects = course.ects();
         this.certificateMaxGrade = course.certificateMaxGrade();
         this.duration = course.duration();
+        this.frequency = course.frequency();
         this.type = course.type();
         this.state = course.state();
         this.organizationName = organizationName;
@@ -127,6 +134,46 @@ public final class CourseView {
         return duration == null || duration.isBlank() ? "-" : duration;
     }
 
+    public String getFrequency() {
+        return frequency.name();
+    }
+
+    public String getFrequencyValue() {
+        return frequency.toDatabaseValue();
+    }
+
+    public String getFrequencyLabel() {
+        return frequency.label();
+    }
+
+    public int getPeriodsPerYear() {
+        return frequency.periodsPerYear();
+    }
+
+    public int getConfiguredPeriodCount() {
+        return getDurationYears() * frequency.periodsPerYear();
+    }
+
+    public int getDurationYears() {
+        if (duration == null || duration.isBlank() || !duration.trim().matches("\\d+")) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(duration.trim());
+        } catch (NumberFormatException exception) {
+            return 0;
+        }
+    }
+
+    public List<SelectOptionView> getDurationYearOptions() {
+        int durationYears = getDurationYears();
+        List<SelectOptionView> options = new ArrayList<>(durationYears);
+        for (int year = 1; year <= durationYears; year++) {
+            options.add(new SelectOptionView(Integer.toString(year), yearLabel(year), false));
+        }
+        return options;
+    }
+
     public String getType() {
         return type.name();
     }
@@ -149,7 +196,7 @@ public final class CourseView {
     public String getStateBadgeClass() {
         return switch (state) {
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
         };
     }
 
@@ -157,7 +204,7 @@ public final class CourseView {
         return state == CourseState.ACTIVE;
     }
 
-    public boolean isArchived() {
+    public boolean isInactive() {
         return state == CourseState.INACTIVE;
     }
 
@@ -271,7 +318,7 @@ public final class CourseView {
         return switch (enrollment.state()) {
             case PENDING -> "bg-warning-30 text-warning-600";
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
             case REJECTED -> "bg-danger-50 text-danger-600";
             case COMPLETED -> "bg-info-50 text-info-600";
             case WITHDRAWN -> "bg-warning-30 text-warning-600";
@@ -283,11 +330,15 @@ public final class CourseView {
     }
 
     public String getEnrollmentStartDate() {
-        return enrollment == null || enrollment.startDate() == null ? "-" : enrollment.startDate().toString();
+        return enrollment == null || enrollment.startDate() == null
+                ? "-"
+                : ApplicationDateTimeFormat.date(enrollment.startDate());
     }
 
     public String getEnrollmentEndDate() {
-        return enrollment == null || enrollment.endDate() == null ? "-" : enrollment.endDate().toString();
+        return enrollment == null || enrollment.endDate() == null
+                ? "-"
+                : ApplicationDateTimeFormat.date(enrollment.endDate());
     }
 
     public static String labelFor(CourseType type) {
@@ -304,8 +355,25 @@ public final class CourseView {
         return value.stripTrailingZeros().toPlainString();
     }
 
+    private static String yearLabel(int year) {
+        return year + ordinalSuffix(year) + " Course Year";
+    }
+
+    private static String ordinalSuffix(int value) {
+        int rem100 = value % 100;
+        if (rem100 >= 11 && rem100 <= 13) {
+            return "th";
+        }
+        return switch (value % 10) {
+            case 1 -> "st";
+            case 2 -> "nd";
+            case 3 -> "rd";
+            default -> "th";
+        };
+    }
+
     private static boolean isWithinCurrentDate(LocalDate startDate, LocalDate endDate) {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(ApplicationClock.system());
         return (startDate == null || !startDate.isAfter(today))
                 && (endDate == null || !endDate.isBefore(today));
     }

@@ -1,12 +1,15 @@
 package pt.isel.gape.web.controller;
 
 import java.io.IOException;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.List;
+import java.util.Set;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletContext;
@@ -20,6 +23,12 @@ public final class MediaServlet extends HttpServlet {
     private static final int CACHE_SECONDS = 3600;
     private static final String ASSETS_PREFIX = "assets/";
     private static final List<String> IMAGE_EXTENSIONS = List.of("png", "jpg", "jpeg", "webp", "gif");
+    private static final Set<String> PUBLIC_UPLOAD_DIRECTORIES = Set.of(
+            "users",
+            "organizations",
+            "courses",
+            "subjects"
+    );
 
     private final String configuredUploadDir;
     private Path uploadRoot;
@@ -86,21 +95,26 @@ public final class MediaServlet extends HttpServlet {
 
     private Path resolveMediaPath(String rawRelativePath) {
         try {
+            if (containsTraversal(rawRelativePath)) {
+                return null;
+            }
             String normalizedRelativePath = normalizeMediaRelativePath(rawRelativePath);
             if (normalizedRelativePath.isBlank()) {
                 return null;
             }
-            if (isPrivateUploadReference(normalizedRelativePath)) {
+
+            Path relativePath = safeRelativePath(normalizedRelativePath);
+            if (relativePath == null) {
                 return null;
             }
+            String canonicalRelativePath = relativePath.toString().replace('\\', '/');
 
-            Path uploadedFile = resolveFromRoot(uploadRoot, normalizedRelativePath);
-            if (uploadedFile != null) {
-                return uploadedFile;
+            if (isPublicUploadReference(canonicalRelativePath)) {
+                return resolveFromRoot(uploadRoot, canonicalRelativePath);
             }
 
-            if (isWebappAssetReference(normalizedRelativePath)) {
-                return resolveFromRoot(webappRoot, normalizedRelativePath);
+            if (isWebappAssetReference(canonicalRelativePath)) {
+                return resolveFromRoot(webappRoot, canonicalRelativePath);
             }
 
             return null;
@@ -124,12 +138,13 @@ public final class MediaServlet extends HttpServlet {
             if (!resolved.startsWith(root)) {
                 return null;
             }
-            if (Files.isRegularFile(resolved)) {
-                return resolved;
+            Path regularFile = regularFileWithinRoot(resolved, root);
+            if (regularFile != null) {
+                return regularFile;
             }
 
             Path resolvedWithAvailableExtension = resolveImagePathWithAvailableExtension(resolved, root);
-            return Files.isRegularFile(resolvedWithAvailableExtension) ? resolvedWithAvailableExtension : null;
+            return regularFileWithinRoot(resolvedWithAvailableExtension, root);
         } catch (InvalidPathException exception) {
             return null;
         }
@@ -164,20 +179,25 @@ public final class MediaServlet extends HttpServlet {
 
         for (String imageExtension : IMAGE_EXTENSIONS) {
             Path candidate = parent.resolve(requestedBaseName + "." + imageExtension).normalize();
-            if (candidate.startsWith(allowedRoot) && Files.isRegularFile(candidate)) {
-                return candidate;
+            Path regularFile = regularFileWithinRoot(candidate, allowedRoot);
+            if (regularFile != null) {
+                return regularFile;
             }
         }
 
+        if (!directoryWithinRoot(parent, allowedRoot)) {
+            return requestedPath;
+        }
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(parent)) {
             for (Path candidate : stream) {
                 String candidateFileName = candidate.getFileName().toString();
                 String candidateExtension = extension(candidateFileName);
                 if (IMAGE_EXTENSIONS.contains(candidateExtension)
-                        && baseName(candidateFileName).equalsIgnoreCase(requestedBaseName)
-                        && candidate.normalize().startsWith(allowedRoot)
-                        && Files.isRegularFile(candidate)) {
-                    return candidate;
+                        && baseName(candidateFileName).equalsIgnoreCase(requestedBaseName)) {
+                    Path regularFile = regularFileWithinRoot(candidate, allowedRoot);
+                    if (regularFile != null) {
+                        return regularFile;
+                    }
                 }
             }
         } catch (IOException ignored) {
@@ -191,13 +211,79 @@ public final class MediaServlet extends HttpServlet {
         return relativePath.toLowerCase(Locale.ROOT).startsWith(ASSETS_PREFIX);
     }
 
-    private static boolean isPrivateUploadReference(String relativePath) {
-        String normalized = relativePath.toLowerCase(Locale.ROOT);
-        return normalized.startsWith("contents/")
-                || normalized.startsWith("messages/")
-                || normalized.startsWith("justifications/")
-                || normalized.startsWith("quarantine/")
-                || normalized.startsWith("tmp/");
+    private static boolean isPublicUploadReference(String relativePath) {
+        String[] segments = relativePath.toLowerCase(Locale.ROOT).split("/");
+        return segments.length == 3
+                && PUBLIC_UPLOAD_DIRECTORIES.contains(segments[0])
+                && segments[1].matches("[1-9][0-9]*")
+                && "profile".equals(baseName(segments[2]))
+                && IMAGE_EXTENSIONS.contains(extension(segments[2]));
+    }
+
+    private static Path safeRelativePath(String value) {
+        if (value.indexOf('\0') >= 0 || containsTraversalSegment(value)) {
+            return null;
+        }
+        Path relativePath = Path.of(value).normalize();
+        if (relativePath.isAbsolute() || relativePath.startsWith("..")) {
+            return null;
+        }
+        return relativePath;
+    }
+
+    private static boolean containsTraversal(String rawPath) {
+        if (rawPath == null) {
+            return false;
+        }
+        String candidate = rawPath.replace('\\', '/');
+        for (int decodePass = 0; decodePass < 3; decodePass++) {
+            if (candidate.indexOf('\0') >= 0 || containsTraversalSegment(candidate)) {
+                return true;
+            }
+            try {
+                String decoded = URLDecoder.decode(candidate, StandardCharsets.UTF_8);
+                if (decoded.equals(candidate)) {
+                    return false;
+                }
+                candidate = decoded.replace('\\', '/');
+            } catch (IllegalArgumentException exception) {
+                return true;
+            }
+        }
+        return containsTraversalSegment(candidate);
+    }
+
+    private static boolean containsTraversalSegment(String value) {
+        for (String segment : value.replace('\\', '/').split("/", -1)) {
+            if ("..".equals(segment)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Path regularFileWithinRoot(Path candidate, Path allowedRoot) {
+        if (candidate == null || allowedRoot == null || !Files.isRegularFile(candidate)) {
+            return null;
+        }
+        try {
+            Path realRoot = allowedRoot.toRealPath();
+            Path realCandidate = candidate.toRealPath();
+            return realCandidate.startsWith(realRoot) ? realCandidate : null;
+        } catch (IOException exception) {
+            return null;
+        }
+    }
+
+    private static boolean directoryWithinRoot(Path candidate, Path allowedRoot) {
+        if (candidate == null || allowedRoot == null || !Files.isDirectory(candidate)) {
+            return false;
+        }
+        try {
+            return candidate.toRealPath().startsWith(allowedRoot.toRealPath());
+        } catch (IOException exception) {
+            return false;
+        }
     }
 
     private static String baseName(String fileName) {

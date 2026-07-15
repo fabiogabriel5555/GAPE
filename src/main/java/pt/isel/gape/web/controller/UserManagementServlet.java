@@ -2,7 +2,6 @@ package pt.isel.gape.web.controller;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -20,7 +19,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
 import pt.isel.gape.access.model.AccessProfileContextAssignment;
-import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AdministratorPermissionAssignment;
 import pt.isel.gape.access.model.AccessProfile;
 import pt.isel.gape.access.model.AccessProfileType;
@@ -36,24 +34,14 @@ import pt.isel.gape.security.crypto.PasswordHasher;
 import pt.isel.gape.security.authorization.AccessEntityType;
 import pt.isel.gape.security.authorization.AuthorizationPolicy;
 import pt.isel.gape.security.session.SessionUser;
-import pt.isel.gape.learning.dao.CourseDAO;
-import pt.isel.gape.learning.dao.CourseSubjectDAO;
-import pt.isel.gape.learning.dao.EnrollmentDAO;
-import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.CourseState;
 import pt.isel.gape.learning.model.Subject;
-import pt.isel.gape.learning.model.SubjectEnrollment;
-import pt.isel.gape.learning.model.SubjectState;
-import pt.isel.gape.structure.dao.CoordinateSubjectDAO;
-import pt.isel.gape.structure.dao.ManageOrganizationDAO;
-import pt.isel.gape.structure.dao.OrganicUnitDAO;
-import pt.isel.gape.structure.dao.OrganizationDAO;
-import pt.isel.gape.structure.dao.TeachClassGroupDAO;
 import pt.isel.gape.structure.model.ClassGroupContext;
 import pt.isel.gape.structure.model.OrganicUnit;
 import pt.isel.gape.structure.model.Organization;
+import pt.isel.gape.transversal.service.ApplicationReadService;
 import pt.isel.gape.web.media.ProfilePhotoStorage;
 import pt.isel.gape.web.view.AdminPermissionContextOptionView;
 import pt.isel.gape.web.view.OrganizationView;
@@ -71,81 +59,45 @@ public final class UserManagementServlet extends DashboardServletSupport {
     private static final String USER_DETAIL_JSP = "/admin/admin/user/admin-user-detail.jsp";
 
     private final UserService userService;
-    private final PermissionDAO permissionDAO;
-    private final OrganizationDAO organizationDAO;
-    private final OrganicUnitDAO organicUnitDAO;
-    private final CourseDAO courseDAO;
-    private final CourseSubjectDAO courseSubjectDAO;
-    private final SubjectDAO subjectDAO;
-    private final EnrollmentDAO enrollmentDAO;
-    private final CoordinateSubjectDAO coordinateSubjectDAO;
-    private final TeachClassGroupDAO teachClassGroupDAO;
-    private final ManageOrganizationDAO manageOrganizationDAO;
+    private final ApplicationReadService.Permissions permissionDAO;
+    private final ApplicationReadService.Organizations organizationDAO;
+    private final ApplicationReadService.OrganicUnits organicUnitDAO;
+    private final ApplicationReadService.Courses courseDAO;
+    private final ApplicationReadService.CourseSubjects courseSubjectDAO;
+    private final ApplicationReadService.Subjects subjectDAO;
+    private final ApplicationReadService.Enrollments enrollmentDAO;
+    private final ApplicationReadService.CoordinateSubjects coordinateSubjectDAO;
+    private final ApplicationReadService.TeachClassGroups teachClassGroupDAO;
+    private final ApplicationReadService.ManageOrganizations manageOrganizationDAO;
     private final PasswordHasher passwordHasher;
     private final ProfilePhotoStorage profilePhotoStorage;
 
     public UserManagementServlet() {
         this(
+                new ApplicationReadService(ConnectionProvider.defaultProvider()),
                 new UserService(ConnectionProvider.defaultProvider()),
-                new PermissionDAO(ConnectionProvider.defaultProvider()),
-                new OrganizationDAO(ConnectionProvider.defaultProvider()),
-                new OrganicUnitDAO(ConnectionProvider.defaultProvider()),
-                new CourseDAO(ConnectionProvider.defaultProvider()),
-                new CourseSubjectDAO(ConnectionProvider.defaultProvider()),
-                new SubjectDAO(ConnectionProvider.defaultProvider()),
-                new EnrollmentDAO(ConnectionProvider.defaultProvider()),
-                new CoordinateSubjectDAO(ConnectionProvider.defaultProvider()),
-                new TeachClassGroupDAO(ConnectionProvider.defaultProvider()),
-                new ManageOrganizationDAO(ConnectionProvider.defaultProvider()),
                 new PasswordHasher(),
                 new ProfilePhotoStorage()
         );
     }
 
-    UserManagementServlet(UserService userService, PasswordHasher passwordHasher) {
-        this(
-                userService,
-                new PermissionDAO(ConnectionProvider.defaultProvider()),
-                new OrganizationDAO(ConnectionProvider.defaultProvider()),
-                new OrganicUnitDAO(ConnectionProvider.defaultProvider()),
-                new CourseDAO(ConnectionProvider.defaultProvider()),
-                new CourseSubjectDAO(ConnectionProvider.defaultProvider()),
-                new SubjectDAO(ConnectionProvider.defaultProvider()),
-                new EnrollmentDAO(ConnectionProvider.defaultProvider()),
-                new CoordinateSubjectDAO(ConnectionProvider.defaultProvider()),
-                new TeachClassGroupDAO(ConnectionProvider.defaultProvider()),
-                new ManageOrganizationDAO(ConnectionProvider.defaultProvider()),
-                passwordHasher,
-                new ProfilePhotoStorage()
-        );
-    }
-
     UserManagementServlet(
+            ApplicationReadService readService,
             UserService userService,
-            PermissionDAO permissionDAO,
-            OrganizationDAO organizationDAO,
-            OrganicUnitDAO organicUnitDAO,
-            CourseDAO courseDAO,
-            CourseSubjectDAO courseSubjectDAO,
-            SubjectDAO subjectDAO,
-            EnrollmentDAO enrollmentDAO,
-            CoordinateSubjectDAO coordinateSubjectDAO,
-            TeachClassGroupDAO teachClassGroupDAO,
-            ManageOrganizationDAO manageOrganizationDAO,
             PasswordHasher passwordHasher,
             ProfilePhotoStorage profilePhotoStorage
     ) {
         this.userService = userService;
-        this.permissionDAO = permissionDAO;
-        this.organizationDAO = organizationDAO;
-        this.organicUnitDAO = organicUnitDAO;
-        this.courseDAO = courseDAO;
-        this.courseSubjectDAO = courseSubjectDAO;
-        this.subjectDAO = subjectDAO;
-        this.enrollmentDAO = enrollmentDAO;
-        this.coordinateSubjectDAO = coordinateSubjectDAO;
-        this.teachClassGroupDAO = teachClassGroupDAO;
-        this.manageOrganizationDAO = manageOrganizationDAO;
+        this.permissionDAO = readService.permissions();
+        this.organizationDAO = readService.organizations();
+        this.organicUnitDAO = readService.organicUnits();
+        this.courseDAO = readService.courses();
+        this.courseSubjectDAO = readService.courseSubjects();
+        this.subjectDAO = readService.subjects();
+        this.enrollmentDAO = readService.enrollments();
+        this.coordinateSubjectDAO = readService.coordinateSubjects();
+        this.teachClassGroupDAO = readService.teachClassGroups();
+        this.manageOrganizationDAO = readService.manageOrganizations();
         this.passwordHasher = passwordHasher;
         this.profilePhotoStorage = profilePhotoStorage;
     }
@@ -231,6 +183,7 @@ public final class UserManagementServlet extends DashboardServletSupport {
                 userId,
                 request.getRemoteAddr()
         );
+        markLearningEventsReadForCurrentUser(request, "/admin/users/" + user.id(), false);
         UserView userView = UserView.from(user);
         request.setAttribute("user", userView);
         request.setAttribute("accessProfileDetails", accessProfileDetails(user));
@@ -254,6 +207,7 @@ public final class UserManagementServlet extends DashboardServletSupport {
         if (error != null) {
             request.setAttribute("errorMessage", error);
         }
+        request.setAttribute("adminUserActiveChild", "new");
         prepareDashboard(request, "users", "Create User");
         forward(request, response, USER_FORM_JSP);
     }
@@ -779,7 +733,6 @@ public final class UserManagementServlet extends DashboardServletSupport {
 
     private void prepareProfileContextOptions(HttpServletRequest request, SessionUser actor) throws ServletException {
         List<Organization> organizations = assignableOrganizations(actor);
-        request.setAttribute("coordinatorContextOptions", coordinatorContextOptions(organizations));
         request.setAttribute("teacherContextOptions", teacherContextOptions(organizations));
         request.setAttribute("studentContextOptions", studentContextOptions(organizations));
     }
@@ -818,66 +771,6 @@ public final class UserManagementServlet extends DashboardServletSupport {
             return options;
         } catch (SQLException exception) {
             throw new ServletException("Could not load organization permission contexts", exception);
-        }
-    }
-
-    private List<ProfileContextOptionView> coordinatorContextOptions(List<Organization> organizations)
-            throws ServletException {
-        try {
-            List<ProfileContextOptionView> options = new ArrayList<>();
-            for (Organization organization : organizations) {
-                List<Course> courses = activeProfileCourses(organization.id());
-                Map<Long, List<Subject>> subjectsByCourse = activeSubjectsByCourse(courses);
-                boolean hasSubjects = subjectsByCourse.values().stream().anyMatch(subjects -> !subjects.isEmpty());
-                if (!hasSubjects) {
-                    continue;
-                }
-                String organizationKey = profileNodeKey("COORDINATOR_ORGANIZATION", organization.id());
-                options.add(profileHeading(
-                        AccessProfileType.COORDINATOR,
-                        AccessEntityType.ORGANIZATION,
-                        organization.id(),
-                        organization.name(),
-                        "Organization",
-                        organizationKey,
-                        "",
-                        0
-                ));
-                for (Course course : courses) {
-                    List<Subject> subjects = subjectsByCourse.getOrDefault(course.id(), List.of());
-                    if (subjects.isEmpty()) {
-                        continue;
-                    }
-                    String courseKey = profileNodeKey("COORDINATOR_COURSE", course.id());
-                    options.add(profileHeading(
-                            AccessProfileType.COORDINATOR,
-                            AccessEntityType.COURSE,
-                            course.id(),
-                            courseProfileLabel(course),
-                            "Course",
-                            courseKey,
-                            organizationKey,
-                            1
-                    ));
-                    for (Subject subject : subjects) {
-                        options.add(new ProfileContextOptionView(
-                                AccessProfileType.COORDINATOR,
-                                AccessEntityType.SUBJECT,
-                                subject.id(),
-                                null,
-                                subject.name(),
-                                "Subject",
-                                profileNodeKey("COORDINATOR_COURSE_SUBJECT", course.id() + ":" + subject.id()),
-                                courseKey,
-                                2,
-                                true
-                        ));
-                    }
-                }
-            }
-            return options;
-        } catch (SQLException exception) {
-            throw new ServletException("Could not load coordinator profile contexts", exception);
         }
     }
 
@@ -977,7 +870,6 @@ public final class UserManagementServlet extends DashboardServletSupport {
                         "",
                         0
                 ));
-                Map<Long, List<Subject>> subjectsByCourse = activeSubjectsByCourse(courses);
                 for (Course course : courses) {
                     String courseKey = profileNodeKey("STUDENT_COURSE", course.id());
                     options.add(new ProfileContextOptionView(
@@ -992,20 +884,6 @@ public final class UserManagementServlet extends DashboardServletSupport {
                             1,
                             true
                     ));
-                    for (Subject subject : subjectsByCourse.getOrDefault(course.id(), List.of())) {
-                        options.add(new ProfileContextOptionView(
-                                AccessProfileType.STUDENT,
-                                AccessEntityType.SUBJECT,
-                                subject.id(),
-                                course.id(),
-                                subject.name(),
-                                "Subject",
-                                profileNodeKey("STUDENT_COURSE_SUBJECT", course.id() + ":" + subject.id()),
-                                courseKey,
-                                2,
-                                true
-                        ));
-                    }
                 }
             }
             return options;
@@ -1026,28 +904,6 @@ public final class UserManagementServlet extends DashboardServletSupport {
                 .filter(course -> course.state() == CourseState.ACTIVE)
                 .sorted(Comparator.comparing(Course::name))
                 .toList();
-    }
-
-    private Map<Long, List<Subject>> activeSubjectsByCourse(List<Course> courses) throws SQLException {
-        Map<Long, List<Subject>> subjectsByCourse = new HashMap<>();
-        for (Course course : courses) {
-            List<Subject> subjects = new ArrayList<>();
-            for (CourseSubjectAssociation association : courseSubjectDAO.findActiveByCourse(course.id())) {
-                subjectDAO.findById(association.subjectId())
-                        .filter(subject -> subject.state() == SubjectState.ACTIVE)
-                        .ifPresent(subjects::add);
-            }
-            subjects.sort(Comparator.comparing(Subject::name));
-            subjectsByCourse.put(course.id(), subjects);
-        }
-        return subjectsByCourse;
-    }
-
-    private static String courseProfileLabel(Course course) {
-        if (course.acronym() == null || course.acronym().isBlank()) {
-            return course.name();
-        }
-        return course.name() + " (" + course.acronym() + ")";
     }
 
     private Map<String, List<ClassGroupContext>> activeClassGroupsByCourseSubject(List<Long> organizationIds)
@@ -1535,7 +1391,7 @@ public final class UserManagementServlet extends DashboardServletSupport {
                     "SUBJECT",
                     subject.id(),
                     subject.name(),
-                    "Subject enrollments",
+                    "Subject context",
                     subjectKey,
                     parentKey,
                     depth
@@ -1703,14 +1559,6 @@ public final class UserManagementServlet extends DashboardServletSupport {
                         AccessEntityType.COURSE,
                         courseId,
                         null
-                ));
-            }
-            for (SubjectEnrollment enrollment : enrollmentDAO.findActiveSubjectEnrollmentsByStudent(userId)) {
-                assignments.add(new AccessProfileContextAssignment(
-                        AccessProfileType.STUDENT,
-                        AccessEntityType.SUBJECT,
-                        enrollment.subjectId(),
-                        enrollment.courseId()
                 ));
             }
             return Set.copyOf(assignments);

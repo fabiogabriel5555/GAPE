@@ -1,5 +1,8 @@
 package pt.isel.gape.web.view;
 
+import java.time.LocalDate;
+
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.AssessmentEnrollment;
 import pt.isel.gape.learning.model.EnrollmentState;
 
@@ -8,6 +11,8 @@ public final class AssessmentEnrollmentView {
     private final long studentUserId;
     private final long assessmentId;
     private final EnrollmentState state;
+    private final LocalDate startDate;
+    private final LocalDate endDate;
     private final String studentName;
     private final String studentEmail;
 
@@ -19,6 +24,8 @@ public final class AssessmentEnrollmentView {
         this.studentUserId = enrollment.studentUserId();
         this.assessmentId = enrollment.assessmentId();
         this.state = enrollment.state();
+        this.startDate = enrollment.startDate();
+        this.endDate = enrollment.endDate();
         this.studentName = studentName;
         this.studentEmail = studentEmail;
     }
@@ -62,7 +69,7 @@ public final class AssessmentEnrollmentView {
         return switch (state) {
             case PENDING -> "bg-warning-30 text-warning-600";
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
             case REJECTED -> "bg-danger-50 text-danger-600";
             case COMPLETED -> "bg-info-50 text-info-600";
             case WITHDRAWN -> "bg-warning-30 text-warning-600";
@@ -79,6 +86,23 @@ public final class AssessmentEnrollmentView {
 
     public boolean isReactivateAvailable() {
         return state != EnrollmentState.ACTIVE && state != EnrollmentState.PENDING;
+    }
+
+    /** The period is derived from the assessment availability and is never editable manually. */
+    public String getStartDate() {
+        return startDate == null ? "-" : ApplicationDateTimeFormat.date(startDate);
+    }
+
+    public String getStartDateValue() {
+        return startDate == null ? "" : startDate.toString();
+    }
+
+    public String getEndDate() {
+        return endDate == null ? "-" : ApplicationDateTimeFormat.date(endDate);
+    }
+
+    public String getEndDateValue() {
+        return endDate == null ? "" : endDate.toString();
     }
 
     public String getStudentName() {

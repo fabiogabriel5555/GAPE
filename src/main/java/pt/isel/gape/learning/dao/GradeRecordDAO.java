@@ -33,6 +33,26 @@ public final class GradeRecordDAO {
             GradeRecordResult result,
             LocalDateTime recordedAt
     ) throws SQLException {
+        return upsertAutomatic(
+                connection,
+                gradeSheetId,
+                studentUserId,
+                value,
+                result,
+                recordedAt,
+                "Automatically calculated from assessment scores and weights."
+        );
+    }
+
+    public long upsertAutomatic(
+            Connection connection,
+            long gradeSheetId,
+            long studentUserId,
+            BigDecimal value,
+            GradeRecordResult result,
+            LocalDateTime recordedAt,
+            String notes
+    ) throws SQLException {
         String code = automaticCode(gradeSheetId, studentUserId);
         String sql = """
                 INSERT INTO grade_record (
@@ -56,7 +76,7 @@ public final class GradeRecordDAO {
             statement.setString(5, result.toDatabaseValue());
             statement.setString(6, GradeRecordState.PUBLISHED.toDatabaseValue());
             statement.setTimestamp(7, Timestamp.valueOf(recordedAt));
-            statement.setString(8, "Automatically calculated from assessment scores and weights.");
+            statement.setString(8, notes);
             statement.executeUpdate();
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
@@ -69,10 +89,24 @@ public final class GradeRecordDAO {
                 .orElseThrow(() -> new SQLException("Automatic grade record was not persisted"));
     }
 
-    public void archiveActiveBySheetAndStudent(
+    public void deactivateActiveBySheetAndStudent(
             Connection connection,
             long gradeSheetId,
             long studentUserId
+    ) throws SQLException {
+        deactivateActiveBySheetAndStudent(
+                connection,
+                gradeSheetId,
+                studentUserId,
+                "Marked inactive because the automatic final grade is pending assessment scores."
+        );
+    }
+
+    public void deactivateActiveBySheetAndStudent(
+            Connection connection,
+            long gradeSheetId,
+            long studentUserId,
+            String notes
     ) throws SQLException {
         String sql = """
                 UPDATE grade_record
@@ -82,8 +116,8 @@ public final class GradeRecordDAO {
                   AND state IN ('draft', 'published', 'corrected')
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, GradeRecordState.ARCHIVED.toDatabaseValue());
-            statement.setString(2, "Archived because the automatic final grade is pending assessment scores.");
+            statement.setString(1, GradeRecordState.INACTIVE.toDatabaseValue());
+            statement.setString(2, notes);
             statement.setLong(3, gradeSheetId);
             statement.setLong(4, studentUserId);
             statement.executeUpdate();
@@ -285,16 +319,19 @@ public final class GradeRecordDAO {
                             )
                             AND EXISTS (
                                 SELECT 1
-                                FROM enroll_subject es
-                                JOIN course c ON c.id_course = es.id_course
-                                JOIN subject s ON s.id_subject = es.id_subject
-                                WHERE es.id_student_user = ?
-                                  AND es.id_subject = gs.id_subject
-                                  AND es.state = 'active'
+                                FROM class_group cg
+                                JOIN enroll_class_group ecg ON ecg.id_class_group = cg.id_class_group
+                                JOIN course c ON c.id_course = cg.id_course
+                                JOIN subject s ON s.id_subject = gs.id_subject
+                                WHERE ecg.id_student_user = ?
+                                  AND cg.id_subject = gs.id_subject
+                                  AND cg.id_course_occurrence = gs.id_course_occurrence
+                                  AND ecg.state = 'active'
+                                  AND cg.state = 'active'
                                   AND c.state = 'active'
                                   AND s.state = 'active'
-                                  AND (es.start_date IS NULL OR es.start_date <= CURRENT_DATE)
-                                  AND (es.end_date IS NULL OR es.end_date >= CURRENT_DATE)
+                                  AND (ecg.start_date IS NULL OR ecg.start_date <= CURRENT_DATE)
+                                  AND (ecg.end_date IS NULL OR ecg.end_date >= CURRENT_DATE)
                             )
                         )
                   )

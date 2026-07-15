@@ -2,7 +2,7 @@
 
 ## Scope
 
-This integration connects the Phase 7 learning backend to EduAll screens for courses, subjects, course-subject associations and student enrollment self-service.
+This integration connects the Phase 7 learning backend to EduAll screens for courses, subjects, course-subject associations and course-occurrence enrollment self-service.
 
 ## Template Analysis
 
@@ -49,12 +49,7 @@ Admin courses:
 
 Course-subject association:
 
-- `GET /admin/courses/{id}/subjects/new`
 - `POST /admin/courses/{id}/subjects`
-- `GET /admin/courses/{id}/subjects/{subjectId}/edit`
-- `POST /admin/courses/{id}/subjects/{subjectId}`
-- `POST /admin/courses/{id}/subjects/{subjectId}/archive`
-- `POST /admin/courses/{id}/subjects/{subjectId}/delete`
 
 Admin subjects:
 
@@ -73,8 +68,8 @@ Student self-service:
 - `GET /student/enrollments`
 - `POST /student/enrollments/courses/{courseId}`
 - `POST /student/enrollments/courses/{courseId}/withdraw`
-- `POST /student/enrollments/courses/{courseId}/subjects/{subjectId}`
-- `POST /student/enrollments/courses/{courseId}/subjects/{subjectId}/withdraw`
+- `POST /student/enrollments/class-groups/{classGroupId}`
+- `POST /student/enrollments/class-groups/{classGroupId}/withdraw`
 
 ## JSPs
 
@@ -83,7 +78,6 @@ New administrative JSPs:
 - `admin/admin/course/admin-courses.jsp`
 - `admin/admin/course/admin-course-form.jsp`
 - `admin/admin/course/admin-course-detail.jsp`
-- `admin/admin/course/admin-course-subject-form.jsp`
 - `admin/admin/subject/admin-subjects.jsp`
 - `admin/admin/subject/admin-subject-form.jsp`
 - `admin/admin/subject/admin-subject-detail.jsp`
@@ -114,7 +108,6 @@ Read-only page composition uses DAO methods for catalog and enrollment state:
 - `SubjectDAO.findByCoordinator`
 - `CourseSubjectDAO.findActiveByCourse`
 - `EnrollmentDAO.findCourseEnrollmentsByStudent`
-- `EnrollmentDAO.findSubjectEnrollmentsByStudent`
 
 `SessionManager` now exposes:
 
@@ -153,20 +146,22 @@ The course detail curriculum uses simple bordered subject rows rather than intro
 - Try creating a course without organization and verify the form error.
 - Create a valid subject as administrator.
 - Create a valid subject with an uploaded image and verify the saved WebP photo appears in the admin list and admin detail.
-- Assign a coordinator to a subject.
+- From Subject Details, assign a coordinator to an active subject; Create Subject and Edit Subject do not expose coordinator fields.
+- Deactivate a subject that already has active course associations and verify that those associations remain visible as existing records.
+- Verify that an inactive subject cannot receive a new course association or coordinator assignment, then use Activate beside Edit to restore it in place.
 - Associate a subject with a course using year and period together.
 - Repeat the association and verify the duplicate error.
 - Try saving year without period and verify the validation message.
 - Open `/courses` and verify active courses render as EduAll cards.
 - Open `/courses/{id}` and verify active subjects render in the curriculum.
-- Enroll as a student in a course.
+- Enroll a student in a concrete course occurrence.
 - Withdraw as a student from a course.
-- Enroll as a student in a subject only after being enrolled in the course.
-- Withdraw as a student from a subject.
+- Request a class group belonging to the enrolled course occurrence.
+- Verify that enrollment actions are limited to course occurrences and their eligible class groups.
 
 ## Verification Run
 
-Executed on 2026-06-10.
+Executed on 10-06-2026.
 
 - `mvn -q -DskipTests package`: passed.
 - `mvn test "-Dtest=TemplateAssetReferenceTest,TemplateStructureTest"`: passed, 26 tests.
@@ -180,18 +175,16 @@ Manual Browser verification was executed against a temporary Tomcat 11 instance 
 - Opened `/courses` and verified the public EduAll catalog rendered active courses without login.
 - Opened `/courses/30` and verified detail data, organization, organic unit, curriculum rows and sign-in enrollment state.
 - Logged in as `admin@gape.local` and created course `Curso Browser QA 296450`; the detail page returned `Course created successfully.`.
-- Created subject `Disciplina Browser QA 296450` with coordinator assignment; the detail page returned `Subject created successfully.`.
+- Created subject `Disciplina Browser QA 296450`; its coordinator is assigned afterwards from Subject Details.
 - Associated the subject with the created course using curricular year and period; the course detail returned `Subject associated with course.`.
 - Repeated the same association and verified the form returned `This subject is already associated with the selected course.`.
-- Logged in as `student@gape.local`, opened `/student/enrollments`, enrolled in the created course and verified `Course enrollment completed.`.
-- Opened the created public course detail, enrolled in the associated subject and verified `Subject enrollment completed.`.
-- Withdrew from the subject and verified `Subject withdrawal completed.`.
-- Withdrew from the course and verified `Course withdrawal completed.`.
+- The original enrollment evidence predates the course-occurrence model and is no longer a valid acceptance result; current validation must enroll the student in a course occurrence and then request an eligible class group.
+- Current regression verifies that withdrawing the course enrollment also withdraws active class-group enrollments in that course.
 - Checked the course detail DOM for horizontal overflow, broken images and browser console errors; none were detected in the default `1280x720` viewport.
 
 The in-app Browser screenshot call timed out during this run, so the visual evidence was based on page rendering, DOM state, route transitions, flash messages, image load checks and console-error checks.
 
-Additional image verification on 2026-06-10 after adding course and subject photos:
+Additional image verification on 10-06-2026 after adding course and subject photos:
 
 - Packaged the current WAR with `mvn package -DskipTests`.
 - Opened `http://localhost:18080/GAPE/courses` in the in-app Browser and verified the catalog rendered 2 course cards, no internal error and loaded fallback course thumbnails.

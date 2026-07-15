@@ -13001,6 +13001,35 @@ body::after {
   color: #fff;
 }
 
+.gape-sidebar-event-badge {
+  align-items: center;
+  border: 2px solid #fff;
+  display: inline-flex;
+  justify-content: center;
+  line-height: 1;
+  min-height: 20px;
+  min-width: 20px;
+  padding: 1px 5px !important;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.gape-sidebar-badged-item {
+  position: relative !important;
+}
+
+.gape-sidebar-badged-item > .gape-sidebar-event-badge {
+  inset: 0 auto auto 0 !important;
+  margin: 0 !important;
+  position: absolute !important;
+  transform: none !important;
+}
+
+.dashboard-sidebar ul li.activePage > a .gape-sidebar-event-badge,
+.student-dashboard-sidebar ul li.activePage > a .gape-sidebar-event-badge {
+  border-color: var(--main-600);
+}
+
 .dashboard-sidebar .gape-sidebar-long-link {
   align-items: flex-start !important;
   box-sizing: border-box;
@@ -13014,6 +13043,36 @@ body::after {
   min-width: 0;
   overflow-wrap: anywhere;
   white-space: normal !important;
+}
+
+.gape-dashboard-mobile-menu-slot {
+  background: transparent;
+  padding: 16px 20px 0;
+}
+
+.gape-dashboard-page-heading {
+  background: transparent;
+}
+
+.gape-dashboard-mobile-menu-toggle {
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--neutral-40);
+  border-radius: 999px;
+  color: var(--neutral-500);
+  display: inline-flex;
+  font-size: 28px;
+  height: 44px;
+  justify-content: center;
+  line-height: 1;
+  width: 44px;
+}
+
+.gape-dashboard-mobile-menu-toggle:hover,
+.gape-dashboard-mobile-menu-toggle:focus-visible {
+  background: var(--main-600);
+  border-color: var(--main-600);
+  color: #fff;
 }
 
 @media (max-width: 991px) {
@@ -13062,6 +13121,11 @@ body::after {
 }
 .dashboard-sidebar.active {
   transform: translateX(0px);
+}
+
+.dashbord > .d-flex,
+.dashbord-body {
+  min-width: 0;
 }
 
 @media (max-width: 991px) {
@@ -13266,13 +13330,133 @@ table.dataTable.display > tbody > tr > * {
 
 .gape-select-field .select2-container--default .select2-selection--single .select2-selection__rendered {
   color: var(--neutral-700);
-  flex: 1 1 auto;
+  flex: 1 1 0;
   line-height: 1.5;
+  min-width: 0;
+  overflow: hidden;
   padding: 16px 56px 16px 32px !important;
   padding-block: 16px !important;
   padding-inline-end: 56px !important;
   padding-inline-start: 32px !important;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-select-field .select2-container--default .select2-selection--multiple.gape-eduall-selection {
+  align-items: center !important;
+  cursor: text;
+  min-height: 58px !important;
+  padding: 10px 14px !important;
+}
+
+.gape-select-field .select2-container--default .select2-selection--multiple.gape-eduall-selection .select2-selection__rendered {
+  align-items: center;
+  display: flex !important;
+  flex: 1 1 0;
+  flex-wrap: wrap;
+  gap: 8px;
+  line-height: 1.3;
+  min-width: 0;
+  padding: 0 !important;
+}
+
+.gape-select-field .select2-container--default .select2-selection--multiple.gape-eduall-selection .select2-selection__choice {
+  align-items: center;
+  background-color: #ffffff !important;
+  border: 1px solid #d7e4dc !important;
+  border-radius: 999px !important;
+  color: #334155 !important;
+  display: inline-flex;
+  margin: 0 !important;
+  max-width: 100%;
+  min-height: 34px;
+  min-width: 0;
+  padding: 6px 12px 6px 30px !important;
+}
+
+.gape-select-field .select2-container--default .select2-selection--multiple.gape-eduall-selection .select2-selection__choice__display {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-select-field .select2-container--default .select2-selection--multiple.gape-eduall-selection .select2-selection__choice__remove {
+  align-items: center;
+  border: 0 !important;
+  color: #64748b !important;
+  display: flex;
+  font-size: 16px;
+  height: 100%;
+  justify-content: center;
+  left: 8px;
+  padding: 0 !important;
+  position: absolute;
+  top: 0;
+  width: 16px;
+}
+
+.gape-select-field .select2-container--default .select2-selection--multiple.gape-eduall-selection .select2-selection__choice__remove:hover {
+  background-color: transparent !important;
+  color: var(--main-600) !important;
+}
+
+.gape-select-field .select2-container--default .select2-selection--multiple.gape-eduall-selection .select2-search--inline {
+  line-height: 1;
+  margin: 0;
+}
+
+.gape-select-field .select2-container--default .select2-selection--multiple.gape-eduall-selection .select2-search__field {
+  color: var(--neutral-700);
+  font-family: inherit;
+  font-size: 14px;
+  height: 30px;
+  margin: 0 !important;
+  min-width: 160px;
+  padding: 0 !important;
+}
+
+.gape-select-field .select2-container--default .select2-selection--single.gape-subject-course-selection {
+  padding: 7px 12px !important;
+}
+
+.gape-select-field .select2-container--default .select2-selection--single.gape-subject-course-selection .select2-selection__rendered {
+  display: block;
+  padding: 0 44px 0 0 !important;
+}
+
+.gape-select-field .select2-container--default .select2-selection--single.gape-subject-course-selection .select2-selection__rendered > .gape-subject-course-option {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dbe7ef;
+  border-radius: 10px;
+  min-height: 42px;
+  padding: 8px 10px;
+}
+
+.gape-select-field select[data-course-year-select]:invalid + .select2-container .select2-selection.gape-course-year-selection:not(.gape-course-year-user-invalid),
+.gape-select-field .select2-container--default .select2-selection.gape-course-year-ready:not(.gape-course-year-user-invalid) {
+  border-color: var(--neutral-30) !important;
+  box-shadow: none !important;
+}
+
+.gape-select-field .select2-container--default .select2-selection.gape-course-year-ready {
+  cursor: pointer;
+  opacity: 1 !important;
+}
+
+.gape-select-field .select2-container--default .select2-selection.gape-course-year-selection .select2-selection__rendered {
+  color: var(--neutral-700) !important;
+  padding-inline-start: 24px !important;
+  padding-inline-end: 42px !important;
+}
+
+.gape-select-field .select2-container--default .select2-selection.gape-course-year-ready .select2-selection__placeholder {
+  color: var(--neutral-700) !important;
+  opacity: 1 !important;
 }
 
 .gape-select-field .select2-container--default.select2-container--open .select2-selection--single .select2-selection__rendered {
@@ -13330,6 +13514,7 @@ table.dataTable.display > tbody > tr > * {
   box-shadow: 0 18px 45px rgba(15, 23, 42, .14);
   overflow: hidden;
   padding: 6px;
+  z-index: 2000;
 }
 
 .gape-eduall-select-dropdown .select2-results__option {
@@ -13347,6 +13532,549 @@ table.dataTable.display > tbody > tr > * {
   color: #065f46;
 }
 
+.gape-subject-course-option,
+.gape-eduall-select-dropdown .gape-subject-course-option {
+  align-items: baseline;
+  color: inherit;
+  column-gap: 12px;
+  display: grid;
+  font-size: 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  line-height: inherit;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.gape-subject-course-option-main {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-subject-course-option-context {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  justify-self: end;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-subject-course-token {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-eduall-select-dropdown .select2-results__option.gape-subject-course-option-row {
+  margin-bottom: 2px;
+  padding: 10px 14px;
+}
+
+.gape-eduall-select-dropdown .select2-results__option.select2-results__option--selectable:hover .gape-subject-course-option {
+  color: var(--main-600);
+}
+
+.gape-eduall-select-dropdown .select2-results__option.select2-results__option--selected.select2-results__option--selectable:hover .gape-subject-course-option,
+.gape-eduall-select-dropdown .select2-results__option--selected .gape-subject-course-option,
+.gape-eduall-select-dropdown .select2-results__option--selected:hover .gape-subject-course-option,
+.select2-container--default .gape-eduall-select-dropdown .select2-results__option--highlighted.select2-results__option--selectable:not(:hover) .gape-subject-course-option {
+  color: #fff;
+}
+
+.gape-eduall-select-dropdown .select2-results__option--selected .gape-subject-course-option-context,
+.gape-eduall-select-dropdown .select2-results__option--selected:hover .gape-subject-course-option-context,
+.select2-container--default .gape-eduall-select-dropdown .select2-results__option--highlighted.select2-results__option--selectable:not(:hover) .gape-subject-course-option-context {
+  color: rgba(255, 255, 255, .78);
+}
+
+.gape-class-group-context-field select:disabled {
+  background-color: #f5f6f8;
+  border-color: #d8dde6;
+  color: #7b8494;
+  cursor: not-allowed;
+}
+
+.gape-class-group-context-field.is-disabled .select2-container--default .select2-selection--single {
+  background-color: #f5f6f8 !important;
+  border-color: #d8dde6 !important;
+  cursor: not-allowed;
+}
+
+.gape-class-group-context-field.is-disabled .select2-container--default .select2-selection--single .select2-selection__rendered,
+.gape-class-group-context-field.is-disabled label {
+  color: #7b8494;
+}
+
+.gape-class-group-context-field .form-control {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-class-group-course-option,
+.gape-eduall-select-dropdown .gape-class-group-course-option {
+  align-items: baseline;
+  color: inherit;
+  display: flex;
+  font-size: 14px;
+  font-weight: inherit;
+  gap: 16px;
+  justify-content: space-between;
+  line-height: inherit;
+  min-width: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.gape-class-group-course-option-main {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-class-group-course-option-context {
+  color: #64748b;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-left: auto;
+  max-width: 42%;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-eduall-select-dropdown .gape-class-group-context-option:not(.gape-class-group-course-option) {
+  display: block;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered .gape-class-group-context-option:not(.gape-class-group-course-option) {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-eduall-select-dropdown .gape-class-group-context-option.gape-class-group-context-option-muted {
+  color: #94a3b8;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.gape-eduall-select-dropdown .select2-results__option.gape-class-group-context-option-row {
+  margin-bottom: 2px;
+  padding: 10px 14px;
+}
+
+.gape-eduall-select-dropdown .select2-results__option--disabled {
+  display: none;
+}
+
+/* Subject-context creation keeps unrelated courses visible as disabled
+   choices, making the available associations explicit without allowing a
+   class group to be created in an unrelated course. */
+.gape-eduall-select-dropdown.gape-class-group-context-dropdown .select2-results__option--disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  display: block;
+  opacity: 1;
+}
+
+/* A compatible period that has already ended remains visible for context,
+   but Select2 must keep it non-selectable. */
+.gape-eduall-select-dropdown.gape-class-group-period-dropdown .select2-results__option--disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  display: block;
+}
+
+/* The exact occurrence-period remains the non-selectable first layer. Its
+   child options deliberately retain the standard, simple Select2 row design. */
+.gape-eduall-select-dropdown.gape-class-group-period-dropdown .select2-results__group {
+  border-bottom: 1px solid #e6eaef;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 8px 8px 4px;
+  padding: 0 0 8px;
+}
+
+.gape-eduall-select-dropdown.gape-class-group-period-dropdown .select2-results__options--nested {
+  margin: 0 8px 8px;
+  padding-left: 0;
+}
+
+.gape-class-group-period-group-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered .gape-class-group-period-selection {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-eduall-select-dropdown .select2-results__option--disabled.gape-class-group-unavailable-option {
+  cursor: not-allowed;
+  pointer-events: auto;
+}
+
+/* Disabled subject states stay visible: an information marker explains why
+   the state cannot be selected without adding permanent copy below the field. */
+.gape-eduall-select-dropdown.gape-subject-state-dropdown .select2-results__option--disabled {
+  align-items: center;
+  color: #94a3b8;
+  cursor: help;
+  display: flex;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.gape-eduall-select-dropdown.gape-subject-state-dropdown .gape-subject-state-disabled-option {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.gape-eduall-select-dropdown.gape-subject-state-dropdown .gape-subject-state-disabled-option i {
+  color: #94a3b8;
+  font-size: 16px;
+}
+
+.gape-eduall-select-dropdown .select2-results__option.select2-results__option--selectable:hover .gape-class-group-context-option {
+  color: var(--main-600);
+}
+
+.gape-eduall-select-dropdown .select2-results__option.select2-results__option--selectable:hover .gape-class-group-context-option-muted,
+.gape-eduall-select-dropdown .select2-results__option.select2-results__option--selectable:hover .gape-class-group-course-option-context {
+  color: #64748b;
+}
+
+.gape-eduall-select-dropdown .select2-results__option.select2-results__option--selected.select2-results__option--selectable:hover .gape-class-group-course-option,
+.gape-eduall-select-dropdown .select2-results__option.select2-results__option--selected.select2-results__option--selectable:hover .gape-class-group-course-option-main,
+.gape-eduall-select-dropdown .select2-results__option.select2-results__option--selected.select2-results__option--selectable:hover .gape-class-group-course-option-context,
+.gape-eduall-select-dropdown .select2-results__option.select2-results__option--selected.select2-results__option--selectable:hover .gape-class-group-context-option,
+.gape-eduall-select-dropdown .select2-results__option--selected .gape-class-group-context-option,
+.gape-eduall-select-dropdown .select2-results__option--selected:hover .gape-class-group-context-option,
+.select2-container--default .gape-eduall-select-dropdown .select2-results__option--highlighted.select2-results__option--selectable:not(:hover) .gape-class-group-context-option {
+  color: #fff;
+}
+
+.gape-eduall-select-dropdown .select2-results__option--selected .gape-class-group-course-option-context,
+.gape-eduall-select-dropdown .select2-results__option--selected:hover .gape-class-group-course-option-context,
+.select2-container--default .gape-eduall-select-dropdown .select2-results__option--highlighted.select2-results__option--selectable:not(:hover) .gape-class-group-course-option-context {
+  color: rgba(255, 255, 255, .78);
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered .gape-class-group-course-option {
+  align-items: baseline;
+  column-gap: 12px;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  max-width: 100%;
+  overflow: hidden;
+  padding-right: 0;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__rendered .gape-class-group-course-option-context {
+  color: #7b8494;
+  justify-self: end;
+  margin-left: 0;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.gape-class-group-readonly-value {
+  align-items: baseline;
+  column-gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 58px;
+  min-width: 0;
+}
+
+/* Locked subject context mirrors the regular single-select spacing without
+ * exposing a second contextual label or an editable affordance. */
+.gape-class-group-readonly-value--locked-subject {
+  align-items: center;
+  display: flex;
+  font-size: 1rem;
+  line-height: 1.5;
+  overflow: hidden;
+  padding: 16px 56px 16px 32px !important;
+  white-space: nowrap;
+}
+
+.gape-class-group-readonly-value--locked-subject .gape-class-group-readonly-value-main {
+  flex: 1 1 0;
+}
+
+.gape-class-group-readonly-value-main {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-class-group-readonly-value-context {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  justify-self: end;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-context-date-field {
+  min-width: 0;
+}
+
+.gape-context-date-control {
+  position: relative;
+}
+
+.gape-context-date-control .form-control {
+  min-height: 50px;
+  padding-left: 44px !important;
+}
+
+.gape-context-date-control > i {
+  color: #64748b;
+  font-size: 18px;
+  left: 16px;
+  line-height: 1;
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
+.gape-date-context {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 14px 16px;
+}
+
+.gape-date-context__main {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+
+.gape-date-context__icon {
+  align-items: center;
+  background: #e8f5ef;
+  border-radius: 8px;
+  color: var(--main-600);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.gape-date-context__text {
+  min-width: 0;
+}
+
+.gape-date-context__title {
+  color: #1e293b;
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-date-context__copy {
+  color: #64748b;
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-date-context__actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.gape-date-context__action {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  color: #334155;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 6px;
+  min-height: 34px;
+  padding: 8px 11px;
+  transition: .2s ease;
+}
+
+.gape-date-context__action:hover {
+  background: #e8f5ef;
+  border-color: var(--main-600);
+  color: var(--main-600);
+}
+
+.gape-date-context__action:disabled {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+@media (max-width: 767.98px) {
+  .gape-date-context {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .gape-date-context__actions {
+    justify-content: flex-start;
+  }
+}
+
+.gape-course-context-field select:disabled {
+  background-color: #f5f6f8;
+  border-color: #d8dde6;
+  color: #7b8494;
+  cursor: not-allowed;
+}
+
+.gape-course-context-field.is-disabled .select2-container--default .select2-selection--single {
+  background-color: #f5f6f8 !important;
+  border-color: #d8dde6 !important;
+  cursor: not-allowed;
+}
+
+.gape-course-context-field.is-disabled .select2-container--default .select2-selection--single .select2-selection__rendered,
+.gape-course-context-field.is-disabled label {
+  color: #7b8494;
+}
+
+.gape-course-context-field .form-control {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-course-enrollment-table {
+  min-width: 720px;
+}
+
+.gape-course-enrollment-table th,
+.gape-course-enrollment-table td {
+  white-space: nowrap;
+}
+
+.gape-course-enrollment-table th:first-child,
+.gape-course-enrollment-table td:first-child {
+  min-width: 280px;
+  white-space: normal;
+  word-break: normal;
+}
+
+.gape-eduall-select-dropdown .gape-course-context-option,
+.select2-container--default .select2-selection--single .select2-selection__rendered .gape-course-context-option {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-eduall-select-dropdown .select2-results__option.gape-course-context-option-row {
+  margin-bottom: 2px;
+  padding: 10px 14px;
+}
+
+.gape-eduall-select-dropdown .select2-results__option.select2-results__option--selectable:hover .gape-course-context-option {
+  color: var(--main-600);
+}
+
+.gape-eduall-select-dropdown .select2-results__option.select2-results__option--selected.select2-results__option--selectable:hover .gape-course-context-option,
+.gape-eduall-select-dropdown .select2-results__option--selected .gape-course-context-option,
+.gape-eduall-select-dropdown .select2-results__option--selected:hover .gape-course-context-option,
+.select2-container--default .gape-eduall-select-dropdown .select2-results__option--highlighted.select2-results__option--selectable:not(:hover) .gape-course-context-option {
+  color: #fff;
+}
+
+@media (max-width: 575.98px) {
+  #class-group-enrollments,
+  #class-group-teachers {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  #class-group-enrollments form,
+  #class-group-teachers form,
+  #class-group-enrollments .row,
+  #class-group-teachers .row {
+    min-width: 0;
+  }
+
+  #class-group-enrollments table,
+  #class-group-teachers table {
+    min-width: 640px;
+  }
+}
+
 .gape-document-field-error,
 .select2-selection.gape-document-field-error {
   border-color: #dc2626 !important;
@@ -13362,6 +14090,32 @@ table.dataTable.display > tbody > tr > * {
 .dashbord a[class*="px-20"],
 .dashbord a[class*="px-24"] {
   white-space: nowrap !important;
+}
+
+.gape-dashboard-title-group,
+.gape-dashboard-title-wrap,
+.gape-dashboard-actions {
+  min-width: 0;
+}
+
+.gape-dashboard-title-group {
+  flex: 1 1 auto;
+}
+
+.gape-dashboard-title-wrap {
+  flex: 1 1 auto;
+}
+
+.gape-dashboard-page-title {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.gape-dashboard-actions {
+  flex: 0 0 auto;
 }
 
 .dashbord .dashboard-sidebar .gape-sidebar-long-link,
@@ -13458,6 +14212,22 @@ table.dataTable.display > tbody > tr > * {
   .gape-management-card .form-select {
     min-width: 0 !important;
     width: 100%;
+  }
+
+  .gape-dashboard-topbar {
+    padding-inline: 20px !important;
+  }
+
+  .gape-dashboard-title-group {
+    gap: 14px !important;
+  }
+
+  .gape-dashboard-page-title {
+    font-size: 20px !important;
+  }
+
+  .gape-dashboard-actions {
+    gap: 10px !important;
   }
 
   .gape-management-card .d-flex.gap-8,
@@ -13568,6 +14338,1028 @@ table.dataTable.display > tbody > tr > * {
 
   #attendance form[method="get"] {
     width: 100%;
+  }
+}
+
+.gape-learning-actions,
+.gape-management-actions {
+  min-width: 0;
+}
+
+.gape-filter-toggle {
+  min-height: 44px;
+}
+
+.gape-filter-toggle.is-active {
+  background-color: var(--main-600) !important;
+  border-color: var(--main-600) !important;
+  color: #fff !important;
+}
+
+.gape-filter-toggle.is-active:hover,
+.gape-filter-toggle.is-active:focus-visible {
+  background-color: var(--main-700) !important;
+  border-color: var(--main-700) !important;
+  color: #fff !important;
+}
+
+.gape-filter-toggle.is-active i {
+  color: #fff !important;
+}
+
+.gape-sort-option,
+.gape-group-option {
+  background-color: transparent;
+  border: 0;
+  color: #475569;
+  min-width: 220px;
+  text-align: left;
+}
+
+.gape-sort-option:hover,
+.gape-sort-option:focus-visible,
+.gape-group-option:hover,
+.gape-group-option:focus-visible {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+.gape-sort-option.is-active,
+.gape-group-option.is-active {
+  background-color: var(--main-50);
+  color: var(--main-600);
+  font-weight: 600;
+}
+
+.gape-sort-arrows,
+.gape-group-arrows {
+  min-width: 42px;
+}
+
+.gape-sort-arrow,
+.gape-group-arrow {
+  color: #94a3b8;
+  opacity: .55;
+  transition: color .2s ease, opacity .2s ease;
+}
+
+.gape-sort-option[data-sort-state="normal"] .gape-sort-arrow--normal,
+.gape-sort-option[data-sort-state="reverse"] .gape-sort-arrow--reverse,
+.gape-group-option[data-group-state="normal"] .gape-group-arrow--normal,
+.gape-group-option[data-group-state="reverse"] .gape-group-arrow--reverse {
+  color: var(--main-600);
+  opacity: 1;
+}
+
+tr.gape-dynamic-group-row > td {
+  background: #dcecff !important;
+  border-bottom: 1px solid #b7d4f5 !important;
+  border-top: 18px solid #fff !important;
+  padding-block: 18px !important;
+}
+
+tr.gape-dynamic-group-row:first-child > td {
+  border-top-width: 0 !important;
+}
+
+tr.gape-dynamic-group-row--unit > td {
+  background: #f5f9ff !important;
+  border-bottom: 1px solid #d5e4f6 !important;
+  border-top: 8px solid #fff !important;
+  padding-block: 12px !important;
+}
+
+tr.gape-dynamic-group-row--course > td {
+  background: #fff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-top: 6px solid #f8fbff !important;
+  padding-block: 10px !important;
+}
+
+tr.gape-dynamic-group-row--subject > td,
+tr.gape-dynamic-group-row--class-group > td {
+  background: #fbfdff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  border-top: 4px solid #f8fbff !important;
+  padding-block: 10px !important;
+}
+
+.gape-dynamic-group-row:not(tr) {
+  background: #dcecff;
+  border: 0;
+  border-bottom: 1px solid #b7d4f5;
+  border-top: 18px solid #fff;
+  border-radius: 0;
+  padding: 18px 20px;
+}
+
+.gape-dynamic-group-row:not(tr):first-child {
+  border-top-width: 0;
+}
+
+.gape-dynamic-group-row--unit:not(tr) {
+  background: #f5f9ff;
+  border-bottom-color: #d5e4f6;
+  border-top-width: 8px;
+  padding-block: 12px;
+}
+
+.gape-dynamic-group-row--course:not(tr) {
+  background: #fff;
+  border-bottom-color: #e2e8f0;
+  border-top: 6px solid #f8fbff;
+  padding-block: 10px;
+}
+
+.gape-dynamic-group-row--subject:not(tr),
+.gape-dynamic-group-row--class-group:not(tr) {
+  background: #fbfdff;
+  border-bottom-color: #e2e8f0;
+  border-top: 4px solid #f8fbff;
+  padding-block: 10px;
+}
+
+.gape-dynamic-group-heading {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.gape-dynamic-group-title {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.gape-dynamic-group-title__text {
+  color: #334155;
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gape-dynamic-group-heading--unit.is-nested-under-organization,
+.gape-dynamic-group-heading--course.is-nested-under-organization {
+  padding-inline-start: 20px;
+}
+
+.gape-dynamic-group-heading--course.is-nested-under-unit {
+  padding-inline-start: 28px;
+}
+
+.gape-dynamic-group-heading--subject.is-nested-under-organization {
+  padding-inline-start: 40px;
+}
+
+.gape-dynamic-group-heading--subject.is-nested-under-unit {
+  padding-inline-start: 52px;
+}
+
+.gape-dynamic-group-heading--class-group.is-nested-under-organization {
+  padding-inline-start: 60px;
+}
+
+.gape-dynamic-group-heading--class-group.is-nested-under-unit {
+  padding-inline-start: 76px;
+}
+
+.gape-dynamic-group-heading--subject.is-nested-under-course {
+  padding-inline-start: 28px;
+}
+
+.gape-dynamic-group-heading--class-group.is-nested-under-course {
+  padding-inline-start: 52px;
+}
+
+.gape-dynamic-group-heading--class-group.is-nested-under-subject {
+  padding-inline-start: 28px;
+}
+
+.gape-dynamic-group-marker {
+  border-radius: 999px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 8px;
+  width: 8px;
+}
+
+.gape-dynamic-group-marker--unit {
+  background: var(--main-600);
+}
+
+.gape-dynamic-group-marker--course {
+  background: #16a34a;
+}
+
+.gape-dynamic-group-marker--subject {
+  background: #7c3aed;
+}
+
+.gape-dynamic-group-marker--class-group {
+  background: #f97316;
+}
+
+.gape-dynamic-group-chip {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #cddff4;
+  border-radius: 999px;
+  color: #475569;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.gape-dynamic-group-toggle {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: #64748b;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 28px;
+  justify-content: center;
+  padding: 0;
+  transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+  width: 28px;
+}
+
+.gape-dynamic-group-toggle:hover,
+.gape-dynamic-group-toggle:focus-visible {
+  background-color: #eef4fb;
+  border-color: #d5e4f6;
+  color: #334155;
+}
+
+.gape-dynamic-grouped-by-organization [data-gape-sort-row] > td:first-child {
+  padding-inline-start: 46px !important;
+}
+
+.gape-dynamic-grouped-by-unit [data-gape-sort-row] > td:first-child,
+.gape-dynamic-grouped-by-course [data-gape-sort-row] > td:first-child {
+  padding-inline-start: 36px !important;
+}
+
+.gape-dynamic-grouped-by-subject [data-gape-sort-row] > td:first-child,
+.gape-dynamic-grouped-by-class-group [data-gape-sort-row] > td:first-child {
+  padding-inline-start: 36px !important;
+}
+
+.gape-dynamic-grouped-by-organization [data-gape-dynamic-row-level="organization"] > td:first-child {
+  padding-inline-start: 46px !important;
+}
+
+.gape-dynamic-grouped-by-organization [data-gape-dynamic-row-level="unit"] > td:first-child,
+.gape-dynamic-grouped-by-organization [data-gape-dynamic-row-level="course"] > td:first-child {
+  padding-inline-start: 56px !important;
+}
+
+.gape-dynamic-grouped-by-organization [data-gape-dynamic-row-level="subject"] > td:first-child {
+  padding-inline-start: 76px !important;
+}
+
+.gape-dynamic-grouped-by-organization [data-gape-dynamic-row-level="class-group"] > td:first-child,
+.gape-dynamic-grouped-by-organization [data-gape-group-row-level="class-group"] > td:first-child {
+  padding-inline-start: 96px !important;
+}
+
+.gape-dynamic-grouped-by-unit [data-gape-dynamic-row-level="unit"] > td:first-child,
+.gape-dynamic-grouped-by-course [data-gape-dynamic-row-level="course"] > td:first-child,
+.gape-dynamic-grouped-by-subject [data-gape-dynamic-row-level="subject"] > td:first-child,
+.gape-dynamic-grouped-by-class-group [data-gape-dynamic-row-level="class-group"] > td:first-child {
+  padding-inline-start: 36px !important;
+}
+
+.gape-dynamic-grouped-by-unit [data-gape-dynamic-row-level="course"] > td:first-child,
+.gape-dynamic-grouped-by-course [data-gape-dynamic-row-level="subject"] > td:first-child {
+  padding-inline-start: 64px !important;
+}
+
+.gape-dynamic-grouped-by-unit [data-gape-dynamic-row-level="subject"] > td:first-child,
+.gape-dynamic-grouped-by-course [data-gape-dynamic-row-level="class-group"] > td:first-child,
+.gape-dynamic-grouped-by-course [data-gape-group-row-level="class-group"] > td:first-child {
+  padding-inline-start: 88px !important;
+}
+
+.gape-dynamic-grouped-by-unit [data-gape-dynamic-row-level="class-group"] > td:first-child {
+  padding-inline-start: 112px !important;
+}
+
+.gape-dynamic-grouped-by-subject [data-gape-dynamic-row-level="class-group"] > td:first-child,
+.gape-dynamic-grouped-by-subject [data-gape-group-row-level="class-group"] > td:first-child {
+  padding-inline-start: 64px !important;
+}
+
+.gape-dynamic-grouped-by-class-group [data-gape-group-row-level="class-group"] > td:first-child {
+  padding-inline-start: 36px !important;
+}
+
+[data-gape-grouped-only-content] {
+  display: none !important;
+}
+
+.gape-dynamic-grouped [data-gape-normal-only-content] {
+  display: none !important;
+}
+
+.gape-dynamic-grouped [data-gape-grouped-only-content] {
+  display: inline !important;
+}
+
+@media (max-width: 767.98px) {
+  .gape-learning-actions,
+  .gape-management-actions {
+    width: 100%;
+  }
+
+  .gape-learning-actions > .dropdown,
+  .gape-management-actions > .dropdown {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+  }
+
+  .gape-learning-actions > .dropdown > button,
+  .gape-management-actions > .dropdown > button,
+  .gape-learning-actions > a,
+  .gape-management-actions > a,
+  .gape-learning-actions > button,
+  .gape-management-actions > button {
+    justify-content: center;
+    text-align: center;
+    white-space: nowrap;
+    width: 100%;
+  }
+
+  .gape-dynamic-group-heading--unit.is-nested-under-organization,
+  .gape-dynamic-group-heading--course.is-nested-under-organization,
+  .gape-dynamic-group-heading--course.is-nested-under-unit {
+    padding-inline-start: 20px;
+  }
+
+  .gape-dynamic-group-heading--subject.is-nested-under-organization,
+  .gape-dynamic-group-heading--subject.is-nested-under-unit,
+  .gape-dynamic-group-heading--class-group.is-nested-under-organization,
+  .gape-dynamic-group-heading--class-group.is-nested-under-unit,
+  .gape-dynamic-group-heading--class-group.is-nested-under-course {
+    padding-inline-start: 28px;
+  }
+
+  .gape-dynamic-group-heading--subject.is-nested-under-course,
+  .gape-dynamic-group-heading--class-group.is-nested-under-subject {
+    padding-inline-start: 20px;
+  }
+
+  .gape-dynamic-grouped-by-organization [data-gape-sort-row] > td:first-child {
+    padding-inline-start: 46px !important;
+  }
+
+  .gape-dynamic-grouped-by-unit [data-gape-sort-row] > td:first-child,
+  .gape-dynamic-grouped-by-course [data-gape-sort-row] > td:first-child {
+    padding-inline-start: 36px !important;
+  }
+
+  .gape-dynamic-grouped-by-subject [data-gape-sort-row] > td:first-child,
+  .gape-dynamic-grouped-by-class-group [data-gape-sort-row] > td:first-child {
+    padding-inline-start: 36px !important;
+  }
+
+  .gape-dynamic-grouped-by-organization [data-gape-dynamic-row-level="organization"] > td:first-child {
+    padding-inline-start: 46px !important;
+  }
+
+  .gape-dynamic-grouped-by-organization [data-gape-dynamic-row-level="unit"] > td:first-child,
+  .gape-dynamic-grouped-by-organization [data-gape-dynamic-row-level="course"] > td:first-child {
+    padding-inline-start: 56px !important;
+  }
+
+  .gape-dynamic-grouped-by-organization [data-gape-dynamic-row-level="subject"] > td:first-child,
+  .gape-dynamic-grouped-by-organization [data-gape-dynamic-row-level="class-group"] > td:first-child {
+    padding-inline-start: 64px !important;
+  }
+
+  .gape-dynamic-grouped-by-unit [data-gape-dynamic-row-level="unit"] > td:first-child,
+  .gape-dynamic-grouped-by-course [data-gape-dynamic-row-level="course"] > td:first-child,
+  .gape-dynamic-grouped-by-subject [data-gape-dynamic-row-level="subject"] > td:first-child,
+  .gape-dynamic-grouped-by-class-group [data-gape-dynamic-row-level="class-group"] > td:first-child {
+    padding-inline-start: 36px !important;
+  }
+
+  .gape-dynamic-grouped-by-unit [data-gape-dynamic-row-level="course"] > td:first-child,
+  .gape-dynamic-grouped-by-course [data-gape-dynamic-row-level="subject"] > td:first-child,
+  .gape-dynamic-grouped-by-subject [data-gape-dynamic-row-level="class-group"] > td:first-child {
+    padding-inline-start: 56px !important;
+  }
+
+  .gape-dynamic-grouped-by-unit [data-gape-dynamic-row-level="subject"] > td:first-child,
+  .gape-dynamic-grouped-by-unit [data-gape-dynamic-row-level="class-group"] > td:first-child,
+  .gape-dynamic-grouped-by-course [data-gape-dynamic-row-level="class-group"] > td:first-child {
+    padding-inline-start: 64px !important;
+  }
+
+  .gape-dynamic-grouped-by-organization [data-gape-group-row-level="class-group"] > td:first-child,
+  .gape-dynamic-grouped-by-course [data-gape-group-row-level="class-group"] > td:first-child,
+  .gape-dynamic-grouped-by-subject [data-gape-group-row-level="class-group"] > td:first-child,
+  .gape-dynamic-grouped-by-class-group [data-gape-group-row-level="class-group"] > td:first-child {
+    padding-inline-start: 52px !important;
+  }
+
+}
+
+.gape-course-period-template.is-occurrence-conflict {
+  border-color: #dc3545 !important;
+  background-color: #fff5f5;
+  box-shadow: inset 3px 0 0 #dc3545;
+}
+
+.gape-course-occurrence-form .is-invalid {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.16rem rgba(220, 53, 69, 0.14);
+}
+
+.gape-course-occurrence-form input[type="date"].is-invalid {
+  background-image: none !important;
+}
+
+.gape-course-occurrence-validation {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #dc3545;
+  border-radius: 8px;
+  color: #9f1c28;
+  background-color: #fff5f5;
+  font-size: 13px;
+}
+
+.gape-summary-card {
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #e6edf0;
+  border-radius: 8px;
+  color: #172033;
+  display: flex;
+  gap: 14px;
+  min-height: 118px;
+  padding: 20px;
+  text-align: left;
+  width: 100%;
+}
+
+.gape-summary-card__icon {
+  align-items: center;
+  border-radius: 8px;
+  display: inline-flex;
+  flex: 0 0 48px;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+
+.gape-summary-card--detail {
+  display: block;
+  min-height: 144px;
+}
+
+.gape-summary-card--detail .gape-summary-card__icon {
+  display: inline-flex;
+  height: 44px;
+  margin-bottom: 14px;
+  width: 44px;
+}
+
+.gape-list-pagination {
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: max-content;
+}
+
+.gape-list-pagination-pages {
+  align-items: center;
+  display: flex;
+  gap: 6px;
+  width: max-content;
+}
+
+.gape-list-pagination-button {
+  align-items: center;
+  background: #fff;
+  border: 0;
+  border-radius: 8px;
+  color: var(--main-600);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 15px;
+  font-weight: 600;
+  height: 38px;
+  justify-content: center;
+  min-width: 38px;
+  padding: 0 10px;
+  transition: background-color .2s ease, color .2s ease, opacity .2s ease;
+}
+
+.gape-list-pagination-button:hover:not(:disabled) {
+  background: var(--main-50);
+}
+
+.gape-list-pagination-button.is-active {
+  background: var(--main-600);
+  color: #fff;
+}
+
+.gape-list-pagination-button:disabled {
+  color: #d5dbe8;
+  cursor: not-allowed;
+}
+
+.gape-list-pagination-button.is-disabled {
+  color: #d5dbe8;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.gape-management-server-pagination {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 18px;
+  justify-content: space-between;
+}
+
+.gape-list-pagination-arrow {
+  background: transparent;
+  font-size: 22px;
+  min-width: 30px;
+  padding: 0;
+}
+
+.gape-list-pagination-ellipsis {
+  color: var(--main-600);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.gape-list-load-all {
+  align-items: center;
+  background: #fff;
+  border: 1px solid var(--main-600);
+  border-radius: 8px;
+  color: var(--main-600);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 700;
+  height: 38px;
+  justify-content: center;
+  padding: 0 14px;
+  width: 100%;
+}
+
+.gape-list-load-all:hover:not(:disabled),
+.gape-list-load-all.is-active {
+  background: var(--main-600);
+  color: #fff;
+}
+
+.gape-list-load-all:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+/* The pagination already identifies the next portion of the list, so the
+   final row does not need a second horizontal rule below it. */
+.gape-course-table:not(.is-course-grouped) tbody[data-course-list] > tr:last-child > td,
+.gape-subject-table:not(.is-subject-grouped) tbody[data-subject-list] > tr:last-child > td {
+  border-bottom: 0 !important;
+}
+
+@media (max-width: 575px) {
+  .gape-list-pagination-pages {
+    gap: 6px;
+  }
+
+  .gape-list-pagination-button {
+    font-size: 15px;
+    height: 38px;
+    min-width: 38px;
+    padding: 0 9px;
+  }
+
+  .gape-list-pagination-arrow {
+    font-size: 22px;
+    min-width: 30px;
+    padding: 0;
+  }
+}
+
+/* Deferred management archives intentionally share the visual contract of the
+   Completed Lessons / Completed Assessments row. */
+.gape-deferred-management-archive-row {
+  align-items: center;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(260px, 1.45fr) minmax(180px, .95fr) minmax(130px, .6fr) minmax(115px, .5fr) minmax(130px, .55fr);
+}
+
+.gape-learning-management-group-icon {
+  align-items: center;
+  border-radius: 8px;
+  display: inline-flex;
+  flex: 0 0 40px;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.gape-learning-management-completed-divider {
+  align-items: center;
+  color: #b91c1c;
+  display: flex;
+  font-size: 12px;
+  font-weight: 600;
+  gap: 12px;
+  letter-spacing: .02em;
+  margin: 6px 0 0;
+  text-transform: uppercase;
+}
+
+.gape-learning-management-completed-divider::before,
+.gape-learning-management-completed-divider::after {
+  background: #fecaca;
+  content: "";
+  flex: 1;
+  height: 1px;
+}
+
+.gape-learning-management-completed-node {
+  border-color: #fecaca !important;
+  padding-inline: 16px !important;
+}
+
+.gape-learning-management-completed-panel {
+  border-top: 1px solid #fecaca;
+  margin: 16px -16px 0;
+}
+
+.gape-learning-management-completed-content {
+  padding: 16px 16px 0 36px;
+}
+
+.gape-learning-management-load-state {
+  align-items: center;
+  color: #64748b;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  gap: 8px 16px;
+}
+
+.gape-learning-management-load-state span + span::before {
+  background: #cbd5e1;
+  border-radius: 999px;
+  content: "";
+  display: inline-block;
+  height: 4px;
+  margin-right: 16px;
+  vertical-align: middle;
+  width: 4px;
+}
+
+.gape-learning-management-deferred-copy {
+  background: #fffafa;
+  border: 1px dashed #fecaca;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.gape-node-meta {
+  color: #64748b;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 575px) {
+  .gape-deferred-management-archive-row {
+    grid-template-columns: 1fr;
+  }
+
+  .gape-deferred-management-archive-spacer {
+    display: none;
+  }
+
+  .gape-learning-management-completed-content {
+    padding-left: 16px;
+  }
+}
+
+/* Management pages already load a bounded page of cards.  Keep their mobile
+   content in the document flow so an opened published/completed archive has
+   the same single-scroll behaviour as Completed Lessons. */
+@media (max-width: 991.98px) {
+  .aac-surface .gape-mobile-list {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+}
+
+/*
+ * Shared Class Group Management contract.
+ *
+ * Enrollments, grades, certificates and attendance keep their domain-specific
+ * details, but their outer list is deliberately the same five-column card
+ * structure as Class Group Management.  Keeping this in the common sheet
+ * prevents each tab from reintroducing a table/mobile-card variant with a
+ * different paginator position or responsive geometry.
+ */
+.gape-structured-management-panel,
+.aac-surface.gape-structured-management-panel {
+  background: #fff;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+  min-width: 0;
+}
+
+.gape-structured-management-panel[data-deferred-management-root] {
+  display: flex;
+  flex-direction: column;
+}
+
+.gape-structured-management-panel > .gape-management-card__header {
+  order: 1;
+}
+
+.gape-structured-management-panel > [data-deferred-management-active-content] {
+  min-width: 0;
+  order: 2;
+}
+
+/* Class Group Management communicates loading through the bounded list and
+   paginator; the explanatory line used by the previous variants displaced the
+   archive and made otherwise identical tabs look unrelated. */
+.gape-structured-management-panel > [data-deferred-management-load-state],
+.gape-structured-management-panel > [data-learning-management-load-state] {
+  display: none;
+}
+
+.gape-structured-management-panel > [data-deferred-management-archive] {
+  order: 3;
+}
+
+.gape-structured-management-panel > [data-deferred-management-pagination] {
+  order: 4;
+}
+
+/* Bootstrap's .d-flex uses !important, which otherwise defeats the native
+   hidden attribute on a paginator whose collection has only one page. */
+.gape-structured-management-panel > [data-deferred-management-pagination][hidden] {
+  display: none !important;
+}
+
+.gape-structured-management-panel .gape-desktop-table,
+.gape-structured-management-panel .gape-learning-table-scroll {
+  min-width: 0;
+  overflow: visible !important;
+}
+
+.gape-structured-management-panel .gape-desktop-table > table,
+.gape-structured-management-panel .gape-learning-table-scroll > table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > thead,
+.gape-structured-management-panel .gape-desktop-table > table > tbody,
+.gape-structured-management-panel .gape-learning-table-scroll > table > thead,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody {
+  display: block;
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > thead > tr,
+.gape-structured-management-panel .gape-learning-table-scroll > table > thead > tr,
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row],
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row],
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row],
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row {
+  align-items: center;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(260px, 1.45fr) minmax(180px, .95fr) minmax(105px, .45fr) minmax(115px, .5fr) minmax(110px, .45fr);
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > thead > tr,
+.gape-structured-management-panel .gape-learning-table-scroll > table > thead > tr {
+  border-bottom: 1px solid var(--neutral-30);
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 16px 16px 12px;
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > thead th,
+.gape-structured-management-panel .gape-learning-table-scroll > table > thead th {
+  border: 0 !important;
+  color: inherit !important;
+  font: inherit !important;
+  min-width: 0;
+  padding: 0 !important;
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > tbody,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row],
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row],
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row],
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row {
+  background: #fff;
+  border: 1px solid var(--neutral-30);
+  border-radius: 8px;
+  min-width: 0;
+  padding: 12px 16px;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row]:hover,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row]:hover,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row]:hover,
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row:hover,
+[data-deferred-management-root] .gape-desktop-table > table > tbody > tr[data-gape-sort-row]:hover,
+[data-deferred-management-root] .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row]:hover,
+[data-deferred-management-root] .gape-learning-table-scroll > table > tbody > tr[data-learning-row]:hover,
+[data-deferred-management-root] .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row:hover {
+  /* Match Class Group Management: a hovered card keeps its white surface;
+     the bounded blue border and soft shadow are the only hover feedback. */
+  background-color: #fff !important;
+  border-color: rgba(37, 99, 235, .28);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, .05);
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row] > td,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row] > td,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row] > td,
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row > td,
+[data-deferred-management-root] .gape-desktop-table > table > tbody > tr[data-gape-sort-row] > td,
+[data-deferred-management-root] .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row] > td,
+[data-deferred-management-root] .gape-learning-table-scroll > table > tbody > tr[data-learning-row] > td,
+[data-deferred-management-root] .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row > td {
+  /* Bootstrap paints each table cell white through a large inset shadow.  The
+     rows above are now cards, so that paint must be transparent or hovering a
+     card looks like five disconnected white rectangles. */
+  background-color: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  min-width: 0;
+  padding: 0 !important;
+}
+
+/* Several legacy tables declared percentage widths per column.  Once their
+   rows become the shared Class Group-style grid, those widths shrink the grid
+   items themselves (most visibly student names and e-mails in Certificates).
+   The grid is now the single owner of column geometry. */
+.gape-structured-management-panel .gape-desktop-table > table,
+.gape-structured-management-panel .gape-learning-table-scroll > table {
+  table-layout: auto !important;
+  width: 100% !important;
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > thead > tr > th,
+.gape-structured-management-panel .gape-learning-table-scroll > table > thead > tr > th,
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row] > td,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row] > td,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row] > td,
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row > td {
+  max-width: none !important;
+  width: auto !important;
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row] > td:nth-child(3),
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row] > td:nth-child(3),
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row] > td:nth-child(3),
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row > td:nth-child(3) {
+  justify-self: start;
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr.collapse,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr.collapse,
+[data-deferred-management-root] .gape-desktop-table > table > tbody > tr.collapse,
+[data-deferred-management-root] .gape-learning-table-scroll > table > tbody > tr.collapse,
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr.collapsing,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr.collapsing,
+[data-deferred-management-root] .gape-desktop-table > table > tbody > tr.collapsing,
+[data-deferred-management-root] .gape-learning-table-scroll > table > tbody > tr.collapsing {
+  width: 100%;
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr.collapse.show,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr.collapse.show,
+[data-deferred-management-root] .gape-desktop-table > table > tbody > tr.collapse.show,
+[data-deferred-management-root] .gape-learning-table-scroll > table > tbody > tr.collapse.show {
+  display: block;
+}
+
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr.collapse > td,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr.collapse > td,
+[data-deferred-management-root] .gape-desktop-table > table > tbody > tr.collapse > td,
+[data-deferred-management-root] .gape-learning-table-scroll > table > tbody > tr.collapse > td,
+.gape-structured-management-panel .gape-desktop-table > table > tbody > tr.collapsing > td,
+.gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr.collapsing > td,
+[data-deferred-management-root] .gape-desktop-table > table > tbody > tr.collapsing > td,
+[data-deferred-management-root] .gape-learning-table-scroll > table > tbody > tr.collapsing > td {
+  display: block;
+  max-width: none !important;
+  width: 100% !important;
+}
+
+.gape-structured-management-panel .aac-expanded-cell,
+[data-deferred-management-root] .aac-expanded-cell {
+  border-radius: 8px;
+  margin-top: -4px;
+}
+
+.gape-structured-management-panel .aac-expanded-panel,
+[data-deferred-management-root] .aac-expanded-panel {
+  box-sizing: border-box;
+  max-width: none;
+  min-width: 0;
+  width: 100%;
+}
+
+/* The archive belongs before the paginator, exactly as Completed Class Groups.
+   Its nested source list intentionally omits a second column heading. */
+.gape-structured-management-panel [data-deferred-management-archive-content] .gape-desktop-table > table > thead,
+.gape-structured-management-panel [data-deferred-management-archive-content] .gape-learning-table-scroll > table > thead {
+  display: none;
+}
+
+.gape-structured-management-panel [data-deferred-management-archive-content] .gape-desktop-table > table > tbody,
+.gape-structured-management-panel [data-deferred-management-archive-content] .gape-learning-table-scroll > table > tbody {
+  margin-top: 0;
+}
+
+.gape-deferred-management-archive-row {
+  grid-template-columns: minmax(260px, 1.45fr) minmax(180px, .95fr) minmax(105px, .45fr) minmax(115px, .5fr) minmax(110px, .45fr);
+}
+
+@media (max-width: 575.98px) {
+  .gape-structured-management-panel {
+    max-width: calc(100vw - 48px);
+    overflow: hidden;
+  }
+
+  .gape-structured-management-panel .gape-desktop-table,
+  .gape-structured-management-panel .gape-learning-table-scroll {
+    display: block !important;
+  }
+
+  .gape-structured-management-panel .gape-desktop-table > table > thead,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > thead {
+    display: none;
+  }
+
+  .gape-structured-management-panel .gape-desktop-table > table > tbody,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody {
+    margin-top: 0;
+  }
+
+  .gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row],
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row],
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row],
+  .gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row {
+    grid-template-columns: 1fr;
+  }
+
+  .gape-structured-management-panel .gape-mobile-list {
+    display: none !important;
+  }
+
+  .gape-structured-management-panel .gape-deferred-management-archive-row {
+    grid-template-columns: 1fr;
   }
 }
 

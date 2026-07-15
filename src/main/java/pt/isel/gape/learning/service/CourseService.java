@@ -4,8 +4,16 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalDate;
+import java.time.MonthDay;
+import java.time.YearMonth;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 
 import pt.isel.gape.access.dao.PermissionDAO;
 import pt.isel.gape.access.model.AccessProfileType;
@@ -13,13 +21,17 @@ import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.common.validation.AcademicTextValidator;
 import pt.isel.gape.common.validation.MediaPathValidator;
 import pt.isel.gape.learning.dao.CourseDAO;
+import pt.isel.gape.learning.dao.CoursePeriodTemplateDAO;
 import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseCreateCommand;
+import pt.isel.gape.learning.model.CourseFrequency;
+import pt.isel.gape.learning.model.CoursePeriodTemplate;
+import pt.isel.gape.learning.model.CoursePeriodTemplateCommand;
 import pt.isel.gape.learning.model.CourseState;
 import pt.isel.gape.learning.model.CourseSubjectAssociation;
-import pt.isel.gape.learning.model.CourseSubjectState;
 import pt.isel.gape.learning.model.CourseUpdateCommand;
+import pt.isel.gape.learning.model.CurricularTerm;
 import pt.isel.gape.security.authorization.AccessContext;
 import pt.isel.gape.security.authorization.AccessEntityType;
 import pt.isel.gape.security.authorization.AuthorizationDecision;
@@ -41,6 +53,7 @@ public final class CourseService {
 
     private final ConnectionProvider connectionProvider;
     private final CourseDAO courseDAO;
+    private final CoursePeriodTemplateDAO coursePeriodTemplateDAO;
     private final CourseSubjectDAO courseSubjectDAO;
     private final OrganizationDAO organizationDAO;
     private final OrganicUnitDAO organicUnitDAO;
@@ -50,6 +63,7 @@ public final class CourseService {
     public CourseService(
             ConnectionProvider connectionProvider,
             CourseDAO courseDAO,
+            CoursePeriodTemplateDAO coursePeriodTemplateDAO,
             CourseSubjectDAO courseSubjectDAO,
             OrganizationDAO organizationDAO,
             OrganicUnitDAO organicUnitDAO,
@@ -58,6 +72,7 @@ public final class CourseService {
     ) {
         this.connectionProvider = Objects.requireNonNull(connectionProvider, "connectionProvider is required");
         this.courseDAO = Objects.requireNonNull(courseDAO, "courseDAO is required");
+        this.coursePeriodTemplateDAO = Objects.requireNonNull(coursePeriodTemplateDAO, "coursePeriodTemplateDAO is required");
         this.courseSubjectDAO = Objects.requireNonNull(courseSubjectDAO, "courseSubjectDAO is required");
         this.organizationDAO = Objects.requireNonNull(organizationDAO, "organizationDAO is required");
         this.organicUnitDAO = Objects.requireNonNull(organicUnitDAO, "organicUnitDAO is required");
@@ -69,6 +84,7 @@ public final class CourseService {
         this(
                 connectionProvider,
                 new CourseDAO(connectionProvider),
+                new CoursePeriodTemplateDAO(connectionProvider),
                 new CourseSubjectDAO(connectionProvider),
                 new OrganizationDAO(connectionProvider),
                 new OrganicUnitDAO(connectionProvider),
@@ -91,6 +107,11 @@ public final class CourseService {
     ) {
         try {
             validateCreateCommand(command);
+            List<CoursePeriodTemplateCommand> periodTemplates = normalizedPeriodTemplates(
+                    requireDurationInYears(command.duration()),
+                    command.frequency(),
+                    command.periodTemplates()
+            );
             requireCourseCreateContext(
                     actorUserId,
                     sessionId,
@@ -105,6 +126,7 @@ public final class CourseService {
                 try {
                     validateOrganizationAndUnit(connection, command.organizationId(), command.organicUnitId());
                     long courseId = courseDAO.create(connection, command);
+                    coursePeriodTemplateDAO.replaceForCourse(connection, courseId, periodTemplates);
                     auditService.record(connection, actorUserId, sessionId, "COURSE_CREATE",
                             "course", Long.toString(courseId), "success", sourceIp);
                     connection.commit();
@@ -182,6 +204,12 @@ public final class CourseService {
     ) {
         try {
             validateUpdateCommand(command);
+            int durationYears = requireDurationInYears(command.duration());
+            List<CoursePeriodTemplateCommand> periodTemplates = normalizedPeriodTemplates(
+                    durationYears,
+                    command.frequency(),
+                    command.periodTemplates()
+            );
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
@@ -199,7 +227,14 @@ public final class CourseService {
                     );
                     validateOrganizationAndUnit(connection, command.organizationId(), command.organicUnitId());
                     MediaPathValidator.optionalEntityProfilePath(command.photo(), "courses", courseId, "Course photo");
+                    boolean hasOccurrences = courseDAO.hasCourseOccurrences(connection, courseId);
+                    if (hasOccurrences) {
+                        requireOccurrenceStableCourseCalendar(connection, current, command, periodTemplates);
+                    }
                     courseDAO.update(connection, courseId, command);
+                    if (!hasOccurrences) {
+                        coursePeriodTemplateDAO.replaceForCourse(connection, courseId, periodTemplates);
+                    }
                     auditService.record(connection, actorUserId, sessionId, "COURSE_UPDATE",
                             "course", Long.toString(courseId), "success", sourceIp);
                     connection.commit();
@@ -535,12 +570,9 @@ public final class CourseService {
             String sourceIp
     ) {
         try {
-            boolean hasActiveAssociation = false;
-            for (CourseSubjectAssociation association : courseSubjectDAO.findActiveByCourse(courseId)) {
-                if (association.state() != CourseSubjectState.ACTIVE) {
-                    continue;
-                }
-                hasActiveAssociation = true;
+            boolean hasAssociation = false;
+            for (CourseSubjectAssociation association : courseSubjectDAO.findByCourse(courseId)) {
+                hasAssociation = true;
                 AuthorizationDecision subjectDecision = permissionChecker.check(new AccessContext(
                         actorUserId,
                         sessionId,
@@ -554,9 +586,9 @@ public final class CourseService {
                     return subjectDecision;
                 }
             }
-            return AuthorizationDecision.deny(hasActiveAssociation
+            return AuthorizationDecision.deny(hasAssociation
                     ? "missing_coordinated_course_subject"
-                    : "course_has_no_active_subjects");
+                    : "course_has_no_subjects");
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to check coordinator course context", exception);
         }
@@ -649,6 +681,7 @@ public final class CourseService {
         Objects.requireNonNull(command.state(), "course state is required");
         requirePositiveDecimal(command.ects(), "Course ECTS is required");
         requirePositiveDecimal(command.certificateMaxGrade(), "Course certificate max grade is required");
+        Objects.requireNonNull(command.frequency(), "course frequency is required");
         requireDurationInYears(command.duration());
     }
 
@@ -664,16 +697,152 @@ public final class CourseService {
         Objects.requireNonNull(command.state(), "course state is required");
         requirePositiveDecimal(command.ects(), "Course ECTS is required");
         requirePositiveDecimal(command.certificateMaxGrade(), "Course certificate max grade is required");
+        Objects.requireNonNull(command.frequency(), "course frequency is required");
         requireDurationInYears(command.duration());
     }
 
-    private static void requireDurationInYears(String value) {
-        if (value == null || value.isBlank()) {
-            return;
+    private void requireOccurrenceStableCourseCalendar(
+            Connection connection,
+            Course current,
+            CourseUpdateCommand command,
+            List<CoursePeriodTemplateCommand> submittedTemplates
+    ) throws SQLException {
+        if (!Objects.equals(current.duration(), command.duration())
+                || current.frequency() != command.frequency()) {
+            throw new IllegalStateException("Course duration and frequency cannot change after temporal occurrences exist");
         }
-        if (!value.trim().matches("\\d+")) {
+        List<CoursePeriodTemplateCommand> existingTemplates = coursePeriodTemplateDAO.findByCourse(connection, current.id())
+                .stream()
+                .map(CourseService::templateCommand)
+                .sorted(templateComparator())
+                .toList();
+        List<CoursePeriodTemplateCommand> normalizedSubmitted = submittedTemplates.stream()
+                .sorted(templateComparator())
+                .toList();
+        if (!existingTemplates.equals(normalizedSubmitted)) {
+            throw new IllegalStateException("Course period dates cannot change after temporal occurrences exist");
+        }
+    }
+
+    public static List<CoursePeriodTemplateCommand> normalizedPeriodTemplates(
+            int durationYears,
+            CourseFrequency frequency,
+            List<CoursePeriodTemplateCommand> submittedTemplates
+    ) {
+        Objects.requireNonNull(frequency, "course frequency is required");
+        List<CoursePeriodTemplateCommand> templates = submittedTemplates == null || submittedTemplates.isEmpty()
+                ? defaultPeriodTemplates(durationYears, frequency)
+                : submittedTemplates;
+        validatePeriodTemplates(durationYears, frequency, templates);
+        return templates.stream()
+                .sorted(templateComparator())
+                .toList();
+    }
+
+    public static List<CoursePeriodTemplateCommand> defaultPeriodTemplates(
+            int durationYears,
+            CourseFrequency frequency
+    ) {
+        if (durationYears <= 0) {
+            throw new IllegalArgumentException("Course duration must be greater than zero");
+        }
+        Objects.requireNonNull(frequency, "course frequency is required");
+        List<CoursePeriodTemplateCommand> templates = new ArrayList<>();
+        for (int year = 1; year <= durationYears; year++) {
+            for (CurricularTerm term : frequency.terms()) {
+                int startMonth = ((term.position() - 1) * frequency.monthsPerPeriod()) + 1;
+                int endMonth = term.position() * frequency.monthsPerPeriod();
+                templates.add(new CoursePeriodTemplateCommand(
+                        year,
+                        term,
+                        startMonth,
+                        1,
+                        endMonth,
+                        YearMonth.of(2001, endMonth).lengthOfMonth()
+                ));
+            }
+        }
+        return List.copyOf(templates);
+    }
+
+    private static void validatePeriodTemplates(
+            int durationYears,
+            CourseFrequency frequency,
+            List<CoursePeriodTemplateCommand> templates
+    ) {
+        int expectedCount = durationYears * frequency.periodsPerYear();
+        if (templates.size() != expectedCount) {
+            throw new IllegalArgumentException("Course period frequency requires exactly " + expectedCount + " periods");
+        }
+        Set<String> seen = new HashSet<>();
+        for (CoursePeriodTemplateCommand template : templates) {
+            if (template.curricularYear() < 1 || template.curricularYear() > durationYears) {
+                throw new IllegalArgumentException("Course period year is outside the course duration");
+            }
+            Objects.requireNonNull(template.term(), "course period term is required");
+            if (!template.term().belongsTo(frequency)) {
+                throw new IllegalArgumentException("Course period term does not match the selected frequency");
+            }
+            String key = template.curricularYear() + ":" + template.term().toDatabaseValue();
+            if (!seen.add(key)) {
+                throw new IllegalArgumentException("Course period is duplicated: " + key);
+            }
+            validateMonthDay(template.startsMonth(), template.startsDay(), "Course period start date");
+            validateMonthDay(template.endsMonth(), template.endsDay(), "Course period end date");
+        }
+        for (int year = 1; year <= durationYears; year++) {
+            for (CurricularTerm term : frequency.terms()) {
+                String key = year + ":" + term.toDatabaseValue();
+                if (!seen.contains(key)) {
+                    throw new IllegalArgumentException("Course period is missing: " + key);
+                }
+            }
+        }
+    }
+
+    private static void validateMonthDay(int month, int day, String label) {
+        try {
+            MonthDay.of(month, day);
+        } catch (RuntimeException exception) {
+            throw new IllegalArgumentException(label + " must be a valid month/day", exception);
+        }
+    }
+
+    private static Comparator<CoursePeriodTemplateCommand> templateComparator() {
+        return Comparator
+                .comparingInt(CoursePeriodTemplateCommand::curricularYear)
+                .thenComparingInt(template -> template.term().position());
+    }
+
+    private static CoursePeriodTemplateCommand templateCommand(CoursePeriodTemplate template) {
+        return new CoursePeriodTemplateCommand(
+                template.curricularYear(),
+                template.term(),
+                template.startsMonth(),
+                template.startsDay(),
+                template.endsMonth(),
+                template.endsDay()
+        );
+    }
+
+    private static int requireDurationInYears(String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Course duration in years is required");
+        }
+        String normalized = value.trim().toLowerCase(Locale.ROOT);
+        if (!normalized.matches("\\d+")) {
             throw new IllegalArgumentException("Course duration must contain only digits");
         }
+        int duration;
+        try {
+            duration = Integer.parseInt(normalized);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Course duration must be a valid year count");
+        }
+        if (duration <= 0) {
+            throw new IllegalArgumentException("Course duration must be greater than zero");
+        }
+        return duration;
     }
 
     private static void requirePositiveDecimal(BigDecimal value, String message) {

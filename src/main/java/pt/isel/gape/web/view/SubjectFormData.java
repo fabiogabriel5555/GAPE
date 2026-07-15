@@ -1,9 +1,6 @@
 package pt.isel.gape.web.view;
 
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Set;
 import pt.isel.gape.learning.model.Subject;
 import pt.isel.gape.learning.model.SubjectState;
 
@@ -11,6 +8,7 @@ public final class SubjectFormData {
 
     private final Long id;
     private final String organizationId;
+    private final String organicUnitId;
     private final String name;
     private final String acronym;
     private final String photo;
@@ -19,16 +17,11 @@ public final class SubjectFormData {
     private final String finalGradeMax;
     private final String workloadHours;
     private final String state;
-    private final String coordinatorUserId;
-    private final String initialCourseId;
-    private final Set<String> initialCourseIds;
-    private final String initialCurricularYear;
-    private final String initialTerm;
-    private final boolean initialMandatory;
 
     public SubjectFormData(
             Long id,
             String organizationId,
+            String organicUnitId,
             String name,
             String acronym,
             String photo,
@@ -36,16 +29,11 @@ public final class SubjectFormData {
             String ects,
             String finalGradeMax,
             String workloadHours,
-            String state,
-            String coordinatorUserId,
-            String initialCourseId,
-            Set<String> initialCourseIds,
-            String initialCurricularYear,
-            String initialTerm,
-            boolean initialMandatory
+            String state
     ) {
         this.id = id;
         this.organizationId = organizationId;
+        this.organicUnitId = organicUnitId;
         this.name = name;
         this.acronym = acronym;
         this.photo = photo;
@@ -54,20 +42,9 @@ public final class SubjectFormData {
         this.finalGradeMax = finalGradeMax;
         this.workloadHours = workloadHours;
         this.state = state;
-        this.coordinatorUserId = coordinatorUserId;
-        this.initialCourseId = initialCourseId;
-        this.initialCourseIds = initialCourseIds == null ? Set.of() : Set.copyOf(new LinkedHashSet<>(initialCourseIds));
-        this.initialCurricularYear = initialCurricularYear;
-        this.initialTerm = initialTerm;
-        this.initialMandatory = initialMandatory;
     }
 
     public static SubjectFormData blank(Long organizationId) {
-        return blank(organizationId, null);
-    }
-
-    public static SubjectFormData blank(Long organizationId, Long initialCourseId) {
-        String selectedInitialCourseId = initialCourseId == null ? "" : Long.toString(initialCourseId);
         return new SubjectFormData(
                 null,
                 organizationId == null ? "" : Long.toString(organizationId),
@@ -76,15 +53,10 @@ public final class SubjectFormData {
                 "",
                 "",
                 "",
+                "",
                 "20",
                 "",
-                SubjectState.ACTIVE.name(),
-                "",
-                selectedInitialCourseId,
-                selectedInitialCourseId.isBlank() ? Set.of() : Set.of(selectedInitialCourseId),
-                "",
-                "",
-                true
+                SubjectState.ACTIVE.name()
         );
     }
 
@@ -92,6 +64,7 @@ public final class SubjectFormData {
         return new SubjectFormData(
                 subject.id(),
                 Long.toString(subject.organizationId()),
+                subject.organicUnitId() == null ? "" : Long.toString(subject.organicUnitId()),
                 subject.name(),
                 subject.acronym() == null ? "" : subject.acronym(),
                 subject.photo() == null ? "" : subject.photo(),
@@ -99,13 +72,7 @@ public final class SubjectFormData {
                 subject.ects() == null ? "" : subject.ects().stripTrailingZeros().toPlainString(),
                 subject.finalGradeMax() == null ? "" : subject.finalGradeMax().stripTrailingZeros().toPlainString(),
                 subject.workloadHours() == null ? "" : Integer.toString(subject.workloadHours()),
-                subject.state().name(),
-                "",
-                "",
-                Set.of(),
-                "",
-                "",
-                true
+                subject.state().name()
         );
     }
 
@@ -113,6 +80,7 @@ public final class SubjectFormData {
         return new SubjectFormData(
                 id,
                 value(request, "organizationId"),
+                value(request, "organicUnitId"),
                 value(request, "name"),
                 value(request, "acronym"),
                 value(request, "photo"),
@@ -120,13 +88,7 @@ public final class SubjectFormData {
                 value(request, "ects"),
                 value(request, "finalGradeMax"),
                 value(request, "workloadHours"),
-                value(request, "state"),
-                value(request, "coordinatorUserId"),
-                primaryInitialCourseId(request),
-                selectedInitialCourseIds(request),
-                value(request, "initialCurricularYear"),
-                value(request, "initialTerm"),
-                request.getParameter("initialMandatory") != null
+                value(request, "state")
         );
     }
 
@@ -136,6 +98,10 @@ public final class SubjectFormData {
 
     public String getOrganizationId() {
         return organizationId;
+    }
+
+    public String getOrganicUnitId() {
+        return organicUnitId;
     }
 
     public String getName() {
@@ -170,55 +136,9 @@ public final class SubjectFormData {
         return state;
     }
 
-    public String getCoordinatorUserId() {
-        return coordinatorUserId;
-    }
-
-    public String getInitialCourseId() {
-        return initialCourseId;
-    }
-
-    public Set<String> getInitialCourseIds() {
-        return initialCourseIds;
-    }
-
-    public boolean isInitialCourseSelected(long courseId) {
-        return initialCourseIds.contains(Long.toString(courseId))
-                || (initialCourseIds.isEmpty() && initialCourseId.equals(Long.toString(courseId)));
-    }
-
-    public String getInitialCurricularYear() {
-        return initialCurricularYear;
-    }
-
-    public String getInitialTerm() {
-        return initialTerm;
-    }
-
-    public boolean isInitialMandatory() {
-        return initialMandatory;
-    }
-
     private static String value(HttpServletRequest request, String name) {
         String value = request.getParameter(name);
         return value == null ? "" : value.trim();
     }
 
-    private static Set<String> selectedInitialCourseIds(HttpServletRequest request) {
-        String[] values = request.getParameterValues("initialCourseIds");
-        if (values == null || values.length == 0) {
-            String value = value(request, "initialCourseId");
-            return value.isBlank() ? Set.of() : Set.of(value);
-        }
-        Set<String> selected = new LinkedHashSet<>();
-        Arrays.stream(values)
-                .map(value -> value == null ? "" : value.trim())
-                .filter(value -> !value.isBlank())
-                .forEach(selected::add);
-        return Set.copyOf(selected);
-    }
-
-    private static String primaryInitialCourseId(HttpServletRequest request) {
-        return selectedInitialCourseIds(request).stream().findFirst().orElse("");
-    }
 }

@@ -93,7 +93,7 @@
                                     <td class="py-20 px-20 text-14 text-neutral-500">
                                         <c:out value="${assessment.contextLabel}"/>
                                     </td>
-                                    <td class="py-20 px-20 text-14 text-neutral-500">
+                                    <td class="py-20 px-20 text-14 text-neutral-500" data-gape-datetime-display>
                                         <c:choose>
                                             <c:when test="${empty assessment.availabilityLabel}">Always available</c:when>
                                             <c:otherwise><c:out value="${assessment.availabilityLabel}"/></c:otherwise>

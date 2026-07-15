@@ -3,6 +3,7 @@ param(
     [string] $ContextPath = "GAPE",
     [string] $Email = "admin@gape.local",
     [string] $Password = "Password#2026",
+    [string] $TomcatVersion = "10.1.24",
     [switch] $SkipPackage
 )
 
@@ -15,9 +16,11 @@ function Assert-InWorkspace {
         [string] $Label
     )
 
-    $resolvedWorkspace = (Resolve-Path -LiteralPath $Workspace).Path
+    $resolvedWorkspace = (Resolve-Path -LiteralPath $Workspace).Path.TrimEnd('\', '/')
     $fullPath = [System.IO.Path]::GetFullPath($Path)
-    if (-not $fullPath.StartsWith($resolvedWorkspace, [System.StringComparison]::OrdinalIgnoreCase)) {
+    $insideWorkspace = $fullPath.Equals($resolvedWorkspace, [System.StringComparison]::OrdinalIgnoreCase) -or
+        $fullPath.StartsWith($resolvedWorkspace + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+    if (-not $insideWorkspace) {
         throw "$Label is outside the workspace: $fullPath"
     }
 }
@@ -32,7 +35,7 @@ function Stop-ExistingBrowserTomcat {
     foreach ($listener in $listeners) {
         $processInfo = Get-CimInstance Win32_Process -Filter "ProcessId = $($listener.OwningProcess)"
         $commandLine = [string] $processInfo.CommandLine
-        if ($commandLine -like "*browser-tomcat10*" -or $commandLine -like "*apache-tomcat-10.1.24*") {
+        if ($commandLine -like "*$ExpectedBase*") {
             Stop-Process -Id $listener.OwningProcess -Force
             Start-Sleep -Seconds 2
             continue
@@ -50,7 +53,7 @@ function Initialize-TomcatBase {
     )
 
     if (-not (Test-Path -LiteralPath $TomcatHome)) {
-        throw "Tomcat was not found at $TomcatHome. Run mvn package once or restore target/tools/apache-tomcat-10.1.24."
+        throw "Tomcat was not found at $TomcatHome. Run docs/dev/scripts/tomcat-install.ps1."
     }
 
     New-Item -ItemType Directory -Path $TomcatBase -Force | Out-Null
@@ -90,7 +93,7 @@ function Deploy-App {
 
     $sourceApp = Join-Path $Workspace "target\gape"
     if (-not (Test-Path -LiteralPath $sourceApp)) {
-        throw "Exploded app target\gape was not found. Run mvn package without -DskipTests before preparing Browser QA."
+        throw "Exploded app target\gape was not found. Run mvn -DskipTests package before preparing Browser QA."
     }
 
     $targetApp = Join-Path (Join-Path $TomcatBase "webapps") $ContextPath
@@ -160,6 +163,24 @@ function Resolve-JavaHome {
     throw "Could not resolve JAVA_HOME from java command: $javaExe"
 }
 
+function Get-CsrfTokenFromHtml {
+    param([string] $Html)
+    $inputMatch = [regex]::Match(
+        $Html,
+        '<input\b(?=[^>]*\bname\s*=\s*["'']csrfToken["''])[^>]*>',
+        [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+    )
+    $valueMatch = if ($inputMatch.Success) {
+        [regex]::Match($inputMatch.Value, '\bvalue\s*=\s*(["''])(.*?)\1')
+    } else {
+        $null
+    }
+    if ($null -eq $valueMatch -or -not $valueMatch.Success -or [string]::IsNullOrWhiteSpace($valueMatch.Groups[2].Value)) {
+        throw "Login page did not expose a non-empty CSRF token."
+    }
+    return [System.Net.WebUtility]::HtmlDecode($valueMatch.Groups[2].Value)
+}
+
 function New-AuthenticatedBrowserUrls {
     param(
         [string] $BaseUrl,
@@ -170,25 +191,41 @@ function New-AuthenticatedBrowserUrls {
 
     $cookieJar = Join-Path $TomcatBase "temp\browser-cookies.txt"
     $loginBody = Join-Path $TomcatBase "temp\browser-login.html"
+    $loginHeaders = Join-Path $TomcatBase "temp\browser-login.headers"
     if (Test-Path -LiteralPath $cookieJar) {
         Remove-Item -LiteralPath $cookieJar -Force
     }
     if (Test-Path -LiteralPath $loginBody) {
         Remove-Item -LiteralPath $loginBody -Force
     }
+    if (Test-Path -LiteralPath $loginHeaders) {
+        Remove-Item -LiteralPath $loginHeaders -Force
+    }
 
-    & curl.exe -s -L -c $cookieJar -b $cookieJar -o $loginBody `
-        -X POST "$BaseUrl/auth/login" `
+    & curl.exe -s -L -c $cookieJar -b $cookieJar -o $loginBody "$BaseUrl/login.jsp"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Login page request failed with exit code $LASTEXITCODE."
+    }
+    $csrfToken = Get-CsrfTokenFromHtml -Html (Get-Content -LiteralPath $loginBody -Raw)
+
+    $loginStatus = & curl.exe -s -c $cookieJar -b $cookieJar -D $loginHeaders -o $loginBody -w "%{http_code}" "$BaseUrl/auth/login" `
+        --data-urlencode "csrfToken=$csrfToken" `
         --data-urlencode "email=$Email" `
-        --data-urlencode "password=$Password" | Out-Null
+        --data-urlencode "password=$Password"
+    if ($LASTEXITCODE -ne 0) {
+        throw "Login request failed with exit code $LASTEXITCODE."
+    }
+    $location = Select-String -LiteralPath $loginHeaders -Pattern '(?i)^Location:\s*(.+?)\s*$' |
+        Select-Object -Last 1 |
+        ForEach-Object { $_.Matches[0].Groups[1].Value.Trim() }
+    if ($loginStatus -notin @("302", "303") -or [string]::IsNullOrWhiteSpace($location) -or $location -match '(?i)/login\.jsp') {
+        throw "Authentication failed for $Email (HTTP $loginStatus)."
+    }
 
     $sessionLine = Select-String -LiteralPath $cookieJar -Pattern "JSESSIONID" -ErrorAction SilentlyContinue |
         Select-Object -Last 1
     if ($null -eq $sessionLine) {
-        return @{
-            SessionBase = $BaseUrl
-            SessionId = $null
-        }
+        throw "Authenticated session cookie was not returned for $Email."
     }
 
     $sessionId = (($sessionLine.Line -split "`t") | Select-Object -Last 1).Trim()
@@ -199,14 +236,24 @@ function New-AuthenticatedBrowserUrls {
 }
 
 $workspace = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot "..\..\..")).Path
-$tomcatHome = Join-Path $workspace "target\tools\apache-tomcat-10.1.24"
+$tomcatHome = Join-Path $workspace "docs\dev\.tools\apache-tomcat-$TomcatVersion"
 $tomcatBase = Join-Path $workspace "target\browser-tomcat10"
 $baseUrl = "http://localhost:$Port/$ContextPath"
 
 Assert-InWorkspace -Workspace $workspace -Path $tomcatBase -Label "Tomcat base"
 
 if (-not $SkipPackage) {
+    if (-not (Get-Command mvn -ErrorAction SilentlyContinue)) {
+        throw "Maven was not found on PATH. Install Apache Maven 3.9.16 and restart the terminal."
+    }
     & mvn -q -DskipTests package
+    if ($LASTEXITCODE -ne 0) {
+        throw "Maven package failed with exit code $LASTEXITCODE."
+    }
+}
+
+if (-not (Test-Path -LiteralPath (Join-Path $tomcatHome "bin\catalina.bat") -PathType Leaf)) {
+    $tomcatHome = (& (Join-Path $PSScriptRoot "tomcat-install.ps1") -Version $TomcatVersion | Select-Object -Last 1)
 }
 
 Stop-ExistingBrowserTomcat -Port $Port -ExpectedBase $tomcatBase
@@ -227,7 +274,7 @@ $launcher = @"
 `$env:JRE_HOME = '$javaHome'
 `$env:CATALINA_HOME = '$tomcatHome'
 `$env:CATALINA_BASE = '$tomcatBase'
-`$env:JAVA_OPTS = '-Dfile.encoding=UTF-8 -Dgape.upload.dir="$uploadDir" -Dgape.webp.native.dir="$webpDir"'
+`$env:JAVA_OPTS = '--enable-native-access=ALL-UNNAMED -Dfile.encoding=UTF-8 -Duser.timezone=Europe/Lisbon -Dgape.upload.dir="$uploadDir" -Dgape.webp.native.dir="$webpDir"'
 & '$tomcatHome\bin\catalina.bat' run
 "@
 Set-Content -LiteralPath $launcherPath -Value $launcher -Encoding UTF8

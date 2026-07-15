@@ -2,14 +2,15 @@ package pt.isel.gape.web.view;
 
 import java.time.LocalDate;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.CourseEnrollment;
 import pt.isel.gape.learning.model.EnrollmentState;
-import pt.isel.gape.learning.model.SubjectEnrollment;
 
 public final class EnrollmentManagementView {
 
     private final long studentUserId;
     private final long courseId;
+    private final long courseOccurrenceId;
     private final Long subjectId;
     private final EnrollmentState state;
     private final LocalDate startDate;
@@ -17,20 +18,24 @@ public final class EnrollmentManagementView {
     private final String studentName;
     private final String studentEmail;
     private final String contextName;
+    private final String courseOccurrenceCode;
 
     private EnrollmentManagementView(
             long studentUserId,
             long courseId,
+            long courseOccurrenceId,
             Long subjectId,
             EnrollmentState state,
             LocalDate startDate,
             LocalDate endDate,
             String studentName,
             String studentEmail,
-            String contextName
+            String contextName,
+            String courseOccurrenceCode
     ) {
         this.studentUserId = studentUserId;
         this.courseId = courseId;
+        this.courseOccurrenceId = courseOccurrenceId;
         this.subjectId = subjectId;
         this.state = state;
         this.startDate = startDate;
@@ -38,42 +43,27 @@ public final class EnrollmentManagementView {
         this.studentName = studentName;
         this.studentEmail = studentEmail;
         this.contextName = contextName;
+        this.courseOccurrenceCode = courseOccurrenceCode;
     }
 
     public static EnrollmentManagementView course(
             CourseEnrollment enrollment,
             String studentName,
-            String studentEmail
+            String studentEmail,
+            String courseOccurrenceCode
     ) {
         return new EnrollmentManagementView(
                 enrollment.studentUserId(),
                 enrollment.courseId(),
+                enrollment.courseOccurrenceId(),
                 null,
                 enrollment.state(),
                 enrollment.startDate(),
                 enrollment.endDate(),
                 studentName,
                 studentEmail,
-                null
-        );
-    }
-
-    public static EnrollmentManagementView subject(
-            SubjectEnrollment enrollment,
-            String studentName,
-            String studentEmail,
-            String contextName
-    ) {
-        return new EnrollmentManagementView(
-                enrollment.studentUserId(),
-                enrollment.courseId(),
-                enrollment.subjectId(),
-                enrollment.state(),
-                enrollment.startDate(),
-                enrollment.endDate(),
-                studentName,
-                studentEmail,
-                contextName
+                null,
+                courseOccurrenceCode
         );
     }
 
@@ -83,6 +73,16 @@ public final class EnrollmentManagementView {
 
     public long getCourseId() {
         return courseId;
+    }
+
+    public long getCourseOccurrenceId() {
+        return courseOccurrenceId;
+    }
+
+    public String getCourseOccurrenceCode() {
+        return courseOccurrenceCode == null || courseOccurrenceCode.isBlank()
+                ? "Occurrence " + courseOccurrenceId
+                : courseOccurrenceCode;
     }
 
     public Long getSubjectId() {
@@ -108,9 +108,9 @@ public final class EnrollmentManagementView {
         return switch (state) {
             case PENDING -> "bg-warning-30 text-warning-600";
             case ACTIVE -> "bg-success-50 text-success-600";
-            case INACTIVE -> "bg-warning-30 text-warning-600";
+            case INACTIVE -> "bg-danger-50 text-danger-600";
             case REJECTED -> "bg-danger-50 text-danger-600";
-            case COMPLETED -> "bg-info-50 text-info-600";
+            case COMPLETED -> "bg-neutral-20 text-neutral-600";
             case WITHDRAWN -> "bg-warning-30 text-warning-600";
         };
     }
@@ -119,12 +119,16 @@ public final class EnrollmentManagementView {
         return state == EnrollmentState.ACTIVE;
     }
 
+    public boolean isCompleted() {
+        return state == EnrollmentState.COMPLETED;
+    }
+
     public boolean isPending() {
         return state == EnrollmentState.PENDING;
     }
 
     public String getStartDate() {
-        return startDate == null ? "-" : startDate.toString();
+        return startDate == null ? "-" : ApplicationDateTimeFormat.date(startDate);
     }
 
     public String getStartDateValue() {
@@ -132,7 +136,7 @@ public final class EnrollmentManagementView {
     }
 
     public String getEndDate() {
-        return endDate == null ? "-" : endDate.toString();
+        return endDate == null ? "-" : ApplicationDateTimeFormat.date(endDate);
     }
 
     public String getEndDateValue() {
@@ -141,6 +145,18 @@ public final class EnrollmentManagementView {
 
     public String getStudentName() {
         return studentName;
+    }
+
+    public String getStudentShortLabel() {
+        String normalized = studentName == null ? "" : studentName.trim().replaceAll("\\s+", " ");
+        if (normalized.isBlank()) {
+            return studentUserId + " - Student";
+        }
+        String[] parts = normalized.split(" ");
+        if (parts.length == 1) {
+            return studentUserId + " - " + parts[0];
+        }
+        return studentUserId + " - " + parts[0] + " " + parts[parts.length - 1];
     }
 
     public String getStudentEmail() {

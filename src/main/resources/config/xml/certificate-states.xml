@@ -10,7 +10,4 @@
   <state code="issued">
     <label>Emitido</label>
   </state>
-  <state code="revoked">
-    <label>Revogado</label>
-  </state>
 </certificateStates>

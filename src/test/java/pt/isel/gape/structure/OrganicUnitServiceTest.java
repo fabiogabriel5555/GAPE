@@ -227,7 +227,7 @@ class OrganicUnitServiceTest {
     }
 
     @Test
-    void archivedOrganicUnitBlocksFurtherOperations() {
+    void inactiveOrganicUnitBlocksFurtherOperations() {
         organicUnitService.archiveOrganicUnit(1L, null, AccessProfileType.ADMINISTRATOR, 22L, "127.0.0.1");
 
         assertThrows(

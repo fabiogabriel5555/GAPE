@@ -4,14 +4,14 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import jakarta.servlet.http.HttpServletRequest;
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.Lesson;
 import pt.isel.gape.learning.model.LessonState;
 import pt.isel.gape.learning.model.LessonType;
 
 public final class LessonFormData {
 
-    private static final DateTimeFormatter INPUT_DATE_TIME =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+    private static final DateTimeFormatter INPUT_DATE_TIME = ApplicationDateTimeFormat.TECHNICAL_DATE_TIME;
 
     private final Long id;
     private final Long classGroupId;
@@ -193,11 +193,11 @@ public final class LessonFormData {
     }
 
     public LocalDateTime startsAtDateTime() {
-        return startsAt == null || startsAt.isBlank() ? null : LocalDateTime.parse(startsAt);
+        return startsAt == null || startsAt.isBlank() ? null : ApplicationDateTimeFormat.parseUserDateTime(startsAt);
     }
 
     public LocalDateTime endsAtDateTime() {
-        return endsAt == null || endsAt.isBlank() ? null : LocalDateTime.parse(endsAt);
+        return endsAt == null || endsAt.isBlank() ? null : ApplicationDateTimeFormat.parseUserDateTime(endsAt);
     }
 
     private static LessonType normalizeType(String value, LessonType fallback) {

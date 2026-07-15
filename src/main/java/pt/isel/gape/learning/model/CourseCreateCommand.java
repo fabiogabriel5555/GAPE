@@ -1,6 +1,7 @@
 package pt.isel.gape.learning.model;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record CourseCreateCommand(
         long organizationId,
@@ -12,10 +13,42 @@ public record CourseCreateCommand(
         BigDecimal ects,
         BigDecimal certificateMaxGrade,
         String duration,
+        CourseFrequency frequency,
+        List<CoursePeriodTemplateCommand> periodTemplates,
         CourseType type,
         CourseState state
 ) {
     private static final BigDecimal DEFAULT_CERTIFICATE_MAX_GRADE = new BigDecimal("20.00");
+
+    public CourseCreateCommand(
+            long organizationId,
+            Long organicUnitId,
+            String name,
+            String acronym,
+            String photo,
+            String description,
+            BigDecimal ects,
+            BigDecimal certificateMaxGrade,
+            String duration,
+            CourseType type,
+            CourseState state
+    ) {
+        this(
+                organizationId,
+                organicUnitId,
+                name,
+                acronym,
+                photo,
+                description,
+                ects,
+                certificateMaxGrade,
+                duration,
+                CourseFrequency.ANNUAL,
+                List.of(),
+                type,
+                state
+        );
+    }
 
     public CourseCreateCommand(
             long organizationId,
@@ -39,6 +72,8 @@ public record CourseCreateCommand(
                 ects,
                 DEFAULT_CERTIFICATE_MAX_GRADE,
                 duration,
+                CourseFrequency.ANNUAL,
+                List.of(),
                 type,
                 state
         );

@@ -54,8 +54,8 @@ class TemplateAssetReferenceTest {
             "/learning/lessons/",
             "learning/rooms/",
             "/learning/rooms/",
-            "certificates/validate/",
-            "/certificates/validate/",
+            "messages/",
+            "/messages/",
             "student/enrollments/",
             "/student/enrollments/",
             "student/calendar/",
@@ -118,8 +118,8 @@ class TemplateAssetReferenceTest {
             "/learning/lessons",
             "learning/rooms",
             "/learning/rooms",
-            "certificates/validate",
-            "/certificates/validate",
+            "messages",
+            "/messages",
             "profile",
             "/profile",
             "student/enrollments",
@@ -373,7 +373,9 @@ class TemplateAssetReferenceTest {
             return false;
         }
 
-        return !normalized.contains("${") && !normalized.contains("<%");
+        return !normalized.contains("${")
+                && !normalized.contains("<%")
+                && !normalized.contains("<");
     }
 
     private static void validateResolvedPath(

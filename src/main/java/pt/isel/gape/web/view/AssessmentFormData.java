@@ -17,6 +17,7 @@ public final class AssessmentFormData {
     private final String description;
     private final String type;
     private final String mode;
+    private final String physicalRoomCode;
     private final String correctionMode;
     private final String maxGrade;
     private final String passingGrade;
@@ -36,6 +37,7 @@ public final class AssessmentFormData {
             String description,
             String type,
             String mode,
+            String physicalRoomCode,
             String correctionMode,
             String maxGrade,
             String passingGrade,
@@ -54,6 +56,7 @@ public final class AssessmentFormData {
         this.description = description;
         this.type = normalizeType(defaultValue(type, "form"));
         this.mode = defaultValue(mode, "online");
+        this.physicalRoomCode = physicalRoomCode == null ? "" : physicalRoomCode.trim();
         this.correctionMode = defaultValue(correctionMode, "automatic");
         this.maxGrade = defaultValue(maxGrade, "20.00");
         this.passingGrade = defaultValue(passingGrade, "10.00");
@@ -107,6 +110,7 @@ public final class AssessmentFormData {
                 "",
                 safeType,
                 safeMode,
+                "",
                 safeCorrectionMode,
                 "20.00",
                 "10.00",
@@ -129,6 +133,7 @@ public final class AssessmentFormData {
                 assessment.description(),
                 assessment.type().toDatabaseValue(),
                 assessment.mode().toDatabaseValue(),
+                assessment.physicalRoomCode(),
                 assessment.correctionMode().toDatabaseValue(),
                 assessment.maxGrade() == null ? "" : assessment.maxGrade().toPlainString(),
                 assessment.passingGrade() == null ? "" : assessment.passingGrade().toPlainString(),
@@ -153,6 +158,7 @@ public final class AssessmentFormData {
                 assessment.description(),
                 assessment.type().toDatabaseValue(),
                 assessment.mode().toDatabaseValue(),
+                assessment.physicalRoomCode(),
                 assessment.correctionMode().toDatabaseValue(),
                 assessment.maxGrade() == null ? "" : assessment.maxGrade().toPlainString(),
                 assessment.passingGrade() == null ? "" : assessment.passingGrade().toPlainString(),
@@ -175,6 +181,7 @@ public final class AssessmentFormData {
                 text(request, "description"),
                 text(request, "type"),
                 text(request, "mode"),
+                text(request, "physicalRoomCode"),
                 text(request, "correctionMode"),
                 text(request, "maxGrade"),
                 text(request, "passingGrade"),
@@ -221,6 +228,10 @@ public final class AssessmentFormData {
 
     public String getMode() {
         return mode;
+    }
+
+    public String getPhysicalRoomCode() {
+        return physicalRoomCode;
     }
 
     public String getCorrectionMode() {

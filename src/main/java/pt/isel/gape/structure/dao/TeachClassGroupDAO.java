@@ -8,8 +8,10 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import pt.isel.gape.common.config.ConnectionProvider;
@@ -17,7 +19,7 @@ import pt.isel.gape.structure.model.ClassGroupContext;
 import pt.isel.gape.structure.model.RoleAssignmentState;
 import pt.isel.gape.structure.model.TeacherClassGroupAssignment;
 
-public final class TeachClassGroupDAO {
+public final class TeachClassGroupDAO implements pt.isel.gape.transversal.service.ApplicationReadService.TeachClassGroups {
 
     private final ConnectionProvider connectionProvider;
 
@@ -162,6 +164,40 @@ public final class TeachClassGroupDAO {
         }
     }
 
+    public Map<Long, Integer> countActiveAssignmentsByClassGroupIds(Collection<Long> classGroupIds)
+            throws SQLException {
+        if (classGroupIds == null || classGroupIds.isEmpty()) {
+            return Map.of();
+        }
+        String sql = """
+                SELECT tcg.id_class_group, COUNT(*) AS teacher_count
+                FROM teach_class_group tcg
+                JOIN teacher_profile tp ON tp.id_user = tcg.id_teacher_user
+                JOIN user_account u ON u.id_user = tp.id_user
+                WHERE tcg.id_class_group IN (%s)
+                  AND tcg.state = 'active'
+                  AND u.state = 'active'
+                  AND (tcg.start_date IS NULL OR tcg.start_date <= CURRENT_DATE)
+                  AND (tcg.end_date IS NULL OR tcg.end_date >= CURRENT_DATE)
+                GROUP BY tcg.id_class_group
+                """.formatted(placeholders(classGroupIds.size()));
+
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            for (Long classGroupId : classGroupIds) {
+                statement.setLong(index++, classGroupId);
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                Map<Long, Integer> counts = new LinkedHashMap<>();
+                while (resultSet.next()) {
+                    counts.put(resultSet.getLong("id_class_group"), resultSet.getInt("teacher_count"));
+                }
+                return counts;
+            }
+        }
+    }
+
     public List<TeacherClassGroupAssignment> findByClassGroup(long classGroupId) throws SQLException {
         String sql = """
                 SELECT tcg.id_teacher_user, tcg.id_class_group, tcg.state, tcg.start_date, tcg.end_date,
@@ -214,6 +250,31 @@ public final class TeachClassGroupDAO {
             setDate(statement, 2, endDate);
             statement.setLong(3, teacherUserId);
             statement.setLong(4, classGroupId);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * A teacher assignment follows the same lifecycle as a subject coordinator assignment:
+     * its state can change, but it has no assignment-period fields to edit.
+     */
+    public boolean updateState(
+            Connection connection,
+            long teacherUserId,
+            long classGroupId,
+            RoleAssignmentState state
+    ) throws SQLException {
+        String sql = """
+                UPDATE teach_class_group
+                SET state = ?
+                WHERE id_teacher_user = ?
+                  AND id_class_group = ?
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, state.toDatabaseValue());
+            statement.setLong(2, teacherUserId);
+            statement.setLong(3, classGroupId);
             return statement.executeUpdate() > 0;
         }
     }
@@ -343,5 +404,9 @@ public final class TeachClassGroupDAO {
         } else {
             statement.setDate(index, Date.valueOf(value));
         }
+    }
+
+    private static String placeholders(int count) {
+        return String.join(", ", java.util.Collections.nCopies(count, "?"));
     }
 }

@@ -11,10 +11,7 @@ public final class ContentBlockFormData {
     private final String name;
     private final String description;
     private final String orderNo;
-    private final String accessMode;
     private final String state;
-    private final String availableFrom;
-    private final String availableUntil;
 
     private ContentBlockFormData(
             Long id,
@@ -23,10 +20,7 @@ public final class ContentBlockFormData {
             String name,
             String description,
             String orderNo,
-            String accessMode,
-            String state,
-            String availableFrom,
-            String availableUntil
+            String state
     ) {
         this.id = id;
         this.classGroupId = classGroupId;
@@ -34,10 +28,7 @@ public final class ContentBlockFormData {
         this.name = name;
         this.description = description;
         this.orderNo = orderNo;
-        this.accessMode = accessMode == null || accessMode.isBlank() ? "OPEN" : accessMode;
         this.state = state == null || state.isBlank() ? "ACTIVE" : state;
-        this.availableFrom = availableFrom;
-        this.availableUntil = availableUntil;
     }
 
     public static ContentBlockFormData blank(long classGroupId, int nextOrder) {
@@ -48,10 +39,7 @@ public final class ContentBlockFormData {
                 "",
                 "",
                 Integer.toString(nextOrder),
-                "OPEN",
-                "ACTIVE",
-                "",
-                ""
+                "ACTIVE"
         );
     }
 
@@ -63,10 +51,7 @@ public final class ContentBlockFormData {
                 block.name(),
                 block.description(),
                 Integer.toString(block.orderNo()),
-                block.accessMode().name(),
-                block.state().name(),
-                block.availableFrom() == null ? "" : block.availableFrom().toString(),
-                block.availableUntil() == null ? "" : block.availableUntil().toString()
+                block.state().name()
         );
     }
 
@@ -78,10 +63,7 @@ public final class ContentBlockFormData {
                 text(request, "name"),
                 text(request, "description"),
                 text(request, "orderNo"),
-                text(request, "accessMode"),
-                text(request, "state"),
-                text(request, "availableFrom"),
-                text(request, "availableUntil")
+                text(request, "state")
         );
     }
 
@@ -109,20 +91,8 @@ public final class ContentBlockFormData {
         return orderNo;
     }
 
-    public String getAccessMode() {
-        return accessMode;
-    }
-
     public String getState() {
         return state;
-    }
-
-    public String getAvailableFrom() {
-        return availableFrom;
-    }
-
-    public String getAvailableUntil() {
-        return availableUntil;
     }
 
     private static String text(HttpServletRequest request, String name) {

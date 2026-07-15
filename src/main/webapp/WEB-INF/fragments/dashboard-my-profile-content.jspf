@@ -437,7 +437,7 @@
                         <span class="${latestDeletionRequest.stateBadgeClass} px-16 py-8 rounded-pill text-14">
                             <c:out value="${latestDeletionRequest.stateLabelEnglish}"/>
                         </span>
-                        <span class="text-14 text-neutral-600">Submitted at <c:out value="${latestDeletionRequest.submittedAt}"/></span>
+                        <span class="text-14 text-neutral-600" data-gape-datetime-display>Submitted at <c:out value="${latestDeletionRequest.submittedAt}"/></span>
                     </div>
                 </div>
             </c:if>

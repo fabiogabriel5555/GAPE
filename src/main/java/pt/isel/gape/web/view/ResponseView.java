@@ -2,19 +2,15 @@ package pt.isel.gape.web.view;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import pt.isel.gape.common.time.ApplicationDateTimeFormat;
 import pt.isel.gape.learning.model.QuestionConfiguration;
 import pt.isel.gape.learning.model.Response;
 
 public final class ResponseView {
-
-    private static final DateTimeFormatter DISPLAY_DATE_TIME =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("pt-PT"));
 
     private final Response response;
     private final QuestionView question;
@@ -77,7 +73,7 @@ public final class ResponseView {
     }
 
     public String getAnsweredAt() {
-        return response.answeredAt() == null ? "" : DISPLAY_DATE_TIME.format(response.answeredAt());
+        return response.answeredAt() == null ? "" : ApplicationDateTimeFormat.dateTime(response.answeredAt());
     }
 
     public QuestionView getQuestion() {
