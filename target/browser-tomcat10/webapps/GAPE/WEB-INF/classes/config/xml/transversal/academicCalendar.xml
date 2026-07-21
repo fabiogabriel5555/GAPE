@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="../../xsl/transversal/academicCalendar.xsl"?>
+<academicCalendar initialYear="2025" finalYear="2026"
+			   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="../../xsd/transversal/academicCalendar.xsd">
+  <winter start="2025-09-08" end="2025-12-20">
+    <normal start="2026-01-05" end="2026-01-21" release="2026-01-28"/>
+	<resit start="2026-01-22" end="2026-02-04" release="2026-02-10"/>
+	<special start="2026-02-09" end="2026-02-14" release="2026-02-21"/>
+	<christmas start="2025-12-22" end="2026-01-02"/>
+  </winter>
+  <summer start="2026-02-18" end="2026-06-06">
+    <normal start="2026-06-11" end="2026-06-27" release="2026-07-04"/>
+	<resit start="2026-06-29" end="2026-07-11" release="2026-07-17"/>
+	<special start="2026-07-20" end="2026-07-28" release="2026-07-31"/>
+	<carnival start="2026-02-13" end="2026-02-17"/>
+    <easter   start="2026-04-02" end="2026-04-11"/>
+  </summer>
+</academicCalendar>

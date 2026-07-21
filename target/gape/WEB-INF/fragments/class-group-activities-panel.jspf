@@ -1,0 +1,146 @@
+<c:set var="classGroupLessons" value="${classGroupLessonsByClassGroup[classGroup.id]}" />
+<c:set var="classGroupAssessments" value="${classGroupAssessmentsByClassGroup[classGroup.id]}" />
+<c:set var="classGroupRooms" value="${classGroupRoomsByClassGroup[classGroup.id]}" />
+<div class="gape-structure-panel gape-class-activities-panel">
+    <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mb-12">
+        <div>
+            <h3 class="text-16 fw-medium text-neutral-700 mb-4">Class Activities</h3>
+            <span class="text-13 text-neutral-500">
+                <c:out value="${classGroup.code}"/> &middot;
+                <c:out value="${fn:length(classGroupLessons)}"/> lessons &middot;
+                <c:out value="${fn:length(classGroupAssessments)}"/> assessments &middot;
+                <c:out value="${fn:length(classGroupRooms)}"/> rooms
+            </span>
+        </div>
+    </div>
+    <div class="row gy-3">
+        <div class="col-xl-7">
+            <div class="d-flex flex-column gap-10">
+                <div class="text-13 fw-semibold text-neutral-600">Lessons</div>
+                <c:forEach var="lesson" items="${classGroupLessons}">
+                    <div class="gape-lesson-node border border-neutral-30 rounded-8 px-16 py-12 bg-white">
+                        <div class="d-flex align-items-center justify-content-between gap-12">
+                            <div class="d-flex align-items-start gap-10 min-w-0">
+                                <span class="${lesson.typeBadgeClass} text-20 line-height-1"><i class="${lesson.typeIconClass}"></i></span>
+                                <div class="min-w-0">
+                                    <a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}" class="fw-medium text-14 text-neutral-700 hover-text-main-600" data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}" data-lesson-modal-title="Lesson Details">
+                                        <c:out value="${lesson.title}"/>
+                                    </a>
+                                    <span class="gape-node-meta text-12">
+                                        <span><c:out value="${lesson.typeLabel}"/></span>
+                                        <span data-gape-datetime-display><c:out value="${lesson.compactDateRangeLabel}"/></span>
+                                        <c:if test="${lesson.hasRoom}">
+                                            <span>Room <c:out value="${lesson.physicalRoomCode}"/></span>
+                                        </c:if>
+                                        <c:if test="${lesson.hasMeetingLink}">
+                                            <span>Meeting link</span>
+                                        </c:if>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-10 flex-shrink-0">
+                                <span class="${lesson.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
+                                    <c:out value="${lesson.stateLabel}"/>
+                                </span>
+                                <a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail" data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/${lesson.id}?returnTo=${currentReturnToParam}" data-lesson-modal-title="Lesson Details">
+                                    <i class="ph ph-eye"></i>
+                                </a>
+                                <c:if test="${canModifyClassGroup}">
+                                    <a href="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/edit?returnTo=${currentReturnToParam}" class="text-20 text-neutral-500 hover-text-main-600" title="Edit" data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/${lesson.id}/edit?returnTo=${currentReturnToParam}" data-lesson-modal-title="Edit Lesson">
+                                        <i class="ph ph-pencil-simple-line"></i>
+                                    </a>
+                                </c:if>
+                            </div>
+                        </div>
+                    </div>
+                </c:forEach>
+                <c:if test="${empty classGroupLessons}">
+                    <div class="border border-neutral-30 rounded-8 px-16 py-18 text-center text-13 text-neutral-500 bg-white">
+                        No lessons registered for this class group.
+                    </div>
+                </c:if>
+                <div class="text-13 fw-semibold text-neutral-600 mt-12">Assessments</div>
+                <c:forEach var="assessment" items="${classGroupAssessments}">
+                    <div class="gape-lesson-node border border-neutral-30 rounded-8 px-16 py-12 bg-white">
+                        <div class="d-flex align-items-center justify-content-between gap-12">
+                            <div class="d-flex align-items-start gap-10 min-w-0">
+                                <span class="${assessment.softClass} text-20 line-height-1"><i class="${assessment.iconClass}"></i></span>
+                                <div class="min-w-0">
+                                    <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}?returnTo=${currentReturnToParam}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                        <c:out value="${assessment.title}"/>
+                                    </a>
+                                    <span class="gape-node-meta text-12">
+                                        <span><c:out value="${assessment.typeLabel}"/></span>
+                                        <span><c:out value="${assessment.modeLabel}"/></span>
+                                        <span data-gape-datetime-display><c:out value="${assessment.availabilityLabel}"/></span>
+                                        <c:if test="${assessment.hasRoom}">
+                                            <span>Room <c:out value="${assessment.physicalRoomCode}"/></span>
+                                        </c:if>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-10 flex-shrink-0">
+                                <span class="${assessment.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
+                                    <c:out value="${assessment.stateLabel}"/>
+                                </span>
+                                <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}?returnTo=${currentReturnToParam}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail">
+                                    <i class="ph ph-eye"></i>
+                                </a>
+                                <c:if test="${canModifyClassGroup}">
+                                    <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit?returnTo=${currentReturnToParam}" data-assessment-modal-url="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit?returnTo=${currentReturnToParam}" data-assessment-modal-title="Edit Assessment" class="text-20 text-neutral-500 hover-text-main-600" title="Edit Assessment" aria-label="Edit Assessment">
+                                        <i class="ph ph-pencil-simple-line"></i>
+                                    </a>
+                                </c:if>
+                            </div>
+                        </div>
+                    </div>
+                </c:forEach>
+                <c:if test="${empty classGroupAssessments}">
+                    <div class="border border-neutral-30 rounded-8 px-16 py-18 text-center text-13 text-neutral-500 bg-white">
+                        No assessments registered for this class group.
+                    </div>
+                </c:if>
+            </div>
+        </div>
+        <div class="col-xl-5">
+            <div class="d-flex flex-column gap-10">
+                <div class="text-13 fw-semibold text-neutral-600">Rooms</div>
+                <c:forEach var="room" items="${classGroupRooms}">
+                    <c:set var="canManageRoom" value="${canManagePhysicalRoomByCode[room.code]}" />
+                    <div class="gape-room-node border border-neutral-30 rounded-8 px-16 py-12 bg-white">
+                        <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap">
+                            <div>
+                                <a href="${pageContext.request.contextPath}/learning/rooms/${room.encodedCode}?returnTo=${currentReturnToParam}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                    <c:out value="${room.code}"/>
+                                </a>
+                                <span class="gape-node-meta text-12">
+                                    <span><c:out value="${room.name}"/></span>
+                                    <span><c:out value="${room.capacityLabel}"/></span>
+                                    <span><c:out value="${room.location}"/></span>
+                                </span>
+                            </div>
+                            <div class="d-flex align-items-center gap-10 flex-wrap">
+                                <span class="${room.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
+                                    <c:out value="${room.stateLabel}"/>
+                                </span>
+                                <a href="${pageContext.request.contextPath}/learning/rooms/${room.encodedCode}?returnTo=${currentReturnToParam}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail">
+                                    <i class="ph ph-eye"></i>
+                                </a>
+                                <c:if test="${canManageRoom}">
+                                    <a href="${pageContext.request.contextPath}/learning/rooms/${room.encodedCode}/edit?returnTo=${currentReturnToParam}" class="text-20 text-neutral-500 hover-text-main-600" title="Edit">
+                                        <i class="ph ph-pencil-simple-line"></i>
+                                    </a>
+                                </c:if>
+                            </div>
+                        </div>
+                    </div>
+                </c:forEach>
+                <c:if test="${empty classGroupRooms}">
+                    <div class="border border-neutral-30 rounded-8 px-16 py-18 text-center text-13 text-neutral-500 bg-white">
+                        No physical rooms assigned to this class group.
+                    </div>
+                </c:if>
+            </div>
+        </div>
+    </div>
+</div>

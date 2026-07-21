@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scheduleEventTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <type code="lesson">
+    <label>Lesson</label>
+  </type>
+  <type code="assessment">
+    <label>Assessment</label>
+  </type>
+  <type code="reminder">
+    <label>Reminder</label>
+  </type>
+  <type code="meeting">
+    <label>Meeting</label>
+  </type>
+  <type code="other">
+    <label>Other event type</label>
+  </type>
+</scheduleEventTypes>

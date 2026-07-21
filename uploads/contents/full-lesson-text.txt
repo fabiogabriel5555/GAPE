@@ -1,0 +1,11 @@
+Lesson notes - Normalization
+
+1. Identify entities and attributes.
+2. Remove repeating groups to reach 1NF.
+3. Separate partial dependencies to reach 2NF.
+4. Separate transitive dependencies to reach 3NF.
+
+Example:
+Student(id, name)
+ClassGroup(id, code)
+Enrollment(student_id, class_group_id, state)

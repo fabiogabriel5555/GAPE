@@ -1,0 +1,13 @@
+<footer class="footer bg-neutral-900 position-relative z-1">
+    <div class="container">
+        <div class="bottom-footer border-top border-dashed border-neutral-600 border-0 py-32">
+            <div class="container container-two">
+                <div class="bottom-footer__inner flex-between gap-16 flex-wrap">
+                    <p class="text-white text-16 fw-normal">Copyright &copy; 2026 GAPE. All Rights Reserved.</p>
+                    <a href="${pageContext.request.contextPath}/student/student/profile/student-profile.jsp" class="text-white hover-text-main-600 text-16">My Profile</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+<%@ include file="/WEB-INF/fragments/event-read-receipt-script.jspf" %>

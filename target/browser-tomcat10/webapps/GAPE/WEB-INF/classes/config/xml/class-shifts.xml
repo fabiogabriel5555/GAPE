@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classShifts xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <shift code="morning">
+    <label>Morning</label>
+  </shift>
+  <shift code="afternoon">
+    <label>Afternoon</label>
+  </shift>
+  <shift code="evening">
+    <label>Evening</label>
+  </shift>
+  <shift code="mixed">
+    <label>Mixed</label>
+  </shift>
+</classShifts>

@@ -1,0 +1,72 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<section class="cg-surface px-22 py-22 mb-20" id="class-group-teachers">
+    <div class="cg-detail-panel">
+        <div class="cg-detail-panel-content" data-cg-detail-sort-root>
+            <div class="cg-detail-panel-header">
+                <div class="cg-detail-panel-heading">
+                    <h3 class="text-18 fw-semibold text-neutral-800 mb-4">Teacher Assignments</h3>
+                    <span class="text-13 text-neutral-500">Teachers assigned to this class group and their current state.</span>
+                </div>
+                <div class="cg-detail-panel-actions">
+                    <div class="dropdown">
+                        <button type="button" class="cg-sort-toggle" data-bs-toggle="dropdown" data-bs-auto-close="outside" data-cg-detail-sort-toggle aria-expanded="false"><i class="ph ph-sort-ascending"></i>Sort by</button>
+                        <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                            <li><button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-cg-detail-sort-option data-sort-field="name" data-sort-normal="asc" data-sort-state="none" aria-pressed="false"><span>Name</span><span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span></button></li>
+                            <li><button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-cg-detail-sort-option data-sort-field="status" data-sort-normal="asc" data-sort-state="none" aria-pressed="false"><span>State</span><span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span></button></li>
+                        </ul>
+                    </div>
+                    <c:if test="${not classGroup.completed and canManageTeacherAssignments}">
+                        <button type="button" class="cg-primary-button" data-bs-toggle="modal" data-bs-target="#newClassGroupTeacherAssignmentModal"><i class="ph ph-plus-circle me-8"></i>Assign Teacher</button>
+                    </c:if>
+                </div>
+            </div>
+
+            <div class="cg-structure-list-header cg-assignment-list-header"><span>Teacher</span><span>Email</span><span>State</span><span class="text-end">Actions</span></div>
+            <div class="d-flex flex-column gap-12" data-cg-detail-sort-list>
+                <c:forEach var="teacherAssignment" items="${classGroupTeachers}" varStatus="assignmentLoop">
+                    <article class="cg-structure-node border border-neutral-30 rounded-8 px-18 py-16 bg-white"
+                             data-cg-detail-sort-row data-sort-index="${assignmentLoop.index}"
+                             data-sort-name="<c:out value='${teacherAssignment.teacherName}'/>"
+                             data-sort-date="${assignmentLoop.index}"
+                             data-sort-status="<c:out value='${teacherAssignment.stateLabel}'/>">
+                        <div class="cg-structure-row cg-assignment-row">
+                            <div class="d-flex align-items-center gap-12 min-w-0"><span class="bg-info-50 text-info-600 cg-mode-icon text-20 line-height-1"><i class="ph ph-chalkboard-teacher" aria-hidden="true"></i></span><div class="min-w-0"><span class="fw-medium text-14 text-neutral-700 d-block"><c:out value="${teacherAssignment.teacherName}"/></span><span class="cg-node-meta text-12"><span>#<c:out value="${teacherAssignment.teacherUserId}"/></span></span></div></div>
+                            <div class="min-w-0"><span class="text-14 text-neutral-700 d-block text-truncate"><c:out value="${teacherAssignment.teacherEmail}"/></span></div>
+                            <div><span class="${teacherAssignment.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13"><c:out value="${teacherAssignment.stateLabel}"/></span></div>
+                            <div class="d-flex align-items-center gap-10 flex-wrap justify-content-end">
+                                <button type="button" class="cg-detail-action" title="Detail" aria-label="Teacher assignment details" data-bs-toggle="modal" data-bs-target="#classGroupTeacherAssignmentDetail${teacherAssignment.teacherUserId}"><i class="ph ph-eye"></i></button>
+                                <c:if test="${not classGroup.completed and canManageTeacherAssignments}">
+                                    <button type="button" class="cg-detail-action" title="Edit" aria-label="Edit teacher assignment" data-bs-toggle="modal" data-bs-target="#editClassGroupTeacherAssignment${teacherAssignment.teacherUserId}"><i class="ph ph-pencil-simple-line"></i></button>
+                                    <button type="button" class="cg-detail-action cg-detail-action--danger" title="Delete" aria-label="Delete teacher assignment" data-bs-toggle="modal" data-bs-target="#deleteClassGroupTeacherAssignment${teacherAssignment.teacherUserId}"><i class="ph ph-trash"></i></button>
+                                </c:if>
+                            </div>
+                        </div>
+                    </article>
+
+                    <div class="modal fade" id="classGroupTeacherAssignmentDetail${teacherAssignment.teacherUserId}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-12 border-0 text-start"><div class="modal-header border-neutral-30"><h5 class="modal-title text-18 fw-semibold">Teacher Assignment Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><div class="row g-3"><div class="col-sm-6"><span class="text-12 text-neutral-500 d-block mb-6">Teacher</span><span class="fw-medium text-14 text-neutral-700">#<c:out value="${teacherAssignment.teacherUserId}"/> &middot; <c:out value="${teacherAssignment.teacherName}"/></span></div><div class="col-sm-6"><span class="text-12 text-neutral-500 d-block mb-6">Email</span><span class="fw-medium text-14 text-neutral-700"><c:out value="${teacherAssignment.teacherEmail}"/></span></div><div class="col-sm-6"><span class="text-12 text-neutral-500 d-block mb-6">State</span><span class="${teacherAssignment.stateBadgeClass} px-12 py-5 border-neutral-30 border rounded-pill text-12"><c:out value="${teacherAssignment.stateLabel}"/></span></div></div></div><div class="modal-footer border-neutral-30"><button type="button" class="cg-outline-button" data-bs-dismiss="modal">Close</button></div></div></div>
+                    </div>
+
+                    <c:if test="${not classGroup.completed and canManageTeacherAssignments}">
+                        <div class="modal fade" id="editClassGroupTeacherAssignment${teacherAssignment.teacherUserId}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content rounded-12 border-0 text-start"><div class="modal-header border-neutral-30"><h5 class="modal-title text-18 fw-semibold">Edit Teacher Assignment</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/teachers/${teacherAssignment.teacherUserId}/update" method="post" data-class-group-live-form data-class-group-live-panel="teachers"><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-teachers"><div class="modal-body"><p class="text-14 text-neutral-600 mb-20"><strong><c:out value="${teacherAssignment.teacherName}"/></strong><span class="d-block text-12 text-neutral-500"><c:out value="${teacherAssignment.teacherEmail}"/></span></p><div class="row gy-3"><div class="col-12"><label for="classGroupTeacherAssignmentState${teacherAssignment.teacherUserId}" class="fw-medium text-base text-neutral-800 mb-12">State</label><select id="classGroupTeacherAssignmentState${teacherAssignment.teacherUserId}" name="state" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8"><option value="active" ${teacherAssignment.stateValue == 'active' ? 'selected' : ''}>Active</option><option value="inactive" ${teacherAssignment.stateValue == 'inactive' ? 'selected' : ''}>Inactive</option></select></div></div></div><div class="modal-footer border-neutral-30"><button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button><button type="submit" class="cg-primary-button border-0">Save</button></div></form></div></div>
+                        </div>
+
+                        <div class="modal fade" id="deleteClassGroupTeacherAssignment${teacherAssignment.teacherUserId}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-12 border-0 text-start"><div class="modal-header border-neutral-30"><h5 class="modal-title text-18 fw-semibold">Delete Teacher Assignment</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><p class="text-14 text-neutral-600 mb-0">Remove <strong><c:out value="${teacherAssignment.teacherName}"/></strong> from this class group?</p></div><div class="modal-footer border-neutral-30"><button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button><form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/teachers/${teacherAssignment.teacherUserId}/remove" method="post" class="m-0" data-class-group-live-form data-class-group-live-panel="teachers"><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-teachers"><button type="submit" class="cg-danger-button border-0">Delete</button></form></div></div></div>
+                        </div>
+                    </c:if>
+                </c:forEach>
+                <c:if test="${empty classGroupTeachers}"><div class="border border-neutral-30 rounded-8 px-18 py-28 text-center text-14 text-neutral-500">No teacher assignments are available for this class group.</div></c:if>
+            </div>
+        </div>
+    </div>
+</section>
+
+<c:if test="${not classGroup.completed and canManageTeacherAssignments}">
+    <div class="modal fade" id="newClassGroupTeacherAssignmentModal" tabindex="-1" aria-hidden="true" aria-labelledby="newClassGroupTeacherAssignmentModalTitle">
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-12 border-0"><div class="modal-header border-neutral-30"><h5 class="modal-title text-18 fw-semibold" id="newClassGroupTeacherAssignmentModalTitle">Assign Teacher</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/teachers" method="post" data-class-group-live-form data-class-group-live-panel="teachers"><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-teachers"><div class="modal-body"><p class="text-14 text-neutral-600 mb-20">Search and select a teacher by ID, name or email.</p><div class="gape-select-field mb-16"><label for="classGroupTeacherUserId" class="fw-medium text-base text-neutral-800 mb-12">Select teacher</label><select id="classGroupTeacherUserId" name="teacherUserId" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select"><option value="">Select teacher</option><c:forEach var="teacher" items="${teacherOptions}"><option value="${teacher.id}">#<c:out value="${teacher.id}"/> &middot; <c:out value="${teacher.name}"/> &middot; <c:out value="${teacher.email}"/></option></c:forEach></select></div></div><div class="modal-footer border-neutral-30"><button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button><button type="submit" class="cg-primary-button border-0" data-class-group-live-submit>Assign Teacher</button></div></form></div></div>
+    </div>
+</c:if>

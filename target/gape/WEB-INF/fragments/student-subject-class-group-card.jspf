@@ -1,0 +1,64 @@
+<div class="col-xxl-3 col-xl-4 col-md-6 ${hideUnenrolledSubjectClassGroups and not item.currentOrPendingEnrollment ? 'd-none' : ''}"
+     data-student-subject-unenrolled-card="${studentSubjectClassGroupKey}">
+    <c:set var="studentClassGroupEventCount" value="${studentEventUnreadCountByClassGroupId[item.classGroup.id]}" />
+    <article id="subject-class-group-${item.classGroup.id}"
+             class="gape-student-card gape-student-class-group-card px-14 py-14 h-100 position-relative"
+             data-gape-enrollment-target="class-group-${item.classGroup.id}">
+        <c:if test="${not empty studentClassGroupEventCount and studentClassGroupEventCount gt 0}">
+            <span class="gape-student-event-marker gape-student-event-marker--floating" title="${studentClassGroupEventCount} unread class group event(s)">
+                ${studentClassGroupEventCount}
+            </span>
+        </c:if>
+        <div class="gape-student-class-group-card__top mb-10">
+            <span class="gape-student-class-group-card__icon gape-student-class-group-card__icon--compact"><i class="ph ph-users-three"></i></span>
+            <div class="min-w-0">
+                <h6 class="text-14 fw-semibold text-neutral-800 mb-4"><c:out value="${item.classGroup.code}"/></h6>
+                <span class="text-12 text-neutral-500" title="<c:out value='${item.classGroup.contextTitle}'/>">
+                    <c:out value="${item.classGroup.contextHtml}" escapeXml="false"/>
+                </span>
+            </div>
+        </div>
+        <div class="gape-student-class-group-card__badges mb-12">
+            <span class="${item.enrollmentBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12"
+                  data-gape-enrollment-badge
+                  data-gape-enrollment-badge-fixed="px-12 py-7 border-neutral-30 border rounded-pill text-12">
+                <c:out value="${item.enrollmentStateLabel}"/>
+            </span>
+        </div>
+        <div class="gape-student-class-group-card__meta mb-12">
+            <span>Modality: <c:out value="${item.classGroup.modalityLabel}"/></span>
+            <span>Shift: <c:out value="${item.classGroup.shift}"/></span>
+            <span>Occup: <c:out value="${item.classGroup.occupancyLabel}"/></span>
+        </div>
+        <div class="gape-student-class-group-card__actions"
+             data-gape-enrollment-actions
+             data-gape-enrollment-actions-kind="class-group-detail">
+            <c:if test="${item.activeEnrollment}">
+                <a href="${pageContext.request.contextPath}/student/class-groups/${item.classGroup.id}#student-class-group-overview" class="gape-student-card-icon-button" aria-label="Open class group" title="Open class group">
+                    <i class="ph ph-eye"></i>
+                </a>
+            </c:if>
+            <c:if test="${item.canEnroll}">
+                <form action="${pageContext.request.contextPath}/student/enrollments/class-groups/${item.classGroup.id}" method="post" class="m-0">
+                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                    <input type="hidden" name="returnTo" value="/student/subjects/${course.id}/${subject.subjectId}">
+                    <button type="submit" class="gape-student-card-icon-button gape-student-card-icon-button--request" aria-label="Request enrollment" title="Request enrollment">
+                        <i class="ph ph-user-plus"></i>
+                    </button>
+                </form>
+            </c:if>
+            <c:if test="${item.canWithdraw}">
+                <form action="${pageContext.request.contextPath}/student/enrollments/class-groups/${item.classGroup.id}/withdraw" method="post" class="m-0">
+                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                    <input type="hidden" name="returnTo" value="/student/subjects/${course.id}/${subject.subjectId}">
+                    <button type="submit" class="gape-student-card-icon-button gape-student-card-icon-button--danger" aria-label="Leave class group" title="Leave class group">
+                        <i class="ph ph-sign-out"></i>
+                    </button>
+                </form>
+            </c:if>
+            <c:if test="${not item.actionAvailable}">
+                <span class="border border-neutral-30 px-12 py-7 rounded-8 text-12 fw-semibold text-neutral-500 bg-neutral-20"><c:out value="${item.unavailableActionLabel}"/></span>
+            </c:if>
+        </div>
+    </article>
+</div>

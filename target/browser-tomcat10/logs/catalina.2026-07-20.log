@@ -1,0 +1,1014 @@
+20-Jul-2026 18:17:50.139 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 18:17:50.152 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 18:17:50.154 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 18:17:50.154 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 18:17:50.155 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 18:17:50.156 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 18:17:50.156 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 18:17:50.156 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 18:17:50.157 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 18:17:50.157 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 18:17:50.157 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 18:17:50.165 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 18:17:50.165 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 18:17:50.166 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 18:17:50.166 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 18:17:50.166 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 18:17:50.167 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 18:17:50.167 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 18:17:50.167 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 18:17:50.167 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 18:17:50.167 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 18:17:50.169 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 18:17:50.169 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 18:17:50.169 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 18:17:50.170 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 18:17:50.170 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 18:17:50.170 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 18:17:50.170 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 18:17:50.174 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 18:17:50.183 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 18:17:50.446 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 18:17:50.475 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [522] milliseconds
+20-Jul-2026 18:17:50.522 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 18:17:50.523 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 18:17:50.537 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 18:17:55.859 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 18:18:08.078 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [17,534] ms
+20-Jul-2026 18:18:08.085 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 18:18:08.103 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [17625] milliseconds
+20-Jul-2026 18:27:03.285 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 18:27:03.287 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 18:27:03.288 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 18:27:03.288 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 18:27:03.289 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 18:27:03.289 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 18:27:03.289 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 18:27:03.289 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 18:27:03.290 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 18:27:03.290 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 18:27:03.290 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 18:27:03.300 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 18:27:03.300 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 18:27:03.301 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 18:27:03.301 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 18:27:03.301 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 18:27:03.302 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 18:27:03.302 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 18:27:03.302 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 18:27:03.302 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 18:27:03.304 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 18:27:03.304 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 18:27:03.304 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 18:27:03.305 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 18:27:03.305 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 18:27:03.306 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 18:27:03.306 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 18:27:03.306 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 18:27:03.311 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 18:27:03.321 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 18:27:03.587 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 18:27:03.613 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [514] milliseconds
+20-Jul-2026 18:27:03.662 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 18:27:03.663 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 18:27:03.678 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 18:27:06.885 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 18:27:18.584 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [14,902] ms
+20-Jul-2026 18:27:18.591 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 18:27:18.607 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [14992] milliseconds
+20-Jul-2026 18:50:59.648 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 18:50:59.654 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 18:50:59.655 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 18:50:59.655 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 18:50:59.655 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 18:50:59.657 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 18:50:59.657 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 18:50:59.657 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 18:50:59.658 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 18:50:59.658 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 18:50:59.659 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 18:50:59.671 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 18:50:59.672 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 18:50:59.672 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 18:50:59.673 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 18:50:59.673 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 18:50:59.674 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 18:50:59.674 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 18:50:59.674 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 18:50:59.676 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 18:50:59.676 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 18:50:59.676 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 18:50:59.677 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 18:50:59.677 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 18:50:59.678 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 18:50:59.678 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 18:50:59.678 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 18:50:59.679 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 18:50:59.685 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 18:50:59.699 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 18:51:00.171 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 18:51:00.217 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [858] milliseconds
+20-Jul-2026 18:51:00.300 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 18:51:00.302 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 18:51:00.323 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 18:51:05.213 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 18:51:15.923 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [15,596] ms
+20-Jul-2026 18:51:15.926 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 18:51:15.952 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [15730] milliseconds
+20-Jul-2026 19:01:25.364 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 19:01:25.367 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 19:01:25.367 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 19:01:25.367 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 19:01:25.367 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 19:01:25.367 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 19:01:25.367 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 19:01:25.368 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 19:01:25.368 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 19:01:25.368 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 19:01:25.368 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 19:01:25.373 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 19:01:25.373 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 19:01:25.373 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 19:01:25.373 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 19:01:25.374 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 19:01:25.374 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 19:01:25.374 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 19:01:25.374 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 19:01:25.374 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 19:01:25.374 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 19:01:25.375 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 19:01:25.375 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 19:01:25.375 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 19:01:25.375 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 19:01:25.375 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 19:01:25.375 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 19:01:25.376 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 19:01:25.378 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 19:01:25.384 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 19:01:25.557 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 19:01:25.574 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [328] milliseconds
+20-Jul-2026 19:01:25.600 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 19:01:25.600 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 19:01:25.607 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 19:01:27.764 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 19:01:36.207 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [10,595] ms
+20-Jul-2026 19:01:36.211 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 19:01:36.228 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [10652] milliseconds
+20-Jul-2026 20:33:44.469 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 20:33:44.473 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 20:33:44.473 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 20:33:44.473 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 20:33:44.474 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 20:33:44.474 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 20:33:44.474 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 20:33:44.475 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 20:33:44.475 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 20:33:44.475 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:33:44.476 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:33:44.483 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 20:33:44.483 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 20:33:44.484 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 20:33:44.484 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 20:33:44.484 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 20:33:44.484 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 20:33:44.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 20:33:44.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 20:33:44.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 20:33:44.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 20:33:44.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 20:33:44.486 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 20:33:44.486 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 20:33:44.486 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 20:33:44.486 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:33:44.487 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:33:44.487 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 20:33:44.491 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 20:33:44.499 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 20:33:44.763 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:33:44.787 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [496] milliseconds
+20-Jul-2026 20:33:44.827 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 20:33:44.828 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 20:33:44.839 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 20:33:48.544 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 20:34:05.848 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [21,006] ms
+20-Jul-2026 20:34:05.852 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:34:05.865 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [21075] milliseconds
+20-Jul-2026 20:40:01.442 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 20:40:01.445 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 20:40:01.445 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 20:40:01.447 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 20:40:01.447 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 20:40:01.447 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 20:40:01.447 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 20:40:01.448 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 20:40:01.448 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 20:40:01.448 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:40:01.448 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:40:01.456 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 20:40:01.457 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 20:40:01.457 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 20:40:01.457 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 20:40:01.459 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 20:40:01.459 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 20:40:01.459 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 20:40:01.459 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 20:40:01.459 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 20:40:01.460 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 20:40:01.460 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 20:40:01.460 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 20:40:01.460 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 20:40:01.461 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 20:40:01.461 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:40:01.461 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:40:01.462 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 20:40:01.466 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 20:40:01.475 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 20:40:01.746 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:40:01.769 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [526] milliseconds
+20-Jul-2026 20:40:01.802 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 20:40:01.803 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 20:40:01.814 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 20:40:04.347 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 20:40:14.723 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [12,904] ms
+20-Jul-2026 20:40:14.727 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:40:14.741 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [12970] milliseconds
+20-Jul-2026 20:42:01.775 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 20:42:01.779 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 20:42:01.780 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 20:42:01.780 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 20:42:01.781 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 20:42:01.781 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 20:42:01.781 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 20:42:01.782 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 20:42:01.782 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 20:42:01.782 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:42:01.782 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:42:01.789 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 20:42:01.789 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 20:42:01.790 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 20:42:01.790 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 20:42:01.790 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 20:42:01.791 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 20:42:01.791 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 20:42:01.791 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 20:42:01.792 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 20:42:01.792 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 20:42:01.792 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 20:42:01.792 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 20:42:01.792 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 20:42:01.793 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 20:42:01.793 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:42:01.793 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:42:01.793 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 20:42:01.796 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 20:42:01.804 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 20:42:02.037 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:42:02.062 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [441] milliseconds
+20-Jul-2026 20:42:02.106 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 20:42:02.107 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 20:42:02.120 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 20:42:05.015 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 20:42:16.860 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [14,736] ms
+20-Jul-2026 20:42:16.864 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:42:16.882 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [14819] milliseconds
+20-Jul-2026 20:42:53.547 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 20:42:53.550 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 20:42:53.550 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 20:42:53.550 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 20:42:53.550 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 20:42:53.550 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 20:42:53.551 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 20:42:53.551 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 20:42:53.551 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 20:42:53.552 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:42:53.552 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:42:53.560 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 20:42:53.561 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 20:42:53.561 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 20:42:53.561 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 20:42:53.561 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 20:42:53.562 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 20:42:53.562 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 20:42:53.562 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 20:42:53.564 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 20:42:53.564 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 20:42:53.564 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 20:42:53.564 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 20:42:53.564 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 20:42:53.565 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 20:42:53.565 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:42:53.565 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:42:53.565 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 20:42:53.568 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 20:42:53.576 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 20:42:53.801 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:42:53.825 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [437] milliseconds
+20-Jul-2026 20:42:53.869 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 20:42:53.870 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 20:42:53.879 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 20:42:56.456 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 20:43:05.622 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [11,738] ms
+20-Jul-2026 20:43:05.627 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:43:05.645 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [11818] milliseconds
+20-Jul-2026 20:45:30.108 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 20:45:30.113 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 20:45:30.113 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 20:45:30.113 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 20:45:30.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 20:45:30.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 20:45:30.114 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 20:45:30.115 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 20:45:30.115 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 20:45:30.115 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:45:30.116 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:45:30.122 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 20:45:30.122 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 20:45:30.122 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 20:45:30.123 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 20:45:30.123 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 20:45:30.123 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 20:45:30.123 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 20:45:30.124 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 20:45:30.124 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 20:45:30.124 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 20:45:30.124 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 20:45:30.125 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 20:45:30.125 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 20:45:30.125 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 20:45:30.127 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:45:30.128 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:45:30.128 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 20:45:30.131 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 20:45:30.138 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 20:45:30.388 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:45:30.413 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [463] milliseconds
+20-Jul-2026 20:45:30.450 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 20:45:30.451 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 20:45:30.461 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 20:45:33.052 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 20:45:43.446 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [12,982] ms
+20-Jul-2026 20:45:43.450 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:45:43.463 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [13048] milliseconds
+20-Jul-2026 20:49:35.710 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 20:49:35.713 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 20:49:35.714 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 20:49:35.714 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 20:49:35.715 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 20:49:35.715 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 20:49:35.715 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 20:49:35.715 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 20:49:35.716 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 20:49:35.716 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:49:35.716 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:49:35.722 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 20:49:35.723 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 20:49:35.723 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 20:49:35.723 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 20:49:35.723 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 20:49:35.723 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 20:49:35.725 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 20:49:35.725 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 20:49:35.725 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 20:49:35.725 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 20:49:35.725 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 20:49:35.726 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 20:49:35.726 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 20:49:35.726 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 20:49:35.726 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:49:35.726 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:49:35.726 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 20:49:35.729 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 20:49:35.735 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 20:49:36.005 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:49:36.029 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [483] milliseconds
+20-Jul-2026 20:49:36.069 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 20:49:36.070 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 20:49:36.082 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 20:49:38.669 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 20:49:48.869 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [12,784] ms
+20-Jul-2026 20:49:48.876 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:49:48.891 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [12860] milliseconds
+20-Jul-2026 20:50:21.547 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 20:50:21.550 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 20:50:21.550 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 20:50:21.551 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 20:50:21.551 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 20:50:21.551 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 20:50:21.551 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 20:50:21.552 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 20:50:21.552 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 20:50:21.552 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:50:21.553 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:50:21.559 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 20:50:21.560 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 20:50:21.560 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 20:50:21.560 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 20:50:21.561 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 20:50:21.561 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 20:50:21.561 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 20:50:21.561 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 20:50:21.561 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 20:50:21.561 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 20:50:21.561 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 20:50:21.563 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 20:50:21.563 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 20:50:21.563 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 20:50:21.563 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 20:50:21.563 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 20:50:21.564 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 20:50:21.566 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 20:50:21.574 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 20:50:21.812 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:50:21.835 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [444] milliseconds
+20-Jul-2026 20:50:21.876 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 20:50:21.876 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 20:50:21.887 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 20:50:24.514 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 20:50:34.107 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [12,215] ms
+20-Jul-2026 20:50:34.111 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 20:50:34.125 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [12288] milliseconds
+20-Jul-2026 21:18:10.393 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 21:18:10.396 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 21:18:10.396 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 21:18:10.397 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 21:18:10.397 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 21:18:10.397 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 21:18:10.397 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 21:18:10.397 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 21:18:10.399 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 21:18:10.399 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:18:10.399 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:18:10.409 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 21:18:10.410 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 21:18:10.410 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 21:18:10.410 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 21:18:10.410 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 21:18:10.410 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 21:18:10.410 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 21:18:10.411 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 21:18:10.411 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 21:18:10.411 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 21:18:10.411 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 21:18:10.412 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 21:18:10.412 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 21:18:10.412 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 21:18:10.412 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:18:10.412 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:18:10.412 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 21:18:10.416 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 21:18:10.424 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 21:18:10.684 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:18:10.704 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [467] milliseconds
+20-Jul-2026 21:18:10.748 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 21:18:10.748 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 21:18:10.759 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 21:18:13.411 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 21:18:32.128 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [21,363] ms
+20-Jul-2026 21:18:32.133 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:18:32.156 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [21450] milliseconds
+20-Jul-2026 21:19:50.399 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 21:19:50.402 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 21:19:50.402 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 21:19:50.403 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 21:19:50.403 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 21:19:50.403 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 21:19:50.404 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 21:19:50.404 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 21:19:50.404 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 21:19:50.406 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:19:50.406 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:19:50.413 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 21:19:50.414 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 21:19:50.414 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 21:19:50.414 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 21:19:50.414 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 21:19:50.415 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 21:19:50.415 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 21:19:50.415 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 21:19:50.415 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 21:19:50.416 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 21:19:50.416 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 21:19:50.416 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 21:19:50.416 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 21:19:50.417 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 21:19:50.417 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:19:50.417 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:19:50.418 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 21:19:50.420 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 21:19:50.430 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 21:19:50.823 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:19:50.850 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [634] milliseconds
+20-Jul-2026 21:19:50.900 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 21:19:50.901 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 21:19:50.914 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 21:19:54.305 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 21:20:06.948 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [16,029] ms
+20-Jul-2026 21:20:06.953 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:20:06.972 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [16120] milliseconds
+20-Jul-2026 21:20:56.480 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 21:20:56.484 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 21:20:56.484 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 21:20:56.484 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 21:20:56.484 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 21:20:56.484 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 21:20:56.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 21:20:56.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 21:20:56.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 21:20:56.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:20:56.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:20:56.493 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 21:20:56.493 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 21:20:56.494 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 21:20:56.494 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 21:20:56.494 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 21:20:56.494 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 21:20:56.494 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 21:20:56.495 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 21:20:56.495 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 21:20:56.495 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 21:20:56.495 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 21:20:56.496 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 21:20:56.496 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 21:20:56.496 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 21:20:56.496 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:20:56.496 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:20:56.497 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 21:20:56.499 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 21:20:56.506 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 21:20:56.744 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:20:56.763 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [432] milliseconds
+20-Jul-2026 21:20:56.802 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 21:20:56.803 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 21:20:56.814 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 21:20:59.389 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 21:21:09.731 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [12,912] ms
+20-Jul-2026 21:21:09.736 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:21:09.753 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [12986] milliseconds
+20-Jul-2026 21:21:34.313 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 21:21:34.316 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 21:21:34.316 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 21:21:34.316 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 21:21:34.316 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 21:21:34.317 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 21:21:34.317 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 21:21:34.317 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 21:21:34.318 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 21:21:34.318 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:21:34.318 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:21:34.327 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 21:21:34.327 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 21:21:34.328 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 21:21:34.328 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 21:21:34.328 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 21:21:34.328 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 21:21:34.329 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 21:21:34.329 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 21:21:34.330 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 21:21:34.330 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 21:21:34.330 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 21:21:34.331 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 21:21:34.331 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 21:21:34.331 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 21:21:34.332 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:21:34.332 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:21:34.332 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 21:21:34.335 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 21:21:34.343 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 21:21:34.578 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:21:34.603 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [448] milliseconds
+20-Jul-2026 21:21:34.648 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 21:21:34.648 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 21:21:34.658 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 21:21:37.246 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 21:21:47.480 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [12,817] ms
+20-Jul-2026 21:21:47.485 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:21:47.499 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [12894] milliseconds
+20-Jul-2026 21:29:58.498 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 21:29:58.501 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 21:29:58.501 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 21:29:58.501 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 21:29:58.502 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 21:29:58.502 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 21:29:58.502 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 21:29:58.502 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 21:29:58.503 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 21:29:58.503 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:29:58.503 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:29:58.510 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 21:29:58.511 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 21:29:58.511 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 21:29:58.511 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 21:29:58.511 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 21:29:58.512 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 21:29:58.512 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 21:29:58.512 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 21:29:58.512 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 21:29:58.513 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 21:29:58.513 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 21:29:58.513 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 21:29:58.513 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 21:29:58.513 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 21:29:58.514 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:29:58.514 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:29:58.514 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 21:29:58.517 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 21:29:58.524 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 21:29:58.769 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:29:58.794 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [463] milliseconds
+20-Jul-2026 21:29:58.835 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 21:29:58.835 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 21:29:58.847 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 21:30:01.550 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 21:30:10.423 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [11,571] ms
+20-Jul-2026 21:30:10.426 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:30:10.440 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [11644] milliseconds
+20-Jul-2026 21:44:59.363 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 21:44:59.365 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 21:44:59.366 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 21:44:59.366 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 21:44:59.367 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 21:44:59.367 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 21:44:59.367 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 21:44:59.367 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 21:44:59.368 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 21:44:59.368 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:44:59.368 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:44:59.376 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 21:44:59.376 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 21:44:59.377 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 21:44:59.377 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 21:44:59.377 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 21:44:59.377 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 21:44:59.377 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 21:44:59.378 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 21:44:59.378 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 21:44:59.378 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 21:44:59.378 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 21:44:59.378 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 21:44:59.379 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 21:44:59.379 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 21:44:59.379 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:44:59.379 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:44:59.380 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 21:44:59.383 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 21:44:59.391 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 21:44:59.623 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:44:59.649 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [437] milliseconds
+20-Jul-2026 21:44:59.692 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 21:44:59.692 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 21:44:59.702 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 21:45:02.371 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 21:45:10.683 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [10,977] ms
+20-Jul-2026 21:45:10.688 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:45:10.703 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [11051] milliseconds
+20-Jul-2026 21:49:53.173 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 21:49:53.175 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 21:49:53.176 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 21:49:53.176 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 21:49:53.177 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 21:49:53.177 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 21:49:53.177 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 21:49:53.177 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 21:49:53.179 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 21:49:53.179 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:49:53.179 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:49:53.186 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 21:49:53.187 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 21:49:53.187 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 21:49:53.188 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 21:49:53.188 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 21:49:53.188 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 21:49:53.189 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 21:49:53.189 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 21:49:53.189 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 21:49:53.189 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 21:49:53.190 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 21:49:53.190 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 21:49:53.190 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 21:49:53.190 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 21:49:53.191 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:49:53.191 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:49:53.191 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 21:49:53.194 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 21:49:53.200 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 21:49:53.428 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:49:53.448 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [421] milliseconds
+20-Jul-2026 21:49:53.492 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 21:49:53.492 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 21:49:53.504 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 21:49:56.147 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 21:50:05.455 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [11,948] ms
+20-Jul-2026 21:50:05.459 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:50:05.473 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [12023] milliseconds
+20-Jul-2026 21:52:25.631 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 21:52:25.634 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 21:52:25.634 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 21:52:25.634 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 21:52:25.634 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 21:52:25.635 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 21:52:25.635 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 21:52:25.635 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 21:52:25.635 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 21:52:25.635 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:52:25.636 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:52:25.645 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 21:52:25.645 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 21:52:25.645 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 21:52:25.646 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 21:52:25.646 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 21:52:25.646 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 21:52:25.646 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 21:52:25.646 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 21:52:25.647 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 21:52:25.647 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 21:52:25.647 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 21:52:25.647 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 21:52:25.647 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 21:52:25.648 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 21:52:25.648 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:52:25.648 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:52:25.648 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 21:52:25.651 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 21:52:25.658 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 21:52:25.880 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:52:25.900 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [427] milliseconds
+20-Jul-2026 21:52:25.939 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 21:52:25.940 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 21:52:25.952 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 21:52:28.437 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 21:52:37.140 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [11,185] ms
+20-Jul-2026 21:52:37.147 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:52:37.160 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [11256] milliseconds
+20-Jul-2026 21:57:24.378 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 21:57:24.382 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 21:57:24.383 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 21:57:24.383 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 21:57:24.385 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 21:57:24.385 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 21:57:24.386 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 21:57:24.386 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 21:57:24.387 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 21:57:24.387 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:57:24.387 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:57:24.396 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 21:57:24.396 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 21:57:24.397 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 21:57:24.397 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 21:57:24.397 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 21:57:24.397 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 21:57:24.397 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 21:57:24.398 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 21:57:24.398 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 21:57:24.398 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 21:57:24.398 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 21:57:24.398 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 21:57:24.399 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 21:57:24.399 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 21:57:24.399 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 21:57:24.399 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 21:57:24.399 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 21:57:24.402 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 21:57:24.410 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 21:57:24.641 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:57:24.661 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [433] milliseconds
+20-Jul-2026 21:57:24.700 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 21:57:24.700 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 21:57:24.712 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 21:57:27.275 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 21:57:37.532 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [12,821] ms
+20-Jul-2026 21:57:37.532 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 21:57:37.562 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [12898] milliseconds
+20-Jul-2026 22:02:12.257 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 22:02:12.261 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 22:02:12.261 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 22:02:12.262 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 22:02:12.262 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 22:02:12.262 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 22:02:12.263 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 22:02:12.263 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 22:02:12.263 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 22:02:12.263 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 22:02:12.264 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 22:02:12.271 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 22:02:12.272 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 22:02:12.272 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 22:02:12.272 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 22:02:12.272 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 22:02:12.273 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 22:02:12.273 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 22:02:12.273 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 22:02:12.273 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 22:02:12.274 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 22:02:12.274 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 22:02:12.274 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 22:02:12.274 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 22:02:12.274 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 22:02:12.275 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 22:02:12.275 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 22:02:12.275 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 22:02:12.278 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 22:02:12.287 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 22:02:12.512 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 22:02:12.539 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [439] milliseconds
+20-Jul-2026 22:02:12.579 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 22:02:12.579 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 22:02:12.589 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 22:02:15.080 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 22:02:24.805 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [12,213] ms
+20-Jul-2026 22:02:24.809 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 22:02:24.825 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [12284] milliseconds
+20-Jul-2026 22:17:17.916 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 22:17:17.920 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 22:17:17.920 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 22:17:17.920 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 22:17:17.920 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 22:17:17.921 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 22:17:17.921 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 22:17:17.921 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 22:17:17.921 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 22:17:17.922 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 22:17:17.922 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 22:17:17.927 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 22:17:17.928 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 22:17:17.928 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 22:17:17.928 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 22:17:17.928 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 22:17:17.928 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 22:17:17.929 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 22:17:17.929 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 22:17:17.929 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 22:17:17.929 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 22:17:17.929 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 22:17:17.931 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 22:17:17.931 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 22:17:17.931 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 22:17:17.931 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 22:17:17.931 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 22:17:17.932 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 22:17:17.935 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 22:17:17.943 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 22:17:18.173 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 22:17:18.193 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [429] milliseconds
+20-Jul-2026 22:17:18.242 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 22:17:18.243 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 22:17:18.255 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 22:17:20.789 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 22:17:30.074 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [11,816] ms
+20-Jul-2026 22:17:30.078 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 22:17:30.090 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [11894] milliseconds
+20-Jul-2026 22:23:37.255 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 22:23:37.259 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 22:23:37.259 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 22:23:37.260 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 22:23:37.260 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 22:23:37.260 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 22:23:37.260 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 22:23:37.261 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 22:23:37.261 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 22:23:37.261 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 22:23:37.262 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 22:23:37.273 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 22:23:37.273 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 22:23:37.274 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 22:23:37.274 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 22:23:37.274 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 22:23:37.274 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 22:23:37.275 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 22:23:37.275 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 22:23:37.275 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 22:23:37.276 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 22:23:37.276 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 22:23:37.276 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 22:23:37.276 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 22:23:37.276 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 22:23:37.278 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 22:23:37.278 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 22:23:37.278 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 22:23:37.282 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 22:23:37.291 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 22:23:37.584 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 22:23:37.604 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [578] milliseconds
+20-Jul-2026 22:23:37.648 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 22:23:37.649 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 22:23:37.659 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 22:23:40.128 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 22:23:50.132 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [12,470] ms
+20-Jul-2026 22:23:50.136 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 22:23:50.151 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [12544] milliseconds
+20-Jul-2026 22:50:29.778 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 22:50:29.781 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 22:50:29.781 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 22:50:29.781 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 22:50:29.782 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 22:50:29.782 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 22:50:29.782 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 22:50:29.784 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 22:50:29.784 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 22:50:29.784 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 22:50:29.784 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 22:50:29.793 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 22:50:29.793 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 22:50:29.794 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 22:50:29.794 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 22:50:29.794 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 22:50:29.794 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 22:50:29.794 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 22:50:29.795 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 22:50:29.795 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 22:50:29.795 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 22:50:29.795 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 22:50:29.796 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 22:50:29.796 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 22:50:29.796 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 22:50:29.796 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 22:50:29.796 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 22:50:29.797 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 22:50:29.801 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 22:50:29.810 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 22:50:30.098 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 22:50:30.121 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [509] milliseconds
+20-Jul-2026 22:50:30.173 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 22:50:30.174 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 22:50:30.185 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 22:50:40.718 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 22:51:12.917 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [42,721] ms
+20-Jul-2026 22:51:12.932 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 22:51:12.984 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [42861] milliseconds
+20-Jul-2026 23:40:58.469 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 23:40:58.472 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 23:40:58.472 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 23:40:58.472 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 23:40:58.473 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 23:40:58.473 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 23:40:58.473 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 23:40:58.474 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 23:40:58.474 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 23:40:58.474 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 23:40:58.475 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 23:40:58.484 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 23:40:58.484 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 23:40:58.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 23:40:58.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 23:40:58.485 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 23:40:58.486 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 23:40:58.486 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 23:40:58.486 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 23:40:58.487 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 23:40:58.487 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 23:40:58.487 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 23:40:58.488 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 23:40:58.488 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 23:40:58.488 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 23:40:58.489 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 23:40:58.489 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 23:40:58.489 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 23:40:58.493 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 23:40:58.502 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 23:40:58.841 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 23:40:58.873 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [604] milliseconds
+20-Jul-2026 23:40:59.027 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 23:40:59.028 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 23:40:59.045 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 23:41:06.233 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 23:41:25.008 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [25,956] ms
+20-Jul-2026 23:41:25.015 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 23:41:25.041 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [26164] milliseconds
+20-Jul-2026 23:58:49.752 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version name:   Apache Tomcat/10.1.24
+20-Jul-2026 23:58:49.757 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server built:          May 9 2024 17:41:23 UTC
+20-Jul-2026 23:58:49.758 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Server version number: 10.1.24.0
+20-Jul-2026 23:58:49.758 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Name:               Windows 11
+20-Jul-2026 23:58:49.759 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log OS Version:            10.0
+20-Jul-2026 23:58:49.759 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Architecture:          amd64
+20-Jul-2026 23:58:49.759 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Java Home:             C:\Program Files\Java\jdk-25
+20-Jul-2026 23:58:49.759 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Version:           25.0.1+8-LTS-27
+20-Jul-2026 23:58:49.760 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log JVM Vendor:            Oracle Corporation
+20-Jul-2026 23:58:49.760 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_BASE:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 23:58:49.761 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log CATALINA_HOME:         C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 23:58:49.769 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.config.file=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\conf\logging.properties
+20-Jul-2026 23:58:49.771 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager
+20-Jul-2026 23:58:49.772 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --enable-native-access=ALL-UNNAMED
+20-Jul-2026 23:58:49.772 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dfile.encoding=UTF-8
+20-Jul-2026 23:58:49.773 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Duser.timezone=Europe/Lisbon
+20-Jul-2026 23:58:49.773 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.upload.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads
+20-Jul-2026 23:58:49.774 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dgape.webp.native.dir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.gape-webp-native
+20-Jul-2026 23:58:49.774 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djdk.tls.ephemeralDHKeySize=2048
+20-Jul-2026 23:58:49.774 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.protocol.handler.pkgs=org.apache.catalina.webresources
+20-Jul-2026 23:58:49.775 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.lang=ALL-UNNAMED
+20-Jul-2026 23:58:49.775 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.io=ALL-UNNAMED
+20-Jul-2026 23:58:49.775 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util=ALL-UNNAMED
+20-Jul-2026 23:58:49.776 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+20-Jul-2026 23:58:49.776 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: --add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED
+20-Jul-2026 23:58:49.776 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.base=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10
+20-Jul-2026 23:58:49.777 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Dcatalina.home=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev\.tools\apache-tomcat-10.1.24
+20-Jul-2026 23:58:49.777 INFO [main] org.apache.catalina.startup.VersionLoggerListener.log Command line argument: -Djava.io.tmpdir=C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\temp
+20-Jul-2026 23:58:49.781 INFO [main] org.apache.catalina.core.AprLifecycleListener.lifecycleEvent Loaded Apache Tomcat Native library [2.0.7] using APR version [1.7.4].
+20-Jul-2026 23:58:49.791 INFO [main] org.apache.catalina.core.AprLifecycleListener.initializeSSL OpenSSL successfully initialized [OpenSSL 3.0.13 30 Jan 2024]
+20-Jul-2026 23:58:50.282 INFO [main] org.apache.coyote.AbstractProtocol.init Initializing ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 23:58:50.395 INFO [main] org.apache.catalina.startup.Catalina.load Server initialization in [901] milliseconds
+20-Jul-2026 23:58:50.460 INFO [main] org.apache.catalina.core.StandardService.startInternal Starting service [Catalina]
+20-Jul-2026 23:58:50.461 INFO [main] org.apache.catalina.core.StandardEngine.startInternal Starting Servlet engine: [Apache Tomcat/10.1.24]
+20-Jul-2026 23:58:50.478 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deploying web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE]
+20-Jul-2026 23:58:54.671 INFO [main] org.apache.jasper.servlet.TldScanner.scanJars At least one JAR was scanned for TLDs yet contained no TLDs. Enable debug logging for this logger for a complete list of JARs that were scanned but no TLDs were found in them. Skipping unneeded JARs during scanning can improve startup time and JSP compilation time.
+20-Jul-2026 23:59:12.362 INFO [main] org.apache.catalina.startup.HostConfig.deployDirectory Deployment of web application directory [C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\target\browser-tomcat10\webapps\GAPE] has finished in [21,879] ms
+20-Jul-2026 23:59:12.366 INFO [main] org.apache.coyote.AbstractProtocol.start Starting ProtocolHandler ["http-nio-8080"]
+20-Jul-2026 23:59:12.384 INFO [main] org.apache.catalina.startup.Catalina.start Server startup in [21984] milliseconds

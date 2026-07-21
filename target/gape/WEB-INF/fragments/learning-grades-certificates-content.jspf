@@ -1,0 +1,838 @@
+                <c:set var="gradeManagementIdPrefix" value="${gradeManagementScope eq 'published' ? 'published_' : 'active_'}"/>
+                <section id="grade-sheets-${gradeManagementIdPrefix}" class="gape-structured-management-source">
+                    <div class="gape-desktop-table">
+                        <table class="table mb-0">
+                            <thead>
+                            <tr>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Course</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600" data-gape-group-hide-when-grouped>Context</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">
+                                    <span data-gape-normal-only-content>Grade sheets</span>
+                                    <span data-gape-grouped-only-content>Level</span>
+                                </th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
+                                <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody data-gape-sort-list>
+                            <c:forEach var="courseGroup" items="${gradeSheetGroups}" varStatus="gradeCourseLoop">
+                                <c:set var="courseSheet" value="${courseGroup.primarySheet}"/>
+                                <c:set var="courseSubjectSheetTotal" value="${courseGroup.subjectCount + courseGroup.sheetCount}"/>
+                                <tr class="hover-bg-neutral-20 border-bottom transition-03"
+                                    data-gape-sort-row
+                                    data-gape-detail-id="gradeCourseGroup${gradeManagementIdPrefix}${courseGroup.courseId}"
+                                    data-gape-mobile-id="gradeMobileGroup${gradeManagementIdPrefix}${courseGroup.courseId}"
+                                    data-sort-index="${gradeCourseLoop.index}"
+                                    data-sort-name="${fn:escapeXml(courseGroup.courseLabel)}"
+                                    data-sort-date="${fn:escapeXml(courseGroup.primarySheet.releasedAtSort)}"
+                                    data-sort-subject-count="${courseGroup.subjectCount}"
+                                    data-sort-sheet-count="${courseSubjectSheetTotal}"
+                                    data-sort-status="${fn:escapeXml(courseGroup.stateLabel)}"
+                                    data-group-organization-id="${courseGroup.organizationId}"
+                                    data-group-organization="${fn:escapeXml(courseGroup.organizationLabel)}"
+                                    data-group-organic-unit-id="${courseGroup.organicUnitId}"
+                                    data-group-organic-unit="${fn:escapeXml(courseGroup.organicUnitLabel)}"
+                                    data-group-course-id="${courseGroup.courseId}"
+                                    data-group-course="${fn:escapeXml(courseGroup.courseLabel)}"
+                                    data-group-subject-id="${courseSheet.subjectId}"
+                                    data-group-subject="${fn:escapeXml(courseSheet.subjectLabel)}"
+                                    data-group-class-group-id="${courseGroup.primaryClassGroupId}"
+                                    data-group-class-group="${fn:escapeXml(courseSheet.classGroupCode)}">
+                                    <td class="py-20 px-20 text-14 text-neutral-500">
+                                        <span class="fw-medium text-neutral-700"><c:out value="${courseGroup.courseLabel}"/></span>
+                                        <span class="d-block text-12">Subject grade sheets</span>
+                                    </td>
+                                    <td class="py-20 px-20 text-14 text-neutral-500" title="<c:out value='${courseGroup.courseContextTitle}'/>" data-gape-group-hide-when-grouped>
+                                        <c:out value="${courseGroup.courseContextHtml}" escapeXml="false"/>
+                                    </td>
+                                    <td class="py-20 px-20 text-14 text-neutral-500">
+                                        <span class="fw-medium text-neutral-700" data-gape-normal-only-content>${courseSubjectSheetTotal}</span>
+                                        <span class="fw-medium text-neutral-700" data-gape-grouped-only-content>Course</span>
+                                    </td>
+                                    <td class="py-20 px-20">
+                                        <span class="${courseGroup.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13"><c:out value="${courseGroup.stateLabel}"/></span>
+                                    </td>
+                                    <td class="py-20 px-20 text-end">
+                                        <div class="d-inline-flex align-items-center gap-10 justify-content-end flex-nowrap">
+                                            <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show subject occurrences" data-bs-toggle="collapse" data-bs-target="#gradeCourseGroup${gradeManagementIdPrefix}${courseGroup.courseId}" aria-expanded="false"><i class="ph ph-caret-down"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="collapse" id="gradeCourseGroup${gradeManagementIdPrefix}${courseGroup.courseId}">
+                                    <td colspan="5" class="aac-expanded-cell">
+                                        <div class="aac-expanded-panel">
+                                            <div class="aac-expanded-panel__header">
+                                                <div>
+                                                    <h3 class="text-16 fw-semibold text-neutral-800 mb-4">Grade sheets</h3>
+                                                    <span class="text-13 text-neutral-600"><c:out value="${courseGroup.courseLabel}"/> | ${courseGroup.subjectCount} subject occurrences | ${courseGroup.sheetCount} class sheets</span>
+                                                </div>
+                                            </div>
+                                            <div class="aac-tree">
+                                                <c:forEach var="subjectGroup" items="${courseGroup.subjects}">
+                                                    <article class="aac-tree-node aac-tree-node--subject">
+                                                        <div class="aac-tree-row">
+                                                            <div class="aac-tree-main">
+                                                                <span class="aac-tree-icon bg-success-50 text-success-600"><i class="ph ph-book-open"></i></span>
+                                                                <div class="min-w-0">
+                                                                    <span class="aac-tree-title"><c:out value="${subjectGroup.subjectLabel}"/></span>
+                                                                    <span class="aac-tree-meta"><c:out value="${subjectGroup.occurrenceLabel}"/> | ${subjectGroup.sheetCount} class sheets</span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="aac-tree-status">
+                                                                <span class="${subjectGroup.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13"><c:out value="${subjectGroup.stateLabel}"/></span>
+                                                            </div>
+                                                            <div class="aac-tree-actions">
+                                                                <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show class sheets" data-bs-toggle="collapse" data-bs-target="#gradeSubjectClasses${gradeManagementIdPrefix}${courseGroup.courseId}_${subjectGroup.subjectId}_${subjectGroup.occurrenceId}" aria-expanded="false"><i class="ph ph-caret-down"></i></button>
+                                                                <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View subject grade sheet" data-bs-toggle="modal" data-bs-target="#gradeSubjectSheetDetail${gradeManagementIdPrefix}${courseGroup.courseId}_${subjectGroup.subjectId}_${subjectGroup.occurrenceId}"><i class="ph ph-eye"></i></button>
+                                                                <div class="dropdown">
+                                                                    <button type="button" class="aac-icon-button bg-main-50 text-main-600" title="Download" aria-label="Download subject grade sheet" data-bs-toggle="dropdown" aria-expanded="false"><i class="ph ph-download-simple"></i></button>
+                                                                    <ul class="dropdown-menu dropdown-menu-end aac-download-menu">
+                                                                        <li><a class="dropdown-item" href="${pageContext.request.contextPath}/learning/grades/courses/${courseGroup.courseId}/occurrences/${subjectGroup.occurrenceId}/subjects/${subjectGroup.subjectId}/download?format=pdf"><i class="ph ph-file-pdf"></i>PDF</a></li>
+                                                                        <li><a class="dropdown-item" href="${pageContext.request.contextPath}/learning/grades/courses/${courseGroup.courseId}/occurrences/${subjectGroup.occurrenceId}/subjects/${subjectGroup.subjectId}/download?format=excel"><i class="ph ph-file-xls"></i>Excel</a></li>
+                                                                    </ul>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="collapse aac-tree-children" id="gradeSubjectClasses${gradeManagementIdPrefix}${courseGroup.courseId}_${subjectGroup.subjectId}_${subjectGroup.occurrenceId}">
+                                                            <c:forEach var="sheet" items="${subjectGroup.classGroupSheets}">
+                                                                <article class="aac-tree-node aac-tree-node--class">
+                                                                    <div class="aac-tree-row">
+                                                                        <div class="aac-tree-main">
+                                                                            <span class="${sheet.softClass} aac-tree-icon"><i class="${sheet.iconClass}"></i></span>
+                                                                            <div class="min-w-0">
+                                                                                <span class="aac-tree-title"><c:out value="${sheet.classGroupCode}"/></span>
+                                                                                <span class="aac-tree-meta"><c:out value="${sheet.title}"/> | <c:out value="${sheet.typeLabel}"/> | ${sheet.recordCount} records</span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="aac-tree-status">
+                                                                            <span class="${sheet.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13"><c:out value="${sheet.stateLabel}"/></span>
+                                                                        </div>
+                                                                        <div class="aac-tree-actions">
+                                                                            <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View grade sheet" data-bs-toggle="modal" data-bs-target="#gradeSheetDetail${gradeManagementIdPrefix}${sheet.id}"><i class="ph ph-eye"></i></button>
+                                                                            <c:if test="${not empty sheet.classGroupIds}">
+                                                                                <button type="button" class="aac-icon-button bg-info-50 text-info-600" title="Edit" aria-label="Edit grade sheet weights" data-bs-toggle="modal" data-bs-target="#gradeSheetSetup${gradeManagementIdPrefix}${sheet.id}"><i class="ph ph-pencil-simple-line"></i></button>
+                                                                            </c:if>
+                                                                            <div class="dropdown">
+                                                                                <button type="button" class="aac-icon-button bg-main-50 text-main-600" title="Download" aria-label="Download grade sheet" data-bs-toggle="dropdown" aria-expanded="false"><i class="ph ph-download-simple"></i></button>
+                                                                                <ul class="dropdown-menu dropdown-menu-end aac-download-menu">
+                                                                                    <li><a class="dropdown-item" href="${pageContext.request.contextPath}/learning/grades/sheets/${sheet.id}/download?format=pdf"><i class="ph ph-file-pdf"></i>PDF</a></li>
+                                                                                    <li><a class="dropdown-item" href="${pageContext.request.contextPath}/learning/grades/sheets/${sheet.id}/download?format=excel"><i class="ph ph-file-xls"></i>Excel</a></li>
+                                                                                </ul>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </article>
+                                                            </c:forEach>
+                                                        </div>
+                                                    </article>
+                                                </c:forEach>
+                                                <c:if test="${empty courseGroup.subjects}">
+                                                    <div class="aac-tree-empty">No grade sheets available for this course.</div>
+                                                </c:if>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <c:forEach var="subjectGroup" items="${courseGroup.subjects}">
+                                    <tr class="hover-bg-neutral-20 border-bottom transition-03"
+                                        data-gape-sort-row
+                                        data-gape-grouped-only
+                                        data-gape-group-row-level="subject"
+                                        data-gape-mobile-id="gradeSubjectMobile${gradeManagementIdPrefix}${courseGroup.courseId}_${subjectGroup.subjectId}_${subjectGroup.occurrenceId}"
+                                        data-sort-name="${fn:escapeXml(subjectGroup.subjectLabel)}"
+                                        data-sort-date="${fn:escapeXml(subjectGroup.primarySheet.releasedAtSort)}"
+                                        data-sort-status="${fn:escapeXml(subjectGroup.stateLabel)}"
+                                        data-group-organization-id="${courseGroup.organizationId}"
+                                        data-group-organization="${fn:escapeXml(courseGroup.organizationLabel)}"
+                                        data-group-organic-unit-id="${courseGroup.organicUnitId}"
+                                        data-group-organic-unit="${fn:escapeXml(courseGroup.organicUnitLabel)}"
+                                        data-group-course-id="${courseGroup.courseId}"
+                                        data-group-course="${fn:escapeXml(courseGroup.courseLabel)}"
+                                        data-group-subject-id="${subjectGroup.subjectId}"
+                                        data-group-subject="${fn:escapeXml(subjectGroup.subjectLabel)}">
+                                        <td class="py-20 px-20 text-14 text-neutral-500">
+                                            <span class="fw-medium text-neutral-700"><c:out value="${subjectGroup.subjectLabel}"/></span>
+                                            <span class="d-block text-12">Subject grade sheet</span>
+                                        </td>
+                                        <td class="py-20 px-20 text-14 text-neutral-500" title="<c:out value='${subjectGroup.subjectContextTitle}'/>" data-gape-group-hide-when-grouped>
+                                            <c:out value="${subjectGroup.subjectContextHtml}" escapeXml="false"/>
+                                        </td>
+                                        <td class="py-20 px-20 text-14 text-neutral-500">
+                                            <span class="fw-medium text-neutral-700" data-gape-normal-only-content>1</span>
+                                            <span class="fw-medium text-neutral-700" data-gape-grouped-only-content>Subject</span>
+                                        </td>
+                                        <td class="py-20 px-20">
+                                            <span class="${subjectGroup.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13"><c:out value="${subjectGroup.stateLabel}"/></span>
+                                        </td>
+                                        <td class="py-20 px-20 text-end">
+                                            <div class="d-inline-flex align-items-center gap-10 justify-content-end flex-nowrap">
+                                                <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View subject grade sheet" data-bs-toggle="modal" data-bs-target="#gradeSubjectSheetDetail${gradeManagementIdPrefix}${courseGroup.courseId}_${subjectGroup.subjectId}_${subjectGroup.occurrenceId}"><i class="ph ph-eye"></i></button>
+                                                <div class="dropdown">
+                                                    <button type="button" class="aac-icon-button bg-main-50 text-main-600" title="Download" aria-label="Download subject grade sheet" data-bs-toggle="dropdown" aria-expanded="false"><i class="ph ph-download-simple"></i></button>
+                                                    <ul class="dropdown-menu dropdown-menu-end aac-download-menu">
+                                                        <li><a class="dropdown-item" href="${pageContext.request.contextPath}/learning/grades/courses/${courseGroup.courseId}/occurrences/${subjectGroup.occurrenceId}/subjects/${subjectGroup.subjectId}/download?format=pdf"><i class="ph ph-file-pdf"></i>PDF</a></li>
+                                                        <li><a class="dropdown-item" href="${pageContext.request.contextPath}/learning/grades/courses/${courseGroup.courseId}/occurrences/${subjectGroup.occurrenceId}/subjects/${subjectGroup.subjectId}/download?format=excel"><i class="ph ph-file-xls"></i>Excel</a></li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <c:forEach var="sheet" items="${subjectGroup.classGroupSheets}">
+                                        <tr class="hover-bg-neutral-20 border-bottom transition-03"
+                                            data-gape-sort-row
+                                            data-gape-grouped-only
+                                            data-gape-group-row-level="class-group"
+                                            data-gape-mobile-id="gradeSheetMobile${gradeManagementIdPrefix}${sheet.id}"
+                                            data-sort-name="${fn:escapeXml(sheet.title)}"
+                                            data-sort-date="${fn:escapeXml(sheet.releasedAtSort)}"
+                                            data-sort-status="${fn:escapeXml(sheet.stateLabel)}"
+                                            data-group-organization-id="${courseGroup.organizationId}"
+                                            data-group-organization="${fn:escapeXml(courseGroup.organizationLabel)}"
+                                            data-group-organic-unit-id="${courseGroup.organicUnitId}"
+                                            data-group-organic-unit="${fn:escapeXml(courseGroup.organicUnitLabel)}"
+                                            data-group-course-id="${courseGroup.courseId}"
+                                            data-group-course="${fn:escapeXml(courseGroup.courseLabel)}"
+                                            data-group-subject-id="${subjectGroup.subjectId}"
+                                            data-group-subject="${fn:escapeXml(subjectGroup.subjectLabel)}"
+                                            data-group-class-group-id="${sheet.primaryClassGroupId}"
+                                            data-group-class-group="${fn:escapeXml(sheet.classGroupCode)}">
+                                            <td class="py-20 px-20 text-14 text-neutral-500">
+                                                <span class="fw-medium text-neutral-700"><c:out value="${sheet.classGroupCode}"/></span>
+                                                <span class="d-block text-12"><c:out value="${sheet.title}"/> | <c:out value="${sheet.typeLabel}"/></span>
+                                            </td>
+                                            <td class="py-20 px-20 text-14 text-neutral-500" title="<c:out value='${sheet.contextTitle}'/>" data-gape-group-hide-when-grouped>
+                                                <c:out value="${sheet.contextHtml}" escapeXml="false"/>
+                                            </td>
+                                            <td class="py-20 px-20 text-14 text-neutral-500">
+                                                <span class="fw-medium text-neutral-700" data-gape-normal-only-content>1</span>
+                                                <span class="fw-medium text-neutral-700" data-gape-grouped-only-content>Class group</span>
+                                            </td>
+                                            <td class="py-20 px-20">
+                                                <span class="${sheet.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13"><c:out value="${sheet.stateLabel}"/></span>
+                                            </td>
+                                            <td class="py-20 px-20 text-end">
+                                                <div class="d-inline-flex align-items-center gap-10 justify-content-end flex-nowrap">
+                                                    <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View grade sheet" data-bs-toggle="modal" data-bs-target="#gradeSheetDetail${gradeManagementIdPrefix}${sheet.id}"><i class="ph ph-eye"></i></button>
+                                                    <c:if test="${not empty sheet.classGroupIds}">
+                                                        <button type="button" class="aac-icon-button bg-info-50 text-info-600" title="Edit" aria-label="Edit grade sheet weights" data-bs-toggle="modal" data-bs-target="#gradeSheetSetup${gradeManagementIdPrefix}${sheet.id}"><i class="ph ph-pencil-simple-line"></i></button>
+                                                    </c:if>
+                                                    <div class="dropdown">
+                                                        <button type="button" class="aac-icon-button bg-main-50 text-main-600" title="Download" aria-label="Download grade sheet" data-bs-toggle="dropdown" aria-expanded="false"><i class="ph ph-download-simple"></i></button>
+                                                        <ul class="dropdown-menu dropdown-menu-end aac-download-menu">
+                                                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/learning/grades/sheets/${sheet.id}/download?format=pdf"><i class="ph ph-file-pdf"></i>PDF</a></li>
+                                                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/learning/grades/sheets/${sheet.id}/download?format=excel"><i class="ph ph-file-xls"></i>Excel</a></li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </c:forEach>
+                                </c:forEach>
+                            </c:forEach>
+                            <c:if test="${empty gradeSheetGroups}">
+                                <tr>
+                                    <td colspan="5" class="py-32 px-20 text-center text-14 text-neutral-500">No grade sheets available in your management context.</td>
+                                </tr>
+                            </c:if>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="gape-mobile-list" data-gape-mobile-list>
+                        <c:forEach var="courseGroup" items="${gradeSheetGroups}">
+                            <c:set var="mobileSubjectSheetTotal" value="${courseGroup.subjectCount + courseGroup.sheetCount}"/>
+                            <article class="gape-mobile-row"
+                                     data-gape-mobile-row
+                                     data-gape-mobile-row-id="gradeMobileGroup${gradeManagementIdPrefix}${courseGroup.courseId}">
+                                <div class="gape-mobile-row__header">
+                                    <div>
+                                        <div class="gape-mobile-title"><c:out value="${courseGroup.courseLabel}"/></div>
+                                        <div class="gape-mobile-subtitle" title="<c:out value='${courseGroup.courseContextTitle}'/>"><c:out value="${courseGroup.courseContextHtml}" escapeXml="false"/></div>
+                                    </div>
+                                    <span class="gape-mobile-badge px-12 py-7 border-neutral-30 border rounded-pill text-12">${mobileSubjectSheetTotal} sheets</span>
+                                </div>
+                                <div class="gape-mobile-kv">
+                                    <strong>Subject occurrences</strong>
+                                    <span>${courseGroup.subjectCount}</span>
+                                    <strong>Grade sheets</strong>
+                                    <span>${mobileSubjectSheetTotal}</span>
+                                    <strong>State</strong>
+                                    <span><span class="${courseGroup.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12"><c:out value="${courseGroup.stateLabel}"/></span></span>
+                                </div>
+                            </article>
+                            <c:forEach var="subjectGroup" items="${courseGroup.subjects}">
+                                <article class="gape-mobile-row"
+                                         data-gape-mobile-row
+                                         data-gape-mobile-row-id="gradeSubjectMobile${gradeManagementIdPrefix}${courseGroup.courseId}_${subjectGroup.subjectId}_${subjectGroup.occurrenceId}">
+                                    <div class="gape-mobile-row__header">
+                                        <div>
+                                            <div class="gape-mobile-title"><c:out value="${subjectGroup.subjectLabel}"/></div>
+                                            <div class="gape-mobile-subtitle" title="<c:out value='${subjectGroup.subjectContextTitle}'/>"><c:out value="${subjectGroup.subjectContextHtml}" escapeXml="false"/></div>
+                                        </div>
+                                        <span class="gape-mobile-badge px-12 py-7 border-neutral-30 border rounded-pill text-12">1 sheet</span>
+                                    </div>
+                                    <div class="gape-mobile-kv">
+                                        <strong>Type</strong>
+                                        <span>Subject grade sheet</span>
+                                        <strong>State</strong>
+                                        <span><span class="${subjectGroup.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12"><c:out value="${subjectGroup.stateLabel}"/></span></span>
+                                    </div>
+                                </article>
+                                <c:forEach var="sheet" items="${subjectGroup.classGroupSheets}">
+                                    <article class="gape-mobile-row"
+                                             data-gape-mobile-row
+                                             data-gape-mobile-row-id="gradeSheetMobile${gradeManagementIdPrefix}${sheet.id}">
+                                        <div class="gape-mobile-row__header">
+                                            <div>
+                                                <div class="gape-mobile-title"><c:out value="${sheet.classGroupCode}"/></div>
+                                                <div class="gape-mobile-subtitle" title="<c:out value='${sheet.contextTitle}'/>"><c:out value="${sheet.contextHtml}" escapeXml="false"/></div>
+                                            </div>
+                                            <span class="gape-mobile-badge px-12 py-7 border-neutral-30 border rounded-pill text-12">1 sheet</span>
+                                        </div>
+                                        <div class="gape-mobile-kv">
+                                            <strong>Grade sheet</strong>
+                                            <span><c:out value="${sheet.title}"/></span>
+                                            <strong>Type</strong>
+                                            <span><c:out value="${sheet.typeLabel}"/></span>
+                                            <strong>State</strong>
+                                            <span><span class="${sheet.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12"><c:out value="${sheet.stateLabel}"/></span></span>
+                                        </div>
+                                    </article>
+                                </c:forEach>
+                            </c:forEach>
+                        </c:forEach>
+                        <c:if test="${empty gradeSheetGroups}">
+                            <div class="gape-mobile-empty">No grade sheets available in your management context.</div>
+                        </c:if>
+                    </div>
+                </section>
+
+                <section id="grade-sheets-legacy-${gradeManagementIdPrefix}" class="d-none">
+                    <div class="d-flex flex-column gap-18">
+                        <c:forEach var="courseGroup" items="${gradeSheetGroups}">
+                            <article class="aac-expanded-panel">
+                                <div class="aac-expanded-panel__header">
+                                    <div>
+                                        <h3 class="text-17 fw-semibold text-neutral-800 mb-4"><c:out value="${courseGroup.courseLabel}"/></h3>
+                                        <span class="text-13 text-neutral-600">${courseGroup.subjectCount} disciplines · ${courseGroup.sheetCount} grade sheets</span>
+                                    </div>
+                                    <span class="gape-management-card__icon bg-main-50 text-main-600 w-40 h-40 rounded-8 d-inline-flex align-items-center justify-content-center text-20">
+                                        <i class="ph ph-graduation-cap"></i>
+                                    </span>
+                                </div>
+
+                                <div class="aac-expanded-list">
+                                    <c:forEach var="subjectGroup" items="${courseGroup.subjects}">
+                                        <section class="aac-subgroup">
+                                            <div class="aac-subgroup__header">
+                                                <div class="d-flex align-items-center gap-10 min-w-0">
+                                                    <span class="text-success-600 text-20"><i class="ph ph-book-open"></i></span>
+                                                    <div class="min-w-0">
+                                                        <h4 class="text-15 fw-semibold text-neutral-800 mb-2"><c:out value="${subjectGroup.subjectLabel}"/></h4>
+                                                        <span class="text-12 text-neutral-500">${subjectGroup.sheetCount} grade sheets</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="gape-desktop-table">
+                                                <table class="table mb-0">
+                                                    <thead>
+                                                    <tr>
+                                                        <th class="py-14 px-16 text-13 fw-medium text-neutral-600">Grade sheet</th>
+                                                        <th class="py-14 px-16 text-13 fw-medium text-neutral-600">Context</th>
+                                                        <th class="py-14 px-16 text-13 fw-medium text-neutral-600">Scale</th>
+                                                        <th class="py-14 px-16 text-13 fw-medium text-neutral-600">State</th>
+                                                        <th class="py-14 px-16 text-13 fw-medium text-neutral-600 text-end">Actions</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <c:forEach var="sheet" items="${subjectGroup.classGroupSheets}">
+                                                        <tr class="hover-bg-neutral-20 border-bottom transition-03">
+                                                            <td class="py-18 px-16">
+                                                                <div class="d-flex align-items-start gap-12">
+                                                                    <span class="${sheet.softClass} w-40 h-40 rounded-8 d-inline-flex align-items-center justify-content-center text-20 flex-shrink-0">
+                                                                        <i class="${sheet.iconClass}"></i>
+                                                                    </span>
+                                                                    <div class="min-w-0">
+                                                                        <span class="fw-medium text-14 text-neutral-700"><c:out value="${sheet.title}"/></span>
+                                                                        <span class="d-block text-12 text-neutral-500"><c:out value="${sheet.typeLabel}"/> | ${sheet.recordCount} records</span>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td class="py-18 px-16 text-14 text-neutral-500" title="<c:out value='${sheet.contextTitle}'/>">
+                                                                <c:out value="${sheet.contextHtml}" escapeXml="false"/>
+                                                            </td>
+                                                            <td class="py-18 px-16 text-14 text-neutral-500">
+                                                                <span class="d-block">Max: <c:out value="${sheet.maxGrade}"/></span>
+                                                                <span class="d-block text-12">Pass: <c:out value="${sheet.passingGrade}"/></span>
+                                                            </td>
+                                                            <td class="py-18 px-16">
+                                                                <span class="${sheet.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13">
+                                                                    <c:out value="${sheet.stateLabel}"/>
+                                                                </span>
+                                                            </td>
+                                                            <td class="py-18 px-16 text-end">
+                                                                <div class="d-inline-flex align-items-center gap-10 justify-content-end flex-wrap">
+                                                                    <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View grade sheet" data-bs-toggle="modal" data-bs-target="#gradeSheetDetail${gradeManagementIdPrefix}${sheet.id}">
+                                                                        <i class="ph ph-eye"></i>
+                                                                    </button>
+                                                                    <c:if test="${not empty sheet.classGroupIds}">
+                                                                        <button type="button" class="aac-icon-button bg-info-50 text-info-600" title="Edit" aria-label="Edit grade sheet weights" data-bs-toggle="modal" data-bs-target="#gradeSheetSetup${gradeManagementIdPrefix}${sheet.id}">
+                                                                            <i class="ph ph-pencil-simple-line"></i>
+                                                                        </button>
+                                                                    </c:if>
+                                                                    <div class="dropdown">
+                                                                        <button type="button" class="aac-icon-button bg-main-50 text-main-600" title="Download" aria-label="Download grade sheet" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                            <i class="ph ph-download-simple"></i>
+                                                                        </button>
+                                                                        <ul class="dropdown-menu dropdown-menu-end aac-download-menu">
+                                                                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/learning/grades/sheets/${sheet.id}/download?format=pdf"><i class="ph ph-file-pdf"></i>PDF</a></li>
+                                                                            <li><a class="dropdown-item" href="${pageContext.request.contextPath}/learning/grades/sheets/${sheet.id}/download?format=excel"><i class="ph ph-file-xls"></i>Excel</a></li>
+                                                                        </ul>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </c:forEach>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </section>
+                                    </c:forEach>
+                                </div>
+                            </article>
+                        </c:forEach>
+                        <c:if test="${empty gradeSheetGroups}">
+                            <div class="py-40 px-20 text-center text-14 text-neutral-500 border border-neutral-30 rounded-8">No grade sheets available in your management context.</div>
+                        </c:if>
+                    </div>
+                </section>
+
+                <c:forEach var="courseGroup" items="${gradeSheetGroups}">
+                    <c:forEach var="subjectGroup" items="${courseGroup.subjects}">
+                        <div class="modal fade" id="gradeSubjectSheetDetail${gradeManagementIdPrefix}${courseGroup.courseId}_${subjectGroup.subjectId}_${subjectGroup.occurrenceId}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-xl modal-dialog-centered">
+                                <div class="modal-content rounded-8 border-0">
+                                    <div class="modal-header border-neutral-30">
+                                        <div>
+                                            <h5 class="modal-title text-18 fw-semibold mb-4">Subject grade sheet</h5>
+                                            <span class="text-13 text-neutral-500"><c:out value="${subjectGroup.subjectLabel}"/></span>
+                                        </div>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <c:set var="doc" value="${subjectGroup.subjectDocument}"/>
+                                            <div class="aac-grade-doc">
+                                                <div class="aac-grade-doc__head">
+                                                    <div class="aac-grade-doc__posted">Published on: ___ / ___ / _____</div>
+                                                    <div class="aac-grade-doc__institution">
+                                                        <div class="aac-grade-doc__media">
+                                                            <c:choose>
+                                                                <c:when test="${doc.hasImage}">
+                                                                    <img src="${pageContext.request.contextPath}/media/${doc.imagePath}?v=${mediaCacheVersion}" alt="" class="aac-grade-doc__image" onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
+                                                                    <span class="aac-grade-doc__placeholder d-none"><i class="${doc.fallbackIconClass}"></i></span>
+                                                                </c:when>
+                                                                <c:otherwise>
+                                                                    <span class="aac-grade-doc__placeholder"><i class="${doc.fallbackIconClass}"></i></span>
+                                                                </c:otherwise>
+                                                            </c:choose>
+                                                        </div>
+                                                        <div class="aac-grade-doc__brand" title="<c:out value='${doc.contextTitle}'/>"><c:out value="${doc.contextHtml}" escapeXml="false"/></div>
+                                                    </div>
+                                                <div class="aac-grade-doc__entity"><strong><c:out value="${doc.entityLabel}"/>:</strong> <c:out value="${doc.entityName}"/></div>
+                                                <h3><c:out value="${doc.title}"/></h3>
+                                                <div class="aac-grade-doc__period" data-gape-datetime-display>Academic period: <c:out value="${doc.periodLabel}"/></div>
+                                            </div>
+                                            <div class="aac-grade-doc__table-wrap" style="--aac-grade-doc-columns: ${doc.variableColumnCount}; --aac-grade-doc-min-width: ${doc.tableMinWidthPx}px;">
+                                                <table class="aac-grade-doc__table">
+                                                    <colgroup>
+                                                        <col class="aac-grade-doc__number-col">
+                                                        <col class="aac-grade-doc__name-col">
+                                                        <c:choose>
+                                                            <c:when test="${empty doc.columns}">
+                                                                <col class="aac-grade-doc__assessment-col">
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <c:forEach var="column" items="${doc.columns}">
+                                                                    <col class="aac-grade-doc__assessment-col">
+                                                                </c:forEach>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                        <col class="aac-grade-doc__final-col">
+                                                    </colgroup>
+                                                    <thead>
+                                                    <tr>
+                                                        <th>ID</th>
+                                                        <th>Student name</th>
+                                                        <c:choose>
+                                                            <c:when test="${empty doc.columns}">
+                                                                <th>Assessments</th>
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <c:forEach var="column" items="${doc.columns}">
+                                                                    <th title="<c:out value='${column.headerTitle}'/>"><span class="gape-acronym-token" tabindex="0" title="<c:out value='${column.headerTitle}'/>"><c:out value="${column.headerLabel}"/></span></th>
+                                                                </c:forEach>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                        <th>Final grade</th>
+                                                    </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    <c:forEach var="row" items="${doc.rows}">
+                                                        <tr>
+                                                            <td><c:out value="${row.studentId}"/></td>
+                                                            <td class="text-start"><c:out value="${row.studentName}"/></td>
+                                                            <c:forEach var="value" items="${row.values}">
+                                                                <td class="aac-grade-doc__grade"><c:out value="${value}"/></td>
+                                                            </c:forEach>
+                                                            <td class="aac-grade-doc__final"><c:out value="${row.finalGrade}"/></td>
+                                                        </tr>
+                                                    </c:forEach>
+                                                    <c:if test="${empty doc.rows}">
+                                                        <tr>
+                                                            <td colspan="${doc.documentColumnCount}" class="py-24 text-center text-neutral-500"><c:out value="${doc.emptyMessage}"/></td>
+                                                        </tr>
+                                                    </c:if>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <c:if test="${doc.hasAlert}">
+                                                <div class="aac-grade-doc__alert"><c:out value="${doc.alert}"/></div>
+                                            </c:if>
+                                            <div class="aac-grade-doc__footer">
+                                                <div class="aac-grade-doc__signature">
+                                                    <span>Responsible person</span>
+                                                    <em></em>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <c:forEach var="sheet" items="${subjectGroup.classGroupSheets}">
+                            <div class="modal fade" id="gradeSheetDetail${gradeManagementIdPrefix}${sheet.id}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-xl modal-dialog-centered">
+                                    <div class="modal-content rounded-8 border-0">
+                                        <div class="modal-header border-neutral-30">
+                                            <div>
+                                                <h5 class="modal-title text-18 fw-semibold mb-4"><c:out value="${sheet.title}"/></h5>
+                                                <span class="text-13 text-neutral-500" title="<c:out value='${sheet.contextTitle}'/>"><c:out value="${sheet.contextHtml}" escapeXml="false"/></span>
+                                            </div>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <c:set var="doc" value="${sheet.document}"/>
+                                            <div class="aac-grade-doc">
+                                                <div class="aac-grade-doc__head">
+                                                    <div class="aac-grade-doc__posted">Published on: ___ / ___ / _____</div>
+                                                    <div class="aac-grade-doc__institution">
+                                                        <div class="aac-grade-doc__media">
+                                                            <span class="aac-grade-doc__placeholder"><i class="${doc.fallbackIconClass}"></i></span>
+                                                        </div>
+                                                        <div class="aac-grade-doc__brand" title="<c:out value='${doc.contextTitle}'/>"><c:out value="${doc.contextHtml}" escapeXml="false"/></div>
+                                                    </div>
+                                                    <div class="aac-grade-doc__entity"><strong><c:out value="${doc.entityLabel}"/>:</strong> <c:out value="${doc.entityName}"/></div>
+                                                    <h3><c:out value="${doc.title}"/></h3>
+                                                    <div class="aac-grade-doc__period" data-gape-datetime-display>Academic period: <c:out value="${doc.periodLabel}"/></div>
+                                                </div>
+                                                <div class="aac-grade-doc__table-wrap" style="--aac-grade-doc-columns: ${doc.variableColumnCount}; --aac-grade-doc-min-width: ${doc.tableMinWidthPx}px;">
+                                                    <table class="aac-grade-doc__table">
+                                                        <colgroup>
+                                                            <col class="aac-grade-doc__number-col">
+                                                            <col class="aac-grade-doc__name-col">
+                                                            <c:choose>
+                                                                <c:when test="${empty doc.columns}">
+                                                                    <col class="aac-grade-doc__assessment-col">
+                                                                </c:when>
+                                                                <c:otherwise>
+                                                                    <c:forEach var="column" items="${doc.columns}">
+                                                                        <col class="aac-grade-doc__assessment-col">
+                                                                    </c:forEach>
+                                                                </c:otherwise>
+                                                            </c:choose>
+                                                            <col class="aac-grade-doc__final-col">
+                                                        </colgroup>
+                                                        <thead>
+                                                        <tr>
+                                                            <th>ID</th>
+                                                            <th>Student name</th>
+                                                            <c:choose>
+                                                                <c:when test="${empty doc.columns}">
+                                                                    <th>Assessments</th>
+                                                                </c:when>
+                                                                <c:otherwise>
+                                                                    <c:forEach var="column" items="${doc.columns}">
+                                                                        <th title="<c:out value='${column.headerTitle}'/>"><span class="gape-acronym-token" tabindex="0" title="<c:out value='${column.headerTitle}'/>"><c:out value="${column.headerLabel}"/></span></th>
+                                                                    </c:forEach>
+                                                                </c:otherwise>
+                                                            </c:choose>
+                                                            <th>Final grade</th>
+                                                        </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                        <c:forEach var="row" items="${doc.rows}">
+                                                            <tr>
+                                                                <td><c:out value="${row.studentId}"/></td>
+                                                                <td class="text-start"><c:out value="${row.studentName}"/></td>
+                                                                <c:choose>
+                                                                    <c:when test="${empty doc.columns}">
+                                                                        <td class="aac-grade-doc__grade">-</td>
+                                                                    </c:when>
+                                                                    <c:otherwise>
+                                                                        <c:forEach var="value" items="${row.values}">
+                                                                            <td class="aac-grade-doc__grade"><c:out value="${value}"/></td>
+                                                                        </c:forEach>
+                                                                    </c:otherwise>
+                                                                </c:choose>
+                                                                <td class="aac-grade-doc__final"><c:out value="${row.finalGrade}"/></td>
+                                                            </tr>
+                                                        </c:forEach>
+                                                        <c:if test="${empty doc.rows}">
+                                                            <tr>
+                                                                <td colspan="${doc.documentColumnCount}" class="py-24 text-center text-neutral-500"><c:out value="${doc.emptyMessage}"/></td>
+                                                            </tr>
+                                                        </c:if>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <c:if test="${doc.hasAlert}">
+                                                    <div class="aac-grade-doc__alert"><c:out value="${doc.alert}"/></div>
+                                                </c:if>
+                                                <div class="aac-grade-doc__footer">
+                                                    <div>
+                                                        <strong>NOTES:</strong>
+                                                        <c:choose>
+                                                            <c:when test="${empty sheet.classGroupIds}">
+                                                                <span>Final grades are automatically consolidated from the published class group grade sheets.</span>
+                                                            </c:when>
+                                                            <c:when test="${empty sheet.assessmentColumns}">
+                                                                <span>No assessments configured.</span>
+                                                            </c:when>
+                                                            <c:otherwise>
+                                                                <span>Automatic average: <c:out value="${sheet.assessmentWeightLabel}"/>.</span>
+                                                                <c:forEach var="column" items="${sheet.assessmentColumns}">
+                                                                    <span><c:out value="${column.title}"/> - <c:out value="${column.weightLabel}"/>% of the final grade weight</span>
+                                                                </c:forEach>
+                                                            </c:otherwise>
+                                                        </c:choose>
+                                                    </div>
+                                                    <div>
+                                                        <strong>Remarks:</strong>
+                                                        <span><c:out value="${sheet.remarks}"/></span>
+                                                    </div>
+                                                    <div class="aac-grade-doc__signature">
+                                                        <span>Responsible person</span>
+                                                        <em></em>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <c:if test="${not empty sheet.classGroupIds}">
+                            <div class="modal fade" id="gradeSheetSetup${gradeManagementIdPrefix}${sheet.id}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                    <div class="modal-content rounded-8 border-0">
+                                        <div class="modal-header border-neutral-30">
+                                            <div>
+                                                <h5 class="modal-title text-18 fw-semibold mb-4">Edit weights</h5>
+                                                <span class="text-13 text-neutral-500">Configure the assessment weights for this class grade sheet.</span>
+                                            </div>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form action="${pageContext.request.contextPath}/learning/grades/sheets/${sheet.id}/configure" method="post" data-aac-weight-form>
+                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                            <input type="hidden" name="subjectId" value="${sheet.subjectId}">
+                                            <input type="hidden" name="title" value="<c:out value='${sheet.title}'/>">
+                                            <input type="hidden" name="type" value="${sheet.typeValue}">
+                                            <input type="hidden" name="maxGrade" value="${sheet.maxGrade}">
+                                            <input type="hidden" name="passingGrade" value="${sheet.passingGrade}">
+                                            <c:forEach var="classGroupId" items="${sheet.classGroupIds}">
+                                                <input type="hidden" name="classGroupIds" value="${classGroupId}">
+                                            </c:forEach>
+                                            <div class="modal-body">
+                                                <c:choose>
+                                                    <c:when test="${empty sheet.assessmentColumns}">
+                                                        <div class="bg-warning-50 text-warning-600 border border-warning-100 rounded-8 px-16 py-12 text-14">
+                                                            No assessments are configured for this class group yet.
+                                                        </div>
+                                                    </c:when>
+                                                    <c:otherwise>
+                                                        <div class="d-flex flex-column gap-12">
+                                                            <c:forEach var="column" items="${sheet.assessmentColumns}">
+                                                                <div class="d-flex align-items-center justify-content-between gap-12 border border-neutral-30 rounded-8 px-14 py-12">
+                                                                    <div class="min-w-0">
+                                                                        <span class="d-block text-14 fw-medium text-neutral-700 text-truncate"><c:out value="${column.title}"/></span>
+                                                                    </div>
+                                                                    <div class="d-flex align-items-center gap-8 flex-shrink-0">
+                                                                        <input type="hidden" name="assessmentId" value="${column.assessmentId}">
+                                                                        <input type="number" name="assessmentWeight" min="0" max="100" step="0.01" inputmode="decimal" value="${column.weightValue}" class="form-control px-12 py-8 text-14 bg-neutral-20 border-neutral-30 border rounded-8" style="width: 96px;" aria-label="Weight for <c:out value='${column.title}'/>" data-aac-weight-input required>
+                                                                        <span class="text-14 text-neutral-500">%</span>
+                                                                    </div>
+                                                                </div>
+                                                            </c:forEach>
+                                                            <div class="d-flex align-items-center justify-content-between gap-12 bg-neutral-20 border border-neutral-30 rounded-8 px-14 py-12">
+                                                                <span class="text-14 fw-medium text-neutral-700">Total</span>
+                                                                <span class="text-14 fw-semibold text-neutral-700" data-aac-weight-total>0%</span>
+                                                            </div>
+                                                            <div class="text-13 text-warning-600 d-none" data-aac-weight-error>
+                                                                The total must be exactly 100% before saving.
+                                                            </div>
+                                                        </div>
+                                                    </c:otherwise>
+                                                </c:choose>
+                                            </div>
+                                            <div class="modal-footer border-neutral-30">
+                                                <button type="button" class="border border-neutral-30 text-neutral-600 bg-white px-20 py-10 rounded-8 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white border-0" data-aac-weight-submit <c:if test="${empty sheet.assessmentColumns}">disabled</c:if>>Save weights</button>
+                                                <span class="text-13 text-neutral-500" data-aac-weight-status aria-live="polite"></span>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            </c:if>
+                        </c:forEach>
+                    </c:forEach>
+                </c:forEach>
+
+                <script>
+                    (function () {
+                        var initializeWeightForms = function () {
+                        var forms = Array.prototype.slice.call(document.querySelectorAll('[data-aac-weight-form]')).filter(function (form) {
+                            return form.dataset.aacWeightReady !== 'true';
+                        });
+                        if (!forms.length) {
+                            return;
+                        }
+
+                        function formatTotal(value) {
+                            var rounded = Math.round(value * 100) / 100;
+                            return rounded.toLocaleString(undefined, {
+                                minimumFractionDigits: rounded % 1 === 0 ? 0 : 2,
+                                maximumFractionDigits: 2
+                            }) + '%';
+                        }
+
+                        function setBlocked(button, blocked, message) {
+                            if (!button) {
+                                return;
+                            }
+                            button.classList.toggle('opacity-50', blocked);
+                            button.disabled = blocked;
+                            if (blocked) {
+                                button.setAttribute('disabled', 'disabled');
+                            } else {
+                                button.removeAttribute('disabled');
+                            }
+                            button.setAttribute('aria-disabled', blocked ? 'true' : 'false');
+                            button.style.cursor = blocked ? 'not-allowed' : '';
+                            button.setAttribute('title', blocked ? message : 'Save weights');
+                        }
+
+                        forms.forEach(function (form) {
+                            form.dataset.aacWeightReady = 'true';
+                            var inputs = Array.prototype.slice.call(form.querySelectorAll('[data-aac-weight-input]'));
+                            var total = form.querySelector('[data-aac-weight-total]');
+                            var error = form.querySelector('[data-aac-weight-error]');
+                            var submit = form.querySelector('[data-aac-weight-submit]');
+                            var status = form.querySelector('[data-aac-weight-status]');
+
+                            function sync() {
+                                var sum = inputs.reduce(function (current, input) {
+                                    var value = Number.parseFloat(String(input.value || '').replace(',', '.'));
+                                    return current + (Number.isFinite(value) ? value : 0);
+                                }, 0);
+                                var valid = inputs.length > 0 && Math.abs(sum - 100) < 0.005;
+                                var message = 'The total must be exactly 100%. Current total: ' + formatTotal(sum) + '.';
+                                if (total) {
+                                    total.textContent = formatTotal(sum);
+                                    total.classList.toggle('text-success-600', valid);
+                                    total.classList.toggle('text-warning-600', !valid);
+                                    total.classList.toggle('text-neutral-700', valid);
+                                }
+                                if (error) {
+                                    error.textContent = valid ? '' : message;
+                                    error.classList.toggle('d-none', valid);
+                                }
+                                setBlocked(submit, !valid, message);
+                                if (status && !valid) {
+                                    status.textContent = '';
+                                    status.classList.remove('text-success-600', 'text-danger-600');
+                                }
+                                return valid;
+                            }
+
+                            inputs.forEach(function (input) {
+                                input.addEventListener('input', sync);
+                                input.addEventListener('change', sync);
+                            });
+
+                            form.addEventListener('submit', function (event) {
+                                event.preventDefault();
+                                if (!sync()) {
+                                    return;
+                                }
+                                if (submit) {
+                                    submit.disabled = true;
+                                    submit.style.cursor = 'progress';
+                                }
+                                if (status) {
+                                    status.textContent = '';
+                                    status.classList.remove('text-success-600', 'text-danger-600');
+                                }
+                                fetch(form.action, {
+                                    method: 'POST',
+                                    body: new URLSearchParams(new FormData(form)),
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    },
+                                    credentials: 'same-origin'
+                                })
+                                        .then(function (response) {
+                                            return response.json().catch(function () {
+                                                return {success: response.ok, message: response.ok ? '' : 'Unable to save weights.'};
+                                            }).then(function (payload) {
+                                                if (!response.ok || !payload.success) {
+                                                    throw new Error(payload.message || 'Unable to save weights.');
+                                                }
+                                                return payload;
+                                            });
+                                        })
+                                        .then(function () {
+                                            if (status) {
+                                                status.textContent = '';
+                                                status.classList.remove('text-success-600');
+                                                status.classList.remove('text-danger-600');
+                                            }
+                                            var modal = form.closest('.modal');
+                                            if (modal && window.bootstrap && window.bootstrap.Modal) {
+                                                window.bootstrap.Modal.getOrCreateInstance(modal).hide();
+                                            }
+                                        })
+                                        .catch(function (error) {
+                                            if (status) {
+                                                status.textContent = error.message || 'Unable to save weights.';
+                                                status.classList.add('text-danger-600');
+                                                status.classList.remove('text-success-600');
+                                            }
+                                        })
+                                        .finally(function () {
+                                            if (submit) {
+                                                submit.disabled = false;
+                                                submit.style.cursor = '';
+                                            }
+                                            sync();
+                                        });
+                            });
+
+                            sync();
+                        });
+                        };
+                        window.GapeGradeWeightForms = { initialize: initializeWeightForms };
+                        initializeWeightForms();
+                    }());
+                </script>

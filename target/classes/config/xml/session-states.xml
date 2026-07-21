@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sessionStates xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <state code="active">
+    <label>Active session</label>
+  </state>
+  <state code="expired">
+    <label>Expired session</label>
+  </state>
+  <state code="closed">
+    <label>Closed session</label>
+  </state>
+</sessionStates>

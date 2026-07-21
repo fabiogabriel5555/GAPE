@@ -1,0 +1,36 @@
+<section id="assessments" class="gape-student-panel bg-white rounded-10 px-24 py-24 border border-neutral-30">
+    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-24">
+        <div>
+            <h6 class="text-20 fw-semibold text-neutral-800 mb-4">Assessments</h6>
+            <span class="text-14 text-neutral-500">Forms, tests, exams, attempts and results available to you.</span>
+        </div>
+        <a href="${pageContext.request.contextPath}/student/events" class="gape-student-card-icon-button" aria-label="Open events" title="Open events"><i class="ph ph-calendar-dots"></i></a>
+    </div>
+
+    <div class="d-flex flex-column gap-24" data-student-assessments-modern>
+        <c:set var="studentAssessmentGroups" value="${assessmentCourseGroups}"/>
+        <c:set var="studentAssessmentArchive" value="${false}"/>
+        <%@ include file="/WEB-INF/fragments/student-assessment-catalog-groups.jspf" %>
+        <c:if test="${empty assessmentCourseGroups}"><div class="gape-student-empty text-center px-24 py-40"><span class="gape-student-icon gape-student-soft-amber text-28 mb-16"><i class="ph ph-seal-question"></i></span><h4 class="text-18 fw-semibold text-neutral-800 mb-8">No active assessments available</h4><p class="text-14 text-neutral-500 mb-0">Assessments appear after your active class groups publish their schedules.</p></div></c:if>
+    </div>
+
+    <c:if test="${not empty assessmentCompletedCourseGroups}">
+        <section class="gape-learning-management-completed-wrapper gape-student-completed-assessments mt-20" data-student-completed-assessments data-student-completed-archive>
+            <div class="gape-learning-management-completed-divider">Completed Assessments</div>
+            <article class="gape-learning-management-completed-node border rounded-8 px-18 py-16 bg-white">
+                <div class="gape-deferred-management-archive-row">
+                    <div class="d-flex align-items-center gap-12 min-w-0"><span class="gape-learning-management-group-icon bg-danger-50 text-danger-600"><i class="ph ph-archive" aria-hidden="true"></i></span><div class="min-w-0"><span class="fw-medium text-14 text-neutral-700 d-block">Completed Assessments</span><span class="gape-node-meta text-12" data-student-completed-assessments-summary>Past assessments grouped by course, subject, occurrence and class group</span></div></div>
+                    <div class="gape-deferred-management-archive-spacer"></div>
+                    <div><span class="cd-element-count" data-student-completed-assessments-count>${completedAssessmentCount}</span></div>
+                    <div><span class="bg-neutral-20 text-neutral-600 px-14 py-6 border-neutral-30 border rounded-pill text-13">Completed</span></div>
+                    <div class="d-flex justify-content-end"><button type="button" class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600" data-student-completed-assessments-toggle aria-expanded="false" title="Show completed assessments" aria-label="Show completed assessments"><i class="ph ph-caret-down" aria-hidden="true"></i></button></div>
+                </div>
+                <div class="gape-learning-management-completed-panel d-none" data-student-completed-assessments-panel>
+                    <c:set var="studentAssessmentGroups" value="${assessmentCompletedCourseGroups}"/>
+                    <c:set var="studentAssessmentArchive" value="${true}"/>
+                    <%@ include file="/WEB-INF/fragments/student-assessment-catalog-groups.jspf" %>
+                </div>
+            </article>
+        </section>
+    </c:if>
+</section>

@@ -1,0 +1,66 @@
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<c:set var="isLessonManagement" value="${learningManagementKind eq 'lessons'}"/>
+<section class="gape-learning-management-panel gape-structured-management-panel bg-white rounded-10 px-24 py-24"
+         data-learning-management-panel
+         data-learning-management-kind="${learningManagementKind}">
+    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
+        <div>
+            <h2 class="text-18 fw-medium text-neutral-700 mb-4">${isLessonManagement ? 'Lesson Management' : 'Assessment Management'}</h2>
+            <span class="text-14 text-neutral-500">${isLessonManagement ? 'Use Group by to organize lessons by class group.' : 'Use Group by to organize assessments by class group.'}</span>
+        </div>
+        <div class="gape-learning-management-actions d-flex align-items-center gap-12 flex-wrap">
+            <div class="dropdown">
+                <button type="button" class="gape-filter-toggle border-neutral-30 border px-20 py-12 rounded-12 fw-semibold text-neutral-700 hover-bg-main-50 transition-03 bg-white d-flex align-items-center gap-8" data-bs-toggle="dropdown" data-bs-auto-close="outside" data-learning-management-sort-toggle aria-expanded="false"><i class="ph ph-sort-ascending"></i>Sort by</button>
+                <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                    <li><button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-management-sort-option data-sort-field="name" data-sort-normal="asc" data-sort-state="none" aria-pressed="false"><span>Name</span><span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span></button></li>
+                    <li><button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-management-sort-option data-sort-field="date" data-sort-normal="desc" data-sort-state="none" aria-pressed="false"><span>Date</span><span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--reverse"></i></span></button></li>
+                    <li><button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-management-sort-option data-sort-field="status" data-sort-normal="asc" data-sort-state="none" aria-pressed="false"><span>State</span><span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span></button></li>
+                </ul>
+            </div>
+            <div class="dropdown">
+                <button type="button" class="gape-filter-toggle border-neutral-30 border px-20 py-12 rounded-12 fw-semibold text-neutral-700 hover-bg-main-50 transition-03 bg-white d-flex align-items-center gap-8" data-bs-toggle="dropdown" data-bs-auto-close="outside" data-learning-management-group-toggle aria-expanded="false"><i class="ph ph-stack"></i>Group by</button>
+                <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                    <li><button type="button" class="dropdown-item gape-group-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-management-group-option data-group-field="organization" data-group-normal="asc" data-group-state="none" aria-pressed="false"><span>Organization</span><span class="gape-group-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-group-arrow gape-group-arrow--normal"></i><i class="ph ph-arrow-down gape-group-arrow gape-group-arrow--reverse"></i></span></button></li>
+                    <li><button type="button" class="dropdown-item gape-group-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-management-group-option data-group-field="course" data-group-normal="asc" data-group-state="none" aria-pressed="false"><span>Courses</span><span class="gape-group-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-group-arrow gape-group-arrow--normal"></i><i class="ph ph-arrow-down gape-group-arrow gape-group-arrow--reverse"></i></span></button></li>
+                    <li><button type="button" class="dropdown-item gape-group-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-management-group-option data-group-field="subject" data-group-normal="asc" data-group-state="none" aria-pressed="false"><span>Subjects</span><span class="gape-group-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-group-arrow gape-group-arrow--normal"></i><i class="ph ph-arrow-down gape-group-arrow gape-group-arrow--reverse"></i></span></button></li>
+                    <li><button type="button" class="dropdown-item gape-group-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-management-group-option data-group-field="classGroup" data-group-normal="asc" data-group-state="none" aria-pressed="false"><span>Class Groups</span><span class="gape-group-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-group-arrow gape-group-arrow--normal"></i><i class="ph ph-arrow-down gape-group-arrow gape-group-arrow--reverse"></i></span></button></li>
+                </ul>
+            </div>
+            <c:choose>
+                <c:when test="${isLessonManagement}">
+                    <a href="${pageContext.request.contextPath}/learning/lessons/new?returnTo=/learning/lessons" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03 border-0 d-inline-flex align-items-center justify-content-center" style="min-height: 44px;" data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/new?returnTo=/learning/lessons" data-lesson-modal-title="Create Lesson"><i class="ph ph-plus-circle me-8"></i>New Lesson</a>
+                </c:when>
+                <c:otherwise>
+                    <a href="${pageContext.request.contextPath}/learning/assessments/new" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03 border-0 d-inline-flex align-items-center justify-content-center" style="min-height: 44px;" data-assessment-modal-url="${pageContext.request.contextPath}/learning/assessments/new" data-assessment-modal-title="Create Assessment"><i class="ph ph-plus-circle me-8"></i>New Assessment</a>
+                </c:otherwise>
+            </c:choose>
+        </div>
+    </div>
+    <div class="gape-learning-management-list-wrapper">
+        <div class="gape-learning-management-list-header">
+            <span>${isLessonManagement ? 'Lesson' : 'Assessment'}</span>
+            <span>${isLessonManagement ? 'Schedule' : 'Availability'}</span>
+            <span>${isLessonManagement ? 'Access' : 'Progress'}</span>
+            <span>State</span>
+            <span class="text-end">Actions</span>
+        </div>
+        <div class="gape-learning-management-list" data-learning-management-list data-learning-management-kind="${learningManagementKind}" aria-live="polite">
+            <%@ include file="/WEB-INF/fragments/learning-management-rows.jspf" %>
+        </div>
+    </div>
+    <div class="gape-learning-management-load-state mt-20" data-learning-management-load-state>
+        <span><strong><c:out value="${learningManagementTotal}"/></strong> active ${isLessonManagement ? 'lessons' : 'assessments'} load in pages of 10.</span>
+        <c:if test="${learningManagementCompletedCount > 0}">
+            <span><strong><c:out value="${learningManagementCompletedCount}"/></strong> completed ${isLessonManagement ? 'lessons' : 'assessments'} load only when their section is opened.</span>
+        </c:if>
+    </div>
+    <c:if test="${learningManagementTotal > 10}">
+        <div class="d-flex justify-content-end mt-12" data-learning-management-pagination data-total="${learningManagementTotal}" data-page-size="10">
+            <div class="gape-list-pagination">
+                <nav class="gape-list-pagination-pages" aria-label="${isLessonManagement ? 'Lesson' : 'Assessment'} pages" data-learning-management-pagination-pages></nav>
+                <button type="button" class="gape-list-load-all" data-learning-management-load-all>Load All</button>
+            </div>
+        </div>
+    </c:if>
+</section>

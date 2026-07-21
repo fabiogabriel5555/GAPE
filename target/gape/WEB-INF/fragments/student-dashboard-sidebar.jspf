@@ -1,0 +1,130 @@
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<c:set var="sidebarEventUnreadCount" value="${empty eventUnreadCount ? 0 : eventUnreadCount}" />
+<c:set var="sidebarMessageUnreadCount" value="${empty messageUnreadCount ? 0 : messageUnreadCount}" />
+<c:set var="sidebarStudentClassGroupEventCount" value="${empty studentClassGroupEventCount ? 0 : studentClassGroupEventCount}" />
+<c:set var="sidebarStudentCertificateEventCount" value="${empty studentCertificateEventCount ? 0 : studentCertificateEventCount}" />
+<div class="student-dashboard-sidebar px-20 py-24 max-w-288-px bg-white rounded-10 w-100 position-relative" data-active-menu="${activeMenu}">
+    <div class="text-center">
+        <div class="gape-student-sidebar-avatar text-56">
+            <%@ include file="/WEB-INF/fragments/user-avatar-content.jspf" %>
+        </div>
+        <h5 class="mb-4 text-neutral-500 text-line-1" title="#<c:out value='${studentId}'/> - <c:out value='${studentFirstName}'/> <c:out value='${studentLastName}'/>">
+            #<c:out value="${studentId}"/> - <c:out value="${studentFirstName}"/> <c:out value="${studentLastName}"/>
+        </h5>
+        <span class="text-neutral-500 text-14 fw-normal text-line-1 d-block"><c:out value="${studentEmail}"/></span>
+    </div>
+    <span class="w-100 bg-neutral-40 mb-24 mt-24 h-1"></span>
+        <div class="student-dashboard-sidebar-menu">
+        <div class="student-dashbord-scrollbar">
+            <ul>
+                <li class="mb-8 ${activeMenu == 'dashboard' ? 'activePage' : ''}" data-menu-key="dashboard">
+                    <a href="${pageContext.request.contextPath}/dashboard" aria-current="${activeMenu == 'dashboard' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="mb-8 ${activeMenu == 'profile' or activeMenu == 'my-profile' ? 'activePage' : ''}" data-menu-key="profile">
+                    <a href="${pageContext.request.contextPath}/student/student/profile/student-profile.jsp" aria-current="${activeMenu == 'profile' or activeMenu == 'my-profile' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-circle"></i></span>
+                        My Profile
+                    </a>
+                </li>
+                <li class="mb-8 ${activeMenu == 'message' ? 'activePage' : ''}" data-menu-key="message">
+                    <a href="${pageContext.request.contextPath}/messages" aria-current="${activeMenu == 'message' ? 'page' : 'false'}" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-chat-dots"></i></span>
+                        Messages
+                        <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarMessageUnreadCount > 0 ? '' : ' d-none'}" data-sidebar-message-badge>
+                            ${sidebarMessageUnreadCount}
+                        </span>
+                    </a>
+                </li>
+                <li class="mb-8 ${activeMenu == 'calendar' ? 'activePage' : ''}" data-menu-key="calendar">
+                    <a href="${pageContext.request.contextPath}/student/events" aria-current="${activeMenu == 'calendar' ? 'page' : 'false'}" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-dots"></i></span>
+                        Events
+                        <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarEventUnreadCount > 0 ? '' : ' d-none'}" data-sidebar-event-badge>
+                            ${sidebarEventUnreadCount}
+                        </span>
+                    </a>
+                </li>
+                <li class="mb-8 ${activeMenu == 'courses' ? 'activePage' : ''}" data-menu-key="courses">
+                    <a href="${pageContext.request.contextPath}/student/courses" aria-current="${activeMenu == 'courses' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-books"></i></span>
+                        Courses
+                    </a>
+                    <c:if test="${not empty studentCourseContextId}">
+                        <ul class="mt-8 ps-24">
+                            <li class="mb-6 ${studentCourseActiveChild == 'detail' ? 'activePage' : ''}" data-menu-key="course-detail">
+                                <a href="${pageContext.request.contextPath}/student/courses/${studentCourseContextId}" aria-current="${studentCourseActiveChild == 'detail' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                    <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-eye"></i></span>
+                                    Detail
+                                </a>
+                            </li>
+                        </ul>
+                    </c:if>
+                </li>
+                <li class="mb-8 ${activeMenu == 'subjects' ? 'activePage' : ''}" data-menu-key="subjects">
+                    <a href="${pageContext.request.contextPath}/student/subjects" aria-current="${activeMenu == 'subjects' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-book-open-text"></i></span>
+                        Subjects
+                    </a>
+                    <c:if test="${not empty studentSubjectContextId}">
+                        <ul class="mt-8 ps-24">
+                            <li class="mb-6 ${studentSubjectActiveChild == 'detail' ? 'activePage' : ''}" data-menu-key="subject-detail">
+                                <a href="${pageContext.request.contextPath}/student/subjects/${studentSubjectContextCourseId}/${studentSubjectContextId}" aria-current="${studentSubjectActiveChild == 'detail' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                    <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-eye"></i></span>
+                                    Detail
+                                </a>
+                            </li>
+                        </ul>
+                    </c:if>
+                </li>
+                <li class="mb-8 ${activeMenu == 'class-groups' ? 'activePage' : ''}" data-menu-key="class-groups">
+                    <a href="${pageContext.request.contextPath}/student/class-groups" aria-current="${activeMenu == 'class-groups' ? 'page' : 'false'}" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-users-three"></i></span>
+                        Class Groups
+                        <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarStudentClassGroupEventCount > 0 ? '' : ' d-none'}" data-student-class-group-event-badge>
+                            ${sidebarStudentClassGroupEventCount}
+                        </span>
+                    </a>
+                    <c:if test="${not empty studentClassGroupContextId}">
+                        <ul class="mt-8 ps-24">
+                            <li class="mb-6 ${studentClassGroupActiveChild == 'detail' ? 'activePage' : ''}" data-menu-key="class-group-detail">
+                                <a href="${pageContext.request.contextPath}/student/class-groups/${studentClassGroupContextId}" aria-current="${studentClassGroupActiveChild == 'detail' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                    <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-eye"></i></span>
+                                    Detail
+                                </a>
+                            </li>
+                        </ul>
+                    </c:if>
+                </li>
+                <li class="mb-8 ${activeMenu == 'learning' or activeMenu == 'lessons' or activeMenu == 'assessments' ? 'activePage' : ''}" data-menu-key="learning">
+                    <a href="${pageContext.request.contextPath}/student/lessons" aria-current="${activeMenu == 'learning' or activeMenu == 'lessons' or activeMenu == 'assessments' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-files"></i></span>
+                        Lessons &amp; Assessments
+                    </a>
+                </li>
+                <li class="mb-8 ${activeMenu == 'attendance' or activeMenu == 'grades' ? 'activePage' : ''}" data-menu-key="attendance">
+                    <a href="${pageContext.request.contextPath}/student/attendance" aria-current="${activeMenu == 'attendance' or activeMenu == 'grades' ? 'page' : 'false'}" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-check"></i></span>
+                        Enrollments &amp; Certificates
+                        <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarStudentCertificateEventCount > 0 ? '' : ' d-none'}" data-student-certificate-event-badge>
+                            ${sidebarStudentCertificateEventCount}
+                        </span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="position-absolute inset-block-end-0 inset-inline-start-0 pb-16 px-16 w-100">
+        <form action="${pageContext.request.contextPath}/auth/logout" method="post" class="m-0">
+            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.logoutCsrfToken']}">
+            <button type="submit" class="text-14 fw-medium text-neutral-500 d-flex align-items-center gap-8 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap bg-white border-0 w-100 text-start">
+                <span class="text-16 text-main-600 item-hover__text transition-03">
+                    <i class="ph ph-sign-out"></i>
+                </span>
+                Logout
+            </button>
+        </form>
+    </div>
+</div>

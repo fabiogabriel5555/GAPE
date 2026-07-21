@@ -1,0 +1,44 @@
+<div class="col-xxl-3 col-xl-4 col-md-6">
+    <article class="gape-student-card gape-student-class-group-card px-14 py-14 h-100 position-relative" data-enrollment-state="${enrollment.state}">
+        <div class="gape-student-class-group-card__top mb-10">
+            <span class="gape-student-class-group-card__icon gape-student-class-group-card__icon--compact"><i class="ph ph-users-three"></i></span>
+            <div class="min-w-0">
+                <h6 class="text-14 fw-semibold text-neutral-800 mb-4 text-line-1"><c:out value="${enrollment.code}"/></h6>
+                <span class="text-12 text-neutral-500"><c:out value="${enrollment.periodLabel}"/></span>
+            </div>
+        </div>
+        <div class="gape-student-class-group-card__badges mb-12">
+            <span class="${enrollment.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12"><c:out value="${enrollment.stateLabel}"/></span>
+        </div>
+        <div class="gape-student-class-group-card__meta mb-12">
+            <span class="gape-student-enrollment-period">Period: <c:out value="${enrollment.periodLabel}"/></span>
+            <span>Modality: <c:out value="${enrollment.modalityLabel}"/> &middot; Shift: <c:out value="${enrollment.shiftLabel}"/></span>
+        </div>
+        <div class="gape-student-card-actions">
+            <button type="button" class="gape-student-card-icon-button" data-bs-toggle="modal" data-bs-target="#${studentClassEnrollmentModalId}" aria-label="View class enrollment details" title="View class enrollment details"><i class="ph ph-eye"></i></button>
+        </div>
+    </article>
+</div>
+<div class="modal fade" id="${studentClassEnrollmentModalId}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-10 border-0">
+            <div class="modal-header">
+                <h5 class="modal-title text-18 fw-semibold">Class-group enrollment details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="gape-student-class-group-card__meta gape-student-class-group-card__meta--wide">
+                    <span>Course: <c:out value="${enrollment.courseName}"/></span>
+                    <span>Subject: <c:out value="${enrollment.subjectName}"/></span>
+                    <span>Class group: <c:out value="${enrollment.code}"/></span>
+                    <span>Occurrence: <c:out value="${enrollment.occurrenceGroupLabel}"/></span>
+                    <span>State: <c:out value="${enrollment.stateLabel}"/></span>
+                    <span>Period: <c:out value="${enrollment.periodLabel}"/></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

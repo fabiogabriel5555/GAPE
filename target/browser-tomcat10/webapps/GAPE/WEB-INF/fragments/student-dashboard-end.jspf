@@ -1,0 +1,9 @@
+            </div>
+        </div>
+    </div>
+</section>
+
+<%@ include file="/WEB-INF/fragments/student-template-footer.jspf" %>
+<%@ include file="/WEB-INF/fragments/template-base-scripts.jspf" %>
+</body>
+</html>

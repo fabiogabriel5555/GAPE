@@ -1,0 +1,43 @@
+<c:if test="${not empty studentGradeSheetView and not empty studentGradeDoc}">
+    <div class="modal fade gape-student-grade-sheet-modal" id="${studentGradeSheetModalId}" data-student-grade-sheet-full="true" tabindex="-1" aria-labelledby="${studentGradeSheetModalId}Title" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content rounded-12 border-0">
+                <div class="modal-header border-neutral-30">
+                    <div>
+                        <h5 class="modal-title text-18 fw-semibold" id="${studentGradeSheetModalId}Title"><c:out value="${studentGradeSheetView.title}"/></h5>
+                        <span class="text-13 text-neutral-500">Grade sheet &middot; <c:out value="${studentGradeSheetView.classGroupCode}"/></span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex align-items-center gap-8 flex-wrap mb-18">
+                        <span class="${studentGradeSheetView.stateBadgeClass} px-12 py-7 rounded-pill text-12"><c:out value="${studentGradeSheetView.stateLabel}"/></span>
+                        <span class="text-13 text-neutral-500">Scale: <c:out value="${studentGradeSheetView.maxGrade}"/></span>
+                        <span class="text-13 text-neutral-500">Passing grade: <c:out value="${studentGradeSheetView.passingGrade}"/></span>
+                    </div>
+                    <div class="aac-grade-doc cd-grade-sheet-doc">
+                        <div class="aac-grade-doc__head">
+                            <div class="aac-grade-doc__posted">Published on: <c:out value="${studentGradeSheetView.releasedAt}"/></div>
+                            <div class="aac-grade-doc__institution">
+                                <div class="aac-grade-doc__media"><span class="aac-grade-doc__placeholder"><i class="${studentGradeDoc.fallbackIconClass}"></i></span></div>
+                                <div class="aac-grade-doc__brand" title="<c:out value='${studentGradeDoc.contextTitle}'/>"><c:out value="${studentGradeDoc.contextHtml}" escapeXml="false"/></div>
+                            </div>
+                            <div class="aac-grade-doc__entity"><strong><c:out value="${studentGradeDoc.entityLabel}"/>:</strong> <c:out value="${studentGradeDoc.entityName}"/></div>
+                            <h3><c:out value="${studentGradeDoc.title}"/></h3>
+                            <div class="aac-grade-doc__period" data-gape-datetime-display>Academic period: <c:out value="${studentGradeDoc.periodLabel}"/></div>
+                        </div>
+                        <div class="aac-grade-doc__table-wrap" style="--aac-grade-doc-columns: ${studentGradeDoc.variableColumnCount}; --aac-grade-doc-min-width: ${studentGradeDoc.tableMinWidthPx}px;">
+                            <table class="aac-grade-doc__table">
+                                <colgroup><col class="aac-grade-doc__number-col"><col class="aac-grade-doc__name-col"><c:choose><c:when test="${empty studentGradeDoc.columns}"><col class="aac-grade-doc__assessment-col"></c:when><c:otherwise><c:forEach var="column" items="${studentGradeDoc.columns}"><col class="aac-grade-doc__assessment-col"></c:forEach></c:otherwise></c:choose><col class="aac-grade-doc__final-col"></colgroup>
+                                <thead><tr><th>ID</th><th>Student name</th><c:choose><c:when test="${empty studentGradeDoc.columns}"><th>Assessments</th></c:when><c:otherwise><c:forEach var="column" items="${studentGradeDoc.columns}"><th title="<c:out value='${column.headerTitle}'/>"><span class="gape-acronym-token"><c:out value="${column.headerLabel}"/></span></th></c:forEach></c:otherwise></c:choose><th>Final grade</th></tr></thead>
+                                <tbody><c:forEach var="row" items="${studentGradeDoc.rows}"><tr><td><c:out value="${row.studentId}"/></td><td class="text-start"><c:out value="${row.studentName}"/></td><c:choose><c:when test="${empty studentGradeDoc.columns}"><td class="aac-grade-doc__grade">-</td></c:when><c:otherwise><c:forEach var="value" items="${row.values}"><td class="aac-grade-doc__grade"><c:out value="${value}"/></td></c:forEach></c:otherwise></c:choose><td class="aac-grade-doc__final"><c:out value="${row.finalGrade}"/></td></tr></c:forEach><c:if test="${empty studentGradeDoc.rows}"><tr><td colspan="${studentGradeDoc.documentColumnCount}" class="py-24 text-center text-neutral-500"><c:out value="${studentGradeDoc.emptyMessage}"/></td></tr></c:if></tbody>
+                            </table>
+                        </div>
+                        <c:if test="${studentGradeDoc.hasAlert}"><div class="aac-grade-doc__alert"><c:out value="${studentGradeDoc.alert}"/></div></c:if>
+                    </div>
+                </div>
+                <div class="modal-footer border-neutral-30 gape-student-grade-sheet-modal__footer"><a class="gape-student-grade-sheet-action gape-student-grade-sheet-action--download" href="${pageContext.request.contextPath}/learning/grades/sheets/${studentGradeSheetView.id}/download?format=pdf"><i class="ph ph-download-simple" aria-hidden="true"></i><span>Download</span></a><button type="button" class="gape-student-grade-sheet-action gape-student-grade-sheet-action--close" data-bs-dismiss="modal">Close</button></div>
+            </div>
+        </div>
+    </div>
+</c:if>

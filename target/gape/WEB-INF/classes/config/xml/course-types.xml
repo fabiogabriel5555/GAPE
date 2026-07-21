@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<courseTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <type code="degree">
+    <label>Degree</label>
+  </type>
+  <type code="master">
+    <label>Master</label>
+  </type>
+  <type code="short_course">
+    <label>Short course</label>
+  </type>
+  <type code="professional_training">
+    <label>Professional training</label>
+  </type>
+  <type code="other">
+    <label>Other course type</label>
+  </type>
+</courseTypes>

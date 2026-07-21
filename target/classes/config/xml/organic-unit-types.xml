@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<organicUnitTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <type code="school">
+    <label>Escola</label>
+  </type>
+  <type code="faculty">
+    <label>Faculdade</label>
+  </type>
+  <type code="department">
+    <label>Departamento</label>
+  </type>
+  <type code="center">
+    <label>Centro</label>
+  </type>
+  <type code="office">
+    <label>Gabinete</label>
+  </type>
+  <type code="service">
+    <label>Servico</label>
+  </type>
+  <type code="section">
+    <label>Seccao</label>
+  </type>
+  <type code="direction">
+    <label>Direcao</label>
+  </type>
+  <type code="other">
+    <label>Other organic unit type</label>
+  </type>
+</organicUnitTypes>

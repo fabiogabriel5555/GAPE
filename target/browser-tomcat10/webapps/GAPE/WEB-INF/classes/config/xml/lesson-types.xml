@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lessonTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <type code="online">
+    <label>Online class</label>
+  </type>
+  <type code="onsite">
+    <label>In-person class</label>
+  </type>
+  <type code="hybrid">
+    <label>Hybrid class</label>
+  </type>
+</lessonTypes>

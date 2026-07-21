@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<contentFormats xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <format code="text">
+    <label>Texto</label>
+  </format>
+  <format code="image">
+    <label>Imagem</label>
+  </format>
+  <format code="video">
+    <label>Video</label>
+  </format>
+  <format code="audio">
+    <label>Audio</label>
+  </format>
+  <format code="pdf">
+    <label>PDF</label>
+  </format>
+  <format code="archive">
+    <label>Arquivo compactado</label>
+  </format>
+  <format code="url">
+    <label>URL</label>
+  </format>
+  <format code="scorm">
+    <label>SCORM</label>
+  </format>
+  <format code="xapi">
+    <label>xAPI</label>
+  </format>
+  <format code="presentation">
+    <label>Apresentacao</label>
+  </format>
+  <format code="embed">
+    <label>Codigo incorporado</label>
+  </format>
+  <format code="other">
+    <label>Other format</label>
+  </format>
+</contentFormats>

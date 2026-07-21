@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<organizationStates xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                    xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <state code="active">
+    <label>Active organization</label>
+  </state>
+  <state code="inactive">
+    <label>Inactive organization</label>
+  </state>
+</organizationStates>

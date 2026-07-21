@@ -1,0 +1,2 @@
+﻿Messages QA notes
+This file validates multi attachment ordering.

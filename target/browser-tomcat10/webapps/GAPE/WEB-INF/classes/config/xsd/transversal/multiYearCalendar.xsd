@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+
+  <xs:element name="calendar">
+    <xs:annotation>
+      <xs:documentation> Main container that allows multiple years. Example: &lt;calendar&gt;...&lt;/calendar&gt;</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="ano" maxOccurs="unbounded">
+          <xs:annotation>
+            <xs:documentation> Defines a specific year in the calendar. Unlimited years are allowed.</xs:documentation>
+          </xs:annotation>
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="month" maxOccurs="12">
+                <xs:annotation>
+                  <xs:documentation> Represents to month of the year. Maximum of 12 occurrences.</xs:documentation>
+                </xs:annotation>
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="day" maxOccurs="31">
+                      <xs:annotation>
+                        <xs:documentation> Represents an individual day. Maximum of 31 per month.</xs:documentation>
+                      </xs:annotation>
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:choice>
+                            <xs:annotation>
+                              <xs:documentation> Rule: the day must be Workday, Weekend, or Holiday.</xs:documentation>
+                            </xs:annotation>
+                            <xs:element name="workday" type="xs:string" fixed="">
+                              <xs:annotation>
+                                <xs:documentation> Regular workday. Must be empty: &lt;workday/&gt;</xs:documentation>
+                              </xs:annotation>
+                            </xs:element>
+                            <xs:element name="weekend" type="xs:string" fixed="">
+                              <xs:annotation>
+                                <xs:documentation> Saturday or Sunday. Must be empty: &lt;weekend/&gt;</xs:documentation>
+                              </xs:annotation>
+                            </xs:element>
+                            <xs:element name="holiday">
+                              <xs:annotation>
+                                <xs:documentation> Official festive day or national holiday.</xs:documentation>
+                              </xs:annotation>
+                              <xs:simpleType>
+                                <xs:restriction base="xs:string">
+                                  <xs:enumeration value="New Year"/>
+                                  <xs:enumeration value="Carnival Tuesday"/>
+                                  <xs:enumeration value="Good Friday"/>
+                                  <xs:enumeration value="Easter"/>
+                                  <xs:enumeration value="Freedom Day"/>
+                                  <xs:enumeration value="Labor Day"/>
+                                  <xs:enumeration value="Corpus Christi"/>
+                                  <xs:enumeration value="Portugal Day"/>
+                                  <xs:enumeration value="Assumption of Mary"/>
+                                  <xs:enumeration value="Republic Day"/>
+                                  <xs:enumeration value="All Saints Day"/>
+                                  <xs:enumeration value="Restoration of Independence"/>
+                                  <xs:enumeration value="Immaculate Conception"/>
+                                  <xs:enumeration value="Christmas"/>
+                                </xs:restriction>
+                              </xs:simpleType>
+                            </xs:element>
+                          </xs:choice>
+
+                          <xs:element name="container" minOccurs="0">
+                            <xs:annotation>
+                              <xs:documentation> Optional block for additional day information.</xs:documentation>
+                            </xs:annotation>
+                            <xs:complexType>
+                              <xs:all>
+                                <xs:element name="agenda" minOccurs="0">
+                                  <xs:annotation>
+                                    <xs:documentation> Personal notes or general commitments.</xs:documentation>
+                                  </xs:annotation>
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:any minOccurs="0" maxOccurs="unbounded"/>
+                                    </xs:sequence>
+                                  </xs:complexType>
+                                </xs:element>
+                                <xs:element name="academic" minOccurs="0">
+                                  <xs:annotation>
+                                    <xs:documentation> School events, for example class start.</xs:documentation>
+                                  </xs:annotation>
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:any minOccurs="0" maxOccurs="unbounded"/>
+                                    </xs:sequence>
+                                  </xs:complexType>
+                                </xs:element>
+                                <xs:element name="assessment" minOccurs="0">
+                                  <xs:annotation>
+                                    <xs:documentation> Test and exam dates.</xs:documentation>
+                                  </xs:annotation>
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:any minOccurs="0" maxOccurs="unbounded"/>
+                                    </xs:sequence>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:all>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+
+                        <xs:attribute name="number" use="required">
+                          <xs:annotation>
+                            <xs:documentation> Rule: the day number must be between 1 and 31.</xs:documentation>
+                          </xs:annotation>
+                          <xs:simpleType>
+                            <xs:restriction base="xs:integer">
+                              <xs:minInclusive value="1"/>
+                              <xs:maxInclusive value="31"/>
+                            </xs:restriction>
+                          </xs:simpleType>
+                        </xs:attribute>
+
+                        <xs:attribute name="weekday" use="required">
+                          <xs:annotation>
+                            <xs:documentation> Weekday name.</xs:documentation>
+                          </xs:annotation>
+                          <xs:simpleType>
+                            <xs:restriction base="xs:string">
+                              <xs:enumeration value="Monday"/>
+                              <xs:enumeration value="Tuesday"/>
+                              <xs:enumeration value="Wednesday"/>
+                              <xs:enumeration value="Thursday"/>
+                              <xs:enumeration value="Friday"/>
+                              <xs:enumeration value="Saturday"/>
+                              <xs:enumeration value="Sunday"/>
+                            </xs:restriction>
+                          </xs:simpleType>
+                        </xs:attribute>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+
+                  <xs:attribute name="name" use="required">
+                    <xs:annotation>
+                      <xs:documentation> Full month name.</xs:documentation>
+                    </xs:annotation>
+                    <xs:simpleType>
+                      <xs:restriction base="xs:string">
+                        <xs:enumeration value="January"/>
+                        <xs:enumeration value="February"/>
+                        <xs:enumeration value="March"/>
+                        <xs:enumeration value="April"/>
+                        <xs:enumeration value="May"/>
+                        <xs:enumeration value="June"/>
+                        <xs:enumeration value="July"/>
+                        <xs:enumeration value="August"/>
+                        <xs:enumeration value="September"/>
+                        <xs:enumeration value="October"/>
+                        <xs:enumeration value="November"/>
+                        <xs:enumeration value="December"/>
+                      </xs:restriction>
+                    </xs:simpleType>
+                  </xs:attribute>
+
+                  <xs:attribute name="month_id" use="required">
+                    <xs:annotation>
+                      <xs:documentation> Numeric month identifier (1 to 12).</xs:documentation>
+                    </xs:annotation>
+                    <xs:simpleType>
+                      <xs:restriction base="xs:integer">
+                        <xs:minInclusive value="1"/>
+                        <xs:maxInclusive value="12"/>
+                      </xs:restriction>
+                    </xs:simpleType>
+                  </xs:attribute>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="value" type="xs:gYear" use="required">
+              <xs:annotation>
+                <xs:documentation> The year in YYYY format, for example 2026.</xs:documentation>
+              </xs:annotation>
+            </xs:attribute>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

@@ -1,0 +1,21 @@
+  Credenciais seed que agora funcionam:
+
+  - admin@gape.local / Password#2026
+  - coord@gape.local / Password#2026
+  - teacher@gape.local / Password#2026
+  - student@gape.local / Password#2026
+  - teacher2@gape.local / Password#2026
+  - student2@gape.local / Password#2026
+  - admin.org@gape.local / Password#2026
+  - admin.unit@gape.local / Password#2026
+  - admin.structure.demo@gape.local / Password#2026
+  - admin.structure.unit@gape.local / Password#2026
+  - admin.company@gape.local / Password#2026
+  - coord2@gape.local / Password#2026
+  - student3@gape.local / Password#2026
+  - multi@gape.local / Password#2026
+
+  Contas negativas:
+
+  - inactive@gape.local / Password#2026
+  - blocked.full@gape.local / Password#2026

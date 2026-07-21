@@ -1,0 +1,24 @@
+<%-- Reusable EduAll base scripts for future JSP consolidation. --%>
+<script src="${pageContext.request.contextPath}/assets/js/jquery-3.7.1.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/phosphor-icon.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/boostrap.bundle.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/select2.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/slick.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/counter.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/magnific-popup.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/jquery-ui.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/marquee.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/apexcharts.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/plyr.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/editor-quill.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/dataTables.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/vanilla-tilt.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/wow.min.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/aos.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/main.js?v=20260706-sort-group-controls"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-document-validation.js"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-dependent-selects.js?v=20260705-dependent-selects"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-lesson-modal.js?v=20260719-lesson-dialog-5"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-assessment-modal.js?v=20260719-assessment-dialog-3"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-smart-navigation.js?v=20260621-smart-back"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-student-enrollment-auto-update.js?v=20260623-student-enrollment-live"></script>

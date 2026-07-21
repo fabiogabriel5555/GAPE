@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<languages default="en-US"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <language code="en-US">
+    <label>English (United States)</label>
+  </language>
+  <language code="pt-PT">
+    <label>Portuguese (Portugal)</label>
+  </language>
+</languages>

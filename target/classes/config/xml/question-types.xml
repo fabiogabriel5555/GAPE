@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<questionTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <type code="single_choice">
+    <label>Single choice</label>
+  </type>
+  <type code="multiple_choice">
+    <label>Multiple choice</label>
+  </type>
+  <type code="short_text">
+    <label>Short text</label>
+  </type>
+  <type code="paragraph">
+    <label>Paragraph</label>
+  </type>
+  <type code="file_upload">
+    <label>File upload</label>
+  </type>
+  <type code="rating">
+    <label>Rating</label>
+  </type>
+</questionTypes>

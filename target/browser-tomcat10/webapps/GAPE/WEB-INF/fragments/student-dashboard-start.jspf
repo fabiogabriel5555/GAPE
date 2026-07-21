@@ -1,0 +1,2287 @@
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<c:set var="studentCurrentTitle" value="${empty studentPageTitle ? pageTitle : studentPageTitle}"/>
+<c:if test="${empty studentCurrentTitle}">
+    <c:set var="studentCurrentTitle" value="Student Dashboard"/>
+</c:if>
+<c:set var="studentName" value="${sessionScope['gape.auth.userName']}"/>
+<c:set var="studentId" value="${sessionScope['gape.auth.userId']}"/>
+<c:set var="studentEmail" value="${sessionScope['gape.auth.userEmail']}"/>
+<c:set var="studentFirstName" value="Student"/>
+<c:set var="studentLastName" value="Student"/>
+<c:if test="${not empty studentName}">
+    <c:set var="studentNameParts" value="${fn:split(fn:trim(studentName), ' ')}"/>
+    <c:set var="studentFirstName" value="${studentNameParts[0]}"/>
+    <c:set var="studentLastName" value="${studentNameParts[fn:length(studentNameParts) - 1]}"/>
+</c:if>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base href="${pageContext.request.contextPath}/">
+    <title>GAPE - <c:out value="${studentCurrentTitle}"/></title>
+    <%@ include file="/WEB-INF/fragments/template-base-head.jspf" %>
+    <style>
+        html,
+        body {
+            background: var(--neutral-900);
+            overscroll-behavior-y: none;
+        }
+
+        .gape-student-avatar,
+        .gape-student-header-avatar,
+        .gape-student-sidebar-avatar {
+            align-items: center;
+            background: var(--main-25);
+            color: var(--main-600);
+            display: inline-flex;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .gape-student-avatar img,
+        .gape-student-header-avatar img,
+        .gape-student-sidebar-avatar img {
+            height: 100%;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        .gape-student-header-avatar {
+            border: 1px solid rgba(255, 255, 255, .28);
+            height: 44px;
+            width: 44px;
+        }
+
+        .gape-student-sidebar-avatar {
+            border-radius: 50%;
+            height: 112px;
+            margin: 0 auto 20px;
+            width: 112px;
+        }
+
+        .gape-student-dashboard-layout {
+            align-items: flex-start;
+        }
+
+        .gape-student-dashboard-main {
+            min-width: 0;
+            padding-top: 0;
+        }
+
+        .gape-student-hero-band {
+            /* Keep the compact student shell about 20% shorter while
+               preserving the breadcrumb's content hierarchy. */
+            min-height: 97px;
+            padding-bottom: 47px !important;
+            padding-top: 20px !important;
+        }
+
+        .gape-student-dashboard-layout {
+            margin-top: -38px !important;
+        }
+
+        .footer-item__logo img {
+            height: auto;
+            max-height: 44px;
+            max-width: 140px;
+            width: auto;
+        }
+
+        .gape-student-hero-band .shape {
+            pointer-events: none;
+        }
+
+        .gape-student-hero-band .shape.one {
+            inset-block-start: 12%;
+            inset-inline-start: clamp(132px, 13vw, 214px);
+        }
+
+        .gape-student-template-section-title {
+            color: #fff;
+            margin-bottom: 16px;
+        }
+
+        .student-dashboard-sidebar ul li:not(.activePage) > a {
+            background: transparent !important;
+            color: var(--neutral-500) !important;
+        }
+
+        .student-dashboard-sidebar ul li:not(.activePage) > a i {
+            color: var(--main-600) !important;
+        }
+
+        .student-dashboard-sidebar ul li:not(.activePage) > a:hover {
+            background: var(--main-600) !important;
+            color: #fff !important;
+        }
+
+        .student-dashboard-sidebar ul li:not(.activePage) > a:hover i {
+            color: #fff !important;
+        }
+
+        .gape-student-panel {
+            background: #fff;
+            border-radius: 10px !important;
+        }
+
+        .gape-student-page-heading {
+            align-items: flex-start;
+            display: flex;
+            margin-block-start: 0;
+            margin-block-end: 5px !important;
+            min-height: 48px;
+            padding-block-start: 3px;
+        }
+
+        .gape-student-page-heading h6 {
+            color: #fff;
+            font-size: 22px !important;
+            line-height: 1.1;
+            margin-bottom: 0;
+        }
+
+        .gape-student-card-icon-button {
+            align-items: center;
+            background: var(--main-50);
+            border: 1px solid var(--main-600);
+            border-radius: 8px;
+            color: var(--main-600);
+            display: inline-flex;
+            flex: 0 0 auto;
+            font-size: 18px;
+            height: 40px;
+            justify-content: center;
+            line-height: 1;
+            padding: 0;
+            transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+            width: 40px;
+        }
+
+        .gape-student-card-icon-button:hover,
+        .gape-student-card-icon-button:focus-visible {
+            background: var(--main-600);
+            border-color: var(--main-600);
+            color: #fff;
+        }
+
+        .gape-student-card-icon-button--request {
+            background: var(--success-50);
+            border-color: var(--success-600);
+            color: var(--success-600);
+        }
+
+        .gape-student-card-icon-button--request:hover,
+        .gape-student-card-icon-button--request:focus-visible {
+            background: var(--success-600);
+            border-color: var(--success-600);
+            color: #fff;
+        }
+
+        .gape-student-card-icon-button--meeting {
+            background: #f3ecff;
+            border-color: #6d4aff;
+            color: #6d4aff;
+        }
+
+        .gape-student-card-icon-button--meeting:hover,
+        .gape-student-card-icon-button--meeting:focus-visible {
+            background: #6d4aff;
+            border-color: #6d4aff;
+            color: #fff;
+        }
+
+        .gape-student-card-icon-button--download {
+            background: var(--warning-50);
+            border-color: var(--warning-600);
+            color: var(--warning-600);
+        }
+
+        .gape-student-card-icon-button--download:hover,
+        .gape-student-card-icon-button--download:focus-visible {
+            background: var(--warning-600);
+            border-color: var(--warning-600);
+            color: #fff;
+        }
+
+        .gape-student-card-icon-button--danger {
+            background: var(--danger-50);
+            border-color: var(--danger-600);
+            color: var(--danger-600);
+        }
+
+        .gape-student-card-icon-button--danger:hover,
+        .gape-student-card-icon-button--danger:focus-visible {
+            background: var(--danger-600);
+            border-color: var(--danger-600);
+            color: #fff;
+        }
+
+        .gape-student-card-icon-button--muted {
+            background: var(--neutral-20);
+            border-color: var(--neutral-40);
+            color: var(--neutral-600);
+        }
+
+        .gape-student-card-icon-button--muted:hover,
+        .gape-student-card-icon-button--muted:focus-visible {
+            background: var(--neutral-600);
+            border-color: var(--neutral-600);
+            color: #fff;
+        }
+
+        .gape-student-event-marker {
+            align-items: center;
+            background: var(--danger-600);
+            border: 2px solid #fff;
+            border-radius: 999px;
+            color: #fff;
+            display: inline-flex;
+            font-size: 10px;
+            font-weight: 700;
+            justify-content: center;
+            line-height: 1;
+            min-height: 20px;
+            min-width: 20px;
+            padding: 4px 6px;
+            white-space: nowrap;
+        }
+
+        .gape-student-event-marker--floating {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            z-index: 2;
+        }
+
+        .gape-student-content-event-count-anchor {
+            display: inline-flex;
+            flex: 0 0 auto;
+            position: relative;
+        }
+
+        .gape-student-pending-corner-badge {
+            align-items: center;
+            background: #dc2626;
+            border: 2px solid #fff;
+            border-radius: 999px;
+            color: #fff;
+            display: inline-flex;
+            font-size: 11px;
+            font-weight: 700;
+            justify-content: center;
+            left: -8px;
+            line-height: 1;
+            min-height: 22px;
+            min-width: 22px;
+            padding: 3px 6px;
+            position: absolute;
+            top: -8px;
+            z-index: 2;
+        }
+
+        /* The student grade-sheet modal uses the same document grammar as
+           the staff view.  Its dialog/body keep their own scroll context so
+           every column remains readable and the PDF/Close actions stay
+           reachable on desktop and mobile. */
+        .gape-student-grade-sheet-modal .modal-dialog {
+            max-width: min(1180px, calc(100vw - 32px));
+            height: min(860px, calc(100vh - 32px));
+        }
+
+        /* Keep the document above the Bootstrap backdrop even when the
+           student dashboard layout has its own positioned stacking layer. */
+        .gape-student-grade-sheet-modal {
+            z-index: 1060;
+        }
+
+        .gape-student-grade-sheet-modal .modal-dialog,
+        .gape-student-grade-sheet-modal .modal-content {
+            pointer-events: auto;
+        }
+
+        .gape-student-grade-sheet-modal .modal-content {
+            height: 100%;
+        }
+
+        .gape-student-grade-sheet-modal .modal-body {
+            min-height: 0;
+        }
+
+        .gape-student-grade-sheet-modal .aac-grade-doc {
+            background: #fff;
+            color: #000;
+            font-family: Arial, sans-serif;
+            max-width: 100%;
+            min-width: 0;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .gape-student-grade-sheet-modal .cd-grade-sheet-doc {
+            border: 1px solid var(--neutral-30);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .gape-student-grade-sheet-modal .aac-grade-doc__head {
+            border: 1px solid #000;
+            display: grid;
+            gap: 0 18px;
+            grid-template-areas: "posted institution institution" "blank institution institution" "entity title period";
+            grid-template-columns: 310px minmax(330px, 1fr) 300px;
+            margin-bottom: 12px;
+            min-height: 184px;
+            padding: 12px;
+            position: relative;
+        }
+
+        .gape-student-grade-sheet-modal .aac-grade-doc__posted { align-self: start; font-size: 18px; font-weight: 700; grid-area: posted; line-height: 1.2; white-space: nowrap; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__institution { align-items: flex-start; display: flex; grid-area: institution; min-width: 0; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__media { align-items: flex-start; display: flex; flex: 0 0 150px; justify-content: center; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__placeholder { align-items: center; background: #eef2f7; border: 1px solid #d8e0ea; border-radius: 8px; color: #1f3b57; display: inline-flex; flex-shrink: 0; font-size: 24px; height: 58px; justify-content: center; width: 58px; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__brand { align-self: start; border-left: 2px solid #000; display: block; flex: 1 1 auto; font-size: 11px; line-height: 1.25; min-height: 72px; overflow: hidden; overflow-wrap: anywhere; padding-left: 20px; text-overflow: ellipsis; white-space: nowrap; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__entity { align-self: end; border-bottom: 1px solid #000; font-size: 16px; grid-area: entity; line-height: 1.25; padding-bottom: 5px; white-space: nowrap; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__head h3 { align-self: end; color: #000; font-size: 30px; font-weight: 800; grid-area: title; line-height: 1.1; margin: 0; text-align: center; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__period { align-self: end; font-size: 16px; font-weight: 700; grid-area: period; line-height: 1.25; text-align: right; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__table-wrap { max-width: 100%; min-width: 0; overflow-x: auto; padding-bottom: 8px; scrollbar-color: #94a3b8 #eef2f7; scrollbar-gutter: stable; scrollbar-width: thin; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__table { border-collapse: collapse; margin: 0; min-width: var(--aac-grade-doc-min-width, 720px); table-layout: fixed; width: max(100%, var(--aac-grade-doc-min-width, 720px)); }
+        .gape-student-grade-sheet-modal .aac-grade-doc__number-col { width: 70px; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__name-col { width: 300px; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__assessment-col { width: 118px; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__final-col { width: 116px; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__table th,
+        .gape-student-grade-sheet-modal .aac-grade-doc__table td { border: 1px solid #000; color: #000; font-size: 15px; line-height: 1.25; overflow: hidden; overflow-wrap: anywhere; padding: 7px 8px; text-align: center; text-overflow: ellipsis; vertical-align: middle; white-space: nowrap; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__table th:nth-child(2),
+        .gape-student-grade-sheet-modal .aac-grade-doc__table td:nth-child(2) { min-width: 300px; text-align: left; white-space: normal; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__table th { background: #fff; font-weight: 700; white-space: normal; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__grade,
+        .gape-student-grade-sheet-modal .aac-grade-doc__final { font-weight: 700; white-space: nowrap; }
+        .gape-student-grade-sheet-modal .aac-grade-doc__alert { color: #6b4e00; font-size: 13px; margin-top: 10px; }
+
+        .gape-student-grade-sheet-modal__footer {
+            align-items: center;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .gape-student-grade-sheet-action {
+            align-items: center;
+            border-radius: 8px;
+            display: inline-flex;
+            font-size: 14px;
+            font-weight: 600;
+            gap: 8px;
+            justify-content: center;
+            min-height: 40px;
+            padding: 9px 18px;
+            text-decoration: none;
+            transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+        }
+
+        .gape-student-grade-sheet-action--download {
+            background: var(--main-600);
+            border: 1px solid var(--main-600);
+            color: #fff;
+        }
+
+        .gape-student-grade-sheet-action--download:hover {
+            background: var(--main-700);
+            border-color: var(--main-700);
+            color: #fff;
+        }
+
+        .gape-student-grade-sheet-action--close {
+            background: #fff;
+            border: 1px solid var(--neutral-40);
+            color: var(--neutral-700);
+        }
+
+        .gape-student-grade-sheet-action--close:hover {
+            background: var(--neutral-20);
+            border-color: var(--neutral-50);
+            color: var(--neutral-800);
+        }
+
+        /* Enrollment details are rendered inside the dashboard shell.  A
+           Bootstrap modal must escape that shell's stacking contexts: the
+           backdrop stays behind the dialog, while the dialog remains an
+           opaque, readable and interactive surface. */
+        [id^="studentCourseEnrollment"],
+        [id^="studentCompletedCourseEnrollment"],
+        [id^="studentActiveClassEnrollment"],
+        [id^="studentCompletedClassEnrollment"],
+        [id^="studentClassEnrollment"],
+        [id^="studentAssessmentEnrollment"],
+        [id^="studentCompletedAssessmentEnrollment"] {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 1060 !important;
+            pointer-events: auto !important;
+        }
+
+        .modal-backdrop {
+            z-index: 1050 !important;
+        }
+
+        .modal-backdrop.show {
+            /* Keep the page visually separated without the opaque black
+               wash that previously made the enrollment dialog look disabled. */
+            background-color: #fff !important;
+            opacity: .35 !important;
+        }
+
+        [id^="studentCourseEnrollment"] .modal-dialog,
+        [id^="studentCompletedCourseEnrollment"] .modal-dialog,
+        [id^="studentActiveClassEnrollment"] .modal-dialog,
+        [id^="studentCompletedClassEnrollment"] .modal-dialog,
+        [id^="studentClassEnrollment"] .modal-dialog,
+        [id^="studentAssessmentEnrollment"] .modal-dialog,
+        [id^="studentCompletedAssessmentEnrollment"] .modal-dialog {
+            max-width: min(640px, calc(100vw - 32px));
+            position: relative;
+            width: 100%;
+            z-index: 1061;
+            pointer-events: auto;
+        }
+
+        [id^="studentCourseEnrollment"] .modal-content,
+        [id^="studentCompletedCourseEnrollment"] .modal-content,
+        [id^="studentActiveClassEnrollment"] .modal-content,
+        [id^="studentCompletedClassEnrollment"] .modal-content,
+        [id^="studentClassEnrollment"] .modal-content,
+        [id^="studentAssessmentEnrollment"] .modal-content,
+        [id^="studentCompletedAssessmentEnrollment"] .modal-content {
+            background: #fff !important;
+            border: 1px solid var(--neutral-30) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, .24);
+            color: var(--neutral-800);
+            filter: none !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+
+        [id^="studentCourseEnrollment"] .modal-header,
+        [id^="studentCompletedCourseEnrollment"] .modal-header,
+        [id^="studentActiveClassEnrollment"] .modal-header,
+        [id^="studentCompletedClassEnrollment"] .modal-header,
+        [id^="studentClassEnrollment"] .modal-header,
+        [id^="studentAssessmentEnrollment"] .modal-header,
+        [id^="studentCompletedAssessmentEnrollment"] .modal-header {
+            align-items: center;
+            border-bottom: 1px solid var(--neutral-30);
+            padding: 18px 20px;
+        }
+
+        [id^="studentCourseEnrollment"] .modal-body,
+        [id^="studentCompletedCourseEnrollment"] .modal-body,
+        [id^="studentActiveClassEnrollment"] .modal-body,
+        [id^="studentCompletedClassEnrollment"] .modal-body,
+        [id^="studentClassEnrollment"] .modal-body,
+        [id^="studentAssessmentEnrollment"] .modal-body,
+        [id^="studentCompletedAssessmentEnrollment"] .modal-body {
+            padding: 20px;
+        }
+
+        [id^="studentCourseEnrollment"] .modal-footer,
+        [id^="studentCompletedCourseEnrollment"] .modal-footer,
+        [id^="studentActiveClassEnrollment"] .modal-footer,
+        [id^="studentCompletedClassEnrollment"] .modal-footer,
+        [id^="studentClassEnrollment"] .modal-footer,
+        [id^="studentAssessmentEnrollment"] .modal-footer,
+        [id^="studentCompletedAssessmentEnrollment"] .modal-footer {
+            border-top: 1px solid var(--neutral-30);
+            padding: 14px 20px;
+        }
+
+        /* Course names are deliberately single-line labels; the details
+           modal remains the place for the complete value. */
+        [data-enrollment-kind-panel="courses"] .gape-student-class-group-card__top h6,
+        [data-student-completed-course-cards] .gape-student-class-group-card__top h6 {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal;
+        }
+
+        /* Keep completed cards inside their archive surface instead of
+           allowing Bootstrap's row gutters to escape its border. */
+        [data-student-completed-course-cards] {
+            margin-inline: 0 !important;
+            padding: 18px 12px 12px;
+        }
+
+        @media (max-width: 900px) {
+            .gape-student-grade-sheet-modal .aac-grade-doc__head { grid-template-areas: "posted" "institution" "entity" "title" "period"; grid-template-columns: 1fr; gap: 10px; min-height: 0; }
+            .gape-student-grade-sheet-modal .aac-grade-doc__period { text-align: left; }
+        }
+
+        .gape-student-card,
+        .gape-student-line-card,
+        .gape-student-stat-card {
+            background: #fff;
+            border-radius: 10px;
+        }
+
+        .gape-student-stat-card {
+            padding: 20px;
+        }
+
+        .gape-student-dashboard-link-card {
+            min-height: 132px;
+        }
+
+        .gape-student-dashboard-chart {
+            min-height: 280px;
+        }
+
+        .gape-student-card {
+            border: 1px solid var(--neutral-30);
+        }
+
+        .gape-student-card--actionable,
+        .gape-student-card--actionable .gape-student-card__body,
+        .gape-student-class-group-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gape-student-card--actionable .gape-student-card__body {
+            flex: 1;
+        }
+
+        /* Courses and subjects are the same curricular-card pattern, so their
+           columns keep the same visual footprint even when their metadata differs. */
+        .gape-student-card--curricular {
+            min-height: 516px;
+        }
+
+        /* Mirrors the management mode cards used by the other actors, scoped
+           to the student shell so it cannot affect their dashboard pages. */
+        .gape-student-mode-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .gape-student-mode-card {
+            align-items: flex-start;
+            background: #fff;
+            border: 1px solid #e6edf0;
+            border-radius: 8px;
+            color: #172033;
+            cursor: pointer;
+            display: flex;
+            gap: 14px;
+            min-height: 118px;
+            padding: 20px;
+            text-align: left;
+            transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease, background .2s ease;
+            width: 100%;
+        }
+
+        .gape-student-mode-card:hover,
+        .gape-student-mode-card:focus-visible {
+            border-color: rgba(37, 99, 235, .28);
+            box-shadow: 0 10px 26px rgba(15, 23, 42, .05);
+            color: #172033;
+            outline: 0;
+        }
+
+        .gape-student-mode-card.is-active {
+            background: linear-gradient(135deg, rgba(37, 99, 235, .14), rgba(20, 184, 166, .05)), #f7fbff;
+            border-color: rgba(37, 99, 235, .7);
+            box-shadow: 0 16px 36px rgba(37, 99, 235, .12);
+            transform: translateY(-1px);
+        }
+
+        .gape-student-mode-icon {
+            align-items: center;
+            border-radius: 8px;
+            display: inline-flex;
+            flex: 0 0 48px;
+            height: 48px;
+            justify-content: center;
+            width: 48px;
+        }
+
+        .gape-student-mode-card.is-active .gape-student-mode-icon {
+            background: var(--main-600) !important;
+            color: #fff !important;
+        }
+
+        /* Enrollment context selectors are secondary guides inside the
+           Enrollments panel.  Keep the primary Enrollments/Grades/Certificates
+           cards prominent while giving these three filters a quieter footprint. */
+        .gape-student-mode-card--secondary {
+            gap: 10px;
+            min-height: 84px;
+            padding: 14px 16px;
+        }
+
+        .gape-student-mode-card--secondary .gape-student-mode-icon {
+            flex-basis: 38px;
+            height: 38px;
+            width: 38px;
+        }
+
+        .gape-student-mode-card--secondary .text-17 {
+            font-size: 15px !important;
+            line-height: 1.25;
+            margin-bottom: 4px !important;
+        }
+
+        .gape-student-mode-card--secondary .text-13 {
+            font-size: 12px !important;
+        }
+
+        .gape-student-mode-card--secondary.is-active {
+            box-shadow: 0 8px 18px rgba(37, 99, 235, .08);
+        }
+
+        /* Grades has exactly two primary guides; keep both guides on one full
+           row at desktop widths, matching the primary Enrollments cards. */
+        .gape-student-mode-grid--grades {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        /* The archive panels are toggled by JavaScript.  Their layout rules
+           must never override Bootstrap's d-none state when another guide is
+           selected. */
+        [data-student-completed-course-cards].d-none,
+        [data-student-completed-class-cards].d-none,
+        [data-student-completed-assessment-cards].d-none {
+            display: none !important;
+        }
+
+        .gape-student-completed-enrollments .gape-deferred-management-archive-row {
+            grid-template-columns: minmax(260px, 1.45fr) minmax(180px, .95fr) minmax(130px, .6fr) minmax(115px, .5fr) minmax(130px, .55fr);
+        }
+
+        .gape-student-completed-attendance .gape-deferred-management-archive-row {
+            grid-template-columns: minmax(260px, 1.45fr) minmax(180px, .95fr) minmax(130px, .6fr) minmax(170px, .75fr) minmax(130px, .55fr);
+        }
+
+        .gape-student-completed-attendance .gape-deferred-management-archive-row > div:nth-child(4) > span {
+            display: block;
+            text-align: center;
+            white-space: nowrap;
+            width: 100%;
+        }
+
+        /* Lessons use the same archive row as Completed Enrollments.  At the
+           compact student viewport the row must collapse to one column too,
+           otherwise the count/status/toggle columns create page overflow. */
+        @media (max-width: 900px) {
+            .gape-student-completed-lessons .gape-deferred-management-archive-row {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .gape-student-completed-assessments .gape-deferred-management-archive-row,
+            .gape-student-completed-attendance .gape-deferred-management-archive-row {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .gape-student-completed-lessons .gape-deferred-management-archive-spacer {
+                display: none;
+            }
+
+            .gape-student-completed-assessments .gape-deferred-management-archive-spacer,
+            .gape-student-completed-attendance .gape-deferred-management-archive-spacer {
+                display: none;
+            }
+        }
+
+        .gape-student-completed-enrollments .gape-learning-management-completed-content {
+            padding-top: 16px;
+        }
+
+        /* The other actors render these tree rows as a four-column grid.  Keep
+           the same anchors for the student's course layer as well. */
+        .gape-student-completed-enrollments .aac-tree-row {
+            align-items: center;
+            display: grid;
+            gap: 14px;
+            grid-template-columns: minmax(0, 1.55fr) minmax(76px, .38fr) minmax(150px, .72fr) 120px;
+            justify-content: normal;
+        }
+
+        .gape-student-completed-enrollments .aac-tree-main {
+            flex: none;
+            grid-column: 1;
+            min-width: 0;
+        }
+
+        .gape-student-completed-enrollments .aac-tree-count {
+            flex: none;
+            grid-column: 2;
+            min-width: 0;
+        }
+
+        .gape-student-completed-enrollments .aac-tree-status {
+            flex: none;
+            grid-column: 3;
+            min-width: 0;
+        }
+
+        .gape-student-completed-enrollments .aac-tree-actions {
+            display: flex;
+            flex: none;
+            flex-wrap: nowrap;
+            gap: 10px;
+            grid-column: 4;
+            justify-content: flex-end;
+        }
+
+        .gape-student-completed-enrollments .gape-student-completed-course {
+            border-bottom: 1px solid var(--neutral-30);
+            padding-bottom: 12px;
+        }
+
+        .gape-student-completed-enrollments .gape-student-completed-course:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .gape-student-completed-enrollments .gape-student-completed-occurrence {
+            background: var(--neutral-10);
+            border: 1px solid var(--neutral-30);
+            border-radius: 8px;
+            margin-top: 10px;
+            padding: 12px 14px;
+        }
+
+        .gape-student-completed-enrollments .gape-student-completed-item {
+            align-items: center;
+            border-top: 1px solid rgba(148, 163, 184, .22);
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+            padding: 10px 0 0;
+        }
+
+        .gape-student-completed-enrollments .gape-student-completed-item + .gape-student-completed-item {
+            margin-top: 10px;
+        }
+
+        .gape-student-completed-enrollments .gape-student-completed-subject {
+            border-top: 1px dashed var(--neutral-30);
+            margin-top: 12px;
+            padding-top: 10px;
+        }
+
+        .gape-student-completed-enrollments .gape-student-completed-subject__heading {
+            align-items: center;
+            color: var(--neutral-700);
+            display: flex;
+            gap: 8px;
+            justify-content: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .gape-student-completed-enrollments .gape-student-completed-subject__heading > i {
+            color: var(--main-600);
+            font-size: 17px;
+        }
+
+        .gape-student-enrollment-period {
+            background: var(--neutral-20);
+            border: 1px solid var(--neutral-30);
+            border-radius: 8px;
+            display: flex;
+            padding: 6px 9px;
+            width: 100%;
+        }
+
+        /* Student learning actions must not recolour the page when a flash
+           message is returned after an enrollment request.  Keep feedback
+           readable, but use the same neutral surface as the dashboard. */
+        .gape-student-dashboard-main > .alert.alert-success,
+        .gape-student-dashboard-main > .alert.alert-danger {
+            background: #fff !important;
+            border: 1px solid var(--neutral-30) !important;
+            color: var(--neutral-700) !important;
+        }
+
+        [data-enrollment-kind-panel="courses"] .gape-student-enrollment-period,
+        [data-student-completed-course-cards] .gape-student-enrollment-period,
+        [data-student-class-enrollment-modern] .gape-student-enrollment-period,
+        [data-student-completed-class-cards] .gape-student-enrollment-period,
+        [data-student-assessment-enrollment-modern] .gape-student-enrollment-period,
+        [data-student-completed-assessment-cards] .gape-student-enrollment-period {
+            grid-column: 1 / -1;
+        }
+
+        @media (max-width: 575px) {
+            .gape-student-mode-card--secondary {
+                min-height: 76px;
+                padding: 12px;
+            }
+
+            .gape-student-completed-enrollments .gape-deferred-management-archive-row {
+                grid-template-columns: 1fr;
+            }
+
+            .gape-student-completed-enrollments .aac-tree-row {
+                align-items: flex-start;
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .gape-student-completed-enrollments .aac-tree-main,
+            .gape-student-completed-enrollments .aac-tree-count,
+            .gape-student-completed-enrollments .aac-tree-status,
+            .gape-student-completed-enrollments .aac-tree-actions {
+                grid-column: auto;
+                width: 100%;
+            }
+
+            .gape-student-completed-enrollments .aac-tree-actions {
+                justify-content: flex-start;
+            }
+
+            .gape-student-completed-enrollments .gape-student-completed-item {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 6px;
+            }
+        }
+
+        /* Keep standalone grids at the same inset as the class-group grids.
+           The nested course/subject groups already provide this 20px inset;
+           this utility gives courses and certificates the identical card
+           footprint without adding another visual grouping layer. */
+        .gape-student-card-grid--aligned {
+            padding-inline: 21px;
+        }
+
+        /* Keep the completed class-group archive on the same inset and
+           vertical rhythm as the active course/subject/occurrence tree.  Its
+           cards live inside a nested row, so the wrapper must own the spacing
+           instead of relying on the outer archive grid. */
+        [data-student-completed-class-cards] {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-width: 0;
+            padding-inline: 21px;
+        }
+
+        [data-student-completed-class-cards] .gape-student-class-course-group {
+            margin: 0;
+            min-width: 0;
+        }
+
+        [data-student-completed-class-cards] .gape-student-class-occurrence-group {
+            min-width: 0;
+            overflow: visible;
+        }
+
+        [data-student-completed-class-cards] .gape-student-class-occurrence-group > .border {
+            margin-bottom: 0 !important;
+            min-width: 0;
+            overflow: visible;
+            padding: 16px !important;
+        }
+
+        [data-student-completed-assessment-cards] {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            min-width: 0;
+            padding-inline: 21px;
+        }
+
+        [data-student-completed-assessment-cards] .gape-student-class-course-group,
+        [data-student-completed-assessment-cards] .gape-student-class-occurrence-group {
+            min-width: 0;
+            overflow: visible;
+        }
+
+        [data-student-completed-assessment-cards] .gape-student-class-occurrence-group > .border {
+            margin-bottom: 0 !important;
+            min-width: 0;
+            overflow: visible;
+            padding: 16px !important;
+        }
+
+        [data-student-completed-class-cards] .gape-student-class-course-group,
+        [data-student-completed-assessment-cards] .gape-student-class-course-group {
+            min-width: 0;
+        }
+
+        /* Every student catalog card follows the My Class Groups footprint.
+           Details that do not fit remain available in the corresponding modal. */
+        [data-student-tab-panel="lessons"] .gape-student-class-group-card,
+        [data-student-tab-panel="assessments"] .gape-student-class-group-card,
+        [data-student-tab-panel="attendance"] .gape-student-class-group-card,
+        [data-enrollment-kind-panel] .gape-student-class-group-card,
+        [data-grade-kind-panel] .gape-student-class-group-card,
+        [data-student-tab-panel="certificates"] .gape-student-class-group-card {
+            height: 266.8px !important;
+            min-height: 266.8px !important;
+        }
+
+        /* Course and subject headings already identify these grouped
+           enrollments; keep the compact card readable and leave the full
+           metadata to its details modal. */
+        [data-enrollment-kind-panel="classes"] article.gape-student-class-group-card > .gape-student-class-group-card__meta,
+        [data-enrollment-kind-panel="assessments"] article.gape-student-class-group-card > .gape-student-class-group-card__meta {
+            display: none;
+        }
+
+        /* The modern class-group tree keeps two compact information tiles
+           visible: Period first, followed by modality and shift. */
+        [data-student-class-enrollment-modern] article.gape-student-class-group-card > .gape-student-class-group-card__meta,
+        [data-student-completed-class-cards] article.gape-student-class-group-card > .gape-student-class-group-card__meta,
+        [data-student-assessment-enrollment-modern] article.gape-student-class-group-card > .gape-student-class-group-card__meta,
+        [data-student-completed-assessment-cards] article.gape-student-class-group-card > .gape-student-class-group-card__meta {
+            display: grid !important;
+        }
+
+        [data-student-class-enrollment-modern] article.gape-student-class-group-card > .gape-student-class-group-card__meta > span:not(.gape-student-enrollment-period),
+        [data-student-completed-class-cards] article.gape-student-class-group-card > .gape-student-class-group-card__meta > span:not(.gape-student-enrollment-period),
+        [data-student-assessment-enrollment-modern] article.gape-student-class-group-card > .gape-student-class-group-card__meta > span:not(.gape-student-enrollment-period),
+        [data-student-completed-assessment-cards] article.gape-student-class-group-card > .gape-student-class-group-card__meta > span:not(.gape-student-enrollment-period) {
+            grid-column: 1 / -1;
+            display: block;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        [data-student-class-enrollment-modern] .gape-student-class-group-card,
+        [data-student-completed-class-cards] .gape-student-class-group-card,
+        [data-student-assessment-enrollment-modern] .gape-student-class-group-card,
+        [data-student-completed-assessment-cards] .gape-student-class-group-card {
+            height: 266.8px !important;
+            min-height: 266.8px !important;
+        }
+
+        /* Lesson cards have two full-width metadata tiles and may also expose
+           a meeting action.  Give them enough vertical room for both tiles
+           and the complete action row without clipping the buttons. */
+        [data-student-lessons-modern] .gape-student-class-group-card,
+        [data-student-completed-lessons] .gape-student-class-group-card,
+        [data-student-completed-assessments] .gape-student-class-group-card,
+        [data-student-completed-attendance] .gape-student-class-group-card,
+        [data-student-attendance-modern] .gape-student-class-group-card {
+            height: 300px !important;
+            min-height: 300px !important;
+        }
+
+        /* Lessons use the same compact enrollment-card grammar: both metadata
+           tiles span the complete card width, with the date tile first. */
+        [data-student-lessons-modern] .gape-student-enrollment-period,
+        [data-student-completed-lessons] .gape-student-enrollment-period,
+        [data-student-assessments-modern] .gape-student-enrollment-period,
+        [data-student-completed-assessments] .gape-student-enrollment-period,
+        [data-student-completed-attendance] .gape-student-enrollment-period,
+        [data-student-attendance-modern] .gape-student-enrollment-period {
+            grid-column: 1 / -1;
+        }
+
+        [data-student-lessons-modern] article.gape-student-class-group-card > .gape-student-class-group-card__meta > span:not(.gape-student-enrollment-period),
+        [data-student-completed-lessons] article.gape-student-class-group-card > .gape-student-class-group-card__meta > span:not(.gape-student-enrollment-period),
+        [data-student-assessments-modern] article.gape-student-class-group-card > .gape-student-class-group-card__meta > span:not(.gape-student-enrollment-period),
+        [data-student-completed-assessments] article.gape-student-class-group-card > .gape-student-class-group-card__meta > span:not(.gape-student-enrollment-period),
+        [data-student-completed-attendance] article.gape-student-class-group-card > .gape-student-class-group-card__meta > span:not(.gape-student-enrollment-period),
+        [data-student-attendance-modern] article.gape-student-class-group-card > .gape-student-class-group-card__meta > span:not(.gape-student-enrollment-period) {
+            display: block;
+            grid-column: 1 / -1;
+            min-width: 0;
+            width: 100%;
+        }
+
+        [data-student-assessments-modern] .gape-student-class-group-card {
+            height: 300px !important;
+            min-height: 300px !important;
+        }
+
+        [data-student-attendance-modern] .gape-student-class-group-card {
+            height: 300px !important;
+            min-height: 300px !important;
+        }
+
+        .gape-student-lesson-modal[id^="studentLessonModernDetail"],
+        .gape-student-assessment-modal,
+        .gape-student-attendance-modal {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 1060 !important;
+            pointer-events: auto !important;
+        }
+
+        .gape-student-lesson-modal[id^="studentLessonModernDetail"] .modal-dialog,
+        .gape-student-assessment-modal .modal-dialog,
+        .gape-student-attendance-modal .modal-dialog {
+            max-width: min(640px, calc(100vw - 32px));
+            position: relative;
+            width: 100%;
+            z-index: 1061;
+            pointer-events: auto;
+        }
+
+        .gape-student-lesson-modal[id^="studentLessonModernDetail"] .modal-content,
+        .gape-student-assessment-modal .modal-content,
+        .gape-student-attendance-modal .modal-content {
+            background: #fff !important;
+            border: 1px solid var(--neutral-30) !important;
+            border-radius: 12px !important;
+            box-shadow: 0 20px 60px rgba(15, 23, 42, .24);
+            filter: none !important;
+        }
+
+        @media (max-width: 575px) {
+            .gape-student-mode-grid--grades {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            [data-student-tab-panel="lessons"] .gape-student-class-group-card,
+            [data-student-tab-panel="assessments"] .gape-student-class-group-card,
+            [data-student-tab-panel="attendance"] .gape-student-class-group-card,
+            [data-enrollment-kind-panel] .gape-student-class-group-card,
+            [data-grade-kind-panel] .gape-student-class-group-card,
+            [data-student-tab-panel="certificates"] .gape-student-class-group-card {
+                height: 305.8px !important;
+                min-height: 305.8px !important;
+            }
+
+            [data-student-class-enrollment-modern] .gape-student-class-group-card,
+            [data-student-completed-class-cards] .gape-student-class-group-card,
+            [data-student-assessment-enrollment-modern] .gape-student-class-group-card,
+            [data-student-completed-assessment-cards] .gape-student-class-group-card {
+                height: 305.8px !important;
+                min-height: 305.8px !important;
+            }
+
+            [data-student-lessons-modern] .gape-student-class-group-card,
+            [data-student-completed-lessons] .gape-student-class-group-card {
+                height: 340px !important;
+                min-height: 340px !important;
+            }
+
+            [data-student-assessments-modern] .gape-student-class-group-card {
+                height: 340px !important;
+                min-height: 340px !important;
+            }
+
+            [data-student-attendance-modern] .gape-student-class-group-card {
+                height: 340px !important;
+                min-height: 340px !important;
+            }
+        }
+
+        [data-student-tab-panel][hidden] {
+            display: none !important;
+        }
+
+        .gape-student-card-actions,
+        .gape-student-class-group-card__actions {
+            align-items: center;
+            border-top: 1px solid var(--neutral-30);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: auto;
+            padding-top: 12px;
+        }
+
+        .gape-student-line-card {
+            border: 1px solid var(--neutral-30);
+        }
+
+        .gape-student-icon,
+        .gape-student-stat-icon {
+            align-items: center;
+            display: inline-flex;
+            justify-content: center;
+        }
+
+        .gape-student-icon {
+            border-radius: 12px;
+            height: 48px;
+            width: 48px;
+        }
+
+        .gape-student-stat-icon {
+            border-radius: 50%;
+            height: 44px;
+            width: 44px;
+        }
+
+        .gape-student-soft-blue {
+            background: var(--main-25);
+            color: var(--main-600);
+        }
+
+        .gape-student-soft-green {
+            background: var(--success-50);
+            color: var(--success-600);
+        }
+
+        .gape-student-soft-amber {
+            background: var(--warning-50);
+            color: var(--warning-600);
+        }
+
+        .gape-student-soft-violet {
+            background: #f3ecff;
+            color: #6d4aff;
+        }
+
+        .gape-student-empty {
+            background: #fff;
+            border: 1px dashed var(--neutral-40);
+            border-radius: 10px;
+        }
+
+        /* The certificate modal uses the same document treatment as the
+           management certificate view, while remaining self-contained in
+           the student dashboard shell. */
+        .gape-student-certificate-doc {
+            background: #fff;
+            color: #111;
+            display: grid;
+            font-family: Arial, sans-serif;
+            gap: 28px;
+            grid-template-columns: 38px minmax(0, 1fr);
+            margin: 0 auto;
+            max-width: 960px;
+            min-height: 680px;
+            padding: 24px 30px 34px 18px;
+        }
+
+        .gape-student-certificate-doc__rail {
+            align-self: stretch;
+            display: grid;
+            gap: 24px;
+            grid-template-rows: 150px minmax(320px, 1fr) 120px;
+        }
+
+        .gape-student-certificate-doc__rail span {
+            background: #006070;
+            display: block;
+        }
+
+        .gape-student-certificate-doc__body,
+        .gape-student-certificate-doc__identity > div,
+        .gape-student-certificate-doc__signatures > div {
+            min-width: 0;
+        }
+
+        .gape-student-certificate-doc h3 {
+            color: #006070;
+            font-size: 36px;
+            font-weight: 800;
+            line-height: 1.08;
+            margin: 6px 0 48px;
+            overflow-wrap: anywhere;
+        }
+
+        .gape-student-certificate-doc__identity {
+            display: grid;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .gape-student-certificate-doc__identity span,
+        .gape-student-certificate-doc__identity small {
+            display: block;
+            font-size: 15px;
+            line-height: 1.35;
+            margin-bottom: 6px;
+        }
+
+        .gape-student-certificate-doc__identity strong {
+            display: block;
+            font-size: 20px;
+            line-height: 1.35;
+            margin-bottom: 4px;
+            overflow-wrap: anywhere;
+        }
+
+        .gape-student-certificate-doc__table {
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .gape-student-certificate-doc__subject-col { width: 59%; }
+        .gape-student-certificate-doc__ects-col { width: 17%; }
+        .gape-student-certificate-doc__grade-col { width: 24%; }
+
+        .gape-student-certificate-doc__table th,
+        .gape-student-certificate-doc__table td {
+            border: 1px solid #b7b7b7;
+            font-size: 15px;
+            line-height: 1.35;
+            overflow-wrap: anywhere;
+            padding: 14px 12px;
+        }
+
+        .gape-student-certificate-doc__table th {
+            color: #006070;
+            font-weight: 800;
+            text-align: center;
+        }
+
+        .gape-student-certificate-doc__table td:nth-child(2),
+        .gape-student-certificate-doc__table td:nth-child(3),
+        .gape-student-certificate-doc__final td {
+            text-align: center;
+        }
+
+        .gape-student-certificate-doc__final td { font-weight: 800; }
+
+        .gape-student-certificate-doc__statement {
+            font-size: 15px;
+            line-height: 1.6;
+            margin: 0 0 44px;
+        }
+
+        .gape-student-certificate-doc__statement strong { font-weight: 800; }
+
+        .gape-student-certificate-doc__signatures {
+            display: grid;
+            gap: 48px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .gape-student-certificate-doc__signatures span {
+            display: block;
+            font-size: 15px;
+            line-height: 1.35;
+        }
+
+        .gape-student-certificate-doc__line {
+            border-top: 1px solid #111;
+            color: #111;
+            font-size: 12px;
+            margin-top: 34px;
+            padding-top: 8px;
+            text-align: center;
+        }
+
+        .gape-student-certificate-modal .modal-dialog {
+            height: min(900px, calc(100vh - 32px));
+            max-width: min(1180px, calc(100vw - 32px));
+        }
+
+        /* Keep the certificate dialog above the dashboard stacking layers and
+           explicitly restore interaction with its own controls. */
+        .gape-student-certificate-modal {
+            z-index: 1060;
+        }
+
+        .gape-student-certificate-modal .modal-dialog,
+        .gape-student-certificate-modal .modal-content {
+            pointer-events: auto;
+        }
+
+        .gape-student-certificate-modal .modal-content {
+            height: 100%;
+        }
+
+        .gape-student-certificate-modal .modal-body {
+            min-height: 0;
+        }
+
+        /* The global scroll-to-top control must never sit above a modal
+           action area, especially at the compact mobile viewport. */
+        body:has(.modal.show) .progress-wrap {
+            opacity: 0 !important;
+            pointer-events: none !important;
+            visibility: hidden !important;
+        }
+
+        @media (max-width: 1199.98px) {
+            .gape-student-certificate-doc {
+                grid-template-columns: minmax(0, 1fr);
+                min-height: 0;
+                padding: 22px 18px 28px;
+            }
+
+            .gape-student-certificate-doc__rail { display: none; }
+            .gape-student-certificate-doc h3 { font-size: 26px; margin-bottom: 34px; }
+            .gape-student-certificate-doc__signatures { gap: 24px; }
+        }
+
+        @media (max-width: 575px) {
+            .gape-student-certificate-doc { padding: 18px 12px 22px; }
+            .gape-student-certificate-doc h3 { font-size: 22px; }
+            .gape-student-certificate-doc__table th,
+            .gape-student-certificate-doc__table td { font-size: 13px; padding: 10px 7px; }
+            .gape-student-certificate-doc__signatures { grid-template-columns: minmax(0, 1fr); }
+
+            .gape-student-certificate-modal .modal-dialog {
+                position: fixed;
+                top: 16px;
+                right: 16px;
+                bottom: 16px;
+                left: 16px;
+                width: auto;
+                height: auto !important;
+                max-width: none;
+                max-height: none !important;
+                margin: 0 !important;
+                transform: none !important;
+            }
+        }
+
+        /* Active-grade empty states are rendered inside the padded course
+           group (or directly inside its flex panel). Keep the fallback box
+           inside that content box at every viewport width instead of letting
+           its border overlap the surrounding group. */
+        [data-grade-active-empty] {
+            box-sizing: border-box;
+            display: block;
+            margin: 16px 0 0;
+            max-width: 100%;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            width: 100%;
+        }
+
+        .gape-student-progress {
+            background: var(--primary-50);
+            border-radius: 999px;
+            height: 10px;
+            overflow: hidden;
+        }
+
+        .gape-student-progress span {
+            background: var(--main-600);
+            border-radius: inherit;
+            display: block;
+            height: 100%;
+        }
+
+        .gape-student-course-thumb {
+            aspect-ratio: 16 / 9;
+            background: var(--main-25);
+            border-radius: 12px;
+            min-height: 148px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .gape-student-course-thumb img {
+            height: 100%;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        .gape-student-course-thumb--visual {
+            align-items: center;
+            display: flex;
+            justify-content: center;
+        }
+
+        .gape-student-course-thumb__shape {
+            bottom: 0;
+            left: 0;
+            opacity: .55;
+            position: absolute;
+            width: 118px;
+        }
+
+        .gape-student-course-thumb__icon {
+            align-items: center;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, .08);
+            color: var(--main-600);
+            display: inline-flex;
+            font-size: 34px;
+            height: 78px;
+            justify-content: center;
+            position: relative;
+            width: 78px;
+            z-index: 1;
+        }
+
+        .gape-student-course-thumb .gape-photo-placeholder--table {
+            border-radius: inherit;
+            display: flex;
+            font-size: 42px;
+            height: 100%;
+            width: 100%;
+        }
+
+        .gape-student-course-summary {
+            align-items: stretch;
+            display: grid;
+            gap: 28px;
+            grid-template-columns: minmax(260px, 360px) minmax(0, 1fr);
+        }
+
+        .gape-student-course-visual-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        /* Course and subject details deliberately reuse the compact detail
+           hero geometry of a class group.  The old photo-heavy stack made the
+           same context consume substantially more vertical space. */
+        .gape-student-course-visual-stack.gape-student-class-group-detail-hero {
+            display: block;
+            min-width: 0;
+        }
+
+        .gape-student-course-detail-thumb {
+            /* 16 / 7 keeps this visual at 70% of its former 16 / 10 height. */
+            aspect-ratio: 16 / 7;
+            background: var(--main-25);
+            border-radius: 10px;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .gape-student-course-detail-thumb img {
+            height: 100%;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        .gape-student-course-detail-thumb .gape-photo-placeholder--table {
+            border-radius: inherit;
+            display: flex;
+            font-size: 54px;
+            height: 100%;
+            width: 100%;
+        }
+
+        .gape-student-course-side-grid {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .gape-student-course-side-item {
+            background: var(--neutral-20);
+            border: 1px solid var(--neutral-30);
+            border-radius: 10px;
+            min-height: 72px;
+            padding: 13px 14px;
+        }
+
+        .gape-student-course-side-item--wide {
+            grid-column: 1 / -1;
+        }
+
+        .gape-student-course-metric {
+            background: var(--neutral-20);
+            border: 1px solid var(--neutral-30);
+            border-radius: 10px;
+            min-height: 84px;
+            padding: 16px;
+        }
+
+        .gape-student-course-metrics-grid {
+            display: grid;
+            gap: 14px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .gape-student-course-actions,
+        .gape-student-structure-actions {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .gape-student-course-actions {
+            margin-top: 22px;
+        }
+
+        .gape-student-structure-actions {
+            justify-content: flex-end;
+            margin-inline-start: auto;
+        }
+
+        .gape-student-course-structure {
+            border: 1px solid var(--neutral-30);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .gape-student-course-structure__header {
+            background: linear-gradient(135deg, #f8fbff 0%, #eef7ff 100%);
+        }
+
+        .gape-student-course-structure + .gape-student-course-structure {
+            margin-top: 16px;
+        }
+
+        .gape-student-subject-meta-grid {
+            display: grid;
+            gap: 8px;
+            grid-template-columns: repeat(4, minmax(0, max-content));
+        }
+
+        .gape-student-subject-period-divider {
+            align-items: center;
+            color: var(--neutral-600);
+            display: flex;
+            font-size: 13px;
+            font-weight: 600;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .gape-student-subject-period-divider::after {
+            background: var(--neutral-30);
+            content: "";
+            flex: 1;
+            height: 1px;
+        }
+
+        .gape-student-mandatory-badge {
+            background: var(--danger-50);
+            border-color: var(--danger-100) !important;
+            color: var(--danger-600);
+        }
+
+        .gape-student-optional-badge {
+            background: var(--neutral-20);
+            border-color: var(--neutral-30) !important;
+            color: var(--neutral-600);
+        }
+
+        .gape-student-structure-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gape-student-structure-card__thumb {
+            aspect-ratio: 16 / 6;
+            background: var(--main-25);
+            border-radius: 10px;
+            min-height: 86px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .gape-student-structure-card__thumb img {
+            height: 100%;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        .gape-student-structure-card__thumb .gape-photo-placeholder--table {
+            border-radius: inherit;
+            display: flex;
+            font-size: 30px;
+            height: 100%;
+            width: 100%;
+        }
+
+        .gape-student-structure-card__body {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+        }
+
+        .gape-student-structure-card .gape-student-icon {
+            height: 42px;
+            width: 42px;
+        }
+
+        .gape-student-structure-group-chip {
+            align-items: center;
+            background: var(--neutral-20);
+            border: 1px solid var(--neutral-30);
+            border-radius: 8px;
+            color: var(--neutral-600);
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 600;
+            gap: 6px;
+            min-height: 30px;
+            padding: 6px 10px;
+        }
+
+        .gape-student-structure-group-chip:hover,
+        .gape-student-structure-group-chip:focus-visible {
+            background: var(--main-50);
+            border-color: var(--main-200);
+            color: var(--main-600);
+        }
+
+        .gape-student-class-row {
+            background: #fff;
+            border: 1px solid var(--neutral-30);
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+
+        .gape-student-class-row__actions {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-inline-start: auto;
+        }
+
+        .gape-student-class-course-group {
+            background: linear-gradient(135deg, #ffffff 0%, #f6fbff 58%, #fff9ed 100%);
+            border: 1px solid var(--neutral-30);
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .gape-student-class-course-group + .gape-student-class-course-group {
+            margin-top: 8px;
+        }
+
+        .gape-student-class-course-group__header {
+            border-bottom: 1px solid rgba(17, 24, 39, .08);
+            padding-bottom: 16px;
+        }
+
+        .gape-student-grade-course-group {
+            overflow: hidden;
+        }
+
+        .gape-student-grade-course-group > .row,
+        .gape-student-grade-occurrence-group > .row {
+            --bs-gutter-x: 16px;
+            margin-inline: 0;
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .gape-student-grade-course-group > .row > [class*="col-"],
+        .gape-student-grade-occurrence-group > .row > [class*="col-"] {
+            min-width: 0;
+        }
+
+        .gape-student-grade-occurrence-group {
+            background: rgba(255, 255, 255, .72);
+            border: 1px solid rgba(148, 163, 184, .26);
+            border-radius: 10px;
+            margin-top: 16px;
+            overflow: hidden;
+            padding: 14px;
+        }
+
+        .gape-student-grade-occurrence-group__header {
+            border-bottom: 1px dashed rgba(17, 24, 39, .12);
+            padding-bottom: 12px;
+        }
+
+        /* Grades use the same course > subject > occurrence tree as the
+           enrollment catalogue.  Keep every nested layer inside its parent
+           boundary and give the card grid the same inset as enrollments. */
+        .gape-student-grade-course-group {
+            min-width: 0;
+            overflow: visible;
+        }
+
+        .gape-student-grade-course-group .gape-student-grade-occurrence-group.gape-student-class-occurrence-group {
+            background: #fff;
+            margin-top: 0;
+            min-width: 0;
+            overflow: visible;
+            padding: 16px !important;
+        }
+
+        .gape-student-grade-course-group .gape-student-class-subject-group {
+            min-width: 0;
+            overflow: visible;
+        }
+
+        .gape-student-grade-course-group .gape-student-class-subject-group .row {
+            margin-inline: 0;
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .gape-student-grade-course-group .gape-student-class-group-card {
+            min-width: 0;
+        }
+
+        .gape-student-completed-tool {
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            margin-top: 8px;
+            padding: 0;
+        }
+
+        .gape-student-completed-tool > :first-child {
+            align-items: center;
+            background: #fff;
+            border: 1px solid var(--neutral-30);
+            border-radius: 8px;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, .04);
+            min-height: 72px;
+            padding: 14px 18px;
+        }
+
+        .gape-student-completed-tool [data-grade-completed-panel],
+        .gape-student-completed-tool [data-grade-completed-subject-panel] {
+            border-top: 1px dashed rgba(17, 24, 39, .12);
+            padding-top: 16px;
+        }
+
+        /* Grade archives use the same divider and summary node as the
+           Completed Enrollments archive.  The legacy first-child rule above
+           is intentionally neutralised for the generated divider/node. */
+        .gape-student-completed-tool > .gape-learning-management-completed-divider {
+            align-items: center;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            min-height: 0;
+            padding: 0;
+        }
+
+        .gape-student-completed-tool > .gape-learning-management-completed-node {
+            align-items: stretch;
+            background: #fff;
+            border: 1px solid #fecaca !important;
+            border-radius: 8px;
+            box-shadow: none;
+            min-height: 0;
+            padding: 16px !important;
+        }
+
+        .gape-student-completed-tool .gape-learning-management-completed-panel {
+            border-top: 1px solid #fecaca;
+            margin: 16px -16px 0;
+            padding: 16px !important;
+        }
+
+        /* Keep the empty archive state inside the archive node.  The panel
+           intentionally spans the node border, so its content needs an
+           explicit inset instead of touching (or visually crossing) that
+           border. */
+        .gape-student-completed-tool .gape-learning-management-completed-panel > .gape-student-empty {
+            box-sizing: border-box;
+            margin: 0;
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .gape-student-class-subject-group {
+            padding-top: 18px;
+        }
+
+        .gape-student-class-subject-group + .gape-student-class-subject-group {
+            border-top: 1px solid rgba(17, 24, 39, .08);
+            margin-top: 20px;
+        }
+
+        .gape-student-class-group-card {
+            background:
+                    linear-gradient(180deg, rgba(255, 255, 255, .95) 0%, rgba(255, 255, 255, 1) 100%),
+                    linear-gradient(135deg, rgba(37, 99, 235, .16), rgba(245, 158, 11, .13));
+            border-color: rgba(37, 99, 235, .12);
+            box-shadow: 0 16px 36px rgba(15, 23, 42, .07);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .gape-student-class-group-card::before {
+            background: linear-gradient(90deg, var(--main-600), #f59e0b);
+            content: "";
+            height: 4px;
+            inset-block-start: 0;
+            inset-inline: 0;
+            position: absolute;
+        }
+
+        .gape-student-class-group-card--summary {
+            background: #fff;
+            border-color: rgba(148, 163, 184, .34);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, .05);
+        }
+
+        .gape-student-class-group-card--summary::before {
+            background: rgba(148, 163, 184, .55);
+        }
+
+        .gape-student-class-group-card--summary .gape-student-class-group-card__icon {
+            background: var(--neutral-20);
+            border-color: rgba(148, 163, 184, .32);
+            color: var(--neutral-500);
+        }
+
+        .gape-student-class-group-card--summary .gape-student-class-group-card__meta span {
+            background: #fff;
+            border-color: rgba(226, 232, 240, .82);
+            color: var(--neutral-500);
+        }
+
+        .gape-student-class-group-card__icon {
+            align-items: center;
+            background: var(--main-25);
+            border: 1px solid rgba(37, 99, 235, .12);
+            border-radius: 12px;
+            color: var(--main-600);
+            display: inline-flex;
+            flex: 0 0 auto;
+            font-size: 22px;
+            height: 46px;
+            justify-content: center;
+            width: 46px;
+        }
+
+        .gape-student-class-group-card__icon--compact {
+            font-size: 18px;
+            height: 40px;
+            width: 40px;
+        }
+
+        .gape-student-class-group-card__top {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: auto minmax(0, 1fr);
+        }
+
+        .gape-student-class-group-card__badges,
+        .gape-student-class-group-card__actions {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .gape-student-class-group-card__meta {
+            display: grid;
+            gap: 7px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .gape-student-class-group-card__meta span {
+            background: rgba(248, 250, 252, .92);
+            border: 1px solid rgba(226, 232, 240, .9);
+            border-radius: 8px;
+            color: var(--neutral-600);
+            font-size: 12px;
+            min-width: 0;
+            padding: 6px 9px;
+            word-break: break-word;
+        }
+
+        .gape-student-class-group-card__meta--wide {
+            grid-template-columns: repeat(auto-fit, minmax(124px, 1fr));
+        }
+
+        .gape-student-certificate-card .gape-student-certificate-issued {
+            grid-column: 1 / -1;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .gape-student-class-group-detail-hero {
+            background: linear-gradient(135deg, #ffffff 0%, #f4faff 54%, #fff7e8 100%);
+            border: 1px solid rgba(37, 99, 235, .12);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .gape-student-class-group-detail-hero::before {
+            background: linear-gradient(180deg, var(--main-600), #f59e0b);
+            content: "";
+            inset-block: 0;
+            inset-inline-start: 0;
+            position: absolute;
+            width: 5px;
+        }
+
+        .gape-student-class-group-metrics {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .gape-student-class-group-metric {
+            background: rgba(255, 255, 255, .82);
+            border: 1px solid rgba(226, 232, 240, .9);
+            border-radius: 10px;
+            padding: 13px 14px;
+        }
+
+        .gape-student-class-group-detail-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .gape-student-class-group-detail-item {
+            background: #fff;
+            border: 1px solid var(--neutral-30);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .gape-student-structure-board {
+            background: #fff;
+            border: 1px solid var(--neutral-30);
+            border-radius: 8px;
+            box-shadow: none;
+            overflow: hidden;
+        }
+
+        .gape-student-structure-board__header {
+            background: #fff;
+            border-bottom: 1px solid var(--neutral-30);
+        }
+
+        .gape-student-structure-block {
+            background: #fff;
+            border: 1px solid var(--neutral-30);
+            border-radius: 8px;
+            box-shadow: none;
+            overflow: hidden;
+        }
+
+        .gape-student-structure-block + .gape-student-structure-block {
+            margin-top: 20px;
+        }
+
+        .gape-student-structure-block__header {
+            background: #f8fbff;
+            border-bottom: 1px solid var(--neutral-30);
+            padding: 18px 20px !important;
+        }
+
+        .gape-student-structure-number {
+            align-items: center;
+            background: transparent;
+            border-radius: 0;
+            color: rgba(37, 99, 235, .3);
+            display: inline-flex;
+            flex: 0 0 auto;
+            font-size: 42px;
+            font-weight: 800;
+            height: auto;
+            justify-content: center;
+            line-height: .9;
+            min-width: 72px;
+            width: auto;
+        }
+
+        .gape-student-activity-row {
+            align-items: center;
+            background: #fff;
+            border-top: 1px solid rgba(148, 163, 184, .24);
+            display: grid;
+            gap: 14px;
+            grid-template-columns: 44px minmax(0, 1fr) 136px;
+            min-width: 0;
+            padding: 14px 16px;
+        }
+
+        /* Study Path uses the same rigid three-column content map as the
+           management Structure rows: the title always owns the flexible
+           track, while state and type occupy fixed tracks at every depth. */
+        .gape-student-content-meta-row {
+            align-items: center;
+            display: grid;
+            gap: 8px;
+            grid-template-columns: minmax(0, 1fr) 96px 82px;
+            min-width: 0;
+        }
+
+        .gape-student-content-title,
+        .gape-student-content-meta-state,
+        .gape-student-content-meta-type {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .gape-student-content-title {
+            display: block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .gape-student-content-meta-state,
+        .gape-student-content-meta-type {
+            white-space: nowrap;
+        }
+
+        .gape-student-content-meta-state > span,
+        .gape-student-content-meta-type > span {
+            display: inline-flex;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .gape-student-content-thumb-wrap {
+            background: var(--neutral-20);
+            border: 1px solid rgba(148, 163, 184, .32);
+            border-radius: 8px;
+            display: inline-flex;
+            flex-shrink: 0;
+            height: 48px;
+            overflow: hidden;
+            width: 64px;
+        }
+
+        .gape-student-content-thumb {
+            height: 100%;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        .gape-student-activity-row:first-child {
+            border-top: 0;
+        }
+
+        .gape-student-activity-icon {
+            align-items: center;
+            border-radius: 10px;
+            display: inline-flex;
+            flex: 0 0 auto;
+            height: 42px;
+            justify-content: center;
+            width: 42px;
+        }
+
+        .gape-student-lesson-inline-details {
+            background: var(--neutral-20);
+            border: 1px solid var(--neutral-30);
+            border-radius: 10px;
+            grid-column: 2 / -1;
+            padding: 12px;
+        }
+
+        .gape-student-timeline-item {
+            border-inline-start: 3px solid var(--main-600);
+            padding-inline-start: 18px;
+            position: relative;
+        }
+
+        .gape-student-timeline-item::before {
+            background: #fff;
+            border: 3px solid var(--main-600);
+            border-radius: 999px;
+            content: "";
+            height: 13px;
+            inset-inline-start: -8px;
+            position: absolute;
+            top: 22px;
+            width: 13px;
+        }
+
+        .gape-student-dashboard-header-actions button {
+            line-height: 1;
+        }
+
+        @media (min-width: 1200px) {
+            .student-dashboard-sidebar > .student-dashboard-sidebar-menu {
+                overflow: visible !important;
+            }
+
+            .student-dashboard-sidebar .student-dashbord-scrollbar {
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                padding-bottom: 0;
+            }
+
+            .student-dashboard-sidebar > .position-absolute.inset-block-end-0 {
+                margin-top: 40px;
+                position: static !important;
+            }
+        }
+
+        .gape-student-mobile-menu-bar {
+            position: relative;
+            z-index: 5;
+        }
+
+        .gape-student-dashboard-main .table-responsive {
+            border-radius: 10px;
+        }
+
+        .gape-user-avatar-img {
+            display: block;
+        }
+
+        @media (max-width: 1199px) {
+            /* The off-canvas sidebar is translated outside the flex layout.
+               Clip that intentional drawer movement so it cannot enlarge the
+               document's scrollWidth at tablet widths. */
+            .gape-student-dashboard-layout {
+                overflow-x: clip;
+            }
+
+            .gape-student-dashboard-layout {
+                min-height: 420px;
+            }
+
+            .gape-student-dashboard-main {
+                padding-top: 0;
+                position: relative;
+            }
+
+            .gape-student-page-heading {
+                margin-block-start: 0;
+                margin-block-end: 5px !important;
+            }
+
+            .gape-student-mobile-menu-bar {
+                inset-block-start: 0;
+                inset-inline-end: 0;
+                margin-bottom: 0 !important;
+                position: absolute;
+            }
+        }
+
+        @media (max-width: 991px) {
+            .gape-student-mode-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .gape-student-course-summary,
+            .gape-student-course-metrics-grid,
+            .gape-student-subject-meta-grid,
+            .gape-student-class-group-metrics {
+                grid-template-columns: 1fr;
+            }
+
+            .gape-student-course-detail-thumb {
+                max-height: none;
+            }
+        }
+
+        @media (max-width: 575px) {
+            .gape-student-mode-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .gape-student-mode-card {
+                padding: 16px;
+            }
+
+            .gape-student-course-side-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .gape-student-class-group-card__meta {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .gape-student-structure-actions,
+            .gape-student-class-row__actions {
+                justify-content: flex-start;
+                margin-inline-start: 0;
+                width: 100%;
+            }
+
+            .gape-student-activity-row {
+                align-items: flex-start;
+                grid-template-columns: 44px minmax(0, 1fr);
+            }
+
+            .gape-student-activity-row > :last-child {
+                grid-column: 1 / -1;
+            }
+
+            .gape-student-content-meta-row {
+                gap: 6px;
+                grid-template-columns: minmax(0, 1fr) 88px 58px;
+            }
+
+            .gape-student-lesson-inline-details {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 575px) {
+            .gape-student-hero-band {
+                min-height: 88px;
+            }
+
+            .gape-student-hero-band .shape.one {
+                inset-block-start: 15%;
+                inset-inline-start: 128px;
+            }
+
+            .gape-student-dashboard-main .px-24,
+            .gape-student-dashboard-main .px-40 {
+                padding-inline: 20px !important;
+            }
+
+            .gape-student-dashboard-main .py-40 {
+                padding-block: 24px !important;
+            }
+
+            .gape-student-dashboard-main {
+                padding-top: 0;
+            }
+
+            .gape-student-page-heading {
+                min-height: 46px;
+                margin-block-end: 5px !important;
+                padding-inline-end: 54px;
+            }
+
+            .gape-student-page-heading h6 {
+                font-size: 20px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="preloader">
+    <img src="${pageContext.request.contextPath}/assets/images/icons/preloader.gif" alt="">
+</div>
+<div class="overlay"></div>
+<div class="side-overlay"></div>
+<div class="progress-wrap">
+    <svg class="progress-circle svg-content" width="100%" height="100%" viewBox="-1 -1 102 102">
+        <path d="M50,1 a49,49 0 0,1 0,98 a49,49 0 0,1 0,-98"></path>
+    </svg>
+</div>
+
+<section class="breadcrumb pt-80 pb-187 bg-neutral-900 position-relative z-1 overflow-hidden mb-0 z-n1 gape-student-hero-band">
+    <img src="${pageContext.request.contextPath}/assets/images/shapes/shape1.png" alt="" class="shape one animation-rotation">
+    <img src="${pageContext.request.contextPath}/assets/images/shapes/shape2.png" alt="" class="shape two animation-scalation">
+    <img src="${pageContext.request.contextPath}/assets/images/shapes/shape3.png" alt="" class="shape eight animation-walking">
+    <img src="${pageContext.request.contextPath}/assets/images/shapes/shape5.png" alt="" class="shape six animation-walking">
+    <img src="${pageContext.request.contextPath}/assets/images/shapes/shape4.png" alt="" class="shape three animation-upDown">
+    <img src="${pageContext.request.contextPath}/assets/images/shapes/shape6.png" alt="" class="shape four animation-scalation">
+    <img src="${pageContext.request.contextPath}/assets/images/shapes/shape7.png" alt="" class="shape seven animation-walking">
+    <img src="${pageContext.request.contextPath}/assets/images/shapes/shape10.png" alt="" class="shape ten animation-upDown">
+</section>
+
+<section class="bg-main-25 pb-80 w-100 h-100">
+    <div class="container container--xl">
+        <div class="d-flex gap-24 mt--120 z-2 position-relative gape-student-dashboard-layout">
+            <div class="student-overlay-sidebar"></div>
+            <%@ include file="/WEB-INF/fragments/student-dashboard-sidebar.jspf" %>
+            <div class="w-100 gape-student-dashboard-main">
+                <%@ include file="/WEB-INF/fragments/flash-messages.jspf" %>
+                <div class="gape-student-mobile-menu-bar d-flex align-items-center justify-content-end mb-16 d-xl-none">
+                    <button type="button" class="toggle-student-dashbord-button text-white text-32" aria-label="Open dashboard menu">
+                        <i class="ph-bold ph-list"></i>
+                    </button>
+                </div>
+                <section class="gape-student-page-heading mb-24">
+                    <h6 class="text-28 fw-semibold">
+                        <c:out value="${studentCurrentTitle}"/>
+                    </h6>
+                </section>

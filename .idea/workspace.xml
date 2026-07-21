@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ArtifactsWorkspaceSettings">
+    <artifacts-to-build>
+      <artifact name="GAPE:war exploded" />
+    </artifacts-to-build>
+  </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="32d94c2d-968f-4c2d-ae88-b0e998f05434" name="Changes" comment="" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="LogFilters">
+    <option name="FILTER_ERRORS" value="false" />
+    <option name="FILTER_WARNINGS" value="false" />
+    <option name="FILTER_INFO" value="true" />
+    <option name="FILTER_DEBUG" value="true" />
+    <option name="CUSTOM_FILTER" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
+  <component name="ProjectId" id="3EPt7OnCaDZxRZlBeF033lVYFni" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="1" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.DevDatabaseConsoleApp.executor&quot;: &quot;Run&quot;,
+    &quot;Application.DevDatabaseCrudConsoleApp.executor&quot;: &quot;Run&quot;,
+    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;Tomcat Server.Tomcat 11.0.22.executor&quot;: &quot;Run&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/project-setup&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Fábio Gabriel/Documents/1. Faculdade/3 ANO/2025-2026/2 SEMESTRE/1. PRJ/4. Codigo/5. Codigo/GAPE/docs&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;onboarding.tips.debug.path&quot;: &quot;C:/Users/Fábio Gabriel/Documents/1. Faculdade/3 ANO/2025-2026/2 SEMESTRE/1. PRJ/GAPE/src/main/java/org/example/Main.java&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs" />
+      <recent name="C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\fotos-exemplos" />
+      <recent name="C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\uploads\users" />
+      <recent name="C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\src\main\webapp\assets\images\logo" />
+      <recent name="C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\src\main\webapp\assets\images\thumbs" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\dev" />
+      <recent name="C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs" />
+      <recent name="C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\docs\docs" />
+      <recent name="C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\fotos-exemplos" />
+      <recent name="C:\Users\Fábio Gabriel\Documents\1. Faculdade\3 ANO\2025-2026\2 SEMESTRE\1. PRJ\4. Codigo\5. Codigo\GAPE\1.png" />
+    </key>
+  </component>
+  <component name="RunDashboard">
+    <option name="configurationStatuses">
+      <map>
+        <entry key="#com.intellij.j2ee.web.tomcat.TomcatRunConfigurationFactory">
+          <value>
+            <map>
+              <entry key="Tomcat 11.0.22" value="STOPPED" />
+            </map>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="RunManager" selected="Tomcat Server.Tomcat 11.0.22">
+    <configuration name="DevDatabaseConsoleApp" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="pt.isel.gape.dev.DevDatabaseConsoleApp" />
+      <module name="GAPE" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="pt.isel.gape.dev.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="DevDatabaseCrudConsoleApp" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="pt.isel.gape.dev.DevDatabaseCrudConsoleApp" />
+      <module name="GAPE" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="pt.isel.gape.dev.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="Tomcat 11.0.22" type="#com.intellij.j2ee.web.tomcat.TomcatRunConfigurationFactory" factoryName="Local" APPLICATION_SERVER_NAME="Tomcat 11.0.22" ALTERNATIVE_JRE_ENABLED="false" nameIsGenerated="true">
+      <option name="UPDATING_POLICY" value="restart-server" />
+      <deployment>
+        <artifact name="GAPE:war exploded">
+          <settings>
+            <option name="CONTEXT_PATH" value="/GAPE" />
+          </settings>
+        </artifact>
+      </deployment>
+      <server-settings>
+        <option name="BASE_DIRECTORY_NAME" value="5196366c-cf6d-4b86-9473-f6e5cfab2ea9" />
+      </server-settings>
+      <predefined_log_file enabled="true" id="Tomcat" />
+      <predefined_log_file enabled="true" id="Tomcat Catalina" />
+      <predefined_log_file id="Tomcat Manager" />
+      <predefined_log_file id="Tomcat Host Manager" />
+      <predefined_log_file id="Tomcat Localhost Access" />
+      <RunnerSettings RunnerId="Debug">
+        <option name="DEBUG_PORT" value="53170" />
+      </RunnerSettings>
+      <ConfigurationWrapper VM_VAR="JAVA_OPTS" RunnerId="Cover">
+        <option name="USE_ENV_VARIABLES" value="true" />
+        <STARTUP>
+          <option name="USE_DEFAULT" value="true" />
+          <option name="SCRIPT" value="" />
+          <option name="VM_PARAMETERS" value="" />
+          <option name="PROGRAM_PARAMETERS" value="" />
+        </STARTUP>
+        <SHUTDOWN>
+          <option name="USE_DEFAULT" value="true" />
+          <option name="SCRIPT" value="" />
+          <option name="VM_PARAMETERS" value="" />
+          <option name="PROGRAM_PARAMETERS" value="" />
+        </SHUTDOWN>
+      </ConfigurationWrapper>
+      <ConfigurationWrapper VM_VAR="JAVA_OPTS" RunnerId="Debug">
+        <option name="USE_ENV_VARIABLES" value="true" />
+        <STARTUP>
+          <option name="USE_DEFAULT" value="true" />
+          <option name="SCRIPT" value="" />
+          <option name="VM_PARAMETERS" value="" />
+          <option name="PROGRAM_PARAMETERS" value="" />
+        </STARTUP>
+        <SHUTDOWN>
+          <option name="USE_DEFAULT" value="true" />
+          <option name="SCRIPT" value="" />
+          <option name="VM_PARAMETERS" value="" />
+          <option name="PROGRAM_PARAMETERS" value="" />
+        </SHUTDOWN>
+      </ConfigurationWrapper>
+      <ConfigurationWrapper VM_VAR="JAVA_OPTS" RunnerId="Profile">
+        <option name="USE_ENV_VARIABLES" value="true" />
+        <STARTUP>
+          <option name="USE_DEFAULT" value="true" />
+          <option name="SCRIPT" value="" />
+          <option name="VM_PARAMETERS" value="" />
+          <option name="PROGRAM_PARAMETERS" value="" />
+        </STARTUP>
+        <SHUTDOWN>
+          <option name="USE_DEFAULT" value="true" />
+          <option name="SCRIPT" value="" />
+          <option name="VM_PARAMETERS" value="" />
+          <option name="PROGRAM_PARAMETERS" value="" />
+        </SHUTDOWN>
+      </ConfigurationWrapper>
+      <ConfigurationWrapper VM_VAR="JAVA_OPTS" RunnerId="Run">
+        <option name="USE_ENV_VARIABLES" value="true" />
+        <STARTUP>
+          <option name="USE_DEFAULT" value="true" />
+          <option name="SCRIPT" value="" />
+          <option name="VM_PARAMETERS" value="" />
+          <option name="PROGRAM_PARAMETERS" value="" />
+        </STARTUP>
+        <SHUTDOWN>
+          <option name="USE_DEFAULT" value="true" />
+          <option name="SCRIPT" value="" />
+          <option name="VM_PARAMETERS" value="" />
+          <option name="PROGRAM_PARAMETERS" value="" />
+        </SHUTDOWN>
+      </ConfigurationWrapper>
+      <method v="2">
+        <option name="Make" enabled="true" />
+        <option name="BuildArtifacts" enabled="true">
+          <artifact name="GAPE:war exploded" />
+        </option>
+      </method>
+    </configuration>
+    <list>
+      <item itemvalue="Application.DevDatabaseConsoleApp" />
+      <item itemvalue="Application.DevDatabaseCrudConsoleApp" />
+      <item itemvalue="Tomcat Server.Tomcat 11.0.22" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.DevDatabaseCrudConsoleApp" />
+        <item itemvalue="Application.DevDatabaseConsoleApp" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.28238.7" />
+        <option value="bundled-js-predefined-d6986cc7102b-a71380e98a7c-JavaScript-IU-252.28238.7" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="32d94c2d-968f-4c2d-ae88-b0e998f05434" name="Changes" comment="" />
+      <created>1780091864854</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1780091864854</updated>
+      <workItem from="1780091865999" duration="935000" />
+      <workItem from="1780092822657" duration="508000" />
+      <workItem from="1780093383069" duration="1015000" />
+      <workItem from="1780094426168" duration="1278000" />
+      <workItem from="1780095742900" duration="1975000" />
+      <workItem from="1780236897883" duration="860000" />
+      <workItem from="1780305478439" duration="242000" />
+      <workItem from="1780305746384" duration="198000" />
+      <workItem from="1780306005733" duration="1472000" />
+      <workItem from="1780311055144" duration="21872000" />
+      <workItem from="1780388041238" duration="26149000" />
+      <workItem from="1780566488331" duration="39666000" />
+      <workItem from="1780740381784" duration="40310000" />
+      <workItem from="1780827098113" duration="6025000" />
+      <workItem from="1780833254425" duration="9058000" />
+      <workItem from="1780941957599" duration="4728000" />
+      <workItem from="1780946859201" duration="232000" />
+      <workItem from="1780950983208" duration="619000" />
+      <workItem from="1780951756498" duration="49145000" />
+      <workItem from="1781164992082" duration="87502000" />
+      <workItem from="1781607770434" duration="16732000" />
+      <workItem from="1781703742340" duration="46425000" />
+      <workItem from="1781968447302" duration="103057000" />
+      <workItem from="1782297204644" duration="18405000" />
+      <workItem from="1782376536272" duration="39152000" />
+      <workItem from="1782485701769" duration="15820000" />
+      <workItem from="1782549479060" duration="33165000" />
+      <workItem from="1782634981635" duration="31648000" />
+      <workItem from="1782684503591" duration="44976000" />
+      <workItem from="1782867968158" duration="135204000" />
+      <workItem from="1783295732343" duration="176569000" />
+      <workItem from="1783766299453" duration="39840000" />
+      <workItem from="1783850495766" duration="82265000" />
+      <workItem from="1784017930807" duration="41661000" />
+      <workItem from="1784100933400" duration="251610000" />
+      <workItem from="1784626889101" duration="3670000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+</project>

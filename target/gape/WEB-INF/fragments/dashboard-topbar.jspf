@@ -1,0 +1,11 @@
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<div class="gape-dashboard-mobile-menu-slot d-lg-none">
+    <button type="button" class="gape-dashboard-mobile-menu-toggle toggle-dashbord-button" aria-label="Open dashboard menu">
+        <i class="ph-bold ph-list"></i>
+    </button>
+</div>
+<c:if test="${not empty pageTitle}">
+    <div class="gape-dashboard-page-heading px-24 pt-24">
+        <h1 class="fw-semibold text-neutral-500 text-20 mb-0"><c:out value="${pageTitle}"/></h1>
+    </div>
+</c:if>

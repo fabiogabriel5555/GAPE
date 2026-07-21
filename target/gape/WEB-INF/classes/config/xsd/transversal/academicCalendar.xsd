@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="unqualified"
+           elementFormDefault="qualified"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:annotation>
+    <xs:documentation>
+       XML SCHEMA FOR ACADEMIC CALENDAR
+      This schema defines the calendar structure where the root itself contains
+      the academic year metadata (initialYear and finalYear).
+      No element contains text, only raw data attributes.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:element name="academicCalendar">
+    <xs:annotation>
+      <xs:documentation> Calendar root grouping the academic biennium and semesters.</xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+
+        <xs:element name="winter" type="winterSemesterType">
+          <xs:annotation><xs:documentation> Data and exam periods for the 1st semester.</xs:documentation></xs:annotation>
+        </xs:element>
+
+        <xs:element name="summer" type="summerSemesterType">
+          <xs:annotation><xs:documentation> Data and exam periods for the 2nd semester.</xs:documentation></xs:annotation>
+        </xs:element>
+
+      </xs:sequence>
+
+      <xs:attribute name="initialYear" type="xs:gYear" use="required">
+        <xs:annotation>
+          <xs:documentation> Start year of the academic cycle, for example 2025.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="finalYear" type="xs:gYear" use="required">
+        <xs:annotation>
+          <xs:documentation> End year of the academic cycle, for example 2026.</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:complexType name="semesterType" abstract="true">
+    <xs:annotation>
+      <xs:documentation>
+         Base structure shared by all semesters.
+        Contains the exam periods: regular, resit and special.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <xs:element type="examPeriodType" name="normal"/>
+      <xs:element type="examPeriodType" name="resit"/>
+      <xs:element type="examPeriodType" name="special" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute type="xs:date" name="start" use="required">
+      <xs:annotation><xs:documentation> Official class start date for the semester.</xs:documentation></xs:annotation>
+    </xs:attribute>
+    <xs:attribute type="xs:date" name="end" use="required">
+      <xs:annotation><xs:documentation> Official class end date for the semester.</xs:documentation></xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="winterSemesterType">
+    <xs:annotation>
+      <xs:documentation> Semester focused on the autumn/winter period. Includes the Christmas break.</xs:documentation>
+    </xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="semesterType">
+        <xs:sequence>
+          <xs:element type="breakType" name="christmas" minOccurs="1">
+            <xs:annotation><xs:documentation> Learning break for the Christmas holidays.</xs:documentation></xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="summerSemesterType">
+    <xs:annotation>
+      <xs:documentation> Semester focused on the spring/summer period. Includes Easter break and optional Carnival.</xs:documentation>
+    </xs:annotation>
+    <xs:complexContent>
+      <xs:extension base="semesterType">
+        <xs:sequence>
+          <xs:element type="breakType" name="carnival" minOccurs="0">
+            <xs:annotation><xs:documentation> Optional break depending on the civil calendar.</xs:documentation></xs:annotation>
+          </xs:element>
+          <xs:element type="breakType" name="easter" minOccurs="1">
+            <xs:annotation><xs:documentation> Required learning break in spring.</xs:documentation></xs:annotation>
+          </xs:element>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="breakType">
+    <xs:annotation>
+      <xs:documentation> Defines a learning pause period with required start and end dates.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute type="xs:date" name="start" use="required"/>
+    <xs:attribute type="xs:date" name="end" use="required"/>
+    <xs:attribute type="xs:string" name="description" use="optional">
+      <xs:annotation><xs:documentation> Additional notes about the break.</xs:documentation></xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="examPeriodType">
+    <xs:annotation>
+      <xs:documentation> Defines the dates for a specific exam period through attributes.</xs:documentation>
+    </xs:annotation>
+    <xs:attribute type="xs:date" name="start" use="optional"/>
+    <xs:attribute type="xs:date" name="end" use="required"/>
+    <xs:attribute type="xs:date" name="release" use="required">
+      <xs:annotation><xs:documentation> Deadline for grade release.</xs:documentation></xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+</xs:schema>

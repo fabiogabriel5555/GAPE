@@ -1,0 +1,73 @@
+<section class="bg-white rounded-10 px-24 py-24">
+    <div class="messages-layout d-flex flex-wrap align-items-stretch">
+        <aside class="messages-contact-panel max-w-420-px w-100 border-right-dashed pe-24 d-flex flex-column">
+            <div class="d-flex align-items-center justify-content-between gap-16 border-bottom-dashed pb-24">
+                <div class="d-flex align-items-center gap-12 min-w-0">
+                    <span class="messages-avatar rounded-circle bg-main-50 text-main-600 d-inline-flex align-items-center justify-content-center text-24">
+                        <i class="ph ph-chats-circle"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h2 class="text-18 fw-semibold text-neutral-700 mb-2">Conversations</h2>
+                    </div>
+                </div>
+                <span class="w-32 h-32 rounded-circle bg-neutral-20 text-neutral-500 d-inline-flex align-items-center justify-content-center text-18 flex-shrink-0">
+                    <i class="ph ph-chat-dots"></i>
+                </span>
+            </div>
+
+            <div class="messages-new-form new-message-form border-bottom-dashed py-24">
+                <div class="d-flex align-items-center justify-content-between gap-12 mb-12">
+                    <span class="d-block text-15 fw-semibold text-neutral-700 mb-0">New message</span>
+                    <span class="text-20 text-neutral-500 d-inline-flex">
+                        <i class="ph ph-pencil-simple-line"></i>
+                    </span>
+                </div>
+                <div class="messages-user-search">
+                    <label for="new-message-recipient" class="visually-hidden">Select user</label>
+                    <input id="new-message-recipient"
+                           type="search"
+                           class="common-input"
+                           placeholder="Select user"
+                           autocomplete="off"
+                           role="combobox"
+                           aria-controls="messages-recipient-results"
+                           aria-expanded="false"
+                           data-user-search-input>
+                    <div id="messages-recipient-results"
+                         class="messages-recipient-results bg-white border border-neutral-30 rounded-10 py-8"
+                         role="listbox"
+                         hidden
+                         data-user-search-results>
+                        <c:forEach var="recipient" items="${communicationPage.recipients}">
+                            <button type="button"
+                                    class="messages-recipient-option border-0 bg-white hover-bg-neutral-20 transition-03 px-16 py-10 d-flex align-items-center gap-12"
+                                    role="option"
+                                    data-user-option
+                                    data-user-id="${recipient.userId}"
+                                    data-user-label="<c:out value='${recipient.label}'/>"
+                                    data-user-search="${recipient.userId} <c:out value='${recipient.name}'/> <c:out value='${recipient.email}'/>"
+                                    data-user-url="${pageContext.request.contextPath}/messages?userId=${recipient.userId}">
+                                <span class="messages-avatar rounded-circle bg-main-50 text-main-600 d-inline-flex align-items-center justify-content-center text-14 fw-semibold">
+                                    <c:out value="${recipient.initials}"/>
+                                </span>
+                                <span class="min-w-0">
+                                    <span class="d-block text-14 fw-semibold text-neutral-700 text-line-1"><c:out value="${recipient.name}"/></span>
+                                    <span class="d-block text-12 text-neutral-500 text-line-1">ID ${recipient.userId} - <c:out value="${recipient.email}"/></span>
+                                </span>
+                            </button>
+                        </c:forEach>
+                        <div class="px-16 py-14 text-13 text-neutral-500" data-user-search-empty hidden>
+                            No users found.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="messages-contact-list pt-24" data-messages-contact-list>
+                <%@ include file="/WEB-INF/fragments/messages-contact-list.jspf" %>
+            </div>
+        </aside>
+
+        <%@ include file="/WEB-INF/fragments/messages-thread-panel.jspf" %>
+    </div>
+</section>

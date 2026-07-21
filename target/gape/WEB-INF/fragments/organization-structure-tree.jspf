@@ -1,0 +1,514 @@
+<div class="gape-organization-units-panel">
+    <div class="px-18 py-18">
+        <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mb-16">
+            <div class="d-flex align-items-center gap-12 min-w-0">
+                <c:choose>
+                    <c:when test="${organization.hasPhoto}">
+                        <img src="${organizationPhotoUrl}"
+                             alt=""
+                             class="gape-learning-table-photo flex-shrink-0"
+                             onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
+                        <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--table d-none" aria-label="No organization photo">
+                            <i class="ph ph-image"></i>
+                        </span>
+                    </c:when>
+                    <c:otherwise>
+                        <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--table" aria-label="No organization photo">
+                            <i class="ph ph-image"></i>
+                        </span>
+                    </c:otherwise>
+                </c:choose>
+                <div class="min-w-0">
+                    <h3 class="text-18 fw-semibold text-neutral-800 mb-2">Structure</h3>
+                    <span class="text-13 text-neutral-500 d-block text-truncate">
+                        <c:out value="${organization.acronym}"/> - <c:out value="${organization.name}"/>
+                    </span>
+                </div>
+            </div>
+            <c:if test="${canCreateOrganicUnits}">
+                <button type="button"
+                        class="og-primary-button"
+                        data-bs-toggle="modal"
+                        data-bs-target="#organicUnitCreateModal"
+                        data-unit-create-trigger
+                        data-parent-id=""
+                        data-parent-label="Root">
+                    <i class="ph ph-plus-circle me-8"></i>New Unit
+                </button>
+            </c:if>
+        </div>
+
+        <div class="gape-structure-list-header">
+            <span>Organic Unit</span>
+            <span>Type</span>
+            <span>N&ordm; Elements</span>
+            <span>State</span>
+            <span class="text-end">Actions</span>
+        </div>
+
+        <div class="d-flex flex-column gap-12">
+            <c:forEach var="unit" items="${organization.organicUnits}">
+                <c:set var="canModifyUnit" value="${canModifyOrganicUnitById[unit.id]}" />
+                <article class="gape-structure-node gape-hierarchy-node border border-neutral-30 rounded-8 px-18 py-16 bg-white" style="margin-left: ${unit.hierarchyIndent}px;">
+                    <div class="gape-structure-row">
+                        <div class="d-flex align-items-start gap-12 min-w-0">
+                            <span class="og-soft-badge og-mode-icon text-22 line-height-1"><i class="ph ph-tree-structure"></i></span>
+                            <div class="min-w-0">
+                                <button type="button"
+                                        class="og-unit-name-button fw-medium text-14 text-neutral-700 hover-text-main-600"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#organicUnitDetailModal"
+                                        data-unit-detail-trigger
+                                        data-unit-id="${unit.id}"
+                                        data-unit-code="<c:out value='${unit.code}'/>"
+                                        data-unit-name="<c:out value='${unit.name}'/>"
+                                        data-unit-acronym="<c:out value='${unit.acronym}'/>"
+                                        data-unit-type-label="<c:out value='${unit.typeLabel}'/>"
+                                        data-unit-type="<c:out value='${unit.type}'/>"
+                                        data-unit-state-label="<c:out value='${unit.stateLabel}'/>"
+                                        data-unit-state="<c:out value='${unit.state}'/>"
+                                        data-unit-state-class="<c:out value='${unit.stateBadgeClass}'/>"
+                                        data-unit-parent-id="<c:out value='${unit.parentOrganicUnitId}'/>"
+                                        data-unit-parent-label="<c:out value='${unit.parentLabel}'/>"
+                                        data-unit-course-count="<c:out value='${unit.courseCount}'/>"
+                                        data-unit-element-count="<c:out value='${organizationUnitElementCountById[unit.id]}'/>"
+                                        data-unit-can-modify="<c:out value='${canModifyUnit}'/>">
+                                    <c:out value="${unit.code}"/> - <c:out value="${unit.name}"/>
+                                </button>
+                                <span class="d-block text-12 text-neutral-500">Parent: <c:out value="${unit.parentLabel}"/></span>
+                            </div>
+                        </div>
+                        <div class="text-13 text-neutral-500"><c:out value="${unit.typeLabel}"/></div>
+                        <div><span class="og-element-count"><c:out value="${organizationUnitElementCountById[unit.id]}"/></span></div>
+                        <div>
+                            <span class="${unit.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
+                                <c:out value="${unit.stateLabel}"/>
+                            </span>
+                        </div>
+                        <div class="d-flex align-items-center gap-10 flex-wrap justify-content-end">
+                            <button type="button"
+                                    class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600"
+                                    title="Show courses"
+                                    aria-label="Show courses"
+                                    aria-expanded="false"
+                                    aria-controls="unitCourses${unit.id}"
+                                    data-gape-tree-toggle="unitCourses${unit.id}"
+                                    data-gape-open-title="Hide courses"
+                                    data-gape-closed-title="Show courses">
+                                <i class="ph ph-caret-down"></i>
+                            </button>
+                            <c:if test="${canCreateOrganicUnits}">
+                                <button type="button"
+                                        class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0"
+                                        title="New child unit"
+                                        aria-label="New child unit"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#organicUnitCreateModal"
+                                        data-unit-create-trigger
+                                        data-parent-id="${unit.id}"
+                                        data-parent-label="<c:out value='${unit.code}'/> - <c:out value='${unit.name}'/>">
+                                    <i class="ph ph-plus-circle"></i>
+                                </button>
+                            </c:if>
+                            <button type="button"
+                                    class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0"
+                                    title="Detail"
+                                    aria-label="Detail"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#organicUnitDetailModal"
+                                    data-unit-detail-trigger
+                                    data-unit-id="${unit.id}"
+                                    data-unit-code="<c:out value='${unit.code}'/>"
+                                    data-unit-name="<c:out value='${unit.name}'/>"
+                                    data-unit-acronym="<c:out value='${unit.acronym}'/>"
+                                    data-unit-type-label="<c:out value='${unit.typeLabel}'/>"
+                                    data-unit-type="<c:out value='${unit.type}'/>"
+                                    data-unit-state-label="<c:out value='${unit.stateLabel}'/>"
+                                    data-unit-state="<c:out value='${unit.state}'/>"
+                                    data-unit-state-class="<c:out value='${unit.stateBadgeClass}'/>"
+                                    data-unit-parent-id="<c:out value='${unit.parentOrganicUnitId}'/>"
+                                    data-unit-parent-label="<c:out value='${unit.parentLabel}'/>"
+                                    data-unit-course-count="<c:out value='${unit.courseCount}'/>"
+                                    data-unit-element-count="<c:out value='${organizationUnitElementCountById[unit.id]}'/>"
+                                    data-unit-can-modify="<c:out value='${canModifyUnit}'/>">
+                                <i class="ph ph-eye"></i>
+                            </button>
+                            <c:if test="${canModifyUnit}">
+                                <button type="button"
+                                        class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0"
+                                        title="Edit"
+                                        aria-label="Edit"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#organicUnitEditModal"
+                                        data-unit-edit-trigger
+                                        data-unit-id="${unit.id}"
+                                        data-unit-code="<c:out value='${unit.code}'/>"
+                                        data-unit-name="<c:out value='${unit.name}'/>"
+                                        data-unit-acronym="<c:out value='${unit.acronym}'/>"
+                                        data-unit-type="<c:out value='${unit.type}'/>"
+                                        data-unit-state="<c:out value='${unit.state}'/>"
+                                        data-unit-parent-id="<c:out value='${unit.parentOrganicUnitId}'/>">
+                                    <i class="ph ph-pencil-simple-line"></i>
+                                </button>
+                                <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" aria-label="Delete" data-bs-toggle="modal" data-bs-target="#deleteUnit${unit.id}">
+                                    <i class="ph ph-trash"></i>
+                                </button>
+                            </c:if>
+                        </div>
+                    </div>
+
+                    <div id="unitCourses${unit.id}" class="gape-structure-panel d-none">
+                        <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mb-12">
+                            <div>
+                                <h4 class="text-16 fw-medium text-neutral-700 mb-4">Courses</h4>
+                                <span class="text-13 text-neutral-500">
+                                    <c:out value="${unit.code}"/> &middot; <c:out value="${unit.courseCount}"/> courses
+                                </span>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column gap-10">
+                            <c:forEach var="course" items="${unit.courses}">
+                                <c:set var="canModifyCourse" value="${canModifyCourseById[course.id]}" />
+                                <c:set var="coursePhotoUrl" value="" />
+                                <c:if test="${course.hasPhoto}">
+                                    <c:set var="coursePhotoUrl" value="${pageContext.request.contextPath}/media/${course.photo}?v=${mediaCacheVersion}" />
+                                </c:if>
+                                <article class="gape-structure-node gape-course-node border border-neutral-30 rounded-8 px-16 py-14 bg-white">
+                                    <div class="gape-structure-row">
+                                        <div class="d-flex align-items-start gap-10 min-w-0">
+                                            <c:choose>
+                                                <c:when test="${course.hasPhoto}">
+                                                    <img src="${coursePhotoUrl}"
+                                                         alt=""
+                                                         class="gape-learning-table-photo flex-shrink-0"
+                                                         onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
+                                                    <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--table d-none" aria-label="No course photo">
+                                                        <i class="ph ph-image"></i>
+                                                    </span>
+                                                </c:when>
+                                                <c:otherwise>
+                                                    <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--table" aria-label="No course photo">
+                                                        <i class="ph ph-image"></i>
+                                                    </span>
+                                                </c:otherwise>
+                                            </c:choose>
+                                            <div class="min-w-0">
+                                                <a href="${pageContext.request.contextPath}/admin/courses/${course.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                                    <span class="gape-acronym-token" tabindex="0" title="<c:out value='${course.name}'/>"><c:out value="${course.acronym}"/></span>
+                                                    <span class="ms-4"><c:out value="${course.name}"/></span>
+                                                </a>
+                                                <span class="gape-node-meta text-12">
+                                                    <span><c:out value="${course.subjectCount}"/> subjects</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="text-13 text-neutral-500"><c:out value="${course.typeLabel}"/></div>
+                                        <div><span class="og-element-count"><c:out value="${organizationCourseElementCountById[course.id]}"/></span></div>
+                                        <div>
+                                            <span class="${course.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
+                                                <c:out value="${course.stateLabel}"/>
+                                            </span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-10 flex-wrap justify-content-end">
+                                            <button type="button"
+                                                    class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600"
+                                                    title="Show subjects"
+                                                    aria-label="Show subjects"
+                                                    aria-expanded="false"
+                                                    aria-controls="courseSubjects${course.id}"
+                                                    data-gape-tree-toggle="courseSubjects${course.id}"
+                                                    data-gape-open-title="Hide subjects"
+                                                    data-gape-closed-title="Show subjects">
+                                                <i class="ph ph-caret-down"></i>
+                                            </button>
+                                            <a href="${pageContext.request.contextPath}/admin/courses/${course.id}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail" aria-label="Detail">
+                                                <i class="ph ph-eye"></i>
+                                            </a>
+                                            <c:if test="${canModifyCourse}">
+                                                <a href="${pageContext.request.contextPath}/admin/courses/${course.id}/edit" class="text-20 text-neutral-500 hover-text-main-600" title="Edit" aria-label="Edit">
+                                                    <i class="ph ph-pencil-simple-line"></i>
+                                                </a>
+                                                <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" aria-label="Delete" data-bs-toggle="modal" data-bs-target="#deleteTreeCourse${course.id}">
+                                                    <i class="ph ph-trash"></i>
+                                                </button>
+                                            </c:if>
+                                        </div>
+                                    </div>
+
+                                    <div id="courseSubjects${course.id}" class="gape-structure-panel d-none">
+                                        <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mb-12">
+                                            <div>
+                                                <h5 class="text-14 fw-medium text-neutral-700 mb-2">Subjects</h5>
+                                                <span class="text-12 text-neutral-500">
+                                                    <c:out value="${course.name}"/> &middot; <c:out value="${course.subjectCount}"/> subjects
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex flex-column gap-10">
+                                            <c:forEach var="subject" items="${course.subjects}">
+                                                <c:set var="canModifySubject" value="${canModifySubjectById[subject.subjectId]}" />
+                                                <c:set var="subjectPhotoUrl" value="" />
+                                                <c:if test="${subject.hasPhoto}">
+                                                    <c:set var="subjectPhotoUrl" value="${pageContext.request.contextPath}/media/${subject.photo}?v=${mediaCacheVersion}" />
+                                                </c:if>
+                                                <article class="gape-structure-node gape-subject-node border border-neutral-30 rounded-8 px-16 py-14 bg-white">
+                                                    <div class="gape-structure-row">
+                                                        <div class="d-flex align-items-start gap-10 min-w-0">
+                                                            <c:choose>
+                                                                <c:when test="${subject.hasPhoto}">
+                                                                    <img src="${subjectPhotoUrl}"
+                                                                         alt=""
+                                                                         class="gape-learning-table-photo flex-shrink-0"
+                                                                         onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
+                                                                    <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--table d-none" aria-label="No subject photo">
+                                                                        <i class="ph ph-image"></i>
+                                                                    </span>
+                                                                </c:when>
+                                                                <c:otherwise>
+                                                                    <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--table" aria-label="No subject photo">
+                                                                        <i class="ph ph-image"></i>
+                                                                    </span>
+                                                                </c:otherwise>
+                                                            </c:choose>
+                                                            <div class="min-w-0">
+                                                                <a href="${pageContext.request.contextPath}/admin/subjects/${subject.subjectId}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                                                    <span class="gape-acronym-token" tabindex="0" title="<c:out value='${subject.name}'/>"><c:out value="${subject.acronym}"/></span>
+                                                                    <span class="ms-4"><c:out value="${subject.name}"/></span>
+                                                                </a>
+                                                                <span class="gape-node-meta text-12">
+                                                                    <span><c:out value="${subject.curricularPositionLabel}"/></span>
+                                                                    <span><c:out value="${subject.mandatoryLabel}"/></span>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="text-13 text-neutral-500"><c:out value="${subject.mandatoryLabel}"/></div>
+                                                        <div><span class="og-element-count"><c:out value="${organizationSubjectElementCountByKey[subject.treeKey]}"/></span></div>
+                                                        <div>
+                                                            <span class="${subject.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
+                                                                <c:out value="${subject.stateLabel}"/>
+                                                            </span>
+                                                        </div>
+                                                        <div class="d-flex align-items-center gap-10 flex-wrap justify-content-end">
+                                                            <button type="button"
+                                                                    class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600"
+                                                                    title="Show class groups"
+                                                                    aria-label="Show class groups"
+                                                                    aria-expanded="false"
+                                                                    aria-controls="subjectClassGroups${course.id}_${subject.subjectId}"
+                                                                    data-gape-tree-toggle="subjectClassGroups${course.id}_${subject.subjectId}"
+                                                                    data-gape-open-title="Hide class groups"
+                                                                    data-gape-closed-title="Show class groups">
+                                                                <i class="ph ph-caret-down"></i>
+                                                            </button>
+                                                            <a href="${pageContext.request.contextPath}/admin/subjects/${subject.subjectId}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail" aria-label="Detail">
+                                                                <i class="ph ph-eye"></i>
+                                                            </a>
+                                                            <c:if test="${canModifySubject}">
+                                                                <a href="${pageContext.request.contextPath}/admin/subjects/${subject.subjectId}/edit" class="text-20 text-neutral-500 hover-text-main-600" title="Edit" aria-label="Edit">
+                                                                    <i class="ph ph-pencil-simple-line"></i>
+                                                                </a>
+                                                                <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" aria-label="Delete" data-bs-toggle="modal" data-bs-target="#deleteTreeSubject${course.id}_${subject.subjectId}">
+                                                                    <i class="ph ph-trash"></i>
+                                                                </button>
+                                                            </c:if>
+                                                        </div>
+                                                    </div>
+
+                                                    <div id="subjectClassGroups${course.id}_${subject.subjectId}" class="gape-structure-panel d-none">
+                                                        <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mb-12">
+                                                            <div>
+                                                                <h6 class="text-14 fw-medium text-neutral-700 mb-2">Class Groups</h6>
+                                                                <span class="text-12 text-neutral-500">
+                                                                    <c:out value="${subject.name}"/> &middot; <c:out value="${subject.classGroupCount}"/> class groups
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="d-flex flex-column gap-10">
+                                                            <c:forEach var="classGroup" items="${subject.classGroups}">
+                                                                <c:set var="canModifyClassGroup" value="${canModifyClassGroupById[classGroup.id]}" />
+                                                                <c:set var="canManageClassGroupStructure" value="${canManageClassGroupStructureById[classGroup.id]}" />
+                                                                <c:set var="classGroupLessons" value="${classGroupLessonsByClassGroup[classGroup.id]}" />
+                                                                <c:set var="classGroupAssessments" value="${classGroupAssessmentsByClassGroup[classGroup.id]}" />
+                                                                <c:set var="activityPanelId" value="organizationClassGroupActivities${course.id}_${subject.subjectId}_${classGroup.id}" />
+                                                                <article class="gape-structure-node gape-class-group-node border border-neutral-30 rounded-8 px-16 py-12 bg-white">
+                                                                    <div class="gape-structure-row">
+                                                                        <div class="d-flex align-items-start gap-10 min-w-0">
+                                                                            <span class="bg-warning-50 text-warning-600 og-mode-icon text-20 line-height-1"><i class="ph ph-users-three"></i></span>
+                                                                            <div class="min-w-0">
+                                                                                <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="fw-medium text-14 text-neutral-700 hover-text-main-600">
+                                                                                    <c:out value="${classGroup.code}"/>
+                                                                                </a>
+                                                                                <span class="gape-node-meta text-12">
+                                                                                    <span><c:out value="${classGroup.modalityLabel}"/></span>
+                                                                                    <span><c:out value="${classGroup.shift}"/></span>
+                                                                                    <span data-gape-datetime-display><c:out value="${classGroup.dateRangeLabel}"/></span>
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div class="text-13 text-neutral-500"><c:out value="${classGroup.modalityLabel}"/></div>
+                                                                        <div><span class="og-element-count"><c:out value="${organizationClassGroupElementCountById[classGroup.id]}"/></span></div>
+                                                                        <div>
+                                                                            <span class="${classGroup.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
+                                                                                <c:out value="${classGroup.stateLabel}"/>
+                                                                            </span>
+                                                                        </div>
+                                                                        <div class="d-flex align-items-center gap-10 flex-wrap justify-content-end">
+                                                                            <button type="button"
+                                                                                    class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600"
+                                                                                    title="Show Activities"
+                                                                                    aria-label="Show Activities"
+                                                                                    aria-expanded="false"
+                                                                                    aria-controls="${activityPanelId}"
+                                                                                    data-gape-tree-toggle="${activityPanelId}"
+                                                                                    data-gape-open-title="Hide Activities"
+                                                                                    data-gape-closed-title="Show Activities">
+                                                                                <i class="ph ph-caret-down"></i>
+                                                                            </button>
+                                                                            <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}" class="text-20 text-neutral-500 hover-text-main-600" title="Detail" aria-label="Detail">
+                                                                                <i class="ph ph-eye"></i>
+                                                                            </a>
+                                                                            <c:if test="${canModifyClassGroup}">
+                                                                                <a href="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/edit" class="text-20 text-neutral-500 hover-text-main-600" title="Edit" aria-label="Edit">
+                                                                                    <i class="ph ph-pencil-simple-line"></i>
+                                                                                </a>
+                                                                            </c:if>
+                                                                            <c:if test="${canManageClassGroupStructure}">
+                                                                                <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Delete" aria-label="Delete" data-bs-toggle="modal" data-bs-target="#deleteTreeClassGroup${classGroup.id}">
+                                                                                    <i class="ph ph-trash"></i>
+                                                                                </button>
+                                                                            </c:if>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div id="${activityPanelId}" class="d-none">
+                                                                        <%@ include file="/WEB-INF/fragments/organization-class-group-activities-panel.jspf" %>
+                                                                    </div>
+                                                                </article>
+
+                                                                <c:if test="${canManageClassGroupStructure}">
+                                                                    <div class="modal fade" id="deleteTreeClassGroup${classGroup.id}" tabindex="-1" aria-hidden="true">
+                                                                        <div class="modal-dialog modal-dialog-centered">
+                                                                            <div class="modal-content rounded-8 border-0">
+                                                                                <div class="modal-header border-neutral-30">
+                                                                                    <h5 class="modal-title text-18 fw-semibold">Delete Class Group</h5>
+                                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                                </div>
+                                                                                <div class="modal-body">
+                                                                                    <p class="text-14 text-neutral-600 mb-0">This action removes <strong><c:out value="${classGroup.code}"/></strong> if it has no dependencies.</p>
+                                                                                </div>
+                                                                                <div class="modal-footer border-neutral-30">
+                                                                                    <button type="button" class="og-outline-button" data-bs-dismiss="modal">Cancel</button>
+                                                                                    <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/delete" method="post" class="m-0">
+                                                                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                                                        <button type="submit" class="og-danger-button">Delete</button>
+                                                                                    </form>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </c:if>
+                                                            </c:forEach>
+                                                            <c:if test="${empty subject.classGroups}">
+                                                                <div class="border border-neutral-30 rounded-8 px-16 py-18 text-center text-13 text-neutral-500 bg-white">
+                                                                    No class groups registered for this subject in this course.
+                                                                </div>
+                                                            </c:if>
+                                                        </div>
+                                                    </div>
+                                                </article>
+
+                                                <c:if test="${canModifySubject}">
+                                                    <div class="modal fade" id="deleteTreeSubject${course.id}_${subject.subjectId}" tabindex="-1" aria-hidden="true">
+                                                        <div class="modal-dialog modal-dialog-centered">
+                                                            <div class="modal-content rounded-8 border-0">
+                                                                <div class="modal-header border-neutral-30">
+                                                                    <h5 class="modal-title text-18 fw-semibold">Delete Subject</h5>
+                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                                </div>
+                                                                <div class="modal-body">
+                                                                    <p class="text-14 text-neutral-600 mb-0">This action removes <strong><c:out value="${subject.name}"/></strong> if it has no dependencies.</p>
+                                                                </div>
+                                                                <div class="modal-footer border-neutral-30">
+                                                                    <button type="button" class="og-outline-button" data-bs-dismiss="modal">Cancel</button>
+                                                                    <form action="${pageContext.request.contextPath}/admin/subjects/${subject.subjectId}/delete" method="post" class="m-0">
+                                                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                                        <button type="submit" class="og-danger-button">Delete</button>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </c:if>
+                                            </c:forEach>
+                                            <c:if test="${empty course.subjects}">
+                                                <div class="border border-neutral-30 rounded-8 px-16 py-18 text-center text-13 text-neutral-500 bg-white">
+                                                    No subjects associated with this course.
+                                                </div>
+                                            </c:if>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <c:if test="${canModifyCourse}">
+                                    <div class="modal fade" id="deleteTreeCourse${course.id}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content rounded-8 border-0">
+                                                <div class="modal-header border-neutral-30">
+                                                    <h5 class="modal-title text-18 fw-semibold">Delete Course</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p class="text-14 text-neutral-600 mb-0">This action removes <strong><c:out value="${course.name}"/></strong> if it has no dependencies.</p>
+                                                </div>
+                                                <div class="modal-footer border-neutral-30">
+                                                    <button type="button" class="og-outline-button" data-bs-dismiss="modal">Cancel</button>
+                                                    <form action="${pageContext.request.contextPath}/admin/courses/${course.id}/delete" method="post" class="m-0">
+                                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                                        <button type="submit" class="og-danger-button">Delete</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </c:if>
+                            </c:forEach>
+                            <c:if test="${empty unit.courses}">
+                                <div class="border border-neutral-30 rounded-8 px-16 py-18 text-center text-13 text-neutral-500 bg-white">
+                                    No courses registered for this organic unit.
+                                </div>
+                            </c:if>
+                        </div>
+                    </div>
+                </article>
+
+                <c:if test="${canModifyUnit}">
+                    <div class="modal fade" id="deleteUnit${unit.id}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content rounded-8 border-0">
+                                <div class="modal-header border-neutral-30">
+                                    <h5 class="modal-title text-18 fw-semibold">Delete Organic Unit</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-14 text-neutral-600 mb-0">This action removes <strong><c:out value="${unit.name}"/></strong> if it has no dependencies.</p>
+                                </div>
+                                <div class="modal-footer border-neutral-30">
+                                    <button type="button" class="og-outline-button" data-bs-dismiss="modal">Cancel</button>
+                                    <form action="${pageContext.request.contextPath}/admin/organizations/${organization.id}/units/${unit.id}/delete" method="post" class="m-0">
+                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                        <input type="hidden" name="returnTo" value="/admin/organizations/${organization.id}">
+                                        <button type="submit" class="og-danger-button">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </c:if>
+            </c:forEach>
+            <c:if test="${empty organization.organicUnits}">
+                <div class="border border-neutral-30 rounded-8 px-20 py-28 text-center text-14 text-neutral-500 bg-white">
+                    No organic units registered.
+                </div>
+            </c:if>
+        </div>
+    </div>
+</div>

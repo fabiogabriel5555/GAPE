@@ -1,0 +1,51 @@
+<c:forEach var="message" items="${communicationPage.messages}">
+    <div id="message-${message.id}" data-message-id="${message.id}" class="messages-chat-row ${communicationPage.hasSelectedMessage and communicationPage.selectedMessage.id == message.id ? 'is-selected' : ''} d-flex align-items-start gap-12 mb-20 ${message.fromCurrentUser ? 'justify-content-end' : ''}">
+        <c:if test="${!message.fromCurrentUser}">
+            <span class="messages-avatar rounded-circle bg-main-50 text-main-600 d-inline-flex align-items-center justify-content-center text-14 fw-semibold">
+                <c:out value="${communicationPage.selectedConversation.initials}"/>
+            </span>
+        </c:if>
+        <div class="max-w-514-px ${message.fromCurrentUser ? 'text-end' : ''}">
+            <div class="d-flex align-items-center gap-8 flex-wrap mb-6 ${message.fromCurrentUser ? 'justify-content-end' : ''}">
+                <c:if test="${!message.fromCurrentUser}">
+                    <span class="text-13 fw-semibold text-neutral-700"><c:out value="${communicationPage.selectedConversation.peerName}"/></span>
+                </c:if>
+                <span class="text-11 text-neutral-500" data-gape-datetime-display><c:out value="${message.timestampLabel}"/></span>
+            </div>
+            <div class="message-bubble text-14 fw-normal px-20 py-16 rounded-10 mb-8 ${message.fromCurrentUser ? 'message-bubble--sent margin-inline-start-auto text-start' : 'message-bubble--received'}">
+                <c:if test="${message.hasAttachment}">
+                    <c:if test="${message.imageAttachment}">
+                        <img src="${pageContext.request.contextPath}/messages/attachments/${message.id}?inline=1"
+                             alt="<c:out value='${message.attachmentFileName}'/>"
+                             class="messages-media-preview rounded-8"
+                             onerror="this.hidden=true;">
+                    </c:if>
+                    <c:if test="${message.videoAttachment}">
+                        <video src="${pageContext.request.contextPath}/messages/attachments/${message.id}?inline=1"
+                               class="messages-media-preview messages-media-preview--video rounded-8"
+                               controls
+                               preload="metadata"></video>
+                    </c:if>
+                    <a href="${pageContext.request.contextPath}/messages/attachments/${message.id}"
+                       class="messages-attachment-chip mt-10 d-inline-flex align-items-center gap-8 rounded-8 px-12 py-8 text-decoration-none ${message.fromCurrentUser ? 'bg-white text-main-600' : 'bg-white text-main-600 border border-neutral-30'}">
+                        <i class="ph ph-paperclip flex-shrink-0"></i>
+                        <span class="text-line-1"><c:out value="${message.attachmentFileName}"/></span>
+                    </a>
+                </c:if>
+                <c:if test="${not empty message.body}">
+                    <p class="message-bubble__text mb-0 ${message.hasAttachment ? 'mt-12' : ''}"><c:out value="${message.body}"/></p>
+                </c:if>
+            </div>
+            <div class="d-flex align-items-center gap-10 flex-wrap ${message.fromCurrentUser ? 'justify-content-end' : ''}">
+                <span class="text-11 fw-semibold ${message.unread ? 'text-main-600' : 'text-neutral-500'}" data-message-state-label data-message-readable="${message.readable ? 'true' : 'false'}">
+                    <c:out value="${message.stateLabel}"/>
+                </span>
+            </div>
+        </div>
+        <c:if test="${message.fromCurrentUser}">
+            <span class="messages-avatar rounded-circle bg-neutral-20 text-neutral-600 d-inline-flex align-items-center justify-content-center text-14 fw-semibold">
+                You
+            </span>
+        </c:if>
+    </div>
+</c:forEach>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assessmentTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                 xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <type code="form">
+    <label>Form</label>
+  </type>
+  <type code="test">
+    <label>Test</label>
+  </type>
+  <type code="exam">
+    <label>Exam</label>
+  </type>
+</assessmentTypes>

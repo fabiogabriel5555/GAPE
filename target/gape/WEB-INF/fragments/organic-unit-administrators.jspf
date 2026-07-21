@@ -1,0 +1,81 @@
+<div class="bg-white rounded-10 px-24 py-24">
+    <style>
+        .gape-unit-admin-submit {
+            min-height: 52px;
+        }
+    </style>
+    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
+        <div>
+            <h3 class="text-18 fw-medium text-neutral-700 mb-4">Organic Unit Administrators</h3>
+            <span class="text-14 text-neutral-500">Administrators assigned directly to this unit.</span>
+        </div>
+    </div>
+
+    <div class="d-flex flex-column gap-12 mb-20">
+        <c:forEach var="administrator" items="${assignedOrganicUnitAdministrators}">
+            <div class="border border-neutral-30 rounded-12 px-16 py-14">
+                <div class="d-flex align-items-start justify-content-between gap-12 flex-wrap">
+                    <div>
+                        <span class="fw-medium text-14 text-neutral-700 d-block"><c:out value="${administrator.name}"/></span>
+                        <span class="text-12 text-neutral-500"><c:out value="${administrator.email}"/></span>
+                    </div>
+                    <div class="d-flex align-items-center gap-12">
+                        <span class="bg-success-50 text-success-600 px-12 py-6 border-neutral-30 border rounded-pill text-12">Direct grant</span>
+                        <c:if test="${canManageOrganicUnitAdministrators}">
+                            <c:choose>
+                                <c:when test="${administrator.canRevoke}">
+                                    <form action="${unitAdminRevokeAction}" method="post" class="m-0">
+                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                        <input type="hidden" name="returnTo" value="${unitAdminReturnPath}">
+                                        <input type="hidden" name="administratorUserId" value="${administrator.userId}">
+                                        <button type="submit" class="text-21 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Remove">
+                                            <i class="ph ph-trash"></i>
+                                        </button>
+                                    </form>
+                                </c:when>
+                                <c:otherwise>
+                                    <button type="button" class="text-21 text-neutral-300 border-0 bg-transparent p-0" title="Cannot remove the last administrator permission" disabled>
+                                        <i class="ph ph-lock-simple"></i>
+                                    </button>
+                                </c:otherwise>
+                            </c:choose>
+                        </c:if>
+                    </div>
+                </div>
+            </div>
+        </c:forEach>
+        <c:if test="${empty assignedOrganicUnitAdministrators}">
+            <div class="border border-neutral-30 rounded-12 px-16 py-18 text-14 text-neutral-500">
+                No direct administrators assigned.
+            </div>
+        </c:if>
+    </div>
+
+    <c:if test="${canManageOrganicUnitAdministrators}">
+        <form action="${unitAdminAssignAction}" method="post" class="border border-neutral-30 rounded-12 px-20 py-18">
+            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+            <input type="hidden" name="returnTo" value="${unitAdminReturnPath}">
+            <div class="row gy-3 align-items-end">
+                <div class="col-lg-8 gape-select-field">
+                    <label for="organicUnitAdministratorUserId" class="fw-medium text-base text-neutral-800 mb-12">Administrator</label>
+                    <select id="organicUnitAdministratorUserId" name="administratorUserId" required class="form-select px-24 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-14 js-example-basic-single gape-eduall-select">
+                        <option value="">Select administrator</option>
+                        <c:forEach var="administrator" items="${organicUnitAdministratorOptions}">
+                            <option value="${administrator.id}">
+                                <c:out value="${administrator.name}"/> - <c:out value="${administrator.email}"/>
+                            </option>
+                        </c:forEach>
+                    </select>
+                </div>
+                <div class="col-lg-4 d-flex align-items-end">
+                    <button type="submit" class="gape-unit-admin-submit bg-main-600 px-24 py-12 rounded-12 fw-semibold text-white hover-bg-main-700 transition-03 w-100">
+                        Assign
+                    </button>
+                </div>
+            </div>
+            <c:if test="${empty organicUnitAdministratorOptions}">
+                <div class="alert alert-warning rounded-12 border-0 mt-16 mb-0" role="alert">No eligible administrators are available.</div>
+            </c:if>
+        </form>
+    </c:if>
+</div>

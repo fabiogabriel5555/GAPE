@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<userStates xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <state code="active">
+    <label>Conta ativa</label>
+  </state>
+  <state code="inactive">
+    <label>Inactive account</label>
+  </state>
+  <state code="blocked">
+    <label>Conta bloqueada</label>
+  </state>
+</userStates>

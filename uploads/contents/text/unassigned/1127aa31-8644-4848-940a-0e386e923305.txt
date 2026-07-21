@@ -1,0 +1,44 @@
+Exemplo completo: cálculo da nota final do certificado com ECTS
+
+Disciplinas do curso
+
+| Disciplina       | ECTS    |
+|------------------|---------|
+| Programação Web  | 6 ECTS  |
+| Base de Dados    | 4 ECTS  |
+| Total do curso   | 10 ECTS |
+
+
+Disciplina 1: Programação Web — 6 ECTS
+
+| Avaliação | Nota obtida | Máximo | Peso | Nota normalizada                              |
+|-----------|-------------|--------|------|----------------------------------------------|
+| Teste 1   | 14          | 20     | 30%  | 14 / 20 × 20 = 14 → 14 × 0,30 = 4,2          |
+| Teste 2   | 16          | 20     | 40%  | 16 / 20 × 20 = 16 → 16 × 0,40 = 6,4          |
+| Trabalho  | 75          | 100    | 30%  | 75 / 100 × 20 = 15 → 15 × 0,30 = 4,5         |
+| Nota final da disciplina | | | 100% | 4,2 + 6,4 + 4,5 = 15,1 valores              |
+
+
+Disciplina 2: Base de Dados — 4 ECTS
+
+| Avaliação | Nota obtida | Máximo | Peso | Nota normalizada                              |
+|-----------|-------------|--------|------|----------------------------------------------|
+| Teste 1   | 12          | 20     | 30%  | 12 / 20 × 20 = 12 → 12 × 0,30 = 3,6          |
+| Teste 2   | 80          | 100    | 40%  | 80 / 100 × 20 = 16 → 16 × 0,40 = 6,4         |
+| Trabalho  | 18          | 20     | 30%  | 18 / 20 × 20 = 18 → 18 × 0,30 = 5,4          |
+| Nota final da disciplina | | | 100% | 3,6 + 6,4 + 5,4 = 15,4 valores              |
+
+
+Cálculo da nota final do certificado
+
+| Disciplina       | Nota final da disciplina | ECTS | Cálculo ponderado      |
+|------------------|--------------------------|------|-------------------------|
+| Programação Web  | 15,1                     | 6    | 15,1 × 6 = 90,6         |
+| Base de Dados    | 15,4                     | 4    | 15,4 × 4 = 61,6         |
+| Totais           |                          | 6 + 4 = 10 ECTS | 90,6 + 61,6 = 152,2 |
+| Nota final do certificado |                  |      | 152,2 ÷ 10 = 15,22 valores |
+
+
+Resultado final
+
+Nota final do certificado: 15,22 valores

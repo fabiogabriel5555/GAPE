@@ -1,0 +1,396 @@
+<div class="aac-surface gape-structured-management-panel px-24 py-24 mb-24"
+     data-deferred-management-root
+     data-deferred-management-kind="attendance"
+     data-deferred-management-endpoint="${pageContext.request.contextPath}${attendanceFilterPath}"
+     data-deferred-management-page-parameter="attendancePage"
+     data-deferred-management-scope-parameter="attendanceScope"
+     data-deferred-management-load-all-parameter="attendanceLoadAll"
+     data-deferred-management-active-scope="active"
+     data-deferred-management-current-page="${attendanceManagementCurrentPage}"
+     data-deferred-management-total="${attendanceManagementTotal}"
+     data-deferred-management-page-size="10"
+     data-deferred-management-showing-all="${attendanceManagementLoadAll}"
+     data-deferred-management-filter-name="attendanceState"
+     data-deferred-management-filter-value="${selectedAttendanceState}">
+    <div class="gape-management-card__header d-flex align-items-center justify-content-between gap-16 flex-wrap mb-20">
+        <div>
+            <h2 class="text-18 fw-medium text-neutral-700 mb-4">Attendance</h2>
+            <div class="gape-management-summary" aria-label="Attendance summary">
+                <span data-attendance-total-summary>${attendanceCount} records</span>
+                <span data-attendance-absence-summary>${absenceCount} absences</span>
+                <span data-attendance-pending-summary>${pendingJustificationCount} pending justifications</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-10 flex-wrap">
+            <c:if test="${lessonAssessmentAttendanceControls}">
+            <div class="gape-learning-actions d-flex align-items-center gap-12 flex-wrap" data-learning-controls="attendance">
+                <div class="dropdown">
+                    <button type="button"
+                            class="gape-filter-toggle border-neutral-30 border px-20 py-12 rounded-12 fw-semibold text-neutral-700 hover-bg-main-50 transition-03 bg-white d-flex align-items-center gap-8"
+                            data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
+                            data-learning-sort-toggle
+                            aria-expanded="false">
+                        <i class="ph ph-sort-ascending"></i>Sort by
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                        <li>
+                            <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-sort-option data-sort-field="name" data-sort-normal="asc" data-sort-state="none" aria-pressed="false">
+                                <span>Name</span>
+                                <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-sort-option data-sort-field="date" data-sort-normal="desc" data-sort-state="none" aria-pressed="false">
+                                <span>Date</span>
+                                <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-sort-option data-sort-field="status" data-sort-normal="asc" data-sort-state="none" aria-pressed="false">
+                                <span>State</span>
+                                <span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="dropdown">
+                    <button type="button"
+                            class="gape-filter-toggle border-neutral-30 border px-20 py-12 rounded-12 fw-semibold text-neutral-700 hover-bg-main-50 transition-03 bg-white d-flex align-items-center gap-8"
+                            data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside"
+                            data-learning-group-toggle
+                            aria-expanded="false">
+                        <i class="ph ph-stack"></i>Group by
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                        <li>
+                            <button type="button" class="dropdown-item gape-group-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-group-option data-group-field="organization" data-group-normal="asc" data-group-state="none" aria-pressed="false">
+                                <span>Organization</span>
+                                <span class="gape-group-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-group-arrow gape-group-arrow--normal"></i><i class="ph ph-arrow-down gape-group-arrow gape-group-arrow--reverse"></i></span>
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item gape-group-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-group-option data-group-field="course" data-group-normal="asc" data-group-state="none" aria-pressed="false">
+                                <span>Courses</span>
+                                <span class="gape-group-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-group-arrow gape-group-arrow--normal"></i><i class="ph ph-arrow-down gape-group-arrow gape-group-arrow--reverse"></i></span>
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item gape-group-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-group-option data-group-field="subject" data-group-normal="asc" data-group-state="none" aria-pressed="false">
+                                <span>Subjects</span>
+                                <span class="gape-group-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-group-arrow gape-group-arrow--normal"></i><i class="ph ph-arrow-down gape-group-arrow gape-group-arrow--reverse"></i></span>
+                            </button>
+                        </li>
+                        <li>
+                            <button type="button" class="dropdown-item gape-group-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-learning-group-option data-group-field="classGroup" data-group-normal="asc" data-group-state="none" aria-pressed="false">
+                                <span>Class Groups</span>
+                                <span class="gape-group-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-group-arrow gape-group-arrow--normal"></i><i class="ph ph-arrow-down gape-group-arrow gape-group-arrow--reverse"></i></span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            </c:if>
+            <button type="button" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03 border-0 d-inline-flex align-items-center" style="min-height: 44px;" data-bs-toggle="modal" data-bs-target="#registerAttendanceModal">
+                <i class="ph ph-plus-circle me-8"></i>New Attendance
+            </button>
+        </div>
+    </div>
+
+    <div class="modal fade" id="registerAttendanceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content rounded-8 border-0">
+                <div class="modal-header border-neutral-30">
+                    <div>
+                        <h5 class="modal-title text-18 fw-semibold mb-4">New Attendance</h5>
+                        <span class="text-13 text-neutral-500">Create a manual attendance record.</span>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="${pageContext.request.contextPath}${attendanceActionPath}" method="post">
+                    <div class="modal-body">
+                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                        <input type="hidden" name="returnTo" value="${attendanceReturnTo}">
+                        <div class="row gy-3">
+                            <div class="col-md-6">
+                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-lesson-id">Lesson ID</label>
+                                <input type="number" id="attendance-lesson-id" name="lessonId" min="1" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-student-id">Student ID</label>
+                                <input type="number" id="attendance-student-id" name="studentUserId" min="1" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-status">State</label>
+                                <select id="attendance-status" name="status" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8" required>
+                                    <c:forEach var="option" items="${attendanceCreateStateOptions}">
+                                        <option value="${option.value}"><c:out value="${option.label}"/></option>
+                                    </c:forEach>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-source">Source</label>
+                                <select id="attendance-source" name="source" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                    <c:forEach var="option" items="${attendanceCreateSourceOptions}">
+                                        <option value="${option.value}"><c:out value="${option.label}"/></option>
+                                    </c:forEach>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-check-in">Check-in</label>
+                                <input type="datetime-local" id="attendance-check-in" name="checkIn" value="${defaultCheckIn}" data-default-value="${defaultCheckIn}" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-check-out">Check-out</label>
+                                <input type="datetime-local" id="attendance-check-out" name="checkOut" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                            </div>
+                            <div class="col-12">
+                                <label class="text-13 text-neutral-600 mb-6 d-block" for="attendance-notes">Notes</label>
+                                <input type="text" id="attendance-notes" name="notes" maxlength="500" class="form-control px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-neutral-30">
+                        <button type="button" class="border border-neutral-30 bg-white text-neutral-600 px-18 py-10 rounded-8 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03 border-0 d-inline-flex align-items-center">
+                            <i class="ph ph-check-circle me-8"></i>Save
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div data-deferred-management-active-content>
+    <div data-deferred-management-page-content>
+    <div class="gape-learning-table-scroll overflow-x-auto">
+        <table class="table mb-0 aac-attendance-table gape-learning-table" data-learning-table="attendance">
+            <thead>
+            <tr>
+                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Student</th>
+                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Activity</th>
+                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">Attendance</th>
+                <th class="py-16 px-20 text-14 fw-medium text-neutral-600">State</th>
+                <th class="py-16 px-20 text-14 fw-medium text-neutral-600 text-end">Actions</th>
+            </tr>
+            </thead>
+            <tbody data-learning-list="attendance">
+            <c:forEach var="group" items="${attendanceStudentGroups}" varStatus="attendanceLoop">
+                <c:set var="attendanceClassGroup" value="${classGroupById[group.classGroupId]}"/>
+                <tr class="aac-attendance-summary-row hover-bg-neutral-20 border-bottom transition-03"
+                    data-learning-row
+                    data-learning-detail-id="attendanceGroup${group.studentUserId}"
+                    data-sort-index="${attendanceLoop.index}"
+                    data-sort-name="${fn:escapeXml(group.studentLabel)}"
+                    data-sort-date="${group.sortDateValue}"
+                    data-sort-status="${fn:escapeXml(group.primaryStateLabel)}"
+                    data-sort-type="${fn:escapeXml(group.primaryActivityLabel)}"
+                    data-group-organization-id="${not empty attendanceClassGroup ? attendanceClassGroup.course.organizationId : ''}"
+                    data-group-organization="${not empty attendanceClassGroup ? fn:escapeXml(attendanceClassGroup.course.organizationName) : 'Unknown organization'}"
+                    data-group-organic-unit-id="${not empty attendanceClassGroup ? attendanceClassGroup.course.organicUnitId : ''}"
+                    data-group-organic-unit="${not empty attendanceClassGroup ? fn:escapeXml(attendanceClassGroup.course.organicUnitLabel) : 'No organic unit'}"
+                    data-group-course-id="${not empty attendanceClassGroup ? attendanceClassGroup.courseId : ''}"
+                    data-group-course="${not empty attendanceClassGroup ? fn:escapeXml(attendanceClassGroup.courseName) : 'No course'}"
+                    data-group-subject-id="${not empty attendanceClassGroup ? attendanceClassGroup.subjectId : ''}"
+                    data-group-subject="${not empty attendanceClassGroup ? fn:escapeXml(attendanceClassGroup.subjectName) : 'No subject'}"
+                    data-group-class-group-id="${group.classGroupId}"
+                    data-group-class-group="${not empty attendanceClassGroup ? fn:escapeXml(attendanceClassGroup.code) : 'No class group'}">
+                    <td class="py-20 px-20 text-14 text-neutral-500">
+                        <span class="fw-medium text-neutral-700"><c:out value="${group.studentLabel}"/></span>
+                    </td>
+                    <td class="py-20 px-20 text-14 text-neutral-500">
+                        <span class="fw-medium text-neutral-700 aac-attendance-count"><c:out value="${group.activityCountLabel}"/></span>
+                    </td>
+                    <td class="py-20 px-20 text-14 text-neutral-500">
+                        <span class="d-block" data-gape-datetime-display><c:out value="${group.timeLabel}"/></span>
+                    </td>
+                    <td class="py-20 px-20">
+                        <div class="aac-state-summary" data-attendance-group-summary="${group.studentUserId}">
+                            <c:forEach var="summary" items="${group.stateSummaries}">
+                                <span class="${summary.badgeClass} aac-state-summary__badge px-12 py-6 border-neutral-30 border rounded-pill text-12">${summary.count} <c:out value="${summary.label}"/></span>
+                            </c:forEach>
+                        </div>
+                    </td>
+                    <td class="py-20 px-20 text-end">
+                        <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show all attendance activities" data-bs-toggle="collapse" data-bs-target="#attendanceGroup${group.studentUserId}" aria-expanded="false" aria-controls="attendanceGroup${group.studentUserId}">
+                            <i class="ph ph-caret-down"></i>
+                        </button>
+                    </td>
+                </tr>
+                <tr class="collapse" id="attendanceGroup${group.studentUserId}" data-learning-detail-row>
+                    <td colspan="5" class="aac-expanded-cell">
+                        <div class="aac-expanded-panel">
+                            <div class="aac-tree">
+                                <c:forEach var="activity" items="${group.activities}">
+                                    <article class="aac-tree-node aac-tree-node--class">
+                                        <div class="aac-tree-row">
+                                            <div class="aac-tree-main">
+                                                <span class="aac-tree-icon bg-main-two-50 text-main-two-600"><i class="ph ph-calendar-check"></i></span>
+                                                <div class="min-w-0">
+                                                    <span class="aac-tree-title"><c:out value="${activity.activityLabel}"/></span>
+                                                    <span class="aac-tree-meta" data-gape-datetime-display><c:out value="${activity.activityMeta}"/> | <c:out value="${activity.activityScheduleLabel}"/> | <c:out value="${activity.timeLabel}"/> | <c:out value="${activity.permanenceLabel}"/></span>
+                                                </div>
+                                            </div>
+                                            <div class="aac-tree-status">
+                                                <span class="${activity.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12" data-attendance-activity-badge="${activity.id}" data-student-id="${group.studentUserId}" data-state-value="${activity.stateValue}">
+                                                    <c:out value="${activity.stateLabel}"/>
+                                                </span>
+                                            </div>
+                                            <div class="aac-tree-actions">
+                                                <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View attendance detail" data-bs-toggle="modal" data-bs-target="#${activity.detailModalId}">
+                                                    <i class="ph ph-eye"></i>
+                                                </button>
+                                                <c:if test="${activity.hasSettings}">
+                                                    <button type="button" class="aac-icon-button bg-info-50 text-info-600" title="Settings" aria-label="Configure attendance justification" data-bs-toggle="modal" data-bs-target="#${activity.settingsModalId}">
+                                                        <i class="ph ph-gear-six"></i>
+                                                    </button>
+                                                </c:if>
+                                            </div>
+                                        </div>
+                                    </article>
+                                </c:forEach>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </c:forEach>
+            <c:if test="${empty attendanceStudentGroups}">
+                <tr>
+                    <td colspan="5" class="py-32 px-20 text-center text-14 text-neutral-500">No attendance records available.</td>
+                </tr>
+            </c:if>
+            </tbody>
+        </table>
+    </div>
+
+    <c:forEach var="activity" items="${attendanceActivities}">
+        <div class="modal fade" id="${activity.detailModalId}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content rounded-8 border-0">
+                    <div class="modal-header border-neutral-30">
+                        <div>
+                            <h5 class="modal-title text-18 fw-semibold mb-4">Attendance detail</h5>
+                            <span class="text-13 text-neutral-500"><c:out value="${activity.activityLabel}"/></span>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row gy-3">
+                            <div class="col-md-6">
+                                <span class="text-12 text-neutral-500 d-block mb-4">Student</span>
+                                <span class="text-14 fw-medium text-neutral-800"><c:out value="${activity.studentLabel}"/></span>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-12 text-neutral-500 d-block mb-4">State</span>
+                                <span class="${activity.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12" data-attendance-detail-state="${activity.id}" data-state-value="${activity.stateValue}"><c:out value="${activity.stateLabel}"/></span>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-12 text-neutral-500 d-block mb-4">Activity</span>
+                                <span class="text-14 text-neutral-700"><c:out value="${activity.activityMeta}"/></span>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-12 text-neutral-500 d-block mb-4">Schedule</span>
+                                <span class="text-14 text-neutral-700" data-gape-datetime-display><c:out value="${activity.activityScheduleLabel}"/></span>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-12 text-neutral-500 d-block mb-4">Time</span>
+                                <span class="text-14 text-neutral-700" data-gape-datetime-display><c:out value="${activity.timeLabel}"/></span>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-12 text-neutral-500 d-block mb-4">Permanence</span>
+                                <span class="text-14 text-neutral-700" data-gape-datetime-display><c:out value="${activity.permanenceLabel}"/></span>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-12 text-neutral-500 d-block mb-4">Source</span>
+                                <span class="text-14 text-neutral-700"><c:out value="${activity.sourceLabel}"/></span>
+                            </div>
+                            <div class="col-md-6">
+                                <span class="text-12 text-neutral-500 d-block mb-4">Notes</span>
+                                <span class="text-14 text-neutral-700"><c:out value="${activity.notes}"/></span>
+                            </div>
+                            <c:if test="${activity.hasJustification}">
+                                <div class="col-12">
+                                    <div class="border border-neutral-30 rounded-8 p-16 bg-neutral-20">
+                                        <span class="text-12 text-neutral-500 d-block mb-6">Justification</span>
+                                        <span class="text-14 text-neutral-700 d-block"><c:out value="${activity.justification.reason}"/></span>
+                                        <span class="text-12 text-neutral-500 d-block mt-6">Attachment: <c:out value="${activity.justification.attachmentLabel}"/></span>
+                                        <span class="text-12 text-neutral-500 d-block" data-gape-datetime-display>Submitted: <c:out value="${activity.justification.submittedAt}"/></span>
+                                        <span class="text-12 text-neutral-500 d-block" data-gape-datetime-display>Processed: <c:out value="${activity.justification.processedAt}"/></span>
+                                    </div>
+                                </div>
+                            </c:if>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <c:if test="${activity.hasSettings}">
+            <div class="modal fade" id="${activity.settingsModalId}" tabindex="-1" aria-hidden="true" data-attendance-settings-modal data-activity-id="${activity.id}">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content rounded-8 border-0 bg-white aac-settings-modal">
+                        <div class="modal-header border-neutral-30 bg-white">
+                            <div>
+                                <h5 class="modal-title text-18 fw-semibold mb-4">Attendance settings</h5>
+                                <span class="text-13 text-neutral-500"><c:out value="${activity.studentLabel}"/> | <c:out value="${activity.activityLabel}"/></span>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body bg-white">
+                            <div class="aac-settings-grid">
+                                <section class="aac-settings-card">
+                                    <span class="text-12 text-neutral-500 d-block mb-8">Current state</span>
+                                    <span class="${activity.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12" data-attendance-settings-state data-state-value="${activity.stateValue}">
+                                        <c:out value="${activity.stateLabel}"/>
+                                    </span>
+                                </section>
+                                <section class="aac-settings-card">
+                                    <span class="text-12 text-neutral-500 d-block mb-8">Submitted</span>
+                                    <span class="text-14 fw-medium text-neutral-800" data-gape-datetime-display><c:out value="${activity.justification.submittedAt}"/></span>
+                                </section>
+                                <section class="aac-settings-card aac-settings-card--wide">
+                                    <span class="text-12 text-neutral-500 d-block mb-8">Reason</span>
+                                    <span class="text-14 text-neutral-700 d-block"><c:out value="${activity.justification.reason}"/></span>
+                                </section>
+                                <section class="aac-settings-card">
+                                    <span class="text-12 text-neutral-500 d-block mb-8">Attachment</span>
+                                    <span class="text-14 text-neutral-700"><c:out value="${activity.justification.attachmentLabel}"/></span>
+                                </section>
+                                <section class="aac-settings-card">
+                                    <span class="text-12 text-neutral-500 d-block mb-8">Processed</span>
+                                    <span class="text-14 text-neutral-700" data-gape-datetime-display><c:out value="${activity.justification.processedAt}"/></span>
+                                </section>
+                            </div>
+                            <form class="aac-settings-decision mt-18" data-attendance-settings-form data-activity-id="${activity.id}">
+                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                <input type="hidden" name="returnTo" value="${attendanceReturnTo}">
+                                <label class="text-13 text-neutral-600 mb-6 d-block" for="decision-notes-${activity.id}">Decision notes</label>
+                                <textarea id="decision-notes-${activity.id}" name="decisionNotes" maxlength="500" rows="3" class="form-control px-12 py-10 text-13 bg-neutral-20 border-neutral-30 border rounded-8" placeholder="Optional internal note"></textarea>
+                                <div class="aac-settings-actions mt-14">
+                                    <button type="button" class="border-0 bg-success-50 text-success-600 px-16 py-10 rounded-8 fw-semibold d-inline-flex align-items-center" data-attendance-decision="approve" data-action-url="${pageContext.request.contextPath}${attendanceActionPath}/justifications/${activity.justification.id}/approve" onclick="return window.handleAttendanceDecision ? window.handleAttendanceDecision(this) : false;" ${activity.canApprove ? '' : 'hidden'}>
+                                        <i class="ph ph-check me-8"></i>Accept
+                                    </button>
+                                    <button type="button" class="border-0 bg-danger-50 text-danger-600 px-16 py-10 rounded-8 fw-semibold d-inline-flex align-items-center" data-attendance-decision="reject" data-action-url="${pageContext.request.contextPath}${attendanceActionPath}/justifications/${activity.justification.id}/reject" onclick="return window.handleAttendanceDecision ? window.handleAttendanceDecision(this) : false;" ${activity.canReject ? '' : 'hidden'}>
+                                        <i class="ph ph-x me-8"></i>Reject
+                                    </button>
+                                    <span class="text-13 text-neutral-500" data-attendance-settings-message></span>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </c:if>
+    </c:forEach>
+    </div>
+    </div>
+    <div class="gape-learning-management-load-state mt-20" data-deferred-management-load-state>
+        <span><strong>${attendanceManagementTotal}</strong> attendance students load in pages of 10.</span>
+    </div>
+    <div class="d-flex justify-content-end mt-12" data-deferred-management-pagination data-total="${attendanceManagementTotal}" data-page-size="10" ${attendanceManagementTotal > 10 ? '' : 'hidden'}>
+        <div class="gape-list-pagination">
+            <nav class="gape-list-pagination-pages" aria-label="Attendance pages" data-deferred-management-pagination-pages></nav>
+            <button type="button" class="gape-list-load-all" data-deferred-management-load-all>Load All</button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<documentTypes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:noNamespaceSchemaLocation="../xsd/gape-config.xsd">
+  <documentType code="CITIZEN_CARD">
+    <label>Citizen Card</label>
+  </documentType>
+  <documentType code="TAX_IDENTIFICATION_NUMBER">
+    <label>Tax Identification Number</label>
+  </documentType>
+  <documentType code="PASSPORT">
+    <label>Passport</label>
+  </documentType>
+  <documentType code="RESIDENCE_PERMIT">
+    <label>Residence Permit/Authorization</label>
+  </documentType>
+</documentTypes>

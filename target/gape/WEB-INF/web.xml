@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+                             https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+
+    <display-name>GAPE</display-name>
+
+    <listener>
+        <listener-class>pt.isel.gape.web.listener.SecurityConfigurationListener</listener-class>
+    </listener>
+
+    <listener>
+        <listener-class>pt.isel.gape.web.listener.DatabaseBootstrapListener</listener-class>
+    </listener>
+
+    <listener>
+        <listener-class>pt.isel.gape.web.listener.DatabaseMigrationListener</listener-class>
+    </listener>
+
+    <listener>
+        <listener-class>pt.isel.gape.web.listener.SensitiveDataMigrationListener</listener-class>
+    </listener>
+
+    <!-- Pagina inicial da aplicacao -->
+    <welcome-file-list>
+        <welcome-file>login.jsp</welcome-file>
+    </welcome-file-list>
+
+    <error-page>
+        <error-code>404</error-code>
+        <location>/error-404.jsp</location>
+    </error-page>
+
+    <error-page>
+        <error-code>403</error-code>
+        <location>/error-403.jsp</location>
+    </error-page>
+
+    <error-page>
+        <error-code>500</error-code>
+        <location>/error-500.jsp</location>
+    </error-page>
+
+    <servlet>
+        <servlet-name>mediaServlet</servlet-name>
+        <servlet-class>pt.isel.gape.web.controller.MediaServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>profileServlet</servlet-name>
+        <servlet-class>pt.isel.gape.web.controller.ProfileServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>contentUploadServlet</servlet-name>
+        <servlet-class>pt.isel.gape.web.controller.ContentUploadServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>contentDownloadServlet</servlet-name>
+        <servlet-class>pt.isel.gape.web.controller.ContentDownloadServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>mediaServlet</servlet-name>
+        <url-pattern>/media/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>profileServlet</servlet-name>
+        <url-pattern>/profile</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>contentUploadServlet</servlet-name>
+        <url-pattern>/contents/upload</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>contentDownloadServlet</servlet-name>
+        <url-pattern>/contents/download/*</url-pattern>
+    </servlet-mapping>
+
+    <filter>
+        <filter-name>httpsEnforcementFilter</filter-name>
+        <filter-class>pt.isel.gape.web.filter.HttpsEnforcementFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>httpsEnforcementFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>securityHeadersFilter</filter-name>
+        <filter-class>pt.isel.gape.web.filter.SecurityHeadersFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>securityHeadersFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>authenticationFilter</filter-name>
+        <filter-class>pt.isel.gape.web.filter.AuthenticationFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>authenticationFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>authorizationFilter</filter-name>
+        <filter-class>pt.isel.gape.web.filter.AuthorizationFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>authorizationFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>csrfFilter</filter-name>
+        <filter-class>pt.isel.gape.web.filter.CsrfFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>csrfFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>dashboardEventUnreadFilter</filter-name>
+        <filter-class>pt.isel.gape.web.filter.DashboardEventUnreadFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>dashboardEventUnreadFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
+</web-app>

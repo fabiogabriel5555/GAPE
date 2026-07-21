@@ -1,0 +1,533 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified">
+
+  <xs:include schemaLocation="transversal/academicCalendar.xsd"/>
+  <xs:include schemaLocation="transversal/multiYearCalendar.xsd"/>
+
+  <xs:annotation>
+    <xs:documentation>
+      Central schema for GAPE controlled lists.
+      Values were extracted from document 0. GAPE - ALL - V3.
+    </xs:documentation>
+  </xs:annotation>
+
+  <xs:simpleType name="labelType">
+    <xs:restriction base="xs:normalizedString">
+      <xs:minLength value="2"/>
+      <xs:maxLength value="160"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="userStateCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="active"/>
+      <xs:enumeration value="inactive"/>
+      <xs:enumeration value="blocked"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="languageCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="en-US"/>
+      <xs:enumeration value="pt-PT"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="documentTypeCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="CITIZEN_CARD"/>
+      <xs:enumeration value="TAX_IDENTIFICATION_NUMBER"/>
+      <xs:enumeration value="PASSPORT"/>
+      <xs:enumeration value="RESIDENCE_PERMIT"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="sessionStateCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="active"/>
+      <xs:enumeration value="expired"/>
+      <xs:enumeration value="closed"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="deletionStateCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="submitted"/>
+      <xs:enumeration value="under_review"/>
+      <xs:enumeration value="approved"/>
+      <xs:enumeration value="rejected"/>
+      <xs:enumeration value="completed"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="activeInactiveCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="active"/>
+      <xs:enumeration value="inactive"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="organizationTypeCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="educational_institution"/>
+      <xs:enumeration value="training_company"/>
+      <xs:enumeration value="company"/>
+      <xs:enumeration value="other"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="organicUnitTypeCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="school"/>
+      <xs:enumeration value="faculty"/>
+      <xs:enumeration value="department"/>
+      <xs:enumeration value="center"/>
+      <xs:enumeration value="office"/>
+      <xs:enumeration value="service"/>
+      <xs:enumeration value="section"/>
+      <xs:enumeration value="direction"/>
+      <xs:enumeration value="other"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="courseTypeCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="degree"/>
+      <xs:enumeration value="master"/>
+      <xs:enumeration value="short_course"/>
+      <xs:enumeration value="professional_training"/>
+      <xs:enumeration value="other"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="courseStateCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="active"/>
+      <xs:enumeration value="inactive"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="classModalityCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="onsite"/>
+      <xs:enumeration value="online"/>
+      <xs:enumeration value="hybrid"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="classStateCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="draft"/>
+      <xs:enumeration value="scheduled"/>
+      <xs:enumeration value="active"/>
+      <xs:enumeration value="completed"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="classShiftCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="morning"/>
+      <xs:enumeration value="afternoon"/>
+      <xs:enumeration value="evening"/>
+      <xs:enumeration value="mixed"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="contentFormatCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="text"/>
+      <xs:enumeration value="image"/>
+      <xs:enumeration value="video"/>
+      <xs:enumeration value="audio"/>
+      <xs:enumeration value="pdf"/>
+      <xs:enumeration value="archive"/>
+      <xs:enumeration value="url"/>
+      <xs:enumeration value="scorm"/>
+      <xs:enumeration value="xapi"/>
+      <xs:enumeration value="presentation"/>
+      <xs:enumeration value="embed"/>
+      <xs:enumeration value="other"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="lessonTypeCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="online"/>
+      <xs:enumeration value="onsite"/>
+      <xs:enumeration value="hybrid"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="assessmentTypeCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="form"/>
+      <xs:enumeration value="test"/>
+      <xs:enumeration value="exam"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="questionTypeCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="single_choice"/>
+      <xs:enumeration value="multiple_choice"/>
+      <xs:enumeration value="short_text"/>
+      <xs:enumeration value="paragraph"/>
+      <xs:enumeration value="file_upload"/>
+      <xs:enumeration value="rating"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="scheduleEventTypeCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="lesson"/>
+      <xs:enumeration value="assessment"/>
+      <xs:enumeration value="reminder"/>
+      <xs:enumeration value="meeting"/>
+      <xs:enumeration value="other"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="attendanceStatusCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="present"/>
+      <xs:enumeration value="absent"/>
+      <xs:enumeration value="justified"/>
+      <xs:enumeration value="late"/>
+      <xs:enumeration value="partial"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="attendanceStateCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="active"/>
+      <xs:enumeration value="corrected"/>
+      <xs:enumeration value="cancelled"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="certificateStateCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="draft"/>
+      <xs:enumeration value="active"/>
+      <xs:enumeration value="issued"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="messageStateCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="draft"/>
+      <xs:enumeration value="scheduled"/>
+      <xs:enumeration value="sent"/>
+      <xs:enumeration value="active"/>
+      <xs:enumeration value="edited"/>
+      <xs:enumeration value="deleted"/>
+      <xs:enumeration value="cancelled"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="attemptStateCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="in_progress"/>
+      <xs:enumeration value="submitted"/>
+      <xs:enumeration value="corrected"/>
+      <xs:enumeration value="expired"/>
+      <xs:enumeration value="cancelled"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="certificateTypeCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="completion"/>
+      <xs:enumeration value="attendance"/>
+      <xs:enumeration value="qualification"/>
+      <xs:enumeration value="other"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="messageTypeCodeType">
+    <xs:restriction base="xs:token">
+      <xs:enumeration value="text"/>
+      <xs:enumeration value="comment"/>
+      <xs:enumeration value="announcement"/>
+      <xs:enumeration value="warning"/>
+      <xs:enumeration value="alert"/>
+      <xs:enumeration value="reminder"/>
+      <xs:enumeration value="notification"/>
+      <xs:enumeration value="system"/>
+      <xs:enumeration value="attachment"/>
+      <xs:enumeration value="other"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:complexType name="userStateType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="userStateCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="languageType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="languageCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="documentTypeEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="documentTypeCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="sessionStateType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="sessionStateCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="deletionStateType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="deletionStateCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="activeInactiveEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="activeInactiveCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="organizationTypeEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="organizationTypeCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="organicUnitTypeEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="organicUnitTypeCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="courseTypeEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="courseTypeCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="courseStateEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="courseStateCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="classModalityEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="classModalityCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="classStateEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="classStateCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="classShiftEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="classShiftCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="contentFormatEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="contentFormatCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="lessonTypeEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="lessonTypeCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="assessmentTypeEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="assessmentTypeCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="questionTypeEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="questionTypeCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="scheduleEventTypeEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="scheduleEventTypeCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="attendanceStatusEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="attendanceStatusCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="attendanceStateEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="attendanceStateCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="certificateStateEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="certificateStateCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="messageStateEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="messageStateCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="attemptStateEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="attemptStateCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="certificateTypeEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="certificateTypeCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="messageTypeEntryType">
+    <xs:sequence><xs:element name="label" type="labelType"/></xs:sequence>
+    <xs:attribute name="code" type="messageTypeCodeType" use="required"/>
+  </xs:complexType>
+
+  <xs:element name="userStates">
+    <xs:complexType><xs:sequence><xs:element name="state" type="userStateType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueUserStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="languages">
+    <xs:complexType>
+      <xs:sequence><xs:element name="language" type="languageType" minOccurs="2" maxOccurs="2"/></xs:sequence>
+      <xs:attribute name="default" type="languageCodeType" use="required"/>
+    </xs:complexType>
+    <xs:unique name="uniqueLanguageCode"><xs:selector xpath="language"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="documentTypes">
+    <xs:complexType>
+      <xs:sequence><xs:element name="documentType" type="documentTypeEntryType" minOccurs="4" maxOccurs="4"/></xs:sequence>
+    </xs:complexType>
+    <xs:unique name="uniqueDocumentTypeCode"><xs:selector xpath="documentType"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="sessionStates">
+    <xs:complexType><xs:sequence><xs:element name="state" type="sessionStateType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueSessionStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="deletionStates">
+    <xs:complexType><xs:sequence><xs:element name="state" type="deletionStateType" minOccurs="5" maxOccurs="5"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueDeletionStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="permissionStates">
+    <xs:complexType><xs:sequence><xs:element name="state" type="activeInactiveEntryType" minOccurs="2" maxOccurs="2"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniquePermissionStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="organizationTypes">
+    <xs:complexType><xs:sequence><xs:element name="type" type="organizationTypeEntryType" minOccurs="4" maxOccurs="4"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueOrganizationTypeCode"><xs:selector xpath="type"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="organizationStates">
+    <xs:complexType><xs:sequence><xs:element name="state" type="activeInactiveEntryType" minOccurs="2" maxOccurs="2"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueOrganizationStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="organicUnitTypes">
+    <xs:complexType><xs:sequence><xs:element name="type" type="organicUnitTypeEntryType" minOccurs="9" maxOccurs="9"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueOrganicUnitTypeCode"><xs:selector xpath="type"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="courseTypes">
+    <xs:complexType><xs:sequence><xs:element name="type" type="courseTypeEntryType" minOccurs="5" maxOccurs="5"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueCourseTypeCode"><xs:selector xpath="type"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="courseStates">
+    <xs:complexType><xs:sequence><xs:element name="state" type="courseStateEntryType" minOccurs="2" maxOccurs="2"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueCourseStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="classModalities">
+    <xs:complexType><xs:sequence><xs:element name="modality" type="classModalityEntryType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueClassModalityCode"><xs:selector xpath="modality"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="classStates">
+    <xs:complexType><xs:sequence><xs:element name="state" type="classStateEntryType" minOccurs="4" maxOccurs="4"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueClassStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="classShifts">
+    <xs:complexType><xs:sequence><xs:element name="shift" type="classShiftEntryType" minOccurs="4" maxOccurs="4"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueClassShiftCode"><xs:selector xpath="shift"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="contentBlockStates">
+    <xs:complexType><xs:sequence><xs:element name="state" type="activeInactiveEntryType" minOccurs="2" maxOccurs="2"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueContentBlockStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="contentFormats">
+    <xs:complexType><xs:sequence><xs:element name="format" type="contentFormatEntryType" minOccurs="12" maxOccurs="12"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueContentFormatCode"><xs:selector xpath="format"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="lessonTypes">
+    <xs:complexType><xs:sequence><xs:element name="type" type="lessonTypeEntryType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueLessonTypeCode"><xs:selector xpath="type"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="assessmentTypes">
+    <xs:complexType><xs:sequence><xs:element name="type" type="assessmentTypeEntryType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueAssessmentTypeCode"><xs:selector xpath="type"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="questionTypes">
+    <xs:complexType><xs:sequence><xs:element name="type" type="questionTypeEntryType" minOccurs="6" maxOccurs="6"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueQuestionTypeCode"><xs:selector xpath="type"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="scheduleEventTypes">
+    <xs:complexType><xs:sequence><xs:element name="type" type="scheduleEventTypeEntryType" minOccurs="5" maxOccurs="5"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueScheduleEventTypeCode"><xs:selector xpath="type"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="attendanceStates">
+    <xs:annotation>
+      <xs:documentation>
+        Inclui Attendance_Record.status e Attendance_Record.state do documento V3.
+      </xs:documentation>
+    </xs:annotation>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="status" type="attendanceStatusEntryType" minOccurs="5" maxOccurs="5"/>
+        <xs:element name="state" type="attendanceStateEntryType" minOccurs="3" maxOccurs="3"/>
+      </xs:sequence>
+    </xs:complexType>
+    <xs:unique name="uniqueAttendanceStatusCode"><xs:selector xpath="status"/><xs:field xpath="@code"/></xs:unique>
+    <xs:unique name="uniqueAttendanceStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="certificateStates">
+    <xs:complexType><xs:sequence><xs:element name="state" type="certificateStateEntryType" minOccurs="3" maxOccurs="3"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueCertificateStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="messageStates">
+    <xs:complexType><xs:sequence><xs:element name="state" type="messageStateEntryType" minOccurs="7" maxOccurs="7"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueMessageStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="attemptStates">
+    <xs:complexType><xs:sequence><xs:element name="state" type="attemptStateEntryType" minOccurs="5" maxOccurs="5"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueAttemptStateCode"><xs:selector xpath="state"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="certificateTypes">
+    <xs:complexType><xs:sequence><xs:element name="type" type="certificateTypeEntryType" minOccurs="4" maxOccurs="4"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueCertificateTypeCode"><xs:selector xpath="type"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+
+  <xs:element name="messageTypes">
+    <xs:complexType><xs:sequence><xs:element name="type" type="messageTypeEntryType" minOccurs="10" maxOccurs="10"/></xs:sequence></xs:complexType>
+    <xs:unique name="uniqueMessageTypeCode"><xs:selector xpath="type"/><xs:field xpath="@code"/></xs:unique>
+  </xs:element>
+</xs:schema>

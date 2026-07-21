@@ -1,0 +1,142 @@
+<div class="cd-surface px-22 py-22 mb-20 gape-subject-detail-surface" id="course-associations">
+    <div class="gape-subject-detail-panel gape-course-structure-panel">
+        <div class="px-18 py-18 gape-subject-panel-content" data-subject-detail-sort-root>
+            <div class="gape-subject-panel-header">
+                <div class="gape-subject-panel-heading">
+                    <h3 class="text-18 fw-semibold text-neutral-800 mb-4">Subject Associations</h3>
+                    <span class="text-13 text-neutral-500">Courses linked to this subject and their curricular placement.</span>
+                </div>
+                <div class="gape-subject-panel-actions">
+                    <div class="dropdown">
+                        <button type="button"
+                                class="gape-filter-toggle border-neutral-30 border px-20 py-12 rounded-12 fw-semibold text-neutral-700 hover-bg-main-50 transition-03 bg-white d-flex align-items-center gap-8"
+                                data-bs-toggle="dropdown"
+                                data-bs-auto-close="outside"
+                                data-subject-detail-sort-toggle
+                                aria-expanded="false"><i class="ph ph-sort-ascending"></i>Sort by</button>
+                        <ul class="dropdown-menu dropdown-menu-end rounded-12">
+                            <li><button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-subject-detail-sort-option data-sort-field="name" data-sort-normal="asc" data-sort-state="none" aria-pressed="false"><span>Name</span><span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span></button></li>
+                            <li><button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-subject-detail-sort-option data-sort-field="date" data-sort-normal="desc" data-sort-state="none" aria-pressed="false"><span>Date</span><span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--reverse"></i></span></button></li>
+                            <li><button type="button" class="dropdown-item gape-sort-option d-flex align-items-center justify-content-between gap-16 px-16 py-10" data-subject-detail-sort-option data-sort-field="status" data-sort-normal="asc" data-sort-state="none" aria-pressed="false"><span>State</span><span class="gape-sort-arrows d-flex align-items-center justify-content-end gap-4" aria-hidden="true"><i class="ph ph-arrow-up gape-sort-arrow gape-sort-arrow--normal"></i><i class="ph ph-arrow-down gape-sort-arrow gape-sort-arrow--reverse"></i></span></button></li>
+                        </ul>
+                    </div>
+                    <c:if test="${not subject.inactive and canManageSubjectAssociations}">
+                        <button type="button" class="cd-primary-button cd-section-create-button" data-bs-toggle="modal" data-bs-target="#newSubjectCourseAssociationModal"><i class="ph ph-plus-circle me-8"></i>Associate Course</button>
+                    </c:if>
+                </div>
+            </div>
+
+            <div class="gape-structure-list-header gape-enrollment-list-header"><span>Course</span><span>Curricular Position</span><span>State</span><span class="text-end">Actions</span></div>
+            <div class="d-flex flex-column gap-12" data-subject-detail-sort-list>
+                <c:forEach var="association" items="${subjectCourseAssociations}" varStatus="associationLoop">
+                    <article class="gape-structure-node border border-neutral-30 rounded-8 px-18 py-16 bg-white"
+                             data-subject-detail-sort-row
+                             data-sort-index="${associationLoop.index}"
+                             data-sort-name="<c:out value='${association.courseName}'/>"
+                             data-sort-date="${association.courseId}"
+                             data-sort-status="Associated">
+                        <div class="gape-structure-row gape-enrollment-row">
+                            <div class="d-flex align-items-center gap-12 min-w-0"><span class="bg-success-50 text-success-600 cd-mode-icon text-20 line-height-1"><i class="ph ph-graduation-cap" aria-hidden="true"></i></span><div class="min-w-0"><a href="${pageContext.request.contextPath}${subjectCourseBasePath}/${association.courseId}" class="fw-medium text-14 text-neutral-700 hover-text-main-600 d-block text-truncate"><c:out value="${association.courseName}"/></a><span class="gape-node-meta text-12"><span title="<c:out value='${association.courseContextTitle}'/>"><c:out value="${association.courseContextHtml}" escapeXml="false"/></span></span></div></div>
+                            <div class="min-w-0"><span class="text-14 text-neutral-700 d-block"><c:out value="${association.curricularPositionLabel}"/></span><span class="gape-node-meta text-12"><span><c:out value="${association.mandatoryLabel}"/></span></span></div>
+                            <div><span class="bg-success-50 text-success-600 px-14 py-6 border-neutral-30 border rounded-pill text-13">Associated</span></div>
+                            <div class="d-flex align-items-center gap-10 flex-wrap justify-content-end">
+                                <c:if test="${not subject.inactive and canManageSubjectAssociations}">
+                                    <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Edit association" aria-label="Edit association" data-bs-toggle="modal" data-bs-target="#editSubjectCourseAssociation${subject.id}_${association.courseId}"><i class="ph ph-pencil-simple-line"></i></button>
+                                    <button type="button" class="text-20 text-neutral-500 hover-text-main-600 border-0 bg-transparent p-0" title="Remove association" aria-label="Remove association" data-bs-toggle="modal" data-bs-target="#deleteSubjectCourseAssociation${subject.id}_${association.courseId}"><i class="ph ph-trash"></i></button>
+                                </c:if>
+                            </div>
+                        </div>
+                    </article>
+
+                    <c:if test="${not subject.inactive and canManageSubjectAssociations}">
+                        <div class="modal fade gape-subject-form-modal-root" id="editSubjectCourseAssociation${subject.id}_${association.courseId}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered gape-subject-form-modal gape-subject-form-modal--association">
+                                <div class="modal-content rounded-12 border-0">
+                                    <div class="modal-header border-neutral-30"><h5 class="modal-title text-18 fw-semibold">Edit Course Association</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                                    <form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/courses/${association.courseId}" method="post" data-subject-live-form data-subject-live-panel="associations">
+                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                        <input type="hidden" name="returnTo" value="${currentReturnTo}#subject-associations">
+                                        <div class="modal-body">
+                                            <p class="text-14 text-neutral-600 mb-20"><strong><c:out value="${association.courseName}"/></strong><span class="d-block text-12 text-neutral-500"><c:out value="${association.courseContextHtml}" escapeXml="false"/></span></p>
+                                            <div class="row gy-3">
+                                                <div class="col-md-4 gape-select-field">
+                                                    <label for="editAssociationYear${subject.id}_${association.courseId}" class="fw-medium text-base text-neutral-800 mb-12">Course year</label>
+                                                    <select id="editAssociationYear${subject.id}_${association.courseId}" name="curricularYear" required data-course-year-select data-fixed-duration-years="${association.course.durationYears}" data-selected-year="<c:out value='${association.curricularYear}'/>" data-placeholder="Select course year" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                                                        <option value="">Select course year</option>
+                                                        <c:forEach var="yearOption" items="${association.course.durationYearOptions}"><option value="${yearOption.value}" ${association.curricularYear == yearOption.value ? 'selected' : ''}><c:out value="${yearOption.label}"/></option></c:forEach>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4 gape-select-field">
+                                                    <label for="editAssociationTerm${subject.id}_${association.courseId}" class="fw-medium text-base text-neutral-800 mb-12">Period</label>
+                                                    <select id="editAssociationTerm${subject.id}_${association.courseId}" name="term" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                                                        <option value="" ${empty association.term ? 'selected' : ''}>Select period</option>
+                                                        <c:forEach var="termOption" items="${association.courseTermOptions}"><option value="${termOption.value}" ${termOption.selected ? 'selected' : ''}><c:out value="${termOption.label}"/></option></c:forEach>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <label for="editAssociationMandatory${subject.id}_${association.courseId}" class="fw-medium text-base text-neutral-800 mb-12 d-block">Mandatory Subject</label>
+                                                    <label class="gape-subject-required-toggle d-flex align-items-center gap-10 px-16 py-10 bg-neutral-20 border border-neutral-30 rounded-8 text-14 text-neutral-700 mb-0" for="editAssociationMandatory${subject.id}_${association.courseId}"><input class="form-check-input m-0" type="checkbox" id="editAssociationMandatory${subject.id}_${association.courseId}" name="mandatory" value="true" ${association.mandatory ? 'checked' : ''}><span class="fw-semibold">Required</span></label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-neutral-30"><button type="button" class="cd-outline-button" data-bs-dismiss="modal">Cancel</button><button type="submit" class="cd-primary-button border-0">Save</button></div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal fade" id="deleteSubjectCourseAssociation${subject.id}_${association.courseId}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered gape-subject-form-modal">
+                                <div class="modal-content rounded-12 border-0">
+                                    <div class="modal-header border-neutral-30"><h5 class="modal-title text-18 fw-semibold">Remove Course Association</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                                    <div class="modal-body"><p class="text-14 text-neutral-600 mb-0">This action closes the association with <strong><c:out value="${association.courseName}"/></strong>. Historical class groups and records remain available.</p></div>
+                                    <div class="modal-footer border-neutral-30"><button type="button" class="cd-outline-button" data-bs-dismiss="modal">Cancel</button><form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/courses/${association.courseId}/delete" method="post" class="m-0" data-subject-live-form data-subject-live-panel="associations"><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><input type="hidden" name="returnTo" value="${currentReturnTo}#subject-associations"><button type="submit" class="cd-danger-button border-0">Remove</button></form></div>
+                                </div>
+                            </div>
+                        </div>
+                    </c:if>
+                </c:forEach>
+                <c:if test="${empty subjectCourseAssociations}"><div class="border border-neutral-30 rounded-8 px-18 py-28 text-center text-14 text-neutral-500">No associated courses found.</div></c:if>
+            </div>
+        </div>
+    </div>
+</div>
+
+<c:if test="${not subject.inactive and canManageSubjectAssociations}">
+    <div class="modal fade gape-subject-form-modal-root" id="newSubjectCourseAssociationModal" tabindex="-1" aria-hidden="true" aria-labelledby="newSubjectCourseAssociationModalTitle">
+        <div class="modal-dialog modal-dialog-centered gape-subject-form-modal gape-subject-form-modal--association">
+            <div class="modal-content rounded-12 border-0">
+                <div class="modal-header border-neutral-30"><h5 class="modal-title text-18 fw-semibold" id="newSubjectCourseAssociationModalTitle">Associate Course</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                <form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/courses" method="post" data-subject-live-form data-subject-live-panel="associations">
+                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                    <input type="hidden" name="returnTo" value="${currentReturnTo}#subject-associations">
+                    <div class="modal-body">
+                        <p class="text-14 text-neutral-600 mb-20">Choose the course and its curricular placement for this subject.</p>
+                        <div class="row gy-3 gape-subject-association-fields">
+                            <div class="col-12 gape-select-field">
+                                <label for="newSubjectCourseId" class="fw-medium text-base text-neutral-800 mb-12">Course</label>
+                                <select id="newSubjectCourseId" name="courseId" required data-subject-course-select class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                                    <option value="">Select course</option>
+                                    <c:forEach var="course" items="${availableCourseOptions}"><option value="${course.id}" data-duration-years="${course.durationYears}" data-frequency="${course.frequency}" title="<c:out value='${course.courseManagementContextTitle}'/>"><c:out value="${course.name}"/> | <c:out value="${course.courseManagementContextLabel}"/></option></c:forEach>
+                                </select>
+                            </div>
+                            <div class="col-12 col-md-6 gape-select-field gape-course-year-field">
+                                <label for="newSubjectCourseYear" class="fw-medium text-base text-neutral-800 mb-12">Course year</label>
+                                <select id="newSubjectCourseYear" name="curricularYear" required data-course-year-select data-course-year-source="#newSubjectCourseId" data-placeholder="Select course year" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select"><option value="">Select course year</option></select>
+                            </div>
+                            <div class="col-12 col-md-6 gape-select-field">
+                                <label for="newSubjectCourseTerm" class="fw-medium text-base text-neutral-800 mb-12">Period</label>
+                                <select id="newSubjectCourseTerm" name="term" required disabled data-course-term-select data-course-source="#newSubjectCourseId" data-course-term-year-source="#newSubjectCourseYear" data-placeholder="Select period" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select"><option value="">Select period</option></select>
+                            </div>
+                            <div class="col-12">
+                                <label for="newSubjectCourseMandatory" class="fw-medium text-base text-neutral-800 mb-12 d-block">Mandatory Subject</label>
+                                <label class="gape-subject-required-toggle d-flex align-items-center gap-10 px-16 py-10 bg-neutral-20 border border-neutral-30 rounded-8 text-14 text-neutral-700 mb-0" for="newSubjectCourseMandatory"><input class="form-check-input m-0" type="checkbox" id="newSubjectCourseMandatory" name="mandatory" value="true" checked><span class="fw-semibold">Required</span></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-neutral-30"><button type="button" class="cd-outline-button" data-bs-dismiss="modal">Cancel</button><button type="submit" class="cd-primary-button border-0" data-course-term-submit disabled aria-disabled="true">Associate Course</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</c:if>
