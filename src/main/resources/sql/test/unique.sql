@@ -11,7 +11,7 @@ INSERT INTO user_account (
 INSERT INTO user_session (
     id_session, id_user, token, state, start_at, last_activity, end_at
 ) VALUES
-    (9003, 1, 'tok-admin-100', 'active', '2026-03-01 11:05:00', '2026-03-01 11:06:00', NULL);
+    (9003, 1, CONCAT('sha256:', SHA2('tok-admin-100', 256)), 'active', '2026-03-01 11:05:00', '2026-03-01 11:06:00', NULL);
 
 -- Documento unico quando preenchido
 INSERT INTO user_account (

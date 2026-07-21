@@ -211,6 +211,23 @@ public final class CertificateDAO implements pt.isel.gape.transversal.service.Ap
         }
     }
 
+    public List<Certificate> findByCourse(Connection connection, long courseId) throws SQLException {
+        String sql = selectCertificateSql() + """
+                WHERE id_course = ?
+                ORDER BY id_certificate
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, courseId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<Certificate> certificates = new ArrayList<>();
+                while (resultSet.next()) {
+                    certificates.add(mapCertificate(connection, resultSet));
+                }
+                return List.copyOf(certificates);
+            }
+        }
+    }
+
     private Optional<Certificate> findByCourseAndStudentForUpdate(
             Connection connection,
             long courseId,
@@ -355,6 +372,7 @@ public final class CertificateDAO implements pt.isel.gape.transversal.service.Ap
         String sql = """
                 INSERT INTO based_on_grade_sheet_certificate (id_certificate, id_grade_sheet)
                 VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE id_certificate = VALUES(id_certificate)
                 """;
         try (PreparedStatement insert = connection.prepareStatement(sql)) {
             for (Long gradeSheetId : orderedUnique(gradeSheetIds)) {
@@ -456,10 +474,11 @@ public final class CertificateDAO implements pt.isel.gape.transversal.service.Ap
     public List<CourseSubjectScale> findActiveCourseSubjects(Connection connection, long courseId)
             throws SQLException {
         String sql = """
-                SELECT s.id_subject, s.ects, s.final_grade_max
+                SELECT s.id_subject, s.ects, s.final_grade_max, isub.mandatory
                 FROM integrate_subject isub
                 JOIN subject s ON s.id_subject = isub.id_subject
                 WHERE isub.id_course = ?
+                  AND isub.state = 'active'
                   AND s.state = 'active'
                 ORDER BY isub.curricular_year, isub.term, s.id_subject
                 """;
@@ -471,7 +490,8 @@ public final class CertificateDAO implements pt.isel.gape.transversal.service.Ap
                     subjects.add(new CourseSubjectScale(
                             resultSet.getLong("id_subject"),
                             resultSet.getBigDecimal("ects"),
-                            resultSet.getBigDecimal("final_grade_max")
+                            resultSet.getBigDecimal("final_grade_max"),
+                            resultSet.getBoolean("mandatory")
                     ));
                 }
                 return List.copyOf(subjects);
@@ -482,7 +502,6 @@ public final class CertificateDAO implements pt.isel.gape.transversal.service.Ap
     public List<SubjectApprovedGrade> findApprovedSubjectGradeCandidates(
             Connection connection,
             long courseId,
-            long courseOccurrenceId,
             long subjectId,
             long studentUserId
     ) throws SQLException {
@@ -491,22 +510,36 @@ public final class CertificateDAO implements pt.isel.gape.transversal.service.Ap
                 FROM grade_record gr
                 JOIN grade_sheet gs ON gs.id_grade_sheet = gr.id_grade_sheet
                 WHERE gr.id_user_student = ?
+                  AND EXISTS (
+                        SELECT 1
+                        FROM enroll_course ec
+                        WHERE ec.id_course = ?
+                          AND ec.id_student_user = gr.id_user_student
+                          AND ec.state IN ('active', 'completed')
+                  )
+                  AND EXISTS (
+                        SELECT 1
+                        FROM course_occurrence co
+                        WHERE co.id_course_occurrence = gs.id_course_occurrence
+                          AND co.id_course = ?
+                  )
                   AND gr.result = 'approved'
                   AND gr.state = 'published'
                   AND gs.id_subject = ?
-                  AND gs.id_course_occurrence = ?
                   AND gs.state IN ('published', 'closed')
                   AND NOT EXISTS (
                         SELECT 1
                         FROM associate_grade_sheet_class_group agscg
                         WHERE agscg.id_grade_sheet = gs.id_grade_sheet
                   )
-                ORDER BY gr.recorded_at DESC, gr.id_grade_record DESC
+                ORDER BY (gr.value / NULLIF(gs.max_grade, 0)) DESC,
+                         gr.recorded_at DESC, gr.id_grade_record DESC
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, studentUserId);
-            statement.setLong(2, subjectId);
-            statement.setLong(3, courseOccurrenceId);
+            statement.setLong(2, courseId);
+            statement.setLong(3, courseId);
+            statement.setLong(4, subjectId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 List<SubjectApprovedGrade> grades = new ArrayList<>();
                 while (resultSet.next()) {
@@ -621,7 +654,12 @@ public final class CertificateDAO implements pt.isel.gape.transversal.service.Ap
     public record CourseScale(BigDecimal ects, BigDecimal certificateMaxGrade) {
     }
 
-    public record CourseSubjectScale(long subjectId, BigDecimal ects, BigDecimal finalGradeMax) {
+    public record CourseSubjectScale(
+            long subjectId,
+            BigDecimal ects,
+            BigDecimal finalGradeMax,
+            boolean mandatory
+    ) {
     }
 
     public record SubjectApprovedGrade(long gradeSheetId, BigDecimal gradeSheetMaxGrade, BigDecimal value) {

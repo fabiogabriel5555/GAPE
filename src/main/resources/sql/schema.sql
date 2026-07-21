@@ -21,10 +21,16 @@ CREATE TABLE IF NOT EXISTS user_account (
     credential_hash VARCHAR(255) NOT NULL,
     credential_salt VARCHAR(255) NOT NULL,
     document_type VARCHAR(40) NULL,
-    document_number VARCHAR(40) NULL,
+    -- AES-GCM envelope plus nonce/tag; clear document values never persist
+    -- when the sensitive-data key is configured.
+    document_number VARCHAR(512) NULL,
+    -- HMAC-SHA-256 of the clear document number, used only for equality and
+    -- uniqueness without making randomized AES-GCM ciphertext deterministic.
+    document_number_fingerprint CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
     PRIMARY KEY (id_user),
     UNIQUE KEY uq_user_account_email (email),
     UNIQUE KEY uq_user_account_document (document_type, document_number),
+    UNIQUE KEY uq_user_account_document_fingerprint (document_type, document_number_fingerprint),
     KEY idx_user_account_state (state),
     KEY idx_user_account_state_name_email (state, name, email),
     KEY idx_user_account_language (language),
@@ -108,7 +114,9 @@ CREATE TABLE IF NOT EXISTS deletion_request (
     processor_admin_user_id BIGINT UNSIGNED NULL,
     submitted_at DATETIME NOT NULL,
     processed_at DATETIME NULL,
-    reason VARCHAR(300) NULL,
+    -- AES-GCM envelope for a clear reason of up to 300 UTF-8 characters.
+    -- The storage allowance includes nonce/tag/Base64 expansion.
+    reason VARCHAR(2048) NULL,
     state VARCHAR(20) NOT NULL,
     PRIMARY KEY (id_deletion),
     KEY idx_deletion_submitter (submitter_user_id),
@@ -1280,10 +1288,14 @@ CREATE TABLE IF NOT EXISTS absence_justification (
     id_user_student_submitter BIGINT UNSIGNED NOT NULL,
     id_user_processor BIGINT UNSIGNED NULL,
     submitted_at DATETIME NOT NULL,
-    reason VARCHAR(300) NOT NULL,
+    -- AES-GCM envelope for a clear reason of up to 300 UTF-8 characters.
+    -- The storage allowance includes nonce/tag/Base64 expansion.
+    reason VARCHAR(2048) NOT NULL,
     attachment VARCHAR(255) NULL,
     processed_at DATETIME NULL,
-    decision_notes VARCHAR(500) NULL,
+    -- AES-GCM envelope for up to 500 UTF-8 decision-note characters.
+    -- The storage allowance includes nonce/tag/Base64 expansion.
+    decision_notes VARCHAR(4096) NULL,
     state VARCHAR(20) NOT NULL,
     PRIMARY KEY (id_absence_justification),
     UNIQUE KEY uq_absence_justification_attendance (id_attendance_record),
@@ -1474,9 +1486,52 @@ CREATE TABLE IF NOT EXISTS management_view (
     type VARCHAR(40) NOT NULL,
     description VARCHAR(500) NULL,
     visibility_scope VARCHAR(40) NOT NULL,
+    scope_target_type VARCHAR(40) NULL,
+    scope_target_id BIGINT UNSIGNED NULL,
+    owner_user_id BIGINT UNSIGNED NULL,
     state VARCHAR(20) NOT NULL,
     PRIMARY KEY (id_management_view),
-    KEY idx_management_view_state (state)
+    KEY idx_management_view_state (state),
+    KEY idx_management_view_scope_target (visibility_scope, scope_target_type, scope_target_id, state),
+    KEY idx_management_view_owner (owner_user_id),
+    -- The default NO ACTION semantics deliberately avoid a cascading
+    -- referential action: owner_user_id is also part of the PERSONAL scope
+    -- integrity check.
+    CONSTRAINT fk_management_view_owner
+        FOREIGN KEY (owner_user_id) REFERENCES user_account (id_user),
+    CONSTRAINT ck_management_view_type
+        CHECK (type IN ('dashboard', 'report', 'control_panel', 'other')),
+    CONSTRAINT ck_management_view_scope
+        CHECK (visibility_scope IN ('global', 'organization', 'course', 'subject', 'class_group', 'personal')),
+    CONSTRAINT ck_management_view_state
+        CHECK (state IN ('active', 'inactive', 'archived')),
+    CONSTRAINT ck_management_view_scope_context
+        CHECK (
+            (visibility_scope = 'global'
+                AND scope_target_type IS NULL
+                AND scope_target_id IS NULL)
+            OR (visibility_scope = 'organization'
+                AND scope_target_type = 'ORGANIZATION'
+                AND scope_target_id IS NOT NULL
+                AND scope_target_id > 0)
+            OR (visibility_scope = 'course'
+                AND scope_target_type = 'COURSE'
+                AND scope_target_id IS NOT NULL
+                AND scope_target_id > 0)
+            OR (visibility_scope = 'subject'
+                AND scope_target_type = 'SUBJECT'
+                AND scope_target_id IS NOT NULL
+                AND scope_target_id > 0)
+            OR (visibility_scope = 'class_group'
+                AND scope_target_type = 'CLASS_GROUP'
+                AND scope_target_id IS NOT NULL
+                AND scope_target_id > 0)
+            OR (visibility_scope = 'personal'
+                AND scope_target_type = 'USER'
+                AND scope_target_id IS NOT NULL
+                AND owner_user_id IS NOT NULL
+                AND scope_target_id = owner_user_id)
+        )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE IF NOT EXISTS access_management_view (
@@ -1669,13 +1724,25 @@ CREATE TABLE IF NOT EXISTS activity_log (
     PRIMARY KEY (id_activity_log),
     KEY idx_activity_log_user (id_user),
     KEY idx_activity_log_session (id_session),
-    KEY idx_activity_log_occurred_at (occurred_at),
-    CONSTRAINT fk_activity_log_user
-        FOREIGN KEY (id_user) REFERENCES user_account (id_user)
-        ON UPDATE CASCADE ON DELETE SET NULL,
-    CONSTRAINT fk_activity_log_session
-        FOREIGN KEY (id_session) REFERENCES user_session (id_session)
-        ON UPDATE CASCADE ON DELETE SET NULL
+    KEY idx_activity_log_occurred_at (occurred_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- Authorization must remain possible after an audited source entity is
+-- deleted.  These rows are therefore immutable scope snapshots, deliberately
+-- not foreign keys to the contextual entities themselves.
+CREATE TABLE IF NOT EXISTS activity_log_scope (
+    id_activity_log BIGINT UNSIGNED NOT NULL,
+    scope_type VARCHAR(30) NOT NULL,
+    scope_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (id_activity_log, scope_type, scope_id),
+    KEY idx_activity_log_scope_lookup (scope_type, scope_id, id_activity_log),
+    CONSTRAINT fk_activity_log_scope_activity_log
+        FOREIGN KEY (id_activity_log) REFERENCES activity_log (id_activity_log)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
+    CONSTRAINT ck_activity_log_scope_type
+        CHECK (scope_type IN ('ORGANIZATION', 'SUBJECT', 'CLASS_GROUP', 'USER')),
+    CONSTRAINT ck_activity_log_scope_id
+        CHECK (scope_id > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 DELIMITER $$
@@ -3296,7 +3363,6 @@ BEGIN
     DECLARE v_association_course BIGINT UNSIGNED;
     DECLARE v_student_count INT DEFAULT 0;
     DECLARE v_course_enrollment_count INT DEFAULT 0;
-    DECLARE v_overlap_count INT DEFAULT 0;
     DECLARE v_active_enrollments INT DEFAULT 0;
 
     SELECT cg.id_course, cg.id_subject, cg.id_course_occurrence, cg.starts_at, cg.ends_at,
@@ -3343,18 +3409,6 @@ BEGIN
       AND (NEW.end_date IS NULL OR ec.end_date IS NULL OR ec.end_date >= NEW.end_date);
 
     SELECT COUNT(*)
-    INTO v_overlap_count
-    FROM enroll_class_group ecg
-    JOIN class_group existing_cg ON existing_cg.id_class_group = ecg.id_class_group
-    WHERE ecg.id_student_user = NEW.id_student_user
-      AND existing_cg.id_course = v_course_id
-      AND existing_cg.id_subject = v_subject_id
-      AND existing_cg.id_course_occurrence = v_course_occurrence_id
-      AND ecg.state = 'active'
-      AND (ecg.start_date IS NULL OR NEW.end_date IS NULL OR ecg.start_date <= NEW.end_date)
-      AND (ecg.end_date IS NULL OR NEW.start_date IS NULL OR ecg.end_date >= NEW.start_date);
-
-    SELECT COUNT(*)
     INTO v_active_enrollments
     FROM enroll_class_group
     WHERE id_class_group = NEW.id_class_group
@@ -3371,10 +3425,6 @@ BEGIN
 
     IF NEW.state = 'active' AND v_course_enrollment_count = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group enrollment requires active Course occurrence enrollment for the full period';
-    END IF;
-
-    IF NEW.state = 'active' AND v_overlap_count > 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Student already has an overlapping active enrollment in this Course/Subject class group context';
     END IF;
 
     IF NEW.state = 'active' AND v_max_students IS NOT NULL AND v_active_enrollments >= v_max_students THEN
@@ -3399,7 +3449,6 @@ BEGIN
     DECLARE v_association_course BIGINT UNSIGNED;
     DECLARE v_student_count INT DEFAULT 0;
     DECLARE v_course_enrollment_count INT DEFAULT 0;
-    DECLARE v_overlap_count INT DEFAULT 0;
     DECLARE v_active_enrollments INT DEFAULT 0;
 
     SELECT cg.id_course, cg.id_subject, cg.id_course_occurrence, cg.starts_at, cg.ends_at,
@@ -3446,19 +3495,6 @@ BEGIN
       AND (NEW.end_date IS NULL OR ec.end_date IS NULL OR ec.end_date >= NEW.end_date);
 
     SELECT COUNT(*)
-    INTO v_overlap_count
-    FROM enroll_class_group ecg
-    JOIN class_group existing_cg ON existing_cg.id_class_group = ecg.id_class_group
-    WHERE ecg.id_student_user = NEW.id_student_user
-      AND existing_cg.id_course = v_course_id
-      AND existing_cg.id_subject = v_subject_id
-      AND existing_cg.id_course_occurrence = v_course_occurrence_id
-      AND ecg.state = 'active'
-      AND NOT (ecg.id_student_user = OLD.id_student_user AND ecg.id_class_group = OLD.id_class_group)
-      AND (ecg.start_date IS NULL OR NEW.end_date IS NULL OR ecg.start_date <= NEW.end_date)
-      AND (ecg.end_date IS NULL OR NEW.start_date IS NULL OR ecg.end_date >= NEW.start_date);
-
-    SELECT COUNT(*)
     INTO v_active_enrollments
     FROM enroll_class_group
     WHERE id_class_group = NEW.id_class_group
@@ -3476,10 +3512,6 @@ BEGIN
 
     IF NEW.state = 'active' AND v_course_enrollment_count = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Class_Group enrollment requires active Course occurrence enrollment for the full period';
-    END IF;
-
-    IF NEW.state = 'active' AND v_overlap_count > 0 THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Student already has an overlapping active enrollment in this Course/Subject class group context';
     END IF;
 
     IF NEW.state = 'active' AND v_max_students IS NOT NULL AND v_active_enrollments >= v_max_students THEN
@@ -4020,7 +4052,8 @@ BEGIN
     FROM enroll_assessment
     WHERE id_student_user = NEW.id_student_user
       AND id_assessment = NEW.id_assessment
-      AND state = 'active';
+      AND (state = 'active'
+           OR (v_assessment_state = 'completed' AND state = 'completed'));
 
     IF v_assessment_enrollment_exists = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Attempt requires an active Assessment enrollment';
@@ -4086,7 +4119,8 @@ BEGIN
     FROM enroll_assessment
     WHERE id_student_user = NEW.id_student_user
       AND id_assessment = NEW.id_assessment
-      AND state = 'active';
+      AND (state = 'active'
+           OR (v_assessment_state = 'completed' AND state = 'completed'));
 
     IF v_assessment_enrollment_exists = 0 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Attempt requires an active Assessment enrollment';
@@ -4770,20 +4804,14 @@ BEFORE INSERT ON based_on_grade_sheet_certificate
 FOR EACH ROW
 BEGIN
     DECLARE v_course BIGINT UNSIGNED;
-    DECLARE v_certificate_occurrence BIGINT UNSIGNED;
     DECLARE v_subject BIGINT UNSIGNED;
-    DECLARE v_grade_sheet_occurrence BIGINT UNSIGNED;
     DECLARE v_exists INT DEFAULT 0;
 
-    SELECT c.id_course, c.id_course_occurrence, gs.id_subject, gs.id_course_occurrence
-    INTO v_course, v_certificate_occurrence, v_subject, v_grade_sheet_occurrence
+    SELECT c.id_course, gs.id_subject
+    INTO v_course, v_subject
     FROM certificate c
     JOIN grade_sheet gs ON gs.id_grade_sheet = NEW.id_grade_sheet
     WHERE c.id_certificate = NEW.id_certificate;
-
-    IF v_certificate_occurrence <> v_grade_sheet_occurrence THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Certificate Grade_Sheet must belong to the same Course occurrence';
-    END IF;
 
     SELECT COUNT(*)
     INTO v_exists
@@ -4802,20 +4830,14 @@ BEFORE UPDATE ON based_on_grade_sheet_certificate
 FOR EACH ROW
 BEGIN
     DECLARE v_course BIGINT UNSIGNED;
-    DECLARE v_certificate_occurrence BIGINT UNSIGNED;
     DECLARE v_subject BIGINT UNSIGNED;
-    DECLARE v_grade_sheet_occurrence BIGINT UNSIGNED;
     DECLARE v_exists INT DEFAULT 0;
 
-    SELECT c.id_course, c.id_course_occurrence, gs.id_subject, gs.id_course_occurrence
-    INTO v_course, v_certificate_occurrence, v_subject, v_grade_sheet_occurrence
+    SELECT c.id_course, gs.id_subject
+    INTO v_course, v_subject
     FROM certificate c
     JOIN grade_sheet gs ON gs.id_grade_sheet = NEW.id_grade_sheet
     WHERE c.id_certificate = NEW.id_certificate;
-
-    IF v_certificate_occurrence <> v_grade_sheet_occurrence THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Certificate Grade_Sheet must belong to the same Course occurrence';
-    END IF;
 
     SELECT COUNT(*)
     INTO v_exists
@@ -5152,6 +5174,54 @@ BEGIN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Activity_Log Session must belong to the same User';
         END IF;
     END IF;
+END$$
+
+-- A direct import or seed can insert a log without passing through the Java
+-- DAO.  It still receives the immutable actor snapshot; richer contextual
+-- scopes are added by the DAO before the source entity can be deleted.
+DROP TRIGGER IF EXISTS ai_activity_log_scope_actor$$
+CREATE TRIGGER ai_activity_log_scope_actor
+AFTER INSERT ON activity_log
+FOR EACH ROW
+BEGIN
+    IF NEW.id_user IS NOT NULL AND NEW.id_user > 0 THEN
+        INSERT IGNORE INTO activity_log_scope (id_activity_log, scope_type, scope_id)
+        VALUES (NEW.id_activity_log, 'USER', NEW.id_user);
+    END IF;
+END$$
+
+-- Critical audit records are append-only.  No application profile (including
+-- an administrator) may rewrite or remove a historical trace.
+DROP TRIGGER IF EXISTS bu_activity_log_immutable$$
+CREATE TRIGGER bu_activity_log_immutable
+BEFORE UPDATE ON activity_log
+FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Activity_Log records are immutable';
+END$$
+
+DROP TRIGGER IF EXISTS bd_activity_log_immutable$$
+CREATE TRIGGER bd_activity_log_immutable
+BEFORE DELETE ON activity_log
+FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Activity_Log records are immutable';
+END$$
+
+DROP TRIGGER IF EXISTS bu_activity_log_scope_immutable$$
+CREATE TRIGGER bu_activity_log_scope_immutable
+BEFORE UPDATE ON activity_log_scope
+FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Activity_Log scope snapshots are immutable';
+END$$
+
+DROP TRIGGER IF EXISTS bd_activity_log_scope_immutable$$
+CREATE TRIGGER bd_activity_log_scope_immutable
+BEFORE DELETE ON activity_log_scope
+FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Activity_Log scope snapshots are immutable';
 END$$
 
 DROP TRIGGER IF EXISTS bi_deletion_request_validate$$

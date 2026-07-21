@@ -1,0 +1,23 @@
+<!--
+  Exemplo para $CATALINA_BASE/conf/server.xml. Não coloque um keystore nem
+  uma senha neste repositório. O Tomcat resolve propriedades de ambiente no
+  servidor; ajuste os nomes se a política local usar outro mecanismo.
+-->
+<Connector port="8080"
+           protocol="HTTP/1.1"
+           connectionTimeout="20000"
+           redirectPort="8443" />
+
+<Connector port="8443"
+           protocol="org.apache.coyote.http11.Http11NioProtocol"
+           SSLEnabled="true"
+           scheme="https"
+           secure="true"
+           maxThreads="200">
+    <SSLHostConfig protocols="+TLSv1.2,+TLSv1.3">
+        <Certificate certificateKeystoreFile="${env.GAPE_TLS_KEYSTORE_PATH}"
+                     certificateKeystorePassword="${env.GAPE_TLS_KEYSTORE_PASSWORD}"
+                     certificateKeystoreType="PKCS12"
+                     type="RSA" />
+    </SSLHostConfig>
+</Connector>

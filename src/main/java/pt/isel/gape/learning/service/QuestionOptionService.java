@@ -228,6 +228,9 @@ public final class QuestionOptionService {
                         throw new IllegalArgumentException("Questions with options require at least one option");
                     }
 
+                    auditService.record(connection, actorUserId, sessionId, "QUESTION_OPTION_ARCHIVE",
+                            "question_option", Long.toString(optionId), "success", sourceIp);
+
                     optionDAO.delete(connection, optionId);
 
                     boolean needsCorrectOption = assessment.correctionMode().allowsAutomaticCorrection()
@@ -242,8 +245,6 @@ public final class QuestionOptionService {
                         ));
                     }
 
-                    auditService.record(connection, actorUserId, sessionId, "QUESTION_OPTION_ARCHIVE",
-                            "question_option", Long.toString(optionId), "success", sourceIp);
                     List<QuestionOption> activeOptions = optionDAO.findActiveByQuestion(connection, question.id());
                     connection.commit();
                     return activeOptions;

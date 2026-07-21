@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<% request.setAttribute("activeMenu", "learning"); request.setAttribute("pageTitle", "Assessment"); %>
 <%@ include file="/WEB-INF/fragments/student-dashboard-start.jspf" %>
 
 <style>
@@ -128,7 +129,7 @@
                 <p class="text-14 text-neutral-500 mb-0"><c:out value="${assessment.contextLabel}"/> | Attempt #${attempt.attemptNumber}</p>
             </div>
         </div>
-        <a href="${pageContext.request.contextPath}/student/assessments" class="gape-student-card-icon-button" aria-label="Back to assessments" title="Back to assessments">
+        <a href="${pageContext.request.contextPath}/student/lessons#assessments" class="gape-student-card-icon-button" aria-label="Back to lessons and assessments" title="Back to lessons and assessments">
             <i class="ph ph-arrow-left"></i>
         </a>
     </div>
@@ -264,10 +265,10 @@
                             </c:if>
                         </c:when>
                         <c:when test="${question.paragraph}">
-                            <textarea name="question_${question.id}_answer" rows="5" class="form-control px-16 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8" ${question.required ? 'required' : ''}><c:out value="${savedResponse.answer}"/></textarea>
+                            <textarea name="question_${question.id}_answer" rows="5" aria-label="Question ${questionLoop.count} answer" class="form-control px-16 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8" ${question.required ? 'required' : ''}><c:out value="${savedResponse.answer}"/></textarea>
                         </c:when>
                         <c:otherwise>
-                            <input name="question_${question.id}_answer" value="<c:out value='${savedResponse.answer}'/>" class="form-control px-16 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8" ${question.required ? 'required' : ''} placeholder="Your answer">
+                            <input name="question_${question.id}_answer" value="<c:out value='${savedResponse.answer}'/>" aria-label="Question ${questionLoop.count} answer" class="form-control px-16 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8" ${question.required ? 'required' : ''} placeholder="Your answer">
                         </c:otherwise>
                     </c:choose>
                 </article>

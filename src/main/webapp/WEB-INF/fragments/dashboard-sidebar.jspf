@@ -11,8 +11,8 @@
         or fn:contains(currentRequestUri, '/instructor/')
         or fn:startsWith(currentServletPath, '/instructor/')}" />
 <c:set var="isStudentOnlyDashboard" value="${sessionScope['gape.auth.hasStudentProfile'] and not isAdminDashboard and not isCoordinatorDashboard and not isTeacherDashboard}" />
-<c:set var="dashboardHref" value="${isAdminDashboard ? '/admin/admin-dashbord.jsp' : (isStudentOnlyDashboard ? '/student/student/dashboard/student-dashboard.jsp' : '/dashboard')}" />
-<c:set var="siteHomeHref" value="/index.jsp" />
+<c:set var="dashboardHref" value="/dashboard" />
+<c:set var="siteHomeHref" value="/dashboard" />
 <c:set var="profileHref" value="${isAdminDashboard ? '/admin/admin-my-profile.jsp' : (isStudentOnlyDashboard ? '/student/student/profile/student-profile.jsp' : '/profile')}" />
 <c:set var="messageHref" value="/messages" />
 <c:set var="calendarHref" value="/learning/events" />
@@ -210,19 +210,12 @@
                             </span>
                         </a>
                     </li>
-                    <li class="mb-8 ${isLessonsActive ? 'activePage' : ''}">
+                    <li class="mb-8 ${isLessonsActive or isQuizAttemptsActive ? 'activePage' : ''}">
                         <a href="${pageContext.request.contextPath}/student/lessons" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-calendar-check"></i></span>
-                            Lessons
+                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-files"></i></span>
+                            Lessons &amp; Assessments
                         </a>
                         <%@ include file="/WEB-INF/fragments/dashboard-learning-lesson-context.jspf" %>
-                    </li>
-                    <li class="mb-8 ${isQuizAttemptsActive ? 'activePage' : ''}">
-                        <a href="${pageContext.request.contextPath}/student/assessments" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                            <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-seal-question"></i></span>
-                            Assessments
-                        </a>
-                        <%@ include file="/WEB-INF/fragments/dashboard-learning-assessment-context.jspf" %>
                     </li>
                     <li class="mb-8 ${isAttendanceActive ? 'activePage' : ''}">
                         <a href="${pageContext.request.contextPath}${attendanceHref}" class="gape-sidebar-long-link fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
@@ -461,9 +454,9 @@
                                     </c:if>
                                     <c:if test="${sessionScope['gape.auth.canViewReports']}">
                                         <li class="mb-6 ${adminUserActiveChild == 'audit' ? 'activePage' : ''}">
-                                            <a href="${pageContext.request.contextPath}/admin/activity-log?userId=${adminUserContextId}" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
+                                            <a href="${pageContext.request.contextPath}/dashboard?tab=logs&amp;userId=${adminUserContextId}" class="fw-medium d-flex align-items-center text-13 gap-8 text-neutral-500 hover-bg-main-600 px-20 py-8 hover-text-white rounded-12 item-hover flex-wrap">
                                                 <span class="text-15 text-main-600 item-hover__text transition-03"><i class="ph ph-list-checks"></i></span>
-                                                Audit
+                                                Logs
                                             </a>
                                         </li>
                                     </c:if>

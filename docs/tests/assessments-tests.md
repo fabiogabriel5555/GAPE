@@ -26,6 +26,9 @@ The assessment service tests cover Phase 11 back-end rules for questionnaires, e
   - Question scores cannot be negative.
   - Active question score totals cannot exceed the assessment maximum grade.
   - Active question scores can be rebalanced to the assessment maximum grade.
+  - A corrected attempt reaches the assessment maximum when every response is
+    awarded its question maximum; the response total and attempt total must
+    remain equal.
   - Automatic assessments reject manual-scored question types.
   - Submitted attempts block question changes.
 
@@ -74,6 +77,12 @@ The assessment service tests cover Phase 11 back-end rules for questionnaires, e
 
 - `SchemaIntegrityTest`
   - Assessment mode checks and assessment/attempt/response validation triggers are present.
+
+- `DatabaseBootstrapServiceTest`
+  - `Functions Applied Checkpoint` has ten required questions whose scores sum
+    to 20.00.
+  - Its corrected fixture includes one full-score 20.00 attempt, two corrected
+    attempts in total and three submitted attempts awaiting correction.
 
 - `TemplateStructureTest`
   - Legacy quiz-attempt wrappers redirect to the real assessment flow without requiring stale sidebar state.

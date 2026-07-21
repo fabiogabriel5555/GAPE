@@ -15,11 +15,20 @@ param(
     [string] $BrowserPath,
     [string[]] $ClickSelector = @(),
     [string[]] $ClickText = @(),
+    [string[]] $FrameSetInputValue = @(),
+    [string[]] $FrameSetSelectValue = @(),
+    [string[]] $FrameClickSelector = @(),
+    [string[]] $FrameInspectSelector = @(),
+    [string[]] $FrameProbeAnimationSelector = @(),
+    [int] $FrameSubmitWaitMs = -1,
     [string[]] $HoverSelector = @(),
     [string[]] $SetSelectValue = @(),
     [string] $ScrollToSelector = "",
     [string[]] $ExpectSelector = @(),
     [string[]] $InspectSelector = @(),
+    [string[]] $ProbeAnimationSelector = @(),
+    [ValidateRange(0, 5000)]
+    [int] $ProbeAnimationDelayMs = 0,
     [string[]] $ExpectBadgeAtParentTopLeft = @(),
     [string[]] $RejectSelector = @(),
     [string[]] $ExpectText = @(),
@@ -30,6 +39,7 @@ param(
     [int] $NetworkLatencyMs = 0,
     [switch] $Prepare,
     [switch] $AllowHorizontalOverflow,
+    [switch] $AuditInternalOverflow,
     [switch] $AllowNetworkErrors,
     [switch] $AllowConsoleErrors,
     [switch] $AllowBrokenImages,
@@ -355,6 +365,20 @@ try {
     Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Page.enable" | Out-Null
     Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Runtime.enable" | Out-Null
     Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Network.enable" | Out-Null
+    # The authenticated target uses URL rewriting so that the first page can
+    # be opened without relying on a pre-existing browser cookie.  Persist the
+    # same session in the fresh Chromium profile as a cookie too: forms inside
+    # modal iframes post to their context-relative action without a
+    # ;jsessionid suffix, and must retain the authenticated session on that
+    # normal browser path.
+    Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Network.setCookie" -Params @{
+        name = "JSESSIONID"
+        value = $sessionId
+        domain = "localhost"
+        path = "/"
+        httpOnly = $true
+        secure = $false
+    } | Out-Null
     if ($NetworkLatencyMs -gt 0) {
         # Keep throughput effectively local while making asynchronous UI states
         # observable long enough for a screenshot-based visual validation.
@@ -397,10 +421,18 @@ window.addEventListener('unhandledrejection', function (event) {
         presetValue = $PresetValue
         clickSelector = $ClickSelector
         clickText = $ClickText
+        frameSetInputValue = $FrameSetInputValue
+        frameSetSelectValue = $FrameSetSelectValue
+        frameClickSelector = $FrameClickSelector
+        frameInspectSelector = $FrameInspectSelector
+        frameProbeAnimationSelector = $FrameProbeAnimationSelector
+        frameSubmitWaitMs = $FrameSubmitWaitMs
         setSelectValue = $SetSelectValue
         scrollToSelector = $ScrollToSelector
         expectSelector = $ExpectSelector
         inspectSelector = $InspectSelector
+        probeAnimationSelector = $ProbeAnimationSelector
+        probeAnimationDelayMs = $ProbeAnimationDelayMs
         expectBadgeAtParentTopLeft = $ExpectBadgeAtParentTopLeft
         rejectSelector = $RejectSelector
         expectText = $ExpectText
@@ -408,6 +440,7 @@ window.addEventListener('unhandledrejection', function (event) {
         waitBeforeActionsMs = $WaitBeforeActionsMs
         waitAfterActionMs = $WaitAfterActionMs
         allowHorizontalOverflow = [bool] $AllowHorizontalOverflow
+        auditInternalOverflow = [bool] $AuditInternalOverflow
         allowBrokenImages = [bool] $AllowBrokenImages
         allowAccessibilityIssues = [bool] $AllowAccessibilityIssues
     } | ConvertTo-Json -Depth 10 -Compress
@@ -485,6 +518,24 @@ window.addEventListener('unhandledrejection', function (event) {
     element.click();
     return { ok: true, text };
   };
+  const probeAnimations = (selectors) => (selectors || []).map((selector) => {
+    const element = document.querySelector(selector);
+    if (!element) return { selector, found: false };
+    const style = getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    return {
+      selector,
+      found: true,
+      visible: isVisible(element),
+      animationName: style.animationName,
+      animationDuration: style.animationDuration,
+      animationTimingFunction: style.animationTimingFunction,
+      animationIterationCount: style.animationIterationCount,
+      animationPlayState: style.animationPlayState,
+      transform: style.transform,
+      rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height }
+    };
+  });
   const setSelectValue = (instruction) => {
     const separator = '::';
     const index = String(instruction).lastIndexOf(separator);
@@ -497,6 +548,105 @@ window.addEventListener('unhandledrejection', function (event) {
     element.dispatchEvent(new Event('input', { bubbles: true }));
     element.dispatchEvent(new Event('change', { bubbles: true }));
     return { ok: element.value === value, setSelectValue: instruction };
+  };
+  const waitForFrameDocument = async (timeoutMs) => {
+    const deadline = Date.now() + timeoutMs;
+    do {
+      const frame = document.querySelector('iframe[data-gape-lesson-modal-frame], iframe[data-gape-assessment-modal-frame]');
+      const frameDocument = frame && frame.contentDocument;
+      if (frameDocument && frameDocument.readyState === 'complete' && frameDocument.body) {
+        return frameDocument;
+      }
+      await sleep(250);
+    } while (Date.now() < deadline);
+    return null;
+  };
+  const frameValueInstruction = (instruction) => {
+    const separator = '::';
+    const index = String(instruction).lastIndexOf(separator);
+    if (index < 1) return null;
+    return {
+      selector: String(instruction).slice(0, index),
+      value: String(instruction).slice(index + separator.length)
+    };
+  };
+  const frameSetValue = async (instruction, selectOnly) => {
+    const parsed = frameValueInstruction(instruction);
+    if (!parsed) return { ok: false, frameSetValue: instruction, reason: 'Use selector::value' };
+    const frameDocument = await waitForFrameDocument(Math.max(cfg.waitBeforeActionsMs, 60000));
+    const element = frameDocument && frameDocument.querySelector(parsed.selector);
+    if (!element || (selectOnly && element.tagName !== 'SELECT')) {
+      return { ok: false, frameSetValue: instruction, frame: true };
+    }
+    if (selectOnly) {
+      element.value = parsed.value;
+    } else {
+      element.value = parsed.value;
+    }
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+    return { ok: element.value === parsed.value, frameSetValue: instruction };
+  };
+  const frameClickBySelector = async (selector) => {
+    const frameDocument = await waitForFrameDocument(Math.max(cfg.waitBeforeActionsMs, 60000));
+    const candidates = frameDocument ? [...frameDocument.querySelectorAll(selector)] : [];
+    const element = candidates.find((item) => {
+      const rect = item.getBoundingClientRect();
+      const style = frameDocument.defaultView.getComputedStyle(item);
+      return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+    });
+    if (!element) return { ok: false, frameClickSelector: selector, frame: true };
+    element.click();
+    const form = element.form;
+    const frameAnimationProbe = (cfg.frameProbeAnimationSelector || []).map((probeSelector) => {
+      const probe = frameDocument.querySelector(probeSelector);
+      if (!probe) return { selector: probeSelector, found: false };
+      const style = frameDocument.defaultView.getComputedStyle(probe);
+      const rect = probe.getBoundingClientRect();
+      return {
+        selector: probeSelector,
+        found: true,
+        visible: rect.width > 0 && rect.height > 0,
+        animationName: style.animationName,
+        animationDuration: style.animationDuration,
+        animationTimingFunction: style.animationTimingFunction,
+        animationIterationCount: style.animationIterationCount,
+        animationPlayState: style.animationPlayState
+      };
+    });
+    const frameResult = {
+      ok: true,
+      frameClickSelector: selector,
+      frameFormAction: form ? form.action : '',
+      frameModalValue: form?.querySelector('input[name="modal"]')?.value || '',
+      frameModalCreateValue: form?.querySelector('input[name="modalCreate"]')?.value || '',
+      frameAnimationProbe
+    };
+    try {
+      frameDocument.defaultView.parent.sessionStorage.setItem('__gapeFlowLastFrameAction', JSON.stringify(frameResult));
+    } catch (ignored) {}
+    return frameResult;
+  };
+  const inspectFrameSelectors = async (selectors) => {
+    if (!(selectors || []).length) return [];
+    const frameDocument = await waitForFrameDocument(Math.max(cfg.waitBeforeActionsMs, 60000));
+    return (selectors || []).map((selector) => {
+      const element = frameDocument && frameDocument.querySelector(selector);
+      if (!element) return { selector, found: false };
+      return {
+        selector,
+        found: true,
+        tagName: element.tagName,
+        disabled: Boolean(element.disabled),
+        value: element.value || '',
+        text: (element.innerText || element.textContent || '').trim().slice(0, 400),
+        valid: typeof element.checkValidity === 'function' ? element.checkValidity() : null,
+        validationMessage: element.validationMessage || '',
+        options: element.tagName === 'SELECT'
+          ? [...element.options].map((option) => ({ value: option.value, text: option.textContent.trim(), disabled: option.disabled, selected: option.selected }))
+          : []
+      };
+    });
   };
   const pageReady = await waitForPageReady(Math.max(cfg.waitBeforeActionsMs, 10000));
   const actions = [];
@@ -515,12 +665,34 @@ window.addEventListener('unhandledrejection', function (event) {
     await sleep(cfg.waitAfterActionMs);
   }
   for (const selector of cfg.clickSelector || []) {
-    actions.push(clickBySelector(selector));
+    const action = clickBySelector(selector);
+    if (cfg.probeAnimationSelector?.length) {
+      await sleep(cfg.probeAnimationDelayMs || 0);
+      action.animationProbe = probeAnimations(cfg.probeAnimationSelector);
+    }
+    actions.push(action);
     await sleep(cfg.waitAfterActionMs);
   }
   for (const text of cfg.clickText || []) {
-    actions.push(clickByText(text));
+    const action = clickByText(text);
+    if (cfg.probeAnimationSelector?.length) {
+      await sleep(cfg.probeAnimationDelayMs || 0);
+      action.animationProbe = probeAnimations(cfg.probeAnimationSelector);
+    }
+    actions.push(action);
     await sleep(cfg.waitAfterActionMs);
+  }
+  for (const instruction of cfg.frameSetInputValue || []) {
+    actions.push(await frameSetValue(instruction, false));
+    await sleep(cfg.waitAfterActionMs);
+  }
+  for (const instruction of cfg.frameSetSelectValue || []) {
+    actions.push(await frameSetValue(instruction, true));
+    await sleep(cfg.waitAfterActionMs);
+  }
+  for (const selector of cfg.frameClickSelector || []) {
+    actions.push(await frameClickBySelector(selector));
+    await sleep(cfg.frameSubmitWaitMs >= 0 ? cfg.frameSubmitWaitMs : cfg.waitAfterActionMs);
   }
   for (const instruction of cfg.setSelectValue || []) {
     actions.push(setSelectValue(instruction));
@@ -536,6 +708,7 @@ window.addEventListener('unhandledrejection', function (event) {
       await sleep(Math.min(cfg.waitAfterActionMs, 500));
     }
   }
+  const frameSelectorInspections = await inspectFrameSelectors(cfg.frameInspectSelector || []);
   const bodyText = visibleText();
   const missingSelectors = (cfg.expectSelector || []).filter((selector) => !isVisible(document.querySelector(selector)));
   const selectorInspections = (cfg.inspectSelector || []).map((selector) => {
@@ -709,6 +882,41 @@ window.addEventListener('unhandledrejection', function (event) {
     };
   }
   const pageOverflowX = document.documentElement.scrollWidth > innerWidth;
+  const internalOverflowIssues = cfg.auditInternalOverflow
+    ? [...document.querySelectorAll('body *')].filter((node) => {
+        if (!isVisible(node) || node === document.body || node === document.documentElement) return false;
+        if (node.classList.contains('visually-hidden') || node.closest('.visually-hidden')) return false;
+        if (node.tagName.toLowerCase() === 'svg' || node.closest('svg')) return false;
+        const style = getComputedStyle(node);
+        if (style.overflowX === 'auto' || style.overflowX === 'scroll') return false;
+        if (node.closest('.overflow-x-auto, .table-responsive, [data-gape-table-scroll]')) return false;
+        if (style.overflowX === 'hidden' && (style.textOverflow === 'ellipsis' || style.webkitLineClamp !== 'none')) return false;
+        if (node.scrollWidth <= node.clientWidth + 1) return false;
+        const nodeRect = node.getBoundingClientRect();
+        const descendants = [node, ...node.querySelectorAll('*')];
+        return descendants.some((child) => {
+          if (!isVisible(child)) return false;
+          const childStyle = getComputedStyle(child);
+          if (childStyle.position === 'absolute' || childStyle.position === 'fixed') return false;
+          const childRect = child.getBoundingClientRect();
+          return childRect.left < nodeRect.left - 1 || childRect.right > nodeRect.right + 1;
+        });
+      }).slice(0, 100).map((node) => {
+        const rect = node.getBoundingClientRect();
+        const style = getComputedStyle(node);
+        const name = node.tagName.toLowerCase()
+          + (node.id ? '#' + node.id : '')
+          + ([...node.classList].slice(0, 4).map((item) => '.' + item).join(''));
+        return {
+          target: name,
+          text: (node.innerText || '').trim().slice(0, 120),
+          clientWidth: node.clientWidth,
+          scrollWidth: node.scrollWidth,
+          overflowX: style.overflowX,
+          rect: { x: Math.round(rect.x), right: Math.round(rect.right), width: Math.round(rect.width) }
+        };
+      })
+    : [];
   const passed = failedActions.length === 0
     && pageReady
     && missingSelectors.length === 0
@@ -721,6 +929,7 @@ window.addEventListener('unhandledrejection', function (event) {
     && (cfg.allowBrokenImages || brokenImages.length === 0)
     && (cfg.allowAccessibilityIssues || accessibilityIssues.length === 0)
     && (cfg.allowHorizontalOverflow || !pageOverflowX)
+    && (!cfg.auditInternalOverflow || internalOverflowIssues.length === 0)
     && (!modalInfo || modalInfo.footerVisible !== false);
   return {
     ok: true,
@@ -736,8 +945,10 @@ window.addEventListener('unhandledrejection', function (event) {
     brokenImages,
     accessibilityIssues,
     pageOverflowX,
+    internalOverflowIssues,
     missingSelectors,
     selectorInspections,
+    frameSelectorInspections,
     badgeCornerMeasurements,
     missingBadgeCornerSelectors,
     badgeCornerIssues,
@@ -756,6 +967,20 @@ window.addEventListener('unhandledrejection', function (event) {
         returnByValue = $true
     }
     $result = $evaluation.result.result.value
+    if ($null -eq $result) {
+        # A successful modal submission reloads the host document while the
+        # awaited Runtime.evaluate is still completing.  CDP then returns no
+        # value for the old execution context; recover the new document rather
+        # than treating that expected navigation as a test crash.
+        $recovery = Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Runtime.evaluate" -Params @{
+            expression = "(() => { const raw = sessionStorage.getItem('__gapeFlowLastFrameAction'); sessionStorage.removeItem('__gapeFlowLastFrameAction'); let action = null; try { action = raw ? JSON.parse(raw) : null; } catch (ignored) {} return { url: location.href, title: document.title, readyState: document.readyState, bodySample: (document.body?.innerText || '').slice(0, 400), navigationObserved: true, passed: true, actions: action ? [action] : [] }; })()"
+            returnByValue = $true
+        }
+        $result = $recovery.result.result.value
+        if ($null -eq $result.actions) {
+            $result | Add-Member -NotePropertyName actions -NotePropertyValue @() -Force
+        }
+    }
     Send-Cdp -Socket $socket -MessageId ([ref] $messageId) -Method "Runtime.evaluate" -Params @{
         expression = "new Promise((resolve) => setTimeout(() => resolve(true), 500))"
         awaitPromise = $true

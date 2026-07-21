@@ -68,10 +68,12 @@
                                                                     <span class="aac-tree-meta" data-gape-datetime-display><c:out value="${item.courseLabel}"/> | <c:out value="${item.issuedAt}"/> | Grade: <c:out value="${item.finalGrade}"/></span>
                                                                 </div>
                                                             </div>
-                                                            <div class="aac-tree-actions">
+                                                            <div class="aac-tree-status">
                                                                 <span class="${item.statusBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
                                                                     <c:out value="${item.statusLabel}"/>
                                                                 </span>
+                                                            </div>
+                                                            <div class="aac-tree-actions">
                                                                  <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View certificate" data-bs-toggle="modal" data-bs-target="#certificateDetail${certificateManagementIdPrefix}${item.id}">
                                                                      <i class="ph ph-eye"></i>
                                                                  </button>
@@ -153,10 +155,12 @@
                                                             <span class="aac-tree-meta" data-gape-datetime-display><c:out value="${item.courseLabel}"/> | <c:out value="${item.issuedAt}"/> | Grade: <c:out value="${item.finalGrade}"/></span>
                                                         </div>
                                                     </div>
-                                                    <div class="aac-tree-actions">
+                                                    <div class="aac-tree-status">
                                                         <span class="${item.statusBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
                                                             <c:out value="${item.statusLabel}"/>
                                                         </span>
+                                                    </div>
+                                                    <div class="aac-tree-actions">
                                                         <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View certificate" data-bs-toggle="modal" data-bs-target="#certificateDetail${certificateManagementIdPrefix}${item.id}">
                                                             <i class="ph ph-eye"></i>
                                                         </button>

@@ -1,6 +1,6 @@
 <c:set var="occurrenceGroupPanelId" value="${occurrenceGroupPanelPrefix}${subject.id}_${occurrenceGroup.disclosureId}" />
-<article class="gape-structure-node border border-neutral-30 rounded-8 px-16 py-12 bg-white" data-subject-detail-occurrence-group>
-    <div class="gape-structure-row">
+<article class="gape-structure-node border border-neutral-30 rounded-8 px-18 py-16 bg-white" data-subject-detail-occurrence-group>
+    <div class="gape-structure-row gape-enrollment-row">
         <div class="d-flex align-items-center gap-12 min-w-0">
             <span class="${occurrenceGroupIconClass} cd-mode-icon text-20 line-height-1"><i class="${occurrenceGroupIcon}" aria-hidden="true"></i></span>
             <div class="min-w-0">
@@ -8,7 +8,6 @@
                 <span class="gape-node-meta text-12"><span data-gape-datetime-display><c:out value="${occurrenceGroup.occurrenceDateRangeLabel}"/></span><span><c:out value="${occurrenceGroup.classGroupCount}"/> class groups</span></span>
             </div>
         </div>
-        <div class="text-13 text-neutral-500">Course occurrence</div>
         <div><span class="cd-element-count"><c:out value="${occurrenceGroup.classGroupCount}"/></span></div>
         <div><span class="${occurrenceGroup.occurrenceStateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13"><c:out value="${occurrenceGroup.occurrenceStateLabel}"/></span></div>
         <div class="d-flex justify-content-end">
@@ -43,6 +42,10 @@
         </div>
     </div>
     <div id="${occurrenceGroupPanelId}" class="gape-subject-occurrence-groups-panel<c:if test="${not occurrenceGroupStartsOpen}"> d-none</c:if>">
+        <div class="gape-subject-occurrence-groups-panel__heading">
+            <span class="fw-medium text-13 text-neutral-700">Class groups</span>
+            <span class="text-12 text-neutral-500"><c:out value="${occurrenceGroup.classGroupCount}"/> class group<c:if test="${occurrenceGroup.classGroupCount ne 1}">s</c:if></span>
+        </div>
         <div class="gape-subject-occurrence-groups-content" data-subject-detail-sort-list>
             <c:forEach var="classGroup" items="${occurrenceGroup.classGroups}" varStatus="classGroupLoop">
                 <%@ include file="/WEB-INF/fragments/subject-class-group-row.jspf" %>

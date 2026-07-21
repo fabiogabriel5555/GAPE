@@ -197,6 +197,24 @@
         .gape-lesson-form-compact .gape-lesson-attendance-control {
             min-height: 47px;
         }
+
+        .gape-modal-submit-spinner {
+            align-items: center;
+            display: inline-flex;
+            height: 1em;
+            justify-content: center;
+            width: 1em;
+        }
+
+        .gape-modal-submit-spinner .ph-circle-notch {
+            animation: gape-modal-submit-spinner-rotation .8s linear infinite;
+            display: inline-block;
+            transform-origin: center;
+        }
+
+        @keyframes gape-modal-submit-spinner-rotation {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -213,22 +231,21 @@
             <div class="px-24 py-24 flex-grow-1">
                 <%@ include file="/WEB-INF/fragments/flash-messages.jspf" %>
 
-                <form action="${formAction}" method="post" class="gape-lesson-form-compact bg-white rounded-10 px-24 py-24 border border-neutral-30" data-lesson-form>
+                <form action="${formAction}" method="post" class="gape-lesson-form-compact bg-white rounded-10 px-24 py-24 border border-neutral-30" data-lesson-form data-creating="${creating}">
                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                     <c:if test="${lessonModal}"><input type="hidden" name="modal" value="1"></c:if>
                     <c:if test="${not empty formReturnTo}">
                         <input type="hidden" name="returnTo" value="<c:out value='${formReturnTo}'/>">
                     </c:if>
-                    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap border-bottom-dashed pb-20 mb-20">
-                        <div>
-                            <h2 class="text-18 fw-medium text-neutral-700 mb-4">${creating ? 'Create Lesson' : 'Edit Lesson'}</h2>
-                            <span class="text-14 text-neutral-500">Configure schedule, delivery mode and access data.</span>
+                    <c:if test="${not lessonModal}">
+                        <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap border-bottom-dashed pb-20 mb-20">
+                            <div>
+                                <h2 class="text-18 fw-medium text-neutral-700 mb-4">${creating ? 'Create Lesson' : 'Edit Lesson'}</h2>
+                                <span class="text-14 text-neutral-500">Configure schedule, delivery mode and access data.</span>
+                            </div>
+                            <a href="${fn:escapeXml(lessonBackHref)}" class="border-main-600 border px-20 py-10 fw-semibold rounded-8 hover-bg-main-50 transition-03">Back</a>
                         </div>
-                        <c:choose>
-                            <c:when test="${lessonModal}"><button type="button" class="border-main-600 border px-20 py-10 fw-semibold rounded-8 hover-bg-main-50 transition-03 bg-white" data-gape-lesson-modal-close>Back</button></c:when>
-                            <c:otherwise><a href="${fn:escapeXml(lessonBackHref)}" class="border-main-600 border px-20 py-10 fw-semibold rounded-8 hover-bg-main-50 transition-03">Back</a></c:otherwise>
-                        </c:choose>
-                    </div>
+                    </c:if>
 
                     <c:if test="${not empty errorMessage}">
                         <div class="alert alert-danger mb-24" role="alert">
@@ -312,14 +329,14 @@
                             <label for="startsAt" class="fw-medium text-base text-neutral-800 mb-12">Starts At</label>
                             <div class="gape-context-date-control">
                                 <i class="ph ph-calendar-dots"></i>
-                                <input id="startsAt" name="startsAt" type="datetime-local" required value="<c:out value='${form.startsAt}'/>" class="form-control px-18 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                <input id="startsAt" name="startsAt" type="datetime-local" step="1" required value="<c:out value='${form.startsAt}'/>" class="form-control px-18 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
                             </div>
                         </div>
                         <div class="col-xl-3 col-lg-3 gape-context-date-field">
                             <label for="endsAt" class="fw-medium text-base text-neutral-800 mb-12">Ends At</label>
                             <div class="gape-context-date-control">
                                 <i class="ph ph-calendar-check"></i>
-                                <input id="endsAt" name="endsAt" type="datetime-local" required value="<c:out value='${form.endsAt}'/>" class="form-control px-18 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                <input id="endsAt" name="endsAt" type="datetime-local" step="1" required value="<c:out value='${form.endsAt}'/>" class="form-control px-18 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
                             </div>
                         </div>
                         <div class="col-xl-3 col-lg-3 gape-select-field gape-lesson-context-field opacity-75 is-disabled" data-room-field>
@@ -353,10 +370,26 @@
                                 Attendance required
                             </label>
                         </div>
+                        <div class="col-12">
+                            <div class="gape-date-context" data-date-context>
+                            <div class="gape-date-context__main">
+                                <span class="gape-date-context__icon"><i class="ph ph-calendar-dots text-20"></i></span>
+                                <span class="gape-date-context__text">
+                                    <strong class="gape-date-context__title" data-date-context-title>Class group window</strong>
+                                    <span class="gape-date-context__copy" data-date-context-copy>Select a class group or pedagogical block to calculate availability.</span>
+                                </span>
+                            </div>
+                            <div class="gape-date-context__actions">
+                                <button type="button" class="gape-date-context__action" data-date-action="fill-start"><i class="ph ph-skip-back"></i>Start</button>
+                                <button type="button" class="gape-date-context__action" data-date-action="fill-end"><i class="ph ph-skip-forward"></i>End</button>
+                                <button type="button" class="gape-date-context__action" data-date-action="fill-window"><i class="ph ph-arrows-out-line-horizontal"></i>Full Window</button>
+                            </div>
+                        </div>
+                    </div>
                     </div>
 
                     <div class="d-flex align-items-center gap-14 flex-wrap border-top-dashed pt-20 mt-22">
-                        <button type="submit" class="bg-main-600 px-24 py-12 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03">${creating ? 'Create Lesson' : 'Save Changes'}</button>
+                        <button type="submit" class="bg-main-600 px-24 py-12 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03" data-create-submit="${creating}">${creating ? 'Create Lesson' : 'Save Changes'}</button>
                         <c:choose>
                             <c:when test="${lessonModal}"><button type="button" class="text-neutral-600 fw-semibold hover-text-main-600 transition-03 border-0 bg-transparent p-0" data-gape-lesson-modal-close>Cancel</button></c:when>
                             <c:otherwise><a href="${fn:escapeXml(lessonBackHref)}" class="text-neutral-600 fw-semibold hover-text-main-600 transition-03">Cancel</a></c:otherwise>
@@ -881,6 +914,16 @@
                 }) || null;
             }
 
+            function hasAvailableClassGroupWindow(groupData) {
+                if (!groupData || !groupData.startsAt || !groupData.endsAt) {
+                    return false;
+                }
+                var start = String(groupData.startsAt).substring(0, 10);
+                var end = String(groupData.endsAt).substring(0, 10);
+                var today = localMinuteValue().substring(0, 10);
+                return start <= end && end >= today;
+            }
+
             function blockData(value) {
                 return originalBlocks.find(function (item) {
                     return item.value === value;
@@ -909,6 +952,7 @@
             function blockHasCreationContext(blockItem) {
                 return !!blockItem
                         && !!blockItem.value
+                        && hasAvailableClassGroupWindow(blockItem ? classGroupData(blockItem.classGroupId) : null)
                         && (!selectedTypeRequiresRoom() || blockHasPhysicalRoomContext(blockItem));
             }
 
@@ -921,6 +965,9 @@
             function classGroupHasCreationContext(classGroupId, courseId, subjectId) {
                 var groupData = classGroupData(classGroupId);
                 if (!groupData || (courseId && groupData.courseId !== courseId) || (subjectId && groupData.subjectId !== subjectId)) {
+                    return false;
+                }
+                if (!hasAvailableClassGroupWindow(groupData)) {
                     return false;
                 }
                 return originalBlocks.some(function (item) {
@@ -963,7 +1010,7 @@
                     courseLabel: courseName,
                     contextKind: 'course',
                     contextUnavailable: courseAvailable ? '' : 'true',
-                    disabled: false,
+                    disabled: !courseAvailable,
                     title: courseAvailable
                             ? (contextTitle ? courseName + ' | ' + contextTitle : courseName)
                             : courseName + ' does not have a complete lesson context.'
@@ -993,7 +1040,7 @@
                             subjectLabel: subjectName,
                             contextKind: 'subject',
                             contextUnavailable: subjectAvailable ? '' : 'true',
-                            disabled: false,
+                            disabled: !subjectAvailable,
                             title: subjectAvailable
                                     ? subjectName
                                     : subjectName + ' does not have a complete lesson context.'
@@ -1017,7 +1064,7 @@
                                 endsAt: item.endsAt || '',
                                 contextKind: 'class-group',
                                 contextUnavailable: classGroupAvailable ? '' : 'true',
-                                disabled: false,
+                                disabled: !classGroupAvailable,
                                 title: classGroupAvailable
                                         ? (item.text || item.value)
                                         : (item.text || item.value) + ' does not have a complete lesson context.'
@@ -1036,7 +1083,7 @@
                             return Object.assign({}, item, {
                                 contextKind: 'block',
                                 contextUnavailable: blockAvailable ? '' : 'true',
-                                disabled: false,
+                                disabled: !blockAvailable,
                                 title: blockAvailable
                                         ? (item.text || item.value)
                                         : (item.text || item.value) + ' does not have a complete lesson context.'
@@ -1327,6 +1374,28 @@
                 return date.length === 3 ? date[2] + '-' + date[1] + '-' + date[0] + (time ? ' ' + time.replace(':', '-') + '-00' : '') : value;
             }
 
+            function syncDateContext(dateWindow, lowerBound, upperBound) {
+                var panel = form.querySelector('[data-date-context]');
+                if (!panel) {
+                    return;
+                }
+                var title = panel.querySelector('[data-date-context-title]');
+                var copy = panel.querySelector('[data-date-context-copy]');
+                var hasWindow = !!(dateWindow.start && dateWindow.end);
+                var usable = hasWindow && (!lowerBound || !upperBound || lowerBound <= upperBound);
+                if (title) {
+                    title.textContent = hasWindow ? 'Class group window' : 'Availability window';
+                }
+                if (copy) {
+                    copy.textContent = hasWindow
+                            ? formatDateTimeLabel(lowerBound || dayStart(dateWindow.start)) + ' to ' + formatDateTimeLabel(upperBound)
+                            : 'Select a class group or pedagogical block to calculate availability.';
+                }
+                panel.querySelectorAll('[data-date-action]').forEach(function (button) {
+                    button.disabled = !usable;
+                });
+            }
+
             function minDateTime(first, second) {
                 if (!first) {
                     return second || '';
@@ -1372,6 +1441,9 @@
                 } else if (action === 'fill-slot') {
                     startsAt.value = lowerBound;
                     endsAt.value = minDateTime(addMinutes(lowerBound, 90), upperBound);
+                } else if (action === 'fill-window') {
+                    startsAt.value = lowerBound;
+                    endsAt.value = upperBound;
                 }
                 validateSchedule();
             }
@@ -1388,7 +1460,11 @@
                 startsAt.max = upperBound;
                 startsAt.required = true;
                 endsAt.required = true;
-                endsAt.min = maxDateTime(startsAt.value || lowerBound, dayStart(classGroupWindow.start));
+                // Keep the end picker at or after both the current instant and
+                // the selected start.  The custom validity below is still
+                // required for pasted/programmatically assigned values, but
+                // the native picker must not offer an invalid past value.
+                endsAt.min = maxDateTime(startsAt.value || lowerBound, lowerBound);
                 endsAt.max = upperBound;
                 startsAt.setCustomValidity('');
                 endsAt.setCustomValidity('');
@@ -1425,6 +1501,7 @@
                 if (stateDisplay) {
                     stateDisplay.textContent = computedStateLabel();
                 }
+                syncDateContext(classGroupWindow, lowerBound, upperBound);
             }
 
             function localMinuteValue() {
@@ -1474,9 +1551,11 @@
             }
             if (startsAt) {
                 startsAt.addEventListener('input', validateSchedule);
+                startsAt.addEventListener('change', validateSchedule);
             }
             if (endsAt) {
                 endsAt.addEventListener('input', validateSchedule);
+                endsAt.addEventListener('change', validateSchedule);
             }
             form.querySelectorAll('[data-date-action]').forEach(function (button) {
                 button.addEventListener('click', function () {
@@ -1488,6 +1567,14 @@
                 if (!form.checkValidity()) {
                     event.preventDefault();
                     form.reportValidity();
+                    return;
+                }
+                var submit = form.querySelector('[data-create-submit="true"]');
+                if (submit && !submit.disabled) {
+                    submit.disabled = true;
+                    submit.setAttribute('aria-busy', 'true');
+                    submit.setAttribute('aria-label', submit.textContent.trim());
+                    submit.innerHTML = '<span class="gape-modal-submit-spinner" role="status" aria-label="Creating"><i class="ph ph-circle-notch" aria-hidden="true"></i></span>';
                 }
             });
             if (initialClassGroupValue) {

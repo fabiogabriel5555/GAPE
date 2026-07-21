@@ -149,7 +149,9 @@ class LearningEventDAOTest {
         // The enrollment dates are intentionally far in the future. Pending work
         // remains an immediate administrative event rather than waiting for the
         // academic occurrence to start.
-        LocalDateTime currentTime = LocalDateTime.now().plusMinutes(1);
+        // Keep the assertion ahead of both the JVM and MySQL session clocks;
+        // the latter may be configured with a different local offset in CI.
+        LocalDateTime currentTime = LocalDateTime.now().plusHours(2);
         List<LearningEvent> pendingEvents = visibleEvents(3L, currentTime);
         assertTrue(pendingEvents.stream().anyMatch(event ->
                 "assessment_enrollment_pending".equals(event.eventType())
@@ -182,6 +184,30 @@ class LearningEventDAOTest {
         assertFalse(resolvedEvents.stream().anyMatch(event ->
                 "assessment_enrollment_pending".equals(event.eventType())
                         || "assessment_correction_pending".equals(event.eventType())));
+    }
+
+    @Test
+    void studentActionEventsKeepTheirReadReceiptAfterTheDerivedFeedIsRebuilt() throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            dao.rebuildFromCurrentRecords(connection);
+        }
+
+        LocalDateTime now = LocalDateTime.now().plusHours(1);
+        LearningEvent acceptedEnrollment = studentEvents(4L, now).stream()
+                .filter(event -> "student_class_group_enrollment_accepted".equals(event.eventType()))
+                .findFirst()
+                .orElseThrow();
+
+        dao.markReadByHref(4L, acceptedEnrollment.detailHref(), false, now);
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            dao.rebuildFromCurrentRecords(connection);
+        }
+
+        LearningEvent rebuiltEnrollment = studentEvents(4L, now).stream()
+                .filter(event -> acceptedEnrollment.id() == event.id())
+                .findFirst()
+                .orElseThrow();
+        assertTrue(rebuiltEnrollment.read());
     }
 
     private static LearningEvent eventByTitle(List<LearningEvent> events, String title) {
@@ -242,6 +268,25 @@ class LearningEventDAOTest {
                 now,
                 viewerUserId,
                 20,
+                0
+        );
+    }
+
+    private List<LearningEvent> studentEvents(long studentUserId, LocalDateTime now) throws SQLException {
+        return dao.findVisible(
+                List.of(),
+                List.of(),
+                List.of(),
+                studentUserId,
+                true,
+                false,
+                null,
+                null,
+                null,
+                null,
+                now,
+                studentUserId,
+                100,
                 0
         );
     }

@@ -18,6 +18,9 @@
             + '.modal-dialog.gape-lesson-modal-dialog .modal-header{padding:16px 20px}'
             + '.modal-dialog.gape-lesson-modal-dialog .modal-body{min-height:0;flex:1 1 auto;overflow:hidden}'
             + '.gape-lesson-modal-frame{border:0;display:block;height:100%;width:100%;background:#fff}'
+            + '.gape-lesson-modal-spinner{align-items:center;display:inline-flex;height:1em;justify-content:center;width:1em}'
+            + '.gape-lesson-modal-spinner .ph-circle-notch{animation:gape-lesson-modal-spinner-rotation .8s linear infinite;display:inline-block;transform-origin:center}'
+            + '@keyframes gape-lesson-modal-spinner-rotation{to{transform:rotate(360deg)}}'
             + '@media(max-width:575.98px){.modal-dialog.gape-lesson-modal-dialog{max-width:calc(100vw - 20px);margin:10px auto}.modal-dialog.gape-lesson-modal-dialog .modal-content{height:calc(100dvh - 20px);max-height:calc(100dvh - 20px)}.modal-dialog.gape-lesson-modal-dialog .modal-header{padding:14px 16px}}'
             + '</style>'
         );
@@ -53,7 +56,11 @@
         modal = document.getElementById(modalId);
         modal.addEventListener('hidden.bs.modal', function () {
             var frame = modal.querySelector('[data-gape-lesson-modal-frame]');
+            setTriggerLoading(modal._gapeLessonTrigger, false);
+            modal._gapeLessonTrigger = null;
             if (frame) {
+                frame.onload = null;
+                frame.onerror = null;
                 frame.removeAttribute('src');
             }
         });
@@ -76,7 +83,61 @@
         return 'Lesson';
     }
 
-    function open(rawUrl, title) {
+    function setTriggerLoading(trigger, busy) {
+        if (!trigger) {
+            return;
+        }
+        if (busy) {
+            if (trigger.dataset.lessonOriginalHtml === undefined) {
+                trigger.dataset.lessonOriginalHtml = trigger.innerHTML;
+            }
+            if (trigger.dataset.lessonOriginalAriaLabel === undefined) {
+                trigger.dataset.lessonOriginalAriaLabel = trigger.getAttribute('aria-label') || '';
+            }
+            if (trigger.dataset.lessonOriginalDimensions === undefined) {
+                var lessonRect = trigger.getBoundingClientRect();
+                trigger.dataset.lessonOriginalDimensions = JSON.stringify({
+                    width: trigger.style.width,
+                    minWidth: trigger.style.minWidth,
+                    height: trigger.style.height,
+                    minHeight: trigger.style.minHeight
+                });
+                trigger.style.width = lessonRect.width + 'px';
+                trigger.style.minWidth = lessonRect.width + 'px';
+                trigger.style.height = lessonRect.height + 'px';
+                trigger.style.minHeight = lessonRect.height + 'px';
+            }
+            trigger.disabled = true;
+            trigger.setAttribute('aria-busy', 'true');
+            trigger.setAttribute('aria-label', labelFor(trigger));
+            trigger.innerHTML = '<span class="gape-lesson-modal-spinner" role="status" aria-label="Loading"><i class="ph ph-circle-notch animate-spin" aria-hidden="true"></i></span>';
+            return;
+        }
+        if (trigger.dataset.lessonOriginalHtml !== undefined) {
+            trigger.innerHTML = trigger.dataset.lessonOriginalHtml;
+            delete trigger.dataset.lessonOriginalHtml;
+        }
+        if (trigger.dataset.lessonOriginalAriaLabel !== undefined) {
+            if (trigger.dataset.lessonOriginalAriaLabel) {
+                trigger.setAttribute('aria-label', trigger.dataset.lessonOriginalAriaLabel);
+            } else {
+                trigger.removeAttribute('aria-label');
+            }
+            delete trigger.dataset.lessonOriginalAriaLabel;
+        }
+        if (trigger.dataset.lessonOriginalDimensions !== undefined) {
+            var lessonDimensions = JSON.parse(trigger.dataset.lessonOriginalDimensions);
+            trigger.style.width = lessonDimensions.width;
+            trigger.style.minWidth = lessonDimensions.minWidth;
+            trigger.style.height = lessonDimensions.height;
+            trigger.style.minHeight = lessonDimensions.minHeight;
+            delete trigger.dataset.lessonOriginalDimensions;
+        }
+        trigger.disabled = false;
+        trigger.removeAttribute('aria-busy');
+    }
+
+    function open(rawUrl, title, trigger) {
         if (!rawUrl || !window.bootstrap || !window.bootstrap.Modal) {
             return;
         }
@@ -86,11 +147,19 @@
         if (heading) {
             heading.textContent = title || 'Lesson';
         }
+        modal._gapeLessonTrigger = trigger || null;
+        setTriggerLoading(trigger, true);
         if (frame) {
             frame.title = title || 'Lesson';
+            frame.onload = function () {
+                setTriggerLoading(modal._gapeLessonTrigger, false);
+                window.bootstrap.Modal.getOrCreateInstance(modal).show();
+            };
+            frame.onerror = function () {
+                setTriggerLoading(modal._gapeLessonTrigger, false);
+            };
             frame.src = modalUrl(rawUrl);
         }
-        window.bootstrap.Modal.getOrCreateInstance(modal).show();
     }
 
     function openRequestedModal() {
@@ -136,7 +205,7 @@
             return;
         }
         event.preventDefault();
-        open(trigger.dataset.lessonModalUrl, labelFor(trigger));
+        open(trigger.dataset.lessonModalUrl, labelFor(trigger), trigger);
     });
 
     window.addEventListener('message', function (event) {
@@ -144,11 +213,29 @@
             return;
         }
         var modal = document.getElementById(modalId);
-        if (event.data.type === 'gape:lesson:changed') {
+        if (event.data.type === 'gape:lesson:changed' || event.data.type === 'gape:lesson:result') {
             if (modal && window.bootstrap && window.bootstrap.Modal) {
+                var reloadScheduled = false;
+                var reload = function () {
+                    if (reloadScheduled) {
+                        return;
+                    }
+                    reloadScheduled = true;
+                    if (modal.parentNode) {
+                        modal.parentNode.removeChild(modal);
+                    }
+                    document.body.classList.remove('modal-open');
+                    document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) {
+                        backdrop.remove();
+                    });
+                    window.location.reload();
+                };
+                modal.addEventListener('hidden.bs.modal', reload, { once: true });
                 window.bootstrap.Modal.getOrCreateInstance(modal).hide();
+                window.setTimeout(reload, 500);
+            } else {
+                window.location.reload();
             }
-            window.location.reload();
         } else if (event.data.type === 'gape:lesson:close' && modal && window.bootstrap && window.bootstrap.Modal) {
             window.bootstrap.Modal.getOrCreateInstance(modal).hide();
         }

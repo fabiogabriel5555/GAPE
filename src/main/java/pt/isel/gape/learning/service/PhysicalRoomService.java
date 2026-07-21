@@ -354,9 +354,9 @@ public final class PhysicalRoomService {
                     if (physicalRoomDAO.hasDomainDependencies(connection, current.code())) {
                         throw new IllegalStateException("Physical room with lessons cannot be deleted");
                     }
-                    physicalRoomDAO.delete(connection, current.code());
                     auditService.record(connection, actorUserId, sessionId, "PHYSICAL_ROOM_DELETE",
                             "physical_room", current.code(), "success", sourceIp);
+                    physicalRoomDAO.delete(connection, current.code());
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();

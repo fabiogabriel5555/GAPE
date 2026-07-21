@@ -4633,7 +4633,7 @@ mvn test -Dtest=ManagementViewAccessServiceTest
 mvn test -Dtest=ReportAggregationServiceTest
 ```
 
-Testa criar painel por âmbito, acesso sem permissão ao âmbito, administrador a painel global e de organização, coordenador apenas às suas disciplinas, formador apenas às suas turmas, aluno apenas a painéis pessoais e do seu contexto e agregações com dados coerentes.
+Testa painéis provisionados por âmbito, acesso sem permissão ao âmbito, administrador a painel global e de organização, coordenador apenas às suas disciplinas, formador apenas às suas turmas, aluno apenas a painéis pessoais e do seu contexto e agregações com dados coerentes. A criação de painéis não faz parte da aplicação simplificada.
 
 Corrige e repete.
 

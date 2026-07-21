@@ -3,80 +3,44 @@
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
     request.setAttribute("activeMenu", "subjects");
-    request.setAttribute("pageTitle", request.getAttribute("subject") == null ? "Subject Detail" : "Subject Detail");
-    request.setAttribute("studentPageTitle", request.getAttribute("subject") == null ? "Subject Detail" : "Subject Detail");
+    request.setAttribute("pageTitle", "Subject Details");
+    request.setAttribute("studentPageTitle", "Subject Details");
     request.setAttribute("studentPageDescription", "Review curricular subject details and class groups in your active course occurrence.");
 %>
 <%@ include file="/WEB-INF/fragments/student-dashboard-start.jspf" %>
 
-<c:set var="subjectPhotoUrl" value=""/>
-<c:if test="${subject.subject.hasPhoto}">
-    <c:set var="subjectPhotoUrl" value="${pageContext.request.contextPath}/media/${subject.subject.photo}?v=${mediaCacheVersion}"/>
-</c:if>
-
-<section class="gape-student-panel bg-white rounded-10 px-24 py-24 border border-neutral-30 mb-24">
-    <div class="gape-student-course-summary">
-        <div class="gape-student-course-visual-stack">
-            <div class="gape-student-course-detail-thumb">
-                <c:choose>
-                    <c:when test="${subject.subject.hasPhoto}">
-                        <img src="${subjectPhotoUrl}" alt="" onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
-                        <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--table d-none" aria-label="No subject photo">
-                            <i class="ph ph-image"></i>
-                        </span>
-                    </c:when>
-                    <c:otherwise>
-                        <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--table" aria-label="No subject photo">
-                            <i class="ph ph-image"></i>
-                        </span>
-                    </c:otherwise>
-                </c:choose>
-            </div>
-            <div class="gape-student-course-side-grid">
-                <div class="gape-student-course-side-item">
-                    <span>Acronym</span>
-                    <strong><c:out value="${subject.subjectAcronym}"/></strong>
+<section class="gape-student-course-visual-stack gape-student-class-group-detail-hero px-24 py-24 mb-24">
+    <div class="d-flex align-items-start justify-content-between gap-18 flex-wrap mb-22">
+        <div class="d-flex align-items-start gap-14 min-w-0">
+            <span class="gape-student-class-group-card__icon text-26"><i class="ph ph-book-open-text"></i></span>
+            <div class="min-w-0">
+                <div class="d-flex align-items-center gap-8 flex-wrap mb-8">
+                    <h2 class="text-24 fw-semibold text-neutral-800 mb-0"><c:out value="${subject.subjectName}"/></h2>
+                    <span class="${subject.subject.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12">
+                        <c:out value="${subject.subject.stateLabel}"/>
+                    </span>
                 </div>
-                <div class="gape-student-course-side-item">
-                    <span>Course</span>
-                    <strong><c:out value="${course.acronym}"/></strong>
-                </div>
-                <div class="gape-student-course-side-item gape-student-course-side-item--wide">
-                    <span>Position</span>
-                    <strong><c:out value="${subject.curricularPositionLabel}"/></strong>
-                </div>
+                <p class="text-14 text-neutral-500 mb-0"><c:out value="${subject.subject.description}"/></p>
             </div>
         </div>
+    </div>
 
-        <div>
-            <div class="d-flex align-items-center gap-10 flex-wrap mb-16">
-                <span class="${subject.subject.stateBadgeClass} px-16 py-8 border-neutral-30 border rounded-pill text-14">
-                    <c:out value="${subject.subject.stateLabel}"/>
-                </span>
-            </div>
-            <h2 class="text-24 fw-semibold text-neutral-800 mb-10"><c:out value="${subject.subjectName}"/></h2>
-            <p class="text-14 text-neutral-500 mb-24"><c:out value="${subject.subject.description}"/></p>
-
-            <div class="gape-student-course-metrics-grid mb-20">
-                <div class="gape-student-course-metric">
-                    <span class="text-13 text-neutral-500 d-block mb-8">ECTS</span>
-                    <strong class="text-16 text-neutral-800"><c:out value="${subject.subjectEctsLabel}"/></strong>
-                </div>
-                <div class="gape-student-course-metric">
-                    <span class="text-13 text-neutral-500 d-block mb-8">Type</span>
-                    <strong class="text-16 text-neutral-800"><c:out value="${subject.mandatoryLabel}"/></strong>
-                </div>
-                <div class="gape-student-course-metric">
-                    <span class="text-13 text-neutral-500 d-block mb-8">Class groups</span>
-                    <strong class="text-16 text-neutral-800">${fn:length(subjectClassGroups)} visible</strong>
-                </div>
-            </div>
-
-            <div class="gape-student-course-actions">
-                <a href="${pageContext.request.contextPath}/student/subjects" class="border border-neutral-30 px-16 py-9 rounded-8 text-14 fw-semibold text-neutral-600 hover-bg-neutral-20 transition-03">
-                    Back to Subjects
-                </a>
-            </div>
+    <div class="gape-student-class-group-metrics">
+        <div class="gape-student-class-group-metric">
+            <span class="text-12 text-neutral-500 d-block mb-4">Course</span>
+            <a href="${pageContext.request.contextPath}/student/courses/${course.id}" class="text-14 fw-semibold text-neutral-800 hover-text-main-600"><c:out value="${course.name}"/></a>
+        </div>
+        <div class="gape-student-class-group-metric">
+            <span class="text-12 text-neutral-500 d-block mb-4">ECTS</span>
+            <span class="text-14 fw-semibold text-neutral-800"><c:out value="${subject.subjectEctsLabel}"/></span>
+        </div>
+        <div class="gape-student-class-group-metric">
+            <span class="text-12 text-neutral-500 d-block mb-4">Type</span>
+            <span class="text-14 fw-semibold text-neutral-800"><c:out value="${subject.mandatoryLabel}"/></span>
+        </div>
+        <div class="gape-student-class-group-metric">
+            <span class="text-12 text-neutral-500 d-block mb-4">Class groups</span>
+            <span class="text-14 fw-semibold text-neutral-800">${fn:length(subjectClassGroups)} visible</span>
         </div>
     </div>
 </section>
@@ -92,66 +56,65 @@
         </span>
     </div>
 
+    <c:set var="studentSubjectClassGroupKey" value="${course.id}-${subject.subjectId}"/>
+    <c:set var="enrolledSubjectClassGroupCount" value="${0}"/>
+    <c:set var="unenrolledSubjectClassGroupCount" value="${0}"/>
+    <c:forEach var="item" items="${subjectClassGroups}">
+        <c:choose>
+            <%-- Active enrollments and pending requests stay visible. A left
+                 group no longer grants a current place, so it is aggregated. --%>
+            <c:when test="${item.currentOrPendingEnrollment}">
+                <c:set var="enrolledSubjectClassGroupCount" value="${enrolledSubjectClassGroupCount + 1}"/>
+            </c:when>
+            <c:otherwise>
+                <c:set var="unenrolledSubjectClassGroupCount" value="${unenrolledSubjectClassGroupCount + 1}"/>
+            </c:otherwise>
+        </c:choose>
+    </c:forEach>
+    <c:set var="hideUnenrolledSubjectClassGroups" value="${enrolledSubjectClassGroupCount gt 0 and unenrolledSubjectClassGroupCount gt 0}"/>
+
     <div class="row gy-3">
         <c:forEach var="item" items="${subjectClassGroups}">
-            <div class="col-xxl-3 col-xl-4 col-md-6">
-                <article id="subject-class-group-${item.classGroup.id}"
-                         class="gape-student-card gape-student-class-group-card px-14 py-14 h-100"
-                         data-gape-enrollment-target="class-group-${item.classGroup.id}">
+            <c:if test="${item.currentOrPendingEnrollment}">
+                <%@ include file="/WEB-INF/fragments/student-subject-class-group-card.jspf" %>
+            </c:if>
+        </c:forEach>
+        <c:forEach var="item" items="${subjectClassGroups}">
+            <c:if test="${not item.currentOrPendingEnrollment}">
+                <%@ include file="/WEB-INF/fragments/student-subject-class-group-card.jspf" %>
+            </c:if>
+        </c:forEach>
+        <c:if test="${hideUnenrolledSubjectClassGroups}">
+            <div class="col-xxl-3 col-xl-4 col-md-6" data-student-subject-unenrolled-summary="${studentSubjectClassGroupKey}">
+                <article class="gape-student-card gape-student-class-group-card gape-student-class-group-card--summary px-14 py-14 h-100">
                     <div class="gape-student-class-group-card__top mb-10">
-                        <span class="gape-student-class-group-card__icon gape-student-class-group-card__icon--compact"><i class="ph ph-users-three"></i></span>
+                        <span class="gape-student-class-group-card__icon gape-student-class-group-card__icon--compact"><i class="ph ph-stack-plus"></i></span>
                         <div class="min-w-0">
-                            <h6 class="text-14 fw-semibold text-neutral-800 mb-4"><c:out value="${item.classGroup.code}"/></h6>
-                            <span class="text-12 text-neutral-500" title="<c:out value='${item.classGroup.contextTitle}'/>">
-                                <c:out value="${item.classGroup.contextHtml}" escapeXml="false"/>
-                            </span>
+                            <h6 class="text-14 fw-semibold text-neutral-700 mb-4">
+                                ${unenrolledSubjectClassGroupCount} other class group<c:if test="${unenrolledSubjectClassGroupCount ne 1}">s</c:if> without enrollment
+                            </h6>
+                            <span class="text-12 text-neutral-500">Show the remaining groups for this subject.</span>
                         </div>
                     </div>
                     <div class="gape-student-class-group-card__badges mb-12">
-                        <span class="${item.enrollmentBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12"
-                              data-gape-enrollment-badge
-                              data-gape-enrollment-badge-fixed="px-12 py-7 border-neutral-30 border rounded-pill text-12">
-                            <c:out value="${item.enrollmentStateLabel}"/>
-                        </span>
+                        <span class="bg-neutral-20 text-neutral-500 px-12 py-7 border-neutral-30 border rounded-pill text-12">Not enrolled</span>
                     </div>
                     <div class="gape-student-class-group-card__meta mb-12">
-                        <span>Modality: <c:out value="${item.classGroup.modalityLabel}"/></span>
-                        <span>Shift: <c:out value="${item.classGroup.shift}"/></span>
-                        <span>Occup: <c:out value="${item.classGroup.occupancyLabel}"/></span>
+                        <span>Enrolled: ${enrolledSubjectClassGroupCount}</span>
+                        <span>Other groups: ${unenrolledSubjectClassGroupCount}</span>
                     </div>
-                    <div class="gape-student-class-group-card__actions"
-                         data-gape-enrollment-actions
-                         data-gape-enrollment-actions-kind="class-group-detail">
-                        <c:if test="${item.activeEnrollment}">
-                            <a href="${pageContext.request.contextPath}/student/class-groups/${item.classGroup.id}" class="gape-student-card-icon-button" aria-label="Open class group" title="Open class group">
-                                <i class="ph ph-eye"></i>
-                            </a>
-                        </c:if>
-                        <c:if test="${item.canEnroll}">
-                            <form action="${pageContext.request.contextPath}/student/enrollments/class-groups/${item.classGroup.id}" method="post" class="m-0">
-                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                <input type="hidden" name="returnTo" value="/student/subjects/${course.id}/${subject.subjectId}">
-                                <button type="submit" class="gape-student-card-icon-button gape-student-card-icon-button--request" aria-label="Request enrollment" title="Request enrollment">
-                                    <i class="ph ph-user-plus"></i>
-                                </button>
-                            </form>
-                        </c:if>
-                        <c:if test="${item.canWithdraw}">
-                            <form action="${pageContext.request.contextPath}/student/enrollments/class-groups/${item.classGroup.id}/withdraw" method="post" class="m-0">
-                                <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                <input type="hidden" name="returnTo" value="/student/subjects/${course.id}/${subject.subjectId}">
-                                <button type="submit" class="gape-student-card-icon-button gape-student-card-icon-button--danger" aria-label="Leave class group" title="Leave class group">
-                                    <i class="ph ph-sign-out"></i>
-                                </button>
-                            </form>
-                        </c:if>
-                        <c:if test="${not item.actionAvailable}">
-                            <span class="border border-neutral-30 px-12 py-7 rounded-8 text-12 fw-semibold text-neutral-500 bg-neutral-20"><c:out value="${item.unavailableActionLabel}"/></span>
-                        </c:if>
+                    <div class="gape-student-class-group-card__actions">
+                        <button type="button"
+                                class="gape-student-card-icon-button gape-student-card-icon-button--muted"
+                                data-student-show-subject-unenrolled="${studentSubjectClassGroupKey}"
+                                aria-label="Show class groups without enrollment"
+                                title="Show class groups without enrollment">
+                            <i class="ph ph-eye"></i>
+                        </button>
                     </div>
                 </article>
             </div>
-        </c:forEach>
+        </c:if>
         <c:if test="${empty subjectClassGroups}">
             <div class="col-12">
                 <div class="gape-student-empty text-center px-24 py-40">
@@ -163,5 +126,21 @@
         </c:if>
     </div>
 </section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('[data-student-show-subject-unenrolled]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var subjectKey = button.getAttribute('data-student-show-subject-unenrolled');
+                document.querySelectorAll('[data-student-subject-unenrolled-summary="' + subjectKey + '"]').forEach(function (summary) {
+                    summary.classList.add('d-none');
+                });
+                document.querySelectorAll('[data-student-subject-unenrolled-card="' + subjectKey + '"]').forEach(function (card) {
+                    card.classList.remove('d-none');
+                });
+            });
+        });
+    });
+</script>
 
 <%@ include file="/WEB-INF/fragments/student-dashboard-end.jspf" %>

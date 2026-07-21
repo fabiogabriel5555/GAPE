@@ -1,0 +1,55 @@
+<div class="d-flex flex-column gap-24">
+    <c:forEach var="courseGroup" items="${studentAssessmentGroups}">
+        <section class="gape-student-class-course-group">
+            <div class="gape-student-class-course-group__header d-flex align-items-center justify-content-between gap-16 flex-wrap">
+                <div class="d-flex align-items-center gap-12 min-w-0"><span class="gape-student-icon gape-student-soft-blue text-22"><i class="ph ph-books"></i></span><div class="min-w-0"><h4 class="text-18 fw-semibold text-neutral-800 mb-4 text-line-1"><c:out value="${courseGroup.name}"/></h4><span class="text-13 text-neutral-500">${courseGroup.assessmentCount} assessments</span></div></div>
+            </div>
+            <c:forEach var="subjectGroup" items="${courseGroup.subjectGroups}">
+                <section class="gape-student-class-subject-group">
+                    <div class="d-flex align-items-center gap-12 mb-14"><span class="gape-student-icon gape-student-soft-violet text-22"><i class="ph ph-book-open-text"></i></span><div class="min-w-0"><h5 class="text-16 fw-semibold text-neutral-800 mb-4 text-line-1"><c:out value="${subjectGroup.name}"/></h5><span class="text-13 text-neutral-500">${subjectGroup.assessmentCount} assessments</span></div></div>
+                    <c:forEach var="occurrenceGroup" items="${subjectGroup.occurrenceGroups}">
+                        <div class="gape-student-class-occurrence-group border border-neutral-30 rounded-10 px-16 py-14 mb-16">
+                            <div class="d-flex align-items-center justify-content-between gap-12 flex-wrap mb-12"><div class="d-flex align-items-center gap-10 min-w-0"><span class="gape-student-icon gape-student-soft-blue text-18"><i class="ph ph-calendar-blank"></i></span><div class="min-w-0"><span class="text-14 fw-semibold text-neutral-800 d-block text-line-1"><c:out value="${occurrenceGroup.label}"/></span><span class="text-12 text-neutral-500"><c:out value="${occurrenceGroup.dateRangeLabel}"/> &middot; ${occurrenceGroup.assessmentCount} assessments</span></div></div></div>
+                            <c:forEach var="classGroup" items="${occurrenceGroup.classGroups}">
+                                <div class="gape-student-assessment-class-group border border-neutral-30 rounded-10 px-14 py-12 mb-12">
+                                    <div class="d-flex align-items-center gap-10 mb-10"><span class="gape-student-icon gape-student-soft-blue text-18"><i class="ph ph-users-three"></i></span><div class="min-w-0"><span class="text-13 fw-semibold text-neutral-800 d-block text-line-1"><c:out value="${classGroup.code}"/></span><span class="text-12 text-neutral-500">${classGroup.assessmentCount} assessments</span></div></div>
+                                    <div class="row gy-4">
+                                        <c:forEach var="assessment" items="${classGroup.assessments}">
+                                            <c:set var="latestAttempt" value="${latestAttemptByAssessment[assessment.id]}"/>
+                                            <c:set var="assessmentEnrollment" value="${assessmentEnrollmentByAssessment[assessment.id]}"/>
+                                            <c:set var="assessmentEnrollmentState" value="${assessmentEnrollmentStateByAssessment[assessment.id]}"/>
+                                            <c:set var="activeAssessmentEnrollment" value="${assessment.automaticEnrollment or assessmentEnrollmentState eq 'ACTIVE'}"/>
+                                            <c:set var="pendingAssessmentEnrollment" value="${assessmentEnrollmentState eq 'PENDING'}"/>
+                                            <c:set var="attemptLimitReached" value="${not empty latestAttempt and not empty assessment.attemptsLimit and latestAttempt.attemptNumber >= assessment.attemptsLimit}"/>
+                                            <c:set var="assessmentModalId" value="studentAssessmentModernDetail${assessment.id}_${classGroup.id}"/>
+                                            <div class="col-xxl-3 col-xl-4 col-md-6">
+                                                <article class="gape-student-card gape-student-class-group-card px-14 py-14 h-100 position-relative">
+                                                    <div class="gape-student-class-group-card__top mb-10"><span class="gape-student-class-group-card__icon gape-student-class-group-card__icon--compact ${assessment.softClass}"><i class="${assessment.iconClass}"></i></span><div class="min-w-0"><h6 class="text-14 fw-semibold text-neutral-800 mb-4 text-line-1"><c:out value="${assessment.title}"/></h6><span class="text-12 text-neutral-500"><c:out value="${assessment.typeLabel}"/></span></div></div>
+                                                    <div class="gape-student-class-group-card__badges mb-12"><span class="${assessment.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12"><c:out value="${assessment.stateLabel}"/></span><c:if test="${not empty latestAttempt}"><span class="${latestAttempt.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12"><c:out value="${latestAttempt.stateLabel}"/></span></c:if></div>
+                                                    <div class="gape-student-class-group-card__meta mb-12"><span class="gape-student-enrollment-period" data-gape-datetime-display>Available: <c:out value="${assessment.availabilityLabel}"/></span><span><c:out value="${assessment.questionCountLabel}"/> &middot; Grade: <c:out value="${assessment.maxGrade}"/> &middot; <c:out value="${assessment.attemptsLimitLabel}"/> attempts</span></div>
+                                                    <div class="gape-student-card-actions">
+                                                        <c:choose>
+                                                            <c:when test="${not studentAssessmentArchive and not empty latestAttempt and latestAttempt.inProgress}"><a href="${pageContext.request.contextPath}/student/assessments/attempts/${latestAttempt.id}" class="gape-student-card-icon-button" aria-label="Continue attempt" title="Continue attempt"><i class="ph ph-play"></i></a></c:when>
+                                                            <c:when test="${not empty latestAttempt}"><a href="${pageContext.request.contextPath}/student/assessments/attempts/${latestAttempt.id}/result" class="gape-student-card-icon-button" aria-label="View result" title="View result"><i class="ph ph-chart-bar"></i></a></c:when>
+                                                        </c:choose>
+                                                        <c:if test="${not studentAssessmentArchive}">
+                                                            <c:if test="${pendingAssessmentEnrollment}"><span class="gape-student-card-icon-button" aria-label="Enrollment pending" title="Enrollment pending"><i class="ph ph-clock"></i></span></c:if>
+                                                            <c:if test="${not activeAssessmentEnrollment and not pendingAssessmentEnrollment}"><form action="${pageContext.request.contextPath}/student/assessments/${assessment.id}/enroll" method="post" class="m-0"><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><button type="submit" class="gape-student-card-icon-button gape-student-card-icon-button--request" aria-label="Enroll in assessment" title="Enroll in assessment"><i class="ph ph-user-plus"></i></button></form></c:if>
+                                                            <c:if test="${activeAssessmentEnrollment and (not attemptLimitReached or (not empty latestAttempt and latestAttempt.inProgress))}"><form action="${pageContext.request.contextPath}/student/assessments/${assessment.id}/start" method="post" class="m-0"><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><button type="submit" class="gape-student-card-icon-button gape-student-card-icon-button--request" aria-label="Start assessment" title="${not empty latestAttempt and latestAttempt.inProgress ? 'Continue assessment' : 'Start assessment'}"><i class="ph ph-arrow-right"></i></button></form></c:if>
+                                                        </c:if>
+                                                        <button type="button" class="gape-student-card-icon-button" aria-label="View assessment details" title="View assessment details" data-bs-toggle="modal" data-bs-target="#${assessmentModalId}"><i class="ph ph-eye"></i></button>
+                                                    </div>
+                                                </article>
+                                            </div>
+                                            <div class="modal fade gape-student-assessment-modal" id="${assessmentModalId}" tabindex="-1" aria-labelledby="${assessmentModalId}Title" aria-hidden="true"><div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"><div class="modal-content rounded-10 border-0"><div class="modal-header"><div><h5 class="modal-title text-18 fw-semibold" id="${assessmentModalId}Title"><c:out value="${assessment.title}"/></h5><span class="text-13 text-neutral-500"><c:out value="${classGroup.code}"/> &middot; <c:out value="${subjectGroup.name}"/></span></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><div class="gape-student-class-group-card__meta gape-student-class-group-card__meta--wide mb-16"><span>Type: <c:out value="${assessment.typeLabel}"/></span><span>State: <c:out value="${assessment.stateLabel}"/></span><span>Questions: <c:out value="${assessment.questionCountLabel}"/></span><span>Maximum: <c:out value="${assessment.maxGrade}"/></span><span>Passing: <c:out value="${assessment.passingGrade}"/></span><span>Correction: <c:out value="${assessment.correctionModeLabel}"/></span><span>Enrollment: <c:out value="${assessment.enrollmentModeLabel}"/></span><span data-gape-datetime-display><c:out value="${assessment.availabilityLabel}"/></span></div><p class="text-14 text-neutral-600 mb-0"><c:out value="${assessment.description}"/></p></div><div class="modal-footer"><button type="button" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white" data-bs-dismiss="modal">Close</button></div></div></div></div>
+                                        </c:forEach>
+                                    </div>
+                                </div>
+                            </c:forEach>
+                        </div>
+                    </c:forEach>
+                </section>
+            </c:forEach>
+        </section>
+    </c:forEach>
+</div>

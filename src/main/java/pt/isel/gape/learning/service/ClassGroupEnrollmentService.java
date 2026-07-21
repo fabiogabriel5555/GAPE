@@ -515,6 +515,7 @@ public final class ClassGroupEnrollmentService {
                         throw new IllegalArgumentException("Withdrawal date cannot be before enrollment start date");
                     }
                     classGroupEnrollmentDAO.withdraw(connection, studentUserId, classGroupId, withdrawalDate);
+                    gradeLifecycleService.synchronizeAfterClassGroupEnrollmentChange(connection, classGroupId);
                     auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_WITHDRAW",
                             "class_group_enrollment", enrollmentIdentifier(studentUserId, classGroupId),
                             "success", sourceIp);
@@ -563,10 +564,11 @@ public final class ClassGroupEnrollmentService {
                     );
                     classGroupEnrollmentDAO.findEnrollment(connection, studentUserId, classGroupId)
                             .orElseThrow(() -> new IllegalArgumentException("Class group enrollment not found"));
-                    classGroupEnrollmentDAO.deleteEnrollment(connection, studentUserId, classGroupId);
                     auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_ENROLL_DELETE",
                             "class_group_enrollment", enrollmentIdentifier(studentUserId, classGroupId),
                             "success", sourceIp);
+                    classGroupEnrollmentDAO.deleteEnrollment(connection, studentUserId, classGroupId);
+                    gradeLifecycleService.synchronizeAfterClassGroupEnrollmentChange(connection, classGroupId);
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();

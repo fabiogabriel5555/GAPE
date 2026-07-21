@@ -53,7 +53,7 @@ public final class ProfileServlet extends HttpServlet {
         }
 
         Session session = persistedSession.get();
-        if (!session.token().equals(sessionToken.get()) || session.userId() != sessionUser.get().userId()) {
+        if (!sessionService.matchesToken(session, sessionToken.get()) || session.userId() != sessionUser.get().userId()) {
             sessionManager.clearSession(request);
             redirectToLogin(request, response, "invalid");
             return;

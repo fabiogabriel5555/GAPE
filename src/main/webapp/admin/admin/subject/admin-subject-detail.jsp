@@ -495,6 +495,36 @@
             white-space: nowrap;
         }
 
+        .gape-subject-form-modal-root select[data-course-term-select]:disabled + .select2-container {
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .gape-subject-form-modal-root select[data-course-term-select]:disabled + .select2-container .select2-selection--single {
+            background-color: #f3f4f6 !important;
+            border-color: #e5e7eb !important;
+        }
+
+        .gape-subject-form-modal-root select[data-course-term-select]:disabled + .select2-container .select2-selection__rendered,
+        .gape-subject-form-modal-root select[data-course-term-select]:disabled + .select2-container .select2-selection__placeholder {
+            color: #9ca3af !important;
+        }
+
+        .gape-subject-form-modal-root select[data-course-term-select]:disabled + .select2-container .select2-selection__arrow {
+            opacity: .45;
+        }
+
+        .gape-subject-form-modal-root select[data-course-term-select]:not(:disabled) + .select2-container .select2-selection__placeholder {
+            color: #334155 !important;
+            opacity: 1;
+        }
+
+        .gape-subject-form-modal-root button[data-course-term-submit][disabled] {
+            cursor: not-allowed;
+            opacity: .58;
+            pointer-events: none;
+        }
+
         .gape-subject-required-toggle {
             min-height: 50px;
         }
@@ -528,6 +558,60 @@
             grid-template-columns: minmax(250px, 1.25fr) minmax(220px, 1.05fr) minmax(135px, 0.55fr) minmax(92px, auto);
         }
 
+        /* Structure has one shared column map at every depth. The third
+           track is the intentional visual buffer that centres State between
+           Class Groups and Actions without changing any layer's alignment. */
+        #subject-structure {
+            --gape-subject-structure-columns: minmax(260px, 1.15fr) minmax(130px, 0.38fr) minmax(110px, 0.28fr) minmax(0, 0.65fr) minmax(122px, auto);
+        }
+
+        #subject-structure .gape-enrollment-list-header,
+        #subject-structure .gape-enrollment-row {
+            grid-template-columns: var(--gape-subject-structure-columns);
+        }
+
+        @media (min-width: 1200px) {
+            #subject-structure .gape-enrollment-list-header > :nth-child(3),
+            #subject-structure .gape-enrollment-row > :nth-child(3) {
+                grid-column: 4;
+            }
+        }
+
+        /* Grade Sheets has longer course names than its numerical/state
+           fields. Giving both context columns proportional space prevents the
+           State-to-Actions void present in the inherited generic grid. */
+        #subject-grade-sheets .gape-subject-grade-sheet-list-header,
+        #subject-grade-sheets .gape-subject-grade-sheet-row,
+        #subject-grade-sheets .gape-published-grade-sheets-node > .gape-structure-row {
+            grid-template-columns: minmax(250px, 1.35fr) minmax(220px, 1.15fr) minmax(92px, .34fr) minmax(118px, .46fr) minmax(88px, auto);
+        }
+
+        #subject-grade-sheets .gape-subject-grade-sheet-actions {
+            min-width: 88px;
+        }
+
+        #subject-grade-sheets .gape-subject-grade-sheet-actions {
+            min-height: 34px;
+        }
+
+        #subject-grade-sheets .gape-subject-grade-sheet-actions > a,
+        #subject-grade-sheets .gape-subject-grade-sheet-actions > button {
+            align-items: center;
+            border: 1px solid transparent !important;
+            border-radius: 8px;
+            display: inline-flex;
+            height: 34px;
+            justify-content: center;
+            line-height: 1;
+            width: 34px;
+        }
+
+        #subject-grade-sheets .gape-subject-grade-sheet-actions > a:hover,
+        #subject-grade-sheets .gape-subject-grade-sheet-actions > button:hover {
+            background: #eff6ff;
+            border-color: rgba(var(--cd-primary-rgb), .28) !important;
+        }
+
         .gape-structure-node {
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
@@ -539,15 +623,80 @@
 
         .gape-subject-occurrence-groups-panel {
             border-top: 1px solid var(--cd-border);
-            margin-top: 12px;
-            padding-top: 12px;
+            margin-top: 16px;
+            padding-top: 14px;
+        }
+
+        .gape-subject-occurrence-groups-panel__heading {
+            align-items: center;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 0 8px;
         }
 
         .gape-subject-occurrence-groups-content {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            padding: 0 0 4px 20px;
+            gap: 10px;
+        }
+
+        .gape-subject-class-group-card {
+            background: #fff !important;
+            border: 1px solid var(--cd-border) !important;
+            border-radius: 8px !important;
+            padding: 12px 16px !important;
+        }
+
+        @media (min-width: 768px) {
+            .gape-subject-class-group-card .gape-enrollment-row {
+                /* Keep the child card visibly inset, exactly as the concrete
+                   enrollment occurrence card in Course Details. */
+                /* The card itself stays inset like the Course Details enrollment
+                   card.  Extend only its grid tracks to the Structure header's
+                   exact column lines, then restore the visible content inset. */
+                margin-inline: -16px;
+            }
+
+            .gape-subject-class-group-card .gape-enrollment-row > :first-child {
+                padding-left: 16px;
+            }
+
+            .gape-subject-class-group-card .gape-enrollment-row > :last-child {
+                /* Keep the action icons inside the inset card without adding
+                   layout width to the shared Actions grid track. */
+                transform: translateX(-16px);
+            }
+
+            #subject-structure .gape-enrollment-list-header > :last-child,
+            #subject-structure .gape-enrollment-row > :last-child {
+                grid-column: 5;
+            }
+
+            /* Completed occurrence cards are visually nested, but their
+               Class Groups, State and Actions tracks must land on the same
+               column lines as the completed aggregate. */
+            #subject-structure .gape-completed-class-groups-content > [data-subject-detail-occurrence-group] {
+                margin-inline: -32px;
+            }
+
+            #subject-structure .gape-completed-class-groups-content > [data-subject-detail-occurrence-group] > .gape-enrollment-row > :first-child {
+                padding-left: 32px;
+            }
+
+        }
+
+        @media (min-width: 768px) and (max-width: 1199.98px) {
+            /* A medium viewport cannot accommodate the desktop spacer without
+               wrapping State badges. Keep the same four data columns aligned
+               and remove only that spacer at this width. */
+            #subject-structure {
+                --gape-subject-structure-columns: minmax(200px, 1fr) minmax(95px, auto) minmax(110px, auto) minmax(122px, auto);
+            }
+
+            #subject-structure .gape-enrollment-list-header > :last-child,
+            #subject-structure .gape-enrollment-row > :last-child {
+                grid-column: 4;
+            }
         }
 
         .gape-completed-class-groups-divider,
@@ -557,7 +706,7 @@
             display: flex;
             font-size: 12px;
             font-weight: 600;
-            gap: 12px;
+            gap: 10px;
             letter-spacing: 0.02em;
             margin: 6px 0 0;
             text-transform: uppercase;
@@ -610,7 +759,9 @@
         }
 
         .gape-published-grade-sheets-content {
-            padding: 16px 32px 0;
+            /* Published rows use the exact Grade Sheets grid, not a narrower
+               indented area that shifts their columns to the left. */
+            padding: 16px 0 0;
         }
 
         .cd-element-count {
@@ -1236,6 +1387,21 @@
             .gape-structure-row {
                 grid-template-columns: 1fr;
             }
+
+            /* Override the desktop-only, scoped column grammars above.  Without
+               this explicit scope, their higher specificity keeps nested rows
+               in five columns on phones and clips the context cells. */
+            #subject-structure .gape-structure-row,
+            #subject-grade-sheets .gape-subject-grade-sheet-row,
+            #subject-grade-sheets .gape-published-grade-sheets-node > .gape-structure-row {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            #subject-structure .gape-structure-row > *,
+            #subject-grade-sheets .gape-subject-grade-sheet-row > *,
+            #subject-grade-sheets .gape-published-grade-sheets-node > .gape-structure-row > * {
+                min-width: 0;
+            }
         }
 
         @media (max-width: 575.98px) {
@@ -1403,12 +1569,11 @@
                                         </div>
                                     </div>
 
-                                    <div class="gape-structure-list-header">
-                                        <span>Course Occurrence</span>
-                                        <span>Type</span>
-                                        <span>No. Elements</span>
-                                        <span>State</span>
-                                        <span class="text-end">Actions</span>
+                                            <div class="gape-structure-list-header gape-enrollment-list-header">
+                                                <span>Course Occurrence</span>
+                                                <span>Class Groups</span>
+                                                <span>State</span>
+                                                <span class="text-end">Actions</span>
                                     </div>
 
                                     <div class="d-flex flex-column gap-12">
@@ -1423,23 +1588,22 @@
                                         <c:if test="${completedClassGroupCount gt 0}">
                                             <div class="gape-completed-class-groups-divider" aria-hidden="true"><span>Completed Class Groups</span></div>
                                             <article class="gape-structure-node gape-completed-class-groups-node border rounded-8 px-18 py-16 bg-white">
-                                                <div class="gape-structure-row">
+                                                <div class="gape-structure-row gape-enrollment-row">
                                                     <div class="d-flex align-items-center gap-12 min-w-0">
                                                         <span class="bg-danger-50 text-danger-600 cd-mode-icon text-20 line-height-1"><i class="ph ph-archive" aria-hidden="true"></i></span>
                                                         <div class="min-w-0"><span class="fw-medium text-14 text-neutral-700 d-block">Completed Class Groups</span><span class="gape-node-meta text-12"><span>Past class groups</span></span></div>
                                                     </div>
-                                                    <div aria-hidden="true"></div>
                                                     <div><span class="cd-element-count"><c:out value="${completedClassGroupCount}"/></span></div>
                                                     <div><span class="bg-neutral-20 text-neutral-600 px-14 py-6 border-neutral-30 border rounded-pill text-13">Completed</span></div>
                                                     <div class="d-flex justify-content-end"><button type="button" class="gape-tree-toggle text-20 text-neutral-500 hover-text-main-600" data-gape-tree-toggle="completedSubjectClassGroups${subject.id}" data-gape-open-title="Hide completed class groups" data-gape-closed-title="Show completed class groups" aria-expanded="false" aria-controls="completedSubjectClassGroups${subject.id}" aria-label="Show completed class groups" title="Show completed class groups"><i class="ph ph-caret-down" aria-hidden="true"></i></button></div>
                                                 </div>
                                                 <div id="completedSubjectClassGroups${subject.id}" class="gape-completed-class-groups-panel d-none">
-                                                    <div class="gape-completed-class-groups-content d-flex flex-column gap-12">
+                                                    <div class="gape-completed-class-groups-content d-flex flex-column gap-10">
                                                         <c:forEach var="occurrenceGroup" items="${completedClassGroupOccurrenceGroups}">
                                                             <c:set var="occurrenceGroupPanelPrefix" value="subjectDetailCompletedOccurrenceGroups" />
                                                             <c:set var="occurrenceGroupIconClass" value="bg-neutral-20 text-neutral-600" />
                                                             <c:set var="occurrenceGroupIcon" value="ph ph-calendar-check" />
-                                                            <c:set var="occurrenceGroupStartsOpen" value="false" />
+                                                            <c:set var="occurrenceGroupStartsOpen" value="true" />
                                                             <%@ include file="/WEB-INF/fragments/subject-class-group-occurrence-node.jspf" %>
                                                         </c:forEach>
                                                     </div>
@@ -1811,17 +1975,26 @@
         }
     };
 </script>
-<script src="${pageContext.request.contextPath}/assets/js/gape-subject-course-select.js?v=20260713-subject-modal-portal-1"></script>
-<script src="${pageContext.request.contextPath}/assets/js/gape-course-year-select.js?v=20260713-course-years-stable-1"></script>
-<script src="${pageContext.request.contextPath}/assets/js/gape-course-term-select.js?v=20260709-course-terms-1"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-subject-course-select.js?v=20260717-standard-selection-1"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-course-year-select.js?v=20260717-course-year-dependency-2"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-course-term-select.js?v=20260717-course-year-dependency-4"></script>
 <script>
     (function () {
         var hashTarget = {
+            '#subject-coordinators': 'allocations',
+            '#subject-allocations': 'allocations',
             '#course-associations': 'associations',
             '#subject-associations': 'associations',
             '#subject-class-groups': 'structure',
             '#subject-structure': 'structure',
             '#subject-grade-sheet': 'grade-sheet'
+        };
+
+        var subjectPanelHash = {
+            allocations: '#subject-coordinators',
+            associations: '#subject-associations',
+            structure: '#subject-structure',
+            'grade-sheet': '#subject-grade-sheet'
         };
 
         function subjectRoot() {
@@ -2257,6 +2430,11 @@
                 return;
             }
             var target = preferredPanel || hashTarget[window.location.hash] || currentSubjectPanel() || 'structure';
+            if (preferredPanel || hashTarget[window.location.hash]) {
+                /* Keep the requested card visible while its lazy content loads,
+                   including after a normal-navigation fallback. */
+                revealSubjectPanel(target);
+            }
             activateSubjectPanel(target);
             initializeSubjectFragment(root);
         }
@@ -2344,6 +2522,15 @@
             return replaceSubjectRootFrom(html, panel);
         }
 
+        function subjectPanelUrl(url, panel) {
+            var target = new URL(url, window.location.href);
+            var hash = subjectPanelHash[panel];
+            if (hash) {
+                target.hash = hash;
+            }
+            return withCurrentSession(target.toString());
+        }
+
         async function submitSubjectLiveForm(form, trigger) {
             if (form.dataset.subjectSubmitting === 'true') {
                 return;
@@ -2368,7 +2555,7 @@
                 });
                 var html = await response.text();
                 if (!replaceSubjectRootFrom(html, panel) && !await reloadSubjectRoot(panel)) {
-                    window.location.assign(withCurrentSession(response.url || form.action));
+                    window.location.assign(subjectPanelUrl(response.url || form.action, panel));
                 }
             } catch (error) {
                 try {
@@ -2378,7 +2565,7 @@
                 } catch (ignored) {
                     // Fall back to a normal navigation if the live refresh cannot recover.
                 }
-                window.location.assign(withCurrentSession(window.location.href));
+                window.location.assign(subjectPanelUrl(window.location.href, panel));
             } finally {
                 setSubjectControlLoading(trigger || form.querySelector('button[type="submit"]'), false);
                 setFormBusy(form, false);

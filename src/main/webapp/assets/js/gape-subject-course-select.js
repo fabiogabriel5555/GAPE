@@ -59,18 +59,6 @@
         return wrapper;
     }
 
-    function courseTokenTemplate(data) {
-        var label = splitCourseLabel(data.text || '');
-        if (!data.id) {
-            return label.main;
-        }
-
-        var wrapper = document.createElement('span');
-        wrapper.className = 'gape-subject-course-token';
-        wrapper.textContent = label.context ? label.main + ' | ' + label.context : label.main;
-        return wrapper;
-    }
-
     function markCourseRows() {
         document.querySelectorAll('.gape-eduall-select-dropdown .gape-subject-course-option').forEach(function (option) {
             var row = option.closest('.select2-results__option');
@@ -111,11 +99,10 @@
         }
         var options = {
             width: '100%',
-            selectionCssClass: 'gape-eduall-selection gape-subject-course-selection',
+            selectionCssClass: 'gape-eduall-selection',
             dropdownCssClass: 'gape-eduall-select-dropdown gape-subject-course-dropdown',
             matcher: contextMatcher,
-            templateResult: courseTemplate,
-            templateSelection: select.multiple ? courseTokenTemplate : courseTemplate
+            templateResult: courseTemplate
         };
         var modalParent = select.closest('.modal');
         if (modalParent) {

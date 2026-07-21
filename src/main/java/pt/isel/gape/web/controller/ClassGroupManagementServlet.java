@@ -486,13 +486,21 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
             boolean includeStructure
     ) throws ServletException, IOException {
         SessionUser actor = requireCurrentUser(request);
-        ClassGroup classGroup = classGroupService.getClassGroup(
-                actor.userId(),
-                currentSessionId(request),
-                primaryProfile(actor),
-                classGroupId,
-                request.getRemoteAddr()
-        );
+        ClassGroup classGroup = primaryProfile(actor) == AccessProfileType.TEACHER
+                ? classGroupService.getReadableClassGroup(
+                        actor.userId(),
+                        currentSessionId(request),
+                        primaryProfile(actor),
+                        classGroupId,
+                        request.getRemoteAddr()
+                )
+                : classGroupService.getClassGroup(
+                        actor.userId(),
+                        currentSessionId(request),
+                        primaryProfile(actor),
+                        classGroupId,
+                        request.getRemoteAddr()
+                );
         markLearningEventsReadForCurrentUser(request, "/learning/class-groups/" + classGroup.id(), true);
         ClassGroupView classGroupView = viewFactory.classGroupView(classGroup);
         boolean classGroupCompleted = classGroupView.isCompleted();
@@ -701,13 +709,21 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
     }
 
     private ClassGroup visibleClassGroup(HttpServletRequest request, SessionUser actor, long classGroupId) {
-        return classGroupService.getClassGroup(
-                actor.userId(),
-                currentSessionId(request),
-                primaryProfile(actor),
-                classGroupId,
-                request.getRemoteAddr()
-        );
+        return primaryProfile(actor) == AccessProfileType.TEACHER
+                ? classGroupService.getReadableClassGroup(
+                        actor.userId(),
+                        currentSessionId(request),
+                        primaryProfile(actor),
+                        classGroupId,
+                        request.getRemoteAddr()
+                )
+                : classGroupService.getClassGroup(
+                        actor.userId(),
+                        currentSessionId(request),
+                        primaryProfile(actor),
+                        classGroupId,
+                        request.getRemoteAddr()
+                );
     }
 
     private boolean isCompletedClassGroup(HttpServletRequest request, long classGroupId) {
@@ -770,8 +786,8 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
                 return null;
             }
             return "Assessment weights total " + percentageLabel(summary.totalWeight())
-                    + "%. If this is not regularized, when the class group period ends the system will redistribute "
-                    + "the weights equally so the sum is 100%.";
+                    + "%. The grade sheet remains Draft until the total reaches 100%; weights are redistributed "
+                    + "equally only when the class group is completed.";
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load class group assessment weight summary", exception);
         }
@@ -1971,7 +1987,11 @@ public final class ClassGroupManagementServlet extends DashboardServletSupport {
     }
 
     private String classGroupFormJsp(HttpServletRequest request) {
-        return ADMIN_CLASS_GROUP_FORM_JSP;
+        return switch (primaryProfile(requireCurrentUser(request))) {
+            case COORDINATOR -> COORDINATOR_CLASS_GROUP_FORM_JSP;
+            case TEACHER -> INSTRUCTOR_CLASS_GROUP_FORM_JSP;
+            default -> ADMIN_CLASS_GROUP_FORM_JSP;
+        };
     }
 
     private String contentBlockFormJsp(HttpServletRequest request) {

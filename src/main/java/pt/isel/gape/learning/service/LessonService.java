@@ -20,6 +20,7 @@ import pt.isel.gape.integration.videoconference.VideoConferenceAdapter;
 import pt.isel.gape.learning.dao.ClassGroupDAO;
 import pt.isel.gape.learning.dao.ContentBlockDAO;
 import pt.isel.gape.learning.dao.LessonDAO;
+import pt.isel.gape.learning.dao.PedagogicalItemIdAllocator;
 import pt.isel.gape.learning.dao.PhysicalRoomDAO;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupState;
@@ -57,6 +58,7 @@ public final class LessonService {
     private final PermissionChecker permissionChecker;
     private final VideoConferenceAdapter videoConferenceAdapter;
     private final AuditService auditService;
+    private final PedagogicalItemIdAllocator pedagogicalItemIdAllocator;
     private final Clock clock;
 
     public LessonService(
@@ -105,6 +107,7 @@ public final class LessonService {
         this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
         this.videoConferenceAdapter = Objects.requireNonNull(videoConferenceAdapter, "videoConferenceAdapter is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
+        this.pedagogicalItemIdAllocator = new PedagogicalItemIdAllocator();
         this.clock = Objects.requireNonNull(clock, "clock is required");
     }
 
@@ -207,7 +210,15 @@ public final class LessonService {
                             null,
                             now
                     );
-                    long lessonId = lessonDAO.create(connection, normalizedCommand);
+                    long lessonId = lessonDAO.create(
+                            connection,
+                            pedagogicalItemIdAllocator.nextId(
+                                    connection,
+                                    normalizedCommand.contentBlockId(),
+                                    PedagogicalItemIdAllocator.ItemType.LESSON
+                            ),
+                            normalizedCommand
+                    );
                     synchronizeTemporalStates(connection, now);
                     auditService.record(connection, actorUserId, sessionId, "LESSON_CREATE",
                             "lesson", Long.toString(lessonId), "success", sourceIp);
@@ -439,9 +450,9 @@ public final class LessonService {
                     if (lessonDAO.hasDomainDependencies(connection, lessonId)) {
                         throw new IllegalStateException("Lesson with schedule or attendance history cannot be deleted");
                     }
-                    lessonDAO.delete(connection, lessonId);
                     auditService.record(connection, actorUserId, sessionId, "LESSON_DELETE",
                             "lesson", Long.toString(lessonId), "success", sourceIp);
+                    lessonDAO.delete(connection, lessonId);
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();

@@ -23,8 +23,8 @@ import pt.isel.gape.web.view.OrganizationView;
 @WebServlet(name = "courseCatalogServlet", urlPatterns = {"/courses", "/courses/*"})
 public final class CourseCatalogServlet extends DashboardServletSupport {
 
-    private static final String COURSE_LIST_JSP = "/courses.jsp";
-    private static final String COURSE_DETAIL_JSP = "/course-details.jsp";
+    private static final String COURSE_LIST_JSP = "/WEB-INF/views/public/course-catalog.jsp";
+    private static final String COURSE_DETAIL_JSP = "/WEB-INF/views/public/course-detail.jsp";
 
     private final ApplicationReadService.Courses courseDAO;
     private final ApplicationReadService.CourseSubjects courseSubjectDAO;

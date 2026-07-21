@@ -71,7 +71,9 @@ class ActivityLogServiceTest {
                 "127.0.0.1"
         );
 
-        ActivityLog log = activityLogService.findById(id).orElseThrow();
+        ActivityLog log = activityLogService.findVisibleById(
+                1L, AccessProfileType.ADMINISTRATOR, id
+        ).orElseThrow();
 
         assertEquals(1L, log.userId());
         assertEquals(100L, log.sessionId());
@@ -104,8 +106,12 @@ class ActivityLogServiceTest {
         List<ActivityLog> studentLogs = activityLogService.listForActor(4L, AccessProfileType.STUDENT);
 
         assertTrue(adminLogs.size() >= 2);
-        assertEquals(1, studentLogs.size());
-        assertEquals(4L, studentLogs.getFirst().userId());
+        assertEquals(2, studentLogs.size());
+        assertTrue(studentLogs.stream().allMatch(log ->
+                Long.valueOf(4L).equals(log.userId())
+                        || ("user_account".equals(log.affectedEntityType())
+                        && "4".equals(log.affectedEntityIdentifier()))
+        ));
     }
 
     @Test
@@ -298,6 +304,79 @@ class ActivityLogServiceTest {
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """,
                 """
+                CREATE TABLE organization (
+                    id_organization BIGINT UNSIGNED NOT NULL,
+                    name VARCHAR(120) NOT NULL,
+                    state VARCHAR(20) NOT NULL,
+                    PRIMARY KEY (id_organization)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """,
+                """
+                CREATE TABLE course (
+                    id_course BIGINT UNSIGNED NOT NULL,
+                    id_organization BIGINT UNSIGNED NOT NULL,
+                    PRIMARY KEY (id_course)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """,
+                """
+                CREATE TABLE subject (
+                    id_subject BIGINT UNSIGNED NOT NULL,
+                    id_organization BIGINT UNSIGNED NOT NULL,
+                    PRIMARY KEY (id_subject)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """,
+                """
+                CREATE TABLE class_group (
+                    id_class_group BIGINT UNSIGNED NOT NULL,
+                    id_course BIGINT UNSIGNED NOT NULL,
+                    id_subject BIGINT UNSIGNED NOT NULL,
+                    state VARCHAR(20) NOT NULL DEFAULT 'active',
+                    PRIMARY KEY (id_class_group)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """,
+                """
+                CREATE TABLE manage_organization (
+                    id_admin_user BIGINT UNSIGNED NOT NULL,
+                    id_organization BIGINT UNSIGNED NOT NULL,
+                    state VARCHAR(20) NOT NULL,
+                    start_date DATE NULL,
+                    end_date DATE NULL,
+                    PRIMARY KEY (id_admin_user, id_organization)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """,
+                """
+                CREATE TABLE coordinate_subject (
+                    id_coordinator_user BIGINT UNSIGNED NOT NULL,
+                    id_subject BIGINT UNSIGNED NOT NULL,
+                    state VARCHAR(20) NOT NULL,
+                    PRIMARY KEY (id_coordinator_user, id_subject)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """,
+                """
+                CREATE TABLE teach_class_group (
+                    id_teacher_user BIGINT UNSIGNED NOT NULL,
+                    id_class_group BIGINT UNSIGNED NOT NULL,
+                    state VARCHAR(20) NOT NULL,
+                    start_date DATE NULL,
+                    end_date DATE NULL,
+                    PRIMARY KEY (id_teacher_user, id_class_group)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """,
+                """
+                CREATE TABLE enroll_course (
+                    id_student_user BIGINT UNSIGNED NOT NULL,
+                    id_course BIGINT UNSIGNED NOT NULL,
+                    PRIMARY KEY (id_student_user, id_course)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """,
+                """
+                CREATE TABLE enroll_class_group (
+                    id_student_user BIGINT UNSIGNED NOT NULL,
+                    id_class_group BIGINT UNSIGNED NOT NULL,
+                    PRIMARY KEY (id_student_user, id_class_group)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """,
+                """
                 CREATE TABLE activity_log (
                     id_activity_log BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                     id_user BIGINT UNSIGNED NULL,
@@ -315,6 +394,22 @@ class ActivityLogServiceTest {
                     CONSTRAINT fk_activity_log_session
                         FOREIGN KEY (id_session) REFERENCES user_session (id_session)
                         ON UPDATE CASCADE ON DELETE SET NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """,
+                """
+                CREATE TABLE activity_log_scope (
+                    id_activity_log BIGINT UNSIGNED NOT NULL,
+                    scope_type VARCHAR(30) NOT NULL,
+                    scope_id BIGINT UNSIGNED NOT NULL,
+                    PRIMARY KEY (id_activity_log, scope_type, scope_id)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """,
+                """
+                CREATE TABLE deletion_request (
+                    id_deletion BIGINT UNSIGNED NOT NULL,
+                    submitter_user_id BIGINT UNSIGNED NULL,
+                    processor_admin_user_id BIGINT UNSIGNED NULL,
+                    PRIMARY KEY (id_deletion)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """,
                 """
@@ -349,8 +444,22 @@ class ActivityLogServiceTest {
                 "INSERT INTO administrator_profile (id_user, cod_administrator) VALUES (1, 'ADM-001')",
                 "INSERT INTO student_profile (id_user, cod_student) VALUES (4, 'STD-001')",
                 "INSERT INTO user_session (id_session, id_user, token, state, start_at, last_activity, end_at) VALUES (100, 1, 'tok-admin-100', 'active', '2026-01-10 10:00:00', '2026-01-10 10:30:00', NULL)",
-                "INSERT INTO permission (cod_permission, name, state) VALUES ('MANAGE_ALL', 'Manage All', 'active')",
+                """
+                INSERT INTO permission (cod_permission, name, state) VALUES
+                    ('MANAGE_ALL', 'Manage All', 'active'),
+                    ('VIEW_REPORTS', 'View reports', 'active')
+                """,
                 "INSERT INTO grant_administrator (id_admin_user, cod_permission) VALUES (1, 'MANAGE_ALL')",
+                "INSERT INTO grant_student (id_student_user, cod_permission) VALUES (4, 'VIEW_REPORTS')",
+                "INSERT INTO organization (id_organization, name, state) VALUES (10, 'Scoped organization', 'active')",
+                "INSERT INTO course (id_course, id_organization) VALUES (20, 10)",
+                "INSERT INTO subject (id_subject, id_organization) VALUES (30, 10)",
+                "INSERT INTO class_group (id_class_group, id_course, id_subject) VALUES (40, 20, 30)",
+                """
+                INSERT INTO manage_organization (id_admin_user, id_organization, state, start_date, end_date)
+                VALUES (1, 10, 'active', '2026-01-01', '2026-12-31')
+                """,
+                "INSERT INTO enroll_course (id_student_user, id_course) VALUES (4, 20)",
                 """
                 INSERT INTO activity_log (
                     id_activity_log, id_user, id_session, operation_type, affected_entity_type,

@@ -131,6 +131,10 @@
             select.value = '';
         }
         notifySelect2(select);
+        /* A course may rebuild this select with its only valid year already
+           selected. Native `change` is not emitted for that programmatic
+           selection, so dependent fields must receive an explicit signal. */
+        select.dispatchEvent(new Event('gape:course-year-rebuilt'));
     }
 
     function scheduleRebuild(select) {

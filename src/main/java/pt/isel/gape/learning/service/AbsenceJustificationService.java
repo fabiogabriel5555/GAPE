@@ -116,21 +116,38 @@ public final class AbsenceJustificationService {
                     if (record.state() == AttendanceState.CANCELLED || !record.status().allowsJustification()) {
                         throw new IllegalArgumentException("Attendance record is not compatible with absence justification");
                     }
-                    if (justificationDAO.findByAttendanceRecord(connection, record.id()).isPresent()) {
-                        throw new IllegalStateException("Attendance record already has an absence justification");
-                    }
                     LocalDateTime submittedAt = currentMinute();
-                    long justificationId = justificationDAO.create(
-                            connection,
-                            actorUserId,
-                            new AbsenceJustificationCreateCommand(
-                                    command.attendanceRecordId(),
-                                    command.reason(),
-                                    command.attachment(),
-                                    submittedAt
-                            )
-                    );
-                    auditService.record(connection, actorUserId, sessionId, "ABSENCE_JUSTIFICATION_SUBMIT",
+                    AbsenceJustification existing = justificationDAO.findByAttendanceRecord(connection, record.id()).orElse(null);
+                    long justificationId;
+                    String operation;
+                    if (existing == null) {
+                        justificationId = justificationDAO.create(
+                                connection,
+                                actorUserId,
+                                new AbsenceJustificationCreateCommand(
+                                        command.attendanceRecordId(),
+                                        command.reason(),
+                                        command.attachment(),
+                                        submittedAt
+                                )
+                        );
+                        operation = "ABSENCE_JUSTIFICATION_SUBMIT";
+                    } else {
+                        if (existing.state() != AbsenceJustificationState.REJECTED
+                                && existing.state() != AbsenceJustificationState.CANCELLED) {
+                            throw new IllegalStateException("Attendance record already has an active absence justification");
+                        }
+                        justificationId = existing.id();
+                        justificationDAO.resubmit(
+                                connection,
+                                justificationId,
+                                submittedAt,
+                                command.reason(),
+                                command.attachment()
+                        );
+                        operation = "ABSENCE_JUSTIFICATION_RESUBMIT";
+                    }
+                    auditService.record(connection, actorUserId, sessionId, operation,
                             "absence_justification", Long.toString(justificationId), "success", sourceIp);
                     AbsenceJustification justification = requireJustification(connection, justificationId);
                     connection.commit();

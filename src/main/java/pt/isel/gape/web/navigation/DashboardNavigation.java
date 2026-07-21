@@ -19,12 +19,9 @@ public final class DashboardNavigation {
     }
 
     private static String landingPageFor(AccessProfileType profileType) {
-        return switch (profileType) {
-            case ADMINISTRATOR -> "/admin/admin-dashbord.jsp";
-            case COORDINATOR -> "/coordinator/coordinator-dashbord.jsp";
-            case TEACHER -> "/instructor/instructor-dashbord.jsp";
-            case STUDENT -> "/student/student/dashboard/student-dashboard.jsp";
-        };
+        // Every role enters the same protected Dashboard route.  The route
+        // renders only panels granted to the actor's active profile/scope.
+        return "/dashboard";
     }
 
     private static String profilePageFor(AccessProfileType profileType) {

@@ -177,7 +177,8 @@ public final class ContentUploadServlet extends HttpServlet {
                                 reusableFile.source(),
                                 ContentItemState.ACTIVE
                         ),
-                        request.getRemoteAddr()
+                        request.getRemoteAddr(),
+                        targetContentBlockId(associationCommand)
                 );
                 pendingFileContentItemId = contentItem.id();
                 ContentAssociationCommand repositoryAssociationCommand = useOriginalMetadata
@@ -232,7 +233,8 @@ public final class ContentUploadServlet extends HttpServlet {
                                 source,
                                 ContentItemState.ACTIVE
                         ),
-                        request.getRemoteAddr()
+                        request.getRemoteAddr(),
+                        targetContentBlockId(associationCommand)
                 );
                 pendingFileContentItemId = contentItem.id();
                 ContentStorageContext storageContext = ContentStorageContext.forContentItem(
@@ -273,7 +275,8 @@ public final class ContentUploadServlet extends HttpServlet {
                                 source,
                                 ContentItemState.ACTIVE
                         ),
-                        request.getRemoteAddr()
+                        request.getRemoteAddr(),
+                        targetContentBlockId(associationCommand)
                 );
                 pendingFileContentItemId = contentItem.id();
             }
@@ -430,6 +433,12 @@ public final class ContentUploadServlet extends HttpServlet {
         Integer orderNo = parseOptionalInteger(request.getParameter("orderNo"), "orderNo");
         boolean mandatory = Boolean.parseBoolean(request.getParameter("mandatory"));
         return new ContentAssociationCommand(type, targetId, role, orderNo, mandatory);
+    }
+
+    private static Long targetContentBlockId(ContentAssociationCommand command) {
+        return command != null && command.type() == ContentAssociationType.CONTENT_BLOCK
+                ? command.targetId()
+                : null;
     }
 
     private static ContentFormat contentFormat(HttpServletRequest request) {

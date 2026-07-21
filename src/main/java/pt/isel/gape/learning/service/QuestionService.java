@@ -217,9 +217,9 @@ public final class QuestionService {
                             sourceIp
                     );
                     requireMutableStructure(connection, assessment.id());
-                    questionDAO.delete(connection, questionId);
                     auditService.record(connection, actorUserId, sessionId, "QUESTION_DELETE",
                             "question", Long.toString(questionId), "success", sourceIp);
+                    questionDAO.delete(connection, questionId);
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();

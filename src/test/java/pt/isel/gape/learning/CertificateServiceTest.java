@@ -97,6 +97,33 @@ class CertificateServiceTest {
     }
 
     @Test
+    void optionalCourseSubjectsDoNotBlockCertificateOrChangeItsMandatoryEctsAverage() throws Exception {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     UPDATE integrate_subject
+                     SET mandatory = 0
+                     WHERE id_course = 30
+                       AND id_subject = 41
+                     """)) {
+            statement.executeUpdate();
+        }
+        prepareCourse30ForCompletion();
+        deleteCourse30Certificate();
+
+        Certificate certificate = certificateService.issueCertificate(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                issueCommand(),
+                IP
+        );
+        assertEquals(CertificateState.ISSUED, certificate.state());
+        assertEquals(bd("12.00"), certificate.finalGrade());
+        assertEquals(2, certificate.gradeSheetIds().size(),
+                "An optional subject with a grade is shown without affecting the final grade");
+    }
+
+    @Test
     void issuedCertificateSnapshotAndValidationCodeRemainStable() throws Exception {
         prepareCourse30ForCompletion();
         Certificate issued = certificateService.issueCertificate(
@@ -359,6 +386,27 @@ class CertificateServiceTest {
                     VALUES (4, 52, 'active', '2026-01-01', '2026-06-30')
                     ON DUPLICATE KEY UPDATE state = 'active', start_date = '2026-01-01', end_date = '2026-06-30'
                     """)) {
+                statement.executeUpdate();
+            }
+        }
+    }
+
+    private static void deleteCourse30Certificate() throws SQLException {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    DELETE FROM based_on_grade_sheet_certificate
+                    WHERE id_certificate IN (
+                        SELECT id_certificate FROM certificate
+                        WHERE id_course = 30 AND id_user_student = 4
+                    )
+                    """)) {
+                statement.executeUpdate();
+            }
+            try (PreparedStatement statement = connection.prepareStatement("""
+                     DELETE FROM certificate
+                     WHERE id_course = 30
+                       AND id_user_student = 4
+                     """)) {
                 statement.executeUpdate();
             }
         }

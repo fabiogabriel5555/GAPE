@@ -21,6 +21,13 @@
         var lastMarkedHref = null;
         var currentInternalPath = function () {
             var path = window.location.pathname || '/';
+            var sessionMarker = path.indexOf(';jsessionid=');
+            if (sessionMarker >= 0) {
+                var sessionPathStart = path.indexOf('/', sessionMarker);
+                path = sessionPathStart >= 0
+                    ? path.substring(0, sessionMarker) + path.substring(sessionPathStart)
+                    : path.substring(0, sessionMarker);
+            }
             if (contextPath && path.indexOf(contextPath) === 0) {
                 path = path.substring(contextPath.length) || '/';
             }
@@ -28,6 +35,45 @@
         };
         var readEndpoint = function (path) {
             return (path.indexOf('/student/') === 0 ? '/student/events/read-by-href' : '/learning/events/read-by-href');
+        };
+        var sessionUrlSuffix = function () {
+            var match = (window.location.pathname || '').match(/^\/[^/]+(;jsessionid=[^/]+)/i);
+            return match ? match[1] : '';
+        };
+        var clearStudentEventMarkers = function (href) {
+            document.querySelectorAll('[data-student-event-marker]').forEach(function (marker) {
+                if (marker.getAttribute('data-student-event-href') === href) {
+                    marker.remove();
+                }
+            });
+        };
+        var markEventRead = function (href) {
+            if (!href) {
+                return;
+            }
+            var path = href.split('#', 1)[0] || currentInternalPath();
+            var body = new URLSearchParams();
+            body.set('csrfToken', csrfToken);
+            body.set('href', href);
+            fetch(contextPath + sessionUrlSuffix() + readEndpoint(path), {
+                method: 'POST',
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                body: body
+            }).then(function (response) {
+                if (!response.ok || (response.headers.get('content-type') || '').indexOf('application/json') < 0) {
+                    throw new Error('Event read request was not accepted.');
+                }
+                return response.json();
+            }).then(function (payload) {
+                if (!payload || payload.success !== true) {
+                    throw new Error('Event read receipt was not confirmed.');
+                }
+                clearStudentEventMarkers(href);
+            }).catch(function () {
+                if (href === lastMarkedHref) {
+                    lastMarkedHref = null;
+                }
+            });
         };
         var markCurrentHashEventRead = function () {
             var hash = window.location.hash || '';
@@ -40,18 +86,27 @@
                 return;
             }
             lastMarkedHref = href;
-            var body = new URLSearchParams();
-            body.set('csrfToken', csrfToken);
-            body.set('href', href);
-            fetch(contextPath + readEndpoint(path), {
-                method: 'POST',
-                headers: {'X-Requested-With': 'XMLHttpRequest'},
-                body: body
-            }).catch(function () {
-                lastMarkedHref = null;
-            });
+            markEventRead(href);
         };
         markCurrentHashEventRead();
         window.addEventListener('hashchange', markCurrentHashEventRead);
+        document.addEventListener('shown.bs.modal', function (event) {
+            var modal = event.target;
+            if (modal && modal.getAttribute) {
+                markEventRead(modal.getAttribute('data-student-event-read-href'));
+            }
+        });
+        var openHashModal = function () {
+            var id = (window.location.hash || '').replace(/^#/, '');
+            if (!id || !window.bootstrap || !window.bootstrap.Modal) {
+                return;
+            }
+            var modal = document.getElementById(id);
+            if (modal && modal.classList.contains('modal')) {
+                window.bootstrap.Modal.getOrCreateInstance(modal).show();
+            }
+        };
+        openHashModal();
+        window.addEventListener('hashchange', openHashModal);
     }());
 </script>

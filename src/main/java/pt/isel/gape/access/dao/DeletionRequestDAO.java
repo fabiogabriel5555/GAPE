@@ -14,13 +14,22 @@ import java.util.Optional;
 import pt.isel.gape.access.model.DeletionRequest;
 import pt.isel.gape.access.model.DeletionRequestState;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.security.crypto.SensitiveDataCipher;
 
 public final class DeletionRequestDAO {
 
+    private static final String REASON_PURPOSE = "deletion_request.reason";
+
     private final ConnectionProvider connectionProvider;
+    private final SensitiveDataCipher sensitiveDataCipher;
 
     public DeletionRequestDAO(ConnectionProvider connectionProvider) {
+        this(connectionProvider, SensitiveDataCipher.fromRuntimeConfiguration());
+    }
+
+    DeletionRequestDAO(ConnectionProvider connectionProvider, SensitiveDataCipher sensitiveDataCipher) {
         this.connectionProvider = connectionProvider;
+        this.sensitiveDataCipher = sensitiveDataCipher;
     }
 
     public Optional<DeletionRequest> findById(long deletionRequestId) throws SQLException {
@@ -95,7 +104,7 @@ public final class DeletionRequestDAO {
             PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setLong(1, submitterUserId);
             statement.setObject(2, submittedAt);
-            statement.setString(3, reason);
+            setNullableString(statement, 3, sensitiveDataCipher.encryptNullable(reason, REASON_PURPOSE));
             statement.executeUpdate();
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
@@ -133,7 +142,7 @@ public final class DeletionRequestDAO {
         }
     }
 
-    private static DeletionRequest mapDeletionRequest(ResultSet resultSet) throws SQLException {
+    private DeletionRequest mapDeletionRequest(ResultSet resultSet) throws SQLException {
         long processorId = resultSet.getLong("processor_admin_user_id");
         boolean processorWasNull = resultSet.wasNull();
         LocalDateTime processedAt = resultSet.getObject("processed_at", LocalDateTime.class);
@@ -143,8 +152,16 @@ public final class DeletionRequestDAO {
                 processorWasNull ? null : processorId,
                 resultSet.getObject("submitted_at", LocalDateTime.class),
                 processedAt,
-                resultSet.getString("reason"),
+                sensitiveDataCipher.decryptNullable(resultSet.getString("reason"), REASON_PURPOSE),
                 DeletionRequestState.fromDatabaseValue(resultSet.getString("state"))
         );
+    }
+
+    private static void setNullableString(PreparedStatement statement, int index, String value) throws SQLException {
+        if (value == null || value.isBlank()) {
+            statement.setNull(index, Types.VARCHAR);
+        } else {
+            statement.setString(index, value);
+        }
     }
 }

@@ -40,6 +40,15 @@ public final class PhysicalRoomManagementServlet extends DashboardServletSupport
     private static final String ROOM_LIST_JSP = "/WEB-INF/views/learning/room-list.jsp";
     private static final String ROOM_DETAIL_JSP = "/WEB-INF/views/learning/room-detail.jsp";
     private static final String ROOM_FORM_JSP = "/WEB-INF/views/learning/room-form.jsp";
+    private static final String ADMIN_ROOM_LIST_JSP = "/admin/admin/room/admin-rooms.jsp";
+    private static final String ADMIN_ROOM_DETAIL_JSP = "/admin/admin/room/admin-room-detail.jsp";
+    private static final String ADMIN_ROOM_FORM_JSP = "/admin/admin/room/admin-room-form.jsp";
+    private static final String COORDINATOR_ROOM_LIST_JSP = "/coordinator/coordinator/room/coordinator-rooms.jsp";
+    private static final String COORDINATOR_ROOM_DETAIL_JSP = "/coordinator/coordinator/room/coordinator-room-detail.jsp";
+    private static final String COORDINATOR_ROOM_FORM_JSP = "/coordinator/coordinator/room/coordinator-room-form.jsp";
+    private static final String INSTRUCTOR_ROOM_LIST_JSP = "/instructor/instructor/room/instructor-rooms.jsp";
+    private static final String INSTRUCTOR_ROOM_DETAIL_JSP = "/instructor/instructor/room/instructor-room-detail.jsp";
+    private static final String INSTRUCTOR_ROOM_FORM_JSP = "/instructor/instructor/room/instructor-room-form.jsp";
 
     private final PhysicalRoomService roomService;
     private final LessonService lessonService;
@@ -171,7 +180,7 @@ public final class PhysicalRoomManagementServlet extends DashboardServletSupport
                 manageableOrganizations.isEmpty() ? null : "/learning/rooms/new",
                 manageableOrganizations.isEmpty() ? null : "New Room"
         );
-        forward(request, response, ROOM_LIST_JSP);
+        forward(request, response, roomListJsp(request));
     }
 
     private void showDetail(HttpServletRequest request, HttpServletResponse response, String code)
@@ -194,7 +203,7 @@ public final class PhysicalRoomManagementServlet extends DashboardServletSupport
                 + appendReturnTo("/learning/rooms/" + encodePath(room.code()) + "/edit", currentRequestPath(request)));
         prepareRoomContext(request, roomView, "detail");
         prepareDashboard(request, "rooms", "Room Detail");
-        forward(request, response, ROOM_DETAIL_JSP);
+        forward(request, response, roomDetailJsp(request));
     }
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response, String error)
@@ -260,7 +269,7 @@ public final class PhysicalRoomManagementServlet extends DashboardServletSupport
             request.setAttribute("errorMessage", error);
         }
         prepareDashboard(request, "rooms", creating ? "Create Physical Room" : "Edit Physical Room");
-        forward(request, response, ROOM_FORM_JSP);
+        forward(request, response, roomFormJsp(request));
     }
 
     private void createRoom(HttpServletRequest request, HttpServletResponse response)
@@ -541,6 +550,30 @@ public final class PhysicalRoomManagementServlet extends DashboardServletSupport
         return Arrays.stream(PhysicalRoomState.values())
                 .map(state -> new SelectOptionView(state.name(), state.toDatabaseValue(), form.isStateSelected(state.name())))
                 .toList();
+    }
+
+    private String roomListJsp(HttpServletRequest request) {
+        return switch (primaryProfile(requireCurrentUser(request))) {
+            case COORDINATOR -> COORDINATOR_ROOM_LIST_JSP;
+            case TEACHER -> INSTRUCTOR_ROOM_LIST_JSP;
+            default -> ADMIN_ROOM_LIST_JSP;
+        };
+    }
+
+    private String roomDetailJsp(HttpServletRequest request) {
+        return switch (primaryProfile(requireCurrentUser(request))) {
+            case COORDINATOR -> COORDINATOR_ROOM_DETAIL_JSP;
+            case TEACHER -> INSTRUCTOR_ROOM_DETAIL_JSP;
+            default -> ADMIN_ROOM_DETAIL_JSP;
+        };
+    }
+
+    private String roomFormJsp(HttpServletRequest request) {
+        return switch (primaryProfile(requireCurrentUser(request))) {
+            case COORDINATOR -> COORDINATOR_ROOM_FORM_JSP;
+            case TEACHER -> INSTRUCTOR_ROOM_FORM_JSP;
+            default -> ADMIN_ROOM_FORM_JSP;
+        };
     }
 
     private RoomScope roomScope(HttpServletRequest request) {

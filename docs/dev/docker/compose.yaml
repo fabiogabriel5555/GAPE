@@ -1,3 +1,5 @@
+# Isolated local-development stack only. It intentionally uses HTTP and a
+# non-TLS MySQL link inside Docker; do not use it as a production deployment.
 services:
   database:
     image: mysql:8.4
@@ -23,6 +25,8 @@ services:
       database:
         condition: service_healthy
     environment:
+      GAPE_SECURITY_ENVIRONMENT: development
+      GAPE_REQUIRE_HTTPS: "false"
       GAPE_DB_URL: jdbc:mysql://database:3306/gape?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=LOCAL&forceConnectionTimeZoneToSession=false&preserveInstants=false
       GAPE_DB_USER: gape
       GAPE_DB_PASSWORD: gape

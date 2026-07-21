@@ -44,8 +44,8 @@
         var loading = false;
         var sortField = null;
         var sortDirection = null;
-        var groupField = 'classGroup';
-        var groupDirection = 'asc';
+        var groupField = null;
+        var groupDirection = null;
         var completedCollapsed = true;
         var collator = new Intl.Collator(document.documentElement.lang || undefined, { numeric: true, sensitivity: 'base' });
         if (metadata) { metadata.remove(); }
@@ -186,6 +186,10 @@
         }
 
         function renderCollectionInto(host, items, field) {
+            if (!field) {
+                items.forEach(function (group) { host.appendChild(group.row); });
+                return;
+            }
             var buckets = [];
             var byKey = new Map();
             items.forEach(function (group) {
@@ -220,7 +224,7 @@
                 eventCount(items)
             );
             list.appendChild(view.section);
-            renderCollectionInto(view.children, items, groupField || 'classGroup');
+            renderCollectionInto(view.children, items, groupField);
         }
 
         function render() {
@@ -233,7 +237,7 @@
             });
             var active = current.filter(function (group) { return group.row.dataset.learningManagementCompleted !== 'true'; });
             var completed = current.filter(function (group) { return group.row.dataset.learningManagementCompleted === 'true'; });
-            renderCollection(active, groupField || 'classGroup');
+            renderCollection(active, groupField);
             if (completed.length) { renderCompleted(completed); }
         }
 

@@ -25,6 +25,7 @@ import pt.isel.gape.learning.dao.LessonDAO;
 import pt.isel.gape.learning.dao.PhysicalRoomDAO;
 import pt.isel.gape.learning.dao.QuestionDAO;
 import pt.isel.gape.learning.dao.QuestionOptionDAO;
+import pt.isel.gape.learning.dao.PedagogicalItemIdAllocator;
 import pt.isel.gape.learning.dao.SubjectDAO;
 import pt.isel.gape.learning.model.Assessment;
 import pt.isel.gape.learning.model.AssessmentCorrectionMode;
@@ -79,6 +80,7 @@ public final class AssessmentService {
     private final GradeLifecycleService gradeLifecycleService;
     private final AssessmentAccessPolicy accessPolicy;
     private final AuditService auditService;
+    private final PedagogicalItemIdAllocator pedagogicalItemIdAllocator;
     private final Clock clock;
 
     public AssessmentService(ConnectionProvider connectionProvider, Clock clock) {
@@ -142,6 +144,7 @@ public final class AssessmentService {
                 )
         );
         this.auditService = new AuditService(new ActivityLogDAO(connectionProvider), clock);
+        this.pedagogicalItemIdAllocator = new PedagogicalItemIdAllocator();
     }
 
     public Assessment createAssessment(
@@ -186,7 +189,7 @@ public final class AssessmentService {
                             context.command().availableUntil(),
                             null
                     );
-                    long assessmentId = assessmentDAO.create(connection, context.command());
+                    long assessmentId = createAssessmentRow(connection, context.command());
                     assessmentDAO.replaceApplicableClassGroups(
                             connection,
                             assessmentId,
@@ -413,6 +416,7 @@ public final class AssessmentService {
                             sourceIp
                     );
                     assessmentDAO.updateState(connection, assessmentId, AssessmentState.COMPLETED);
+                    synchronizeGradeSheetsForAssessment(connection, assessmentId);
                     auditService.record(connection, actorUserId, sessionId, "ASSESSMENT_ARCHIVE",
                             "assessment", Long.toString(assessmentId), "success", sourceIp);
                     Assessment completed = requireAssessment(connection, assessmentId);
@@ -481,7 +485,7 @@ public final class AssessmentService {
                             null
                     );
 
-                    long cloneId = assessmentDAO.create(connection, context.command());
+                    long cloneId = createAssessmentRow(connection, context.command());
                     assessmentDAO.replaceApplicableClassGroups(
                             connection,
                             cloneId,
@@ -555,12 +559,17 @@ public final class AssessmentService {
                     if (assessmentDAO.hasCertificateDependency(connection, assessmentId)) {
                         throw new IllegalStateException("Assessment cannot be deleted because certificates depend on it");
                     }
-                    if (assessmentDAO.hasGradeSheetDependency(connection, assessmentId)) {
-                        throw new IllegalStateException("Assessment cannot be deleted because grade sheets depend on it");
-                    }
                     if (assessmentDAO.hasAnyAttempts(connection, assessmentId)) {
                         throw new IllegalStateException("Assessment cannot be deleted after attempts have been created");
                     }
+                    // The assessment FK deliberately cascades its based_on_assessment
+                    // rows.  Keep the affected sheets so their remaining weights and
+                    // automatic records can be reconciled in the same transaction
+                    // after the assessment is removed.
+                    List<Long> affectedGradeSheetIds = gradeSheetDAO.findGradeSheetIdsForAssessmentContext(
+                            connection,
+                            assessmentId
+                    );
                     contentItemDAO.findFirstItemBySource(connection, assessmentRepositorySource(assessmentId))
                             .ifPresent(contentItem -> {
                                 try {
@@ -574,9 +583,13 @@ public final class AssessmentService {
                                     throw new IllegalStateException("Failed to inactivate assessment repository item", exception);
                                 }
                             });
-                    assessmentDAO.delete(connection, assessmentId);
                     auditService.record(connection, actorUserId, sessionId, "ASSESSMENT_DELETE",
                             "assessment", Long.toString(assessmentId), "success", sourceIp);
+                    assessmentDAO.delete(connection, assessmentId);
+                    gradeLifecycleService.synchronizeAfterAssessmentDeletion(
+                            connection,
+                            affectedGradeSheetIds
+                    );
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();
@@ -589,6 +602,18 @@ public final class AssessmentService {
             auditFailure(actorUserId, sessionId, "ASSESSMENT_DELETE", Long.toString(assessmentId), sourceIp);
             throw wrap(exception, "Failed to delete assessment");
         }
+    }
+
+    private long createAssessmentRow(Connection connection, AssessmentCreateCommand command) throws SQLException {
+        if (command.contentBlockId() == null) {
+            return assessmentDAO.create(connection, command);
+        }
+        long assessmentId = pedagogicalItemIdAllocator.nextId(
+                connection,
+                command.contentBlockId(),
+                PedagogicalItemIdAllocator.ItemType.ASSESSMENT
+        );
+        return assessmentDAO.create(connection, assessmentId, command);
     }
 
     private NormalizedCreateAssessment normalizeCreateContext(

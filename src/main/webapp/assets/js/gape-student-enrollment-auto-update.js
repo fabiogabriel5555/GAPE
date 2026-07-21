@@ -98,6 +98,17 @@
         });
     }
 
+    function removeNoLongerEnrolledListCard(scope, update) {
+        var listActions = scope.querySelector('[data-gape-enrollment-actions-kind="class-group-list"]');
+        if (!listActions || update.stateLabel === 'Active') {
+            return;
+        }
+        var cardColumn = scope.closest('.col-xxl-3');
+        if (cardColumn) {
+            cardColumn.remove();
+        }
+    }
+
     function enrollmentTargetScopes(target) {
         if (window.CSS && typeof window.CSS.escape === 'function') {
             return document.querySelectorAll('[data-gape-enrollment-target="' + CSS.escape(target) + '"]');
@@ -118,6 +129,7 @@
             Array.prototype.forEach.call(enrollmentTargetScopes(update.target), function (scope) {
                 updateBadge(scope, update);
                 updateActions(scope, update);
+                removeNoLongerEnrolledListCard(scope, update);
             });
         });
     }

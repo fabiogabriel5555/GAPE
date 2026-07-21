@@ -78,6 +78,15 @@ public final class LessonManagementServlet extends DashboardServletSupport {
     private static final String LESSON_LIST_JSP = "/WEB-INF/views/learning/lesson-list.jsp";
     private static final String LESSON_DETAIL_JSP = "/WEB-INF/views/learning/lesson-detail.jsp";
     private static final String LESSON_FORM_JSP = "/WEB-INF/views/learning/lesson-form.jsp";
+    private static final String ADMIN_LESSON_LIST_JSP = "/admin/admin/lesson/admin-lessons.jsp";
+    private static final String ADMIN_LESSON_DETAIL_JSP = "/admin/admin/lesson/admin-lesson-detail.jsp";
+    private static final String ADMIN_LESSON_FORM_JSP = "/admin/admin/lesson/admin-lesson-form.jsp";
+    private static final String COORDINATOR_LESSON_LIST_JSP = "/coordinator/coordinator/lesson/coordinator-lessons.jsp";
+    private static final String COORDINATOR_LESSON_DETAIL_JSP = "/coordinator/coordinator/lesson/coordinator-lesson-detail.jsp";
+    private static final String COORDINATOR_LESSON_FORM_JSP = "/coordinator/coordinator/lesson/coordinator-lesson-form.jsp";
+    private static final String INSTRUCTOR_LESSON_LIST_JSP = "/instructor/instructor/lesson/instructor-lessons.jsp";
+    private static final String INSTRUCTOR_LESSON_DETAIL_JSP = "/instructor/instructor/lesson/instructor-lesson-detail.jsp";
+    private static final String INSTRUCTOR_LESSON_FORM_JSP = "/instructor/instructor/lesson/instructor-lesson-form.jsp";
     private static final String LEARNING_MANAGEMENT_ROWS_JSP =
             "/WEB-INF/fragments/learning-management-rows.jsp";
     private static final int EVENT_PAGE_SIZE = 20;
@@ -442,7 +451,7 @@ public final class LessonManagementServlet extends DashboardServletSupport {
                 null,
                 null
         );
-        forward(request, response, LESSON_LIST_JSP);
+        forward(request, response, lessonListJsp(request));
     }
 
     private void prepareLearningManagementRows(
@@ -1231,7 +1240,7 @@ public final class LessonManagementServlet extends DashboardServletSupport {
                         + appendReturnTo("/learning/lessons/" + lesson.id() + "/edit", currentRequestPath(request)));
         prepareLessonContext(request, lesson.id(), "detail", "/learning/lessons");
         prepareDashboard(request, "lessons", "Lesson Detail");
-        forward(request, response, LESSON_DETAIL_JSP);
+        forward(request, response, lessonDetailJsp(request));
     }
 
     private static boolean isCalendarRequest(HttpServletRequest request) {
@@ -1257,12 +1266,32 @@ public final class LessonManagementServlet extends DashboardServletSupport {
         redirect(request, response, target.toString());
     }
 
-    private static void writeLessonModalSuccess(HttpServletResponse response) throws IOException {
+    private static void writeLessonModalResult(
+            HttpServletResponse response,
+            boolean success,
+            String message
+    ) throws IOException {
         response.setContentType("text/html;charset=UTF-8");
         response.setHeader("Cache-Control", "no-store");
         response.getWriter().write("<!doctype html><html><body><script>"
-                + "window.parent.postMessage({type:'gape:lesson:changed'},window.location.origin);"
+                + "window.parent.postMessage({type:'gape:lesson:result',success:" + success
+                + ",message:" + jsonString(message) + "},window.location.origin);"
                 + "</script></body></html>");
+    }
+
+    private static void writeLessonModalSuccess(HttpServletResponse response) throws IOException {
+        writeLessonModalResult(response, true, "Lesson saved.");
+    }
+
+    private static String jsonString(String value) {
+        String normalized = value == null ? "" : value;
+        return "\"" + normalized
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("</", "<\\/")
+                + "\"";
     }
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response, String error)
@@ -1326,7 +1355,7 @@ public final class LessonManagementServlet extends DashboardServletSupport {
             request.setAttribute("errorMessage", error);
         }
         prepareDashboard(request, "lessons", creating ? "Create Lesson" : "Edit Lesson");
-        forward(request, response, LESSON_FORM_JSP);
+        forward(request, response, lessonFormJsp(request));
     }
 
     private void createLesson(HttpServletRequest request, HttpServletResponse response)
@@ -1348,6 +1377,12 @@ public final class LessonManagementServlet extends DashboardServletSupport {
             }
             redirectPreservingReturnTo(request, response, "/learning/lessons/" + lesson.id());
         } catch (RuntimeException exception) {
+            if (isLessonModalRequest(request)) {
+                String message = messageFor(exception);
+                flashError(request, message);
+                writeLessonModalResult(response, false, message);
+                return;
+            }
             showLessonForm(request, response, form, true, messageFor(exception));
         }
     }
@@ -1772,6 +1807,30 @@ public final class LessonManagementServlet extends DashboardServletSupport {
             case PUBLISHED -> "bg-success-50 text-success-600";
             case CLOSED -> "bg-info-50 text-info-600";
             case INACTIVE -> "bg-danger-50 text-danger-600";
+        };
+    }
+
+    private String lessonListJsp(HttpServletRequest request) {
+        return switch (primaryProfile(requireCurrentUser(request))) {
+            case COORDINATOR -> COORDINATOR_LESSON_LIST_JSP;
+            case TEACHER -> INSTRUCTOR_LESSON_LIST_JSP;
+            default -> ADMIN_LESSON_LIST_JSP;
+        };
+    }
+
+    private String lessonDetailJsp(HttpServletRequest request) {
+        return switch (primaryProfile(requireCurrentUser(request))) {
+            case COORDINATOR -> COORDINATOR_LESSON_DETAIL_JSP;
+            case TEACHER -> INSTRUCTOR_LESSON_DETAIL_JSP;
+            default -> ADMIN_LESSON_DETAIL_JSP;
+        };
+    }
+
+    private String lessonFormJsp(HttpServletRequest request) {
+        return switch (primaryProfile(requireCurrentUser(request))) {
+            case COORDINATOR -> COORDINATOR_LESSON_FORM_JSP;
+            case TEACHER -> INSTRUCTOR_LESSON_FORM_JSP;
+            default -> ADMIN_LESSON_FORM_JSP;
         };
     }
 

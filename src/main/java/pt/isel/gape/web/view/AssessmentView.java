@@ -351,7 +351,7 @@ public final class AssessmentView {
     }
 
     public String getIconClass() {
-        return isExam() ? "ph ph-seal-check" : "ph ph-eye";
+        return isExam() ? "ph ph-seal-check" : "ph ph-clipboard-text";
     }
 
     public String getSoftClass() {

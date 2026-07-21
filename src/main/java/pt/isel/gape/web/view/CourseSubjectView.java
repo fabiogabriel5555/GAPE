@@ -78,6 +78,17 @@ public final class CourseSubjectView {
         return term.labelForCourseYear(curricularYear);
     }
 
+    /**
+     * Stable display order for student-facing curricular subject lists. A
+     * missing curricular position is intentionally kept after defined periods.
+     */
+    public int getCurricularPeriodOrder() {
+        if (curricularYear == null || term == null) {
+            return Integer.MAX_VALUE;
+        }
+        return curricularYear * 100 + term.position();
+    }
+
     public boolean isMandatory() {
         return mandatory;
     }

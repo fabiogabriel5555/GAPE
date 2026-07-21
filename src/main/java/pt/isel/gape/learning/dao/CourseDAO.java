@@ -84,6 +84,25 @@ public final class CourseDAO implements pt.isel.gape.transversal.service.Applica
         }
     }
 
+    /** Returns every course for global reporting and administration summaries. */
+    public List<Course> findAll() throws SQLException {
+        String sql = """
+                SELECT id_course, id_organization, id_organic_unit, name, acronym, photo, description,
+                       ects, certificate_max_grade, duration, frequency, type, state
+                FROM course
+                ORDER BY id_course
+                """;
+        try (Connection connection = connectionProvider.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            List<Course> courses = new ArrayList<>();
+            while (resultSet.next()) {
+                courses.add(mapCourse(resultSet));
+            }
+            return List.copyOf(courses);
+        }
+    }
+
     /**
      * Loads several courses in one query.  Callers that render a collection of
      * course associations should use this instead of resolving each course

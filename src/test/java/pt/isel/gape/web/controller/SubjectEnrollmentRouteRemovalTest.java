@@ -65,24 +65,29 @@ class SubjectEnrollmentRouteRemovalTest {
     }
 
     @Test
-    void studentAdministrationOnlyAssignsCourseContexts() throws Exception {
+    void userAdministrationDoesNotManageStudentCourseEnrollments() throws Exception {
         String userServlet = Files.readString(CONTROLLER_DIRECTORY.resolve("UserManagementServlet.java"));
         String userService = Files.readString(Path.of(
                 "src/main/java/pt/isel/gape/access/service/UserService.java"
         ));
-        String contextModel = Files.readString(Path.of(
-                "src/main/java/pt/isel/gape/access/model/AccessProfileContextAssignment.java"
+        String formData = Files.readString(Path.of(
+                "src/main/java/pt/isel/gape/web/view/UserFormData.java"
         ));
         String userForm = Files.readString(Path.of(
                 "src/main/webapp/admin/admin/user/admin-user-form.jsp"
         ));
 
-        assertTrue(userForm.contains("Student Course Context"));
-        assertTrue(contextModel.contains("Student context must be a course"));
+        assertFalse(userForm.contains("Student Course Context"));
+        assertFalse(userServlet.contains("studentContextOptions("));
+        assertFalse(userServlet.contains("findActiveCourseIdsByStudent"));
+        assertTrue(formData.contains("profileType == AccessProfileType.STUDENT"));
+        assertTrue(userService.contains("rejectStudentCourseContextAssignments"));
+        assertTrue(userService.contains("Student course enrollments are managed exclusively from enrollment pages"));
         assertFalse(userServlet.contains("STUDENT_COURSE_SUBJECT"));
         assertFalse(userService.contains("selectedStudentSubjects")
                 || userService.contains("studentSubjectIdsByCourse")
                 || userService.contains("synchronizeStudentEnrollments")
+                || userService.contains("synchronizeStudentCourseEnrollments")
                 || userService.contains("requireActiveCourseSubject"));
     }
 

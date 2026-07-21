@@ -81,6 +81,44 @@ mvn test -Dtest=AbsenceJustificationServiceTest
 
 All commands must finish with zero failures and zero errors.
 
+## Mandatory real-browser justification journey
+
+The service tests are necessary but do not replace the complete visual flow.
+For every change to attendance justification, validate against the real
+deployment at `http://localhost:8080/GAPE/` (never the historical 18080
+browser instance). Before starting the batch, stop the Tomcat that owns 8080;
+after the batch, stop it again and require zero listeners on 8080.
+
+Use a valid student/teacher fixture and perform real visible actions in this
+order, at desktop and mobile widths:
+
+1. Student opens `Lessons & Assessments > Attendance`, opens an absent/late
+   attendance card, submits a reason (and optionally an attachment), and sees
+   the success message and the pending clock beside the always-present View
+   action. Reload and confirm the pending state persists and that Request
+   justification is absent.
+2. Teacher opens `Learning > Attendance`, opens the same request, verifies the
+   complete request data (reason, attachment, submitted time and current
+   state), then clicks **Accept**. Confirm the request response is successful
+   and the attendance record changes to `Justified`/`Corrected`.
+3. Student reloads Attendance and confirms the record is in Completed Attendance
+   with `Justified`. Every attendance card must keep the same **View** button;
+   there must be no pending/request-justification action after submission. The
+   View modal must contain the attendance data plus state, reason, attachment,
+   submitted and processed times, and decision notes. The modal must close
+   normally and must not block the page.
+4. Repeat the journey with **Reject**. The student must see the rejected
+   justification details, no pending marker, and the attendance must not be
+   reported as `Justified`. Because the record remains eligible, Request
+   justification may be offered again; submitting it reuses the rejected
+   request as a new `Submitted` request and clears the old decision metadata.
+
+The browser evidence must include screenshots of the request form, pending
+card, teacher review modal, accepted details modal and rejected details modal,
+plus selector/geometry checks with zero unexpected network, console or
+horizontal-overflow errors. A direct HTTP POST or a database assertion alone
+is not visual-flow proof.
+
 ## Execution result
 
 Executed on 27-06-2026:

@@ -1086,6 +1086,132 @@
                 font-size: 24px;
             }
         }
+
+        /*
+         * Subject Details > Structure is the reference for management rows:
+         * one grid owns the columns, hover never changes a row's geometry and
+         * every disclosure action occupies the same fixed slot.  Keeping this
+         * contract below the legacy table declarations makes it the single
+         * source of layout truth for Enrollments, Grades, Certificates and
+         * Attendance without leaking into student or unrelated dashboard pages.
+         */
+        .aac-page .gape-structured-management-panel {
+            --aac-structure-columns: minmax(250px, 1.5fr) minmax(190px, 1fr) minmax(106px, .45fr) minmax(136px, .62fr) minmax(120px, auto);
+        }
+
+        .aac-page .gape-structured-management-panel .gape-desktop-table > table > thead > tr,
+        .aac-page .gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row],
+        .aac-page .gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row,
+        .aac-page .gape-deferred-management-archive-row {
+            grid-template-columns: var(--aac-structure-columns);
+        }
+
+        .aac-page .gape-structured-management-panel .gape-desktop-table > table > thead > tr > th,
+        .aac-page .gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row] > td,
+        .aac-page .gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row > td {
+            min-width: 0 !important;
+            width: auto !important;
+        }
+
+        .aac-page .gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row] > td:last-child,
+        .aac-page .gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row > td:last-child {
+            align-items: center;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .aac-page .gape-structured-management-panel tr.hover-bg-neutral-20:hover,
+        .aac-page .aac-tree-node:hover {
+            background-color: #fff !important;
+            transform: none;
+        }
+
+        /* An inset marker keeps opened content visually connected without
+           consuming horizontal space and displacing its child columns. */
+        .aac-page .aac-expanded-cell {
+            border-left: 0 !important;
+            box-shadow: inset 4px 0 0 #18a34a;
+        }
+
+        .aac-page .aac-tree-row {
+            align-items: center;
+            display: grid;
+            gap: 14px;
+            grid-template-columns: minmax(0, 1.55fr) minmax(76px, .38fr) minmax(150px, .72fr) 120px;
+            justify-content: normal;
+        }
+
+        .aac-page .aac-tree-main {
+            flex: none;
+            grid-column: 1;
+            min-width: 0;
+        }
+
+        .aac-page .aac-tree-count {
+            flex: none;
+            grid-column: 2;
+            min-width: 0;
+        }
+
+        .aac-page .aac-tree-status {
+            flex: none;
+            grid-column: 3;
+            min-width: 0;
+        }
+
+        .aac-page .aac-tree-actions {
+            display: flex;
+            flex: none;
+            flex-wrap: nowrap;
+            gap: 10px;
+            grid-column: 4;
+            justify-content: flex-end;
+            min-width: 0;
+            width: 120px;
+        }
+
+        .aac-page .aac-icon-button {
+            box-sizing: border-box;
+            flex: 0 0 32px;
+            line-height: 1;
+            margin: 0 !important;
+            min-height: 32px;
+            min-width: 32px;
+            transform: none !important;
+        }
+
+        .aac-page .aac-icon-button[data-bs-toggle="collapse"] i {
+            transition: transform .2s ease;
+        }
+
+        .aac-page .aac-icon-button[data-bs-toggle="collapse"][aria-expanded="true"] i {
+            transform: rotate(180deg);
+        }
+
+        .aac-page .aac-icon-button:active {
+            background-color: var(--main-50) !important;
+            color: var(--main-600) !important;
+            transform: none !important;
+        }
+
+        @media (max-width: 575.98px) {
+            .aac-page .aac-tree-row {
+                align-items: flex-start;
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .aac-page .aac-tree-main,
+            .aac-page .aac-tree-count,
+            .aac-page .aac-tree-status,
+            .aac-page .aac-tree-actions {
+                grid-column: auto;
+                width: 100%;
+            }
+
+            .aac-page .aac-tree-actions {
+                justify-content: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1948,10 +2074,12 @@
                                                                     <span class="aac-tree-meta" data-gape-datetime-display><c:out value="${activity.activityMeta}"/> | <c:out value="${activity.activityScheduleLabel}"/> | <c:out value="${activity.timeLabel}"/> | <c:out value="${activity.permanenceLabel}"/></span>
                                                                 </div>
                                                             </div>
-                                                            <div class="aac-tree-actions">
+                                                            <div class="aac-tree-status">
                                                                 <span class="${activity.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12" data-attendance-activity-badge="${activity.id}" data-student-id="${group.studentUserId}" data-state-value="${activity.stateValue}">
                                                                     <c:out value="${activity.stateLabel}"/>
                                                                 </span>
+                                                            </div>
+                                                            <div class="aac-tree-actions">
                                                                 <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View attendance detail" data-bs-toggle="modal" data-bs-target="#${activity.detailModalId}">
                                                                     <i class="ph ph-eye"></i>
                                                                 </button>
@@ -2017,10 +2145,12 @@
                                                             <span class="aac-tree-meta" data-gape-datetime-display><c:out value="${activity.activityMeta}"/> | <c:out value="${activity.activityScheduleLabel}"/> | <c:out value="${activity.timeLabel}"/> | <c:out value="${activity.permanenceLabel}"/></span>
                                                         </div>
                                                     </div>
-                                                    <div class="aac-tree-actions">
+                                                    <div class="aac-tree-status">
                                                         <span class="${activity.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12" data-attendance-activity-badge="${activity.id}" data-student-id="${group.studentUserId}" data-state-value="${activity.stateValue}">
                                                             <c:out value="${activity.stateLabel}"/>
                                                         </span>
+                                                    </div>
+                                                    <div class="aac-tree-actions">
                                                         <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View attendance detail" data-bs-toggle="modal" data-bs-target="#${activity.detailModalId}">
                                                             <i class="ph ph-eye"></i>
                                                         </button>

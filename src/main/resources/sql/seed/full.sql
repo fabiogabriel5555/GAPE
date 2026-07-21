@@ -202,10 +202,10 @@ INSERT INTO student_profile (id_user, cod_student) VALUES
 INSERT INTO user_session (
     id_session, id_user, token, state, start_at, last_activity, end_at
 ) VALUES
-    (101, 8, 'tok-admin-org-expired-101', 'expired', '2026-01-11 09:00:00', '2026-01-11 09:15:00', '2026-01-11 09:20:00'),
-    (102, 4, 'tok-student-closed-102', 'closed', '2026-01-11 10:00:00', '2026-01-11 10:40:00', '2026-01-11 10:45:00'),
-    (103, 12, 'tok-multi-active-103', 'active', '2026-01-11 11:00:00', '2026-01-11 11:20:00', NULL),
-    (104, 15, 'tok-student3-active-104', 'active', '2026-01-11 12:00:00', '2026-01-11 12:05:00', NULL);
+    (101, 8, CONCAT('sha256:', SHA2('tok-admin-org-expired-101', 256)), 'expired', '2026-01-11 09:00:00', '2026-01-11 09:15:00', '2026-01-11 09:20:00'),
+    (102, 4, CONCAT('sha256:', SHA2('tok-student-closed-102', 256)), 'closed', '2026-01-11 10:00:00', '2026-01-11 10:40:00', '2026-01-11 10:45:00'),
+    (103, 12, CONCAT('sha256:', SHA2('tok-multi-active-103', 256)), 'active', '2026-01-11 11:00:00', '2026-01-11 11:20:00', NULL),
+    (104, 15, CONCAT('sha256:', SHA2('tok-student3-active-104', 256)), 'active', '2026-01-11 12:00:00', '2026-01-11 12:05:00', NULL);
 
 INSERT INTO permission (cod_permission, name, state) VALUES
     ('VIEW_REPORTS', 'View Reports', 'active'),
@@ -577,7 +577,7 @@ INSERT INTO assessment (
     (94, 42, 63, 'SALA-EX01', 'Databases Practical Exam', 'Practical databases assessment', 'exam', 'onsite', 'manual',
      20.00, 9.50, 80.00, 2, 'manual', 'active', '2026-03-10 09:00:00', '2026-03-10 11:00:00'),
     (95, 42, 64, NULL, 'SQL Draft Form', 'Form in preparation', 'form', 'online', 'automatic',
-     20.00, 10.00, 20.00, 3, 'auto_approve', 'draft', '2026-04-01 00:00:00', '2026-04-15 23:59:59'),
+     20.00, 10.00, 20.00, 3, 'auto_approve', 'completed', '2026-04-01 00:00:00', '2026-04-15 23:59:59'),
     (96, 44, 65, NULL, 'Safety Form', 'Online industrial safety assessment', 'form', 'online', 'automatic',
      20.00, 10.00, 100.00, 1, 'auto_approve', 'active', '2026-04-09 00:00:00', '2026-04-12 23:59:59'),
     (97, 43, NULL, 'SALA-EX02', 'Networks Exam', 'Networks exam without pedagogical block', 'exam', 'onsite', 'manual',
@@ -690,7 +690,9 @@ INSERT INTO question_option (
     (413, 305, 3, 'Second neutral selected option', NULL);
 
 INSERT INTO enroll_assessment (id_student_user, id_assessment, state) VALUES
-    (4, 94, 'pending'),
+    -- The exam has already finished in the full timeline; the request is kept
+    -- as rejected audit history instead of leaving an actionless pending row.
+    (4, 94, 'rejected'),
     (15, 94, 'active'),
     (15, 95, 'active'),
     (12, 96, 'active'),
@@ -888,14 +890,27 @@ INSERT INTO certificate (
     (196, 30, 300, 15, 'Replacement Databases Certificate', 'Replacement document', 'completion', 'template-v2', NULL, NULL, 'draft', NULL);
 
 INSERT INTO management_view (
-    id_management_view, title, type, description, visibility_scope, state
+    id_management_view, title, type, description, visibility_scope,
+    scope_target_type, scope_target_id, owner_user_id, state
 ) VALUES
-    (200, 'Global Administration Dashboard', 'dashboard', 'Global system indicators', 'GLOBAL', 'active'),
-    (201, 'ISG Organization Dashboard', 'dashboard', 'ISG organization indicators', 'ORGANIZATION', 'active'),
-    (202, 'LEI Course Dashboard', 'dashboard', 'LEI course indicators', 'COURSE', 'active'),
-    (203, 'Databases Subject Dashboard', 'dashboard', 'Database indicators', 'SUBJECT', 'active'),
-    (204, 'BD-T1 Class Group Dashboard', 'dashboard', 'Class group attendance indicators', 'CLASS_GROUP', 'active'),
-    (205, 'Inactive Dashboard', 'dashboard', 'Old view kept for historical records', 'GLOBAL', 'inactive');
+    (200, 'Global Administration Dashboard', 'dashboard', 'Global system indicators', 'global', NULL, NULL, 1, 'active'),
+    (201, 'ISG Organization Dashboard', 'dashboard', 'ISG organization indicators', 'organization', 'ORGANIZATION', 10, 8, 'active'),
+    (202, 'LEI Course Dashboard', 'dashboard', 'LEI course indicators', 'course', 'COURSE', 30, 10, 'active'),
+    (203, 'Databases Subject Dashboard', 'dashboard', 'Database indicators', 'subject', 'SUBJECT', 42, 14, 'active'),
+    (204, 'BD-T1 Class Group Dashboard', 'dashboard', 'Historical class group dashboard', 'class_group', 'CLASS_GROUP', 53, 3, 'inactive'),
+    (205, 'Inactive Dashboard', 'dashboard', 'Old view kept for historical records', 'global', NULL, NULL, 1, 'inactive'),
+    -- Default-profile dashboard and report coverage.  These records match the
+    -- active assignments in base.sql, so every standard profile has a real
+    -- authorized Dashboard entry without weakening scope access rules.
+    (206, 'Project Subject Dashboard', 'dashboard', 'Project subject indicators', 'subject', 'SUBJECT', 40, 2, 'active'),
+    (207, 'RC-MATH-05 Class Group Dashboard', 'dashboard', 'RC-MATH-05 teaching indicators', 'class_group', 'CLASS_GROUP', 65, 3, 'active'),
+    (208, 'My Learning Dashboard', 'dashboard', 'Personal learning indicators', 'personal', 'USER', 4, 4, 'active'),
+    (209, 'My Information Systems Report', 'report', 'Current course learning report', 'course', 'COURSE', 32, 4, 'active'),
+    (210, 'Global Operational Report', 'report', 'Global operational indicators', 'global', NULL, NULL, 1, 'active'),
+    (211, 'ISG Organization Report', 'report', 'ISG organization indicators', 'organization', 'ORGANIZATION', 10, 1, 'active'),
+    (212, 'Project Subject Report', 'report', 'Project subject delivery report', 'subject', 'SUBJECT', 40, 2, 'active'),
+    (213, 'RC-MATH-05 Delivery Report', 'report', 'RC-MATH-05 delivery report', 'class_group', 'CLASS_GROUP', 65, 3, 'active'),
+    (214, 'My Personal Learning Report', 'report', 'Personal learning progress report', 'personal', 'USER', 4, 4, 'active');
 
 INSERT INTO access_management_view (id_user, id_management_view) VALUES
     (1, 200),
@@ -903,6 +918,15 @@ INSERT INTO access_management_view (id_user, id_management_view) VALUES
     (10, 202),
     (14, 203),
     (3, 204),
+    (2, 206),
+    (3, 207),
+    (4, 208),
+    (4, 209),
+    (1, 210),
+    (1, 211),
+    (2, 212),
+    (3, 213),
+    (4, 214),
     (15, 204),
     (1, 205);
 
@@ -1676,7 +1700,7 @@ INSERT INTO grade_sheet (
     (1015, 1016, 10060, 'Ended Grade Sheet Missing Grades Draft', 'continuous_assessment', 20.00, 9.50,
      'Assessment weights total 100%, but assessment grades are still missing.', NULL, 'draft'),
     (1016, 1017, 10060, 'Empty Class Partial Weight Grade Sheet', 'continuous_assessment', 20.00, 9.50,
-     'Assessment weights total 30%. If this is not regularized before the class group period ends, the system will redistribute the weights equally so the sum is 100%.', NULL, 'draft'),
+     'Assessment weights total 30%. The grade sheet remains Draft until the total reaches 100%; weights are redistributed equally only when the class group is completed.', NULL, 'draft'),
     (1017, 1018, 10070, 'Hundred Point Final Grade Sheet', 'final', 100.00, 50.00, NULL, '2026-05-30 10:00:00', 'published');
 
 INSERT INTO associate_grade_sheet_class_group (id_grade_sheet, id_class_group) VALUES
@@ -1840,8 +1864,8 @@ INSERT INTO certificate (
      'template-ects-full', NULL, NULL, 'draft', NULL),
     (1002, 1001, 10010, 1004, 'Few Subject Course Certificate', 'Two-subject course completed with ECTS weighted final grade', 'completion',
      'template-ects-short', 'CERT-FULL-1002', '2026-07-01 09:00:00', 'issued', 14.50),
-    (1003, 1001, 10010, 1005, 'Few Subject Low Pass Certificate', 'Two-subject course completed with low passing grades', 'completion',
-     'template-ects-short', 'CERT-FULL-1003', '2026-07-01 09:10:00', 'issued', 10.50),
+    (1003, 1001, 10010, 1005, 'Few Subject Low Pass Certificate', 'Two-subject course has a non-positive mandatory grade', 'completion',
+     'template-ects-short', NULL, NULL, 'draft', NULL),
     (1004, 1004, 10040, 1002, 'All Failed Course Incomplete Certificate', 'Certificate exists but cannot be completed because the student failed', 'completion',
      'template-ects-short', NULL, NULL, 'draft', NULL),
     (1005, 1005, 10050, 1004, 'All Passed Course Certificate One', 'Single-subject course completed by all students', 'completion',
@@ -1872,8 +1896,6 @@ INSERT INTO based_on_grade_sheet_certificate (id_certificate, id_grade_sheet) VA
     (1000, 1009),
     (1002, 1010),
     (1002, 1011),
-    (1003, 1010),
-    (1003, 1011),
     (1005, 1014),
     (1006, 1014),
     (1007, 1014),
@@ -1956,9 +1978,9 @@ INSERT INTO student_profile (id_user, cod_student) VALUES
 INSERT INTO user_session (
     id_session, id_user, token, state, start_at, last_activity, end_at
 ) VALUES
-    (3000, 3000, 'tok-coverage-active-3000', 'active', '2026-06-02 09:00:00', '2026-06-02 09:15:00', NULL),
-    (3001, 3001, 'tok-coverage-expired-3001', 'expired', '2026-06-02 10:00:00', '2026-06-02 10:20:00', '2026-06-02 10:30:00'),
-    (3002, 3002, 'tok-coverage-closed-3002', 'closed', '2026-06-02 11:00:00', '2026-06-02 11:20:00', '2026-06-02 11:25:00');
+    (3000, 3000, CONCAT('sha256:', SHA2('tok-coverage-active-3000', 256)), 'active', '2026-06-02 09:00:00', '2026-06-02 09:15:00', NULL),
+    (3001, 3001, CONCAT('sha256:', SHA2('tok-coverage-expired-3001', 256)), 'expired', '2026-06-02 10:00:00', '2026-06-02 10:20:00', '2026-06-02 10:30:00'),
+    (3002, 3002, CONCAT('sha256:', SHA2('tok-coverage-closed-3002', 256)), 'closed', '2026-06-02 11:00:00', '2026-06-02 11:20:00', '2026-06-02 11:25:00');
 
 INSERT INTO grant_administrator (id_admin_user, cod_permission, context_type, context_id) VALUES
     (3000, 'MANAGE_LEARNING', 'COURSE', 30),
@@ -2190,7 +2212,7 @@ INSERT INTO assessment (
     id_assessment, id_subject, id_content_block, cod_physical_room, title, description, type, mode, correction_mode,
     max_grade, passing_grade, final_grade_weight, attempts_limit, enrollment_mode, state, available_from, available_until, order_no
 ) VALUES
-    (3000, 3002, 3000, NULL, 'Coverage Active Form', 'Active automatic form with every question type.', 'form', 'online', 'automatic',
+    (3000, 3002, 3000, NULL, 'Coverage Active Form', 'Active mixed form with every question type.', 'form', 'online', 'mixed',
      20.00, 10.00, 20.00, 5, 'auto_approve', 'active', '2026-07-02 00:00:00', '2026-12-20 23:59:59', 1),
     (3001, 3002, 3000, NULL, 'Coverage Scheduled Test', 'Scheduled mixed test coverage.', 'test', 'online', 'mixed',
      20.00, 10.00, 20.00, 2, 'manual', 'scheduled', '2026-10-10 09:00:00', '2026-10-10 11:00:00', 2),
@@ -2232,7 +2254,10 @@ INSERT INTO enroll_assessment (id_student_user, id_assessment, state) VALUES
     (3003, 3000, 'active'),
     (3005, 3000, 'active'),
     (3007, 3000, 'active'),
-    (3004, 3000, 'pending'),
+    -- Student 3004 is not in the active FCOV class group; retain the
+    -- historical request as rejected rather than exposing an ineligible
+    -- pending request that could never be approved.
+    (3004, 3000, 'rejected'),
     (3006, 3000, 'withdrawn'),
     (3004, 3001, 'inactive'),
     (3005, 3001, 'rejected'),
@@ -2378,11 +2403,12 @@ INSERT INTO certificate (
     (3003, 3000, 30000, 3006, 'Coverage Other Certificate', 'Draft other certificate coverage for an ineligible student.', 'other', 'template-coverage-other', NULL, NULL, 'draft', NULL);
 
 INSERT INTO management_view (
-    id_management_view, title, type, description, visibility_scope, state
+    id_management_view, title, type, description, visibility_scope,
+    scope_target_type, scope_target_id, owner_user_id, state
 ) VALUES
-    (3000, 'Coverage Global Dashboard', 'dashboard', 'Global coverage dashboard.', 'GLOBAL', 'active'),
-    (3001, 'Coverage Private Report', 'report', 'Private coverage report.', 'USER', 'inactive'),
-    (3002, 'Coverage Inactive Analytics', 'analytics', 'Inactive analytics coverage.', 'COURSE', 'inactive');
+    (3000, 'Coverage Global Dashboard', 'dashboard', 'Global coverage dashboard.', 'global', NULL, NULL, 3000, 'active'),
+    (3001, 'Coverage Private Report', 'report', 'Private coverage report.', 'personal', 'USER', 3002, 3002, 'inactive'),
+    (3002, 'Coverage Inactive Analytics', 'other', 'Inactive analytics coverage.', 'course', 'COURSE', 3000, 3000, 'inactive');
 
 INSERT INTO access_management_view (id_user, id_management_view) VALUES
     (3000, 3000),
@@ -2496,7 +2522,8 @@ INSERT INTO user_account (
     (6506, 'Mathematics Student Two', 'rc.math.student2@gape.local', 'active', 'pt-PT', NULL, '2026-03-01 08:30:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-RCM-6506'),
     (6507, 'Mathematics Student Three', 'rc.math.student3@gape.local', 'active', 'pt-PT', NULL, '2026-03-01 08:35:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-RCM-6507'),
     (6508, 'Mathematics Student Four', 'rc.math.student4@gape.local', 'active', 'pt-PT', NULL, '2026-03-01 08:40:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-RCM-6508'),
-    (6509, 'Mathematics Student Five', 'rc.math.student5@gape.local', 'active', 'pt-PT', NULL, '2026-03-01 08:45:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-RCM-6509');
+    (6509, 'Mathematics Student Five', 'rc.math.student5@gape.local', 'active', 'pt-PT', NULL, '2026-03-01 08:45:00', 'ZsAsa7ClmLV+Ai2LaLAJdrW030r/BuQJ98CexaRn1Ss=', '8scgIe5H/ymYYNE9mx/Zzw==', 'CITIZEN_CARD', 'CC-RCM-6509'),
+    (6510, 'Fábio Gabriel Pontes Baiona', 'fabiogabriel5555@gmail.com', 'active', 'en-US', 'users/6510/profile.webp', '2026-07-16 23:27:39', 'Nz3PVQNyvf6Z1nrWEaORkeXQzNlJr9c45MmRugxSeXY=', '8RQETVGiUD0hgEePhMd70Q==', NULL, NULL);
 
 INSERT INTO student_profile (id_user, cod_student) VALUES
     (6500, 'STD-RCM-6500'),
@@ -2508,7 +2535,8 @@ INSERT INTO student_profile (id_user, cod_student) VALUES
     (6506, 'STD-RCM-6506'),
     (6507, 'STD-RCM-6507'),
     (6508, 'STD-RCM-6508'),
-    (6509, 'STD-RCM-6509');
+    (6509, 'STD-RCM-6509'),
+    (6510, 'STD-006510');
 
 INSERT INTO teach_class_group (id_teacher_user, id_class_group, state, start_date, end_date) VALUES
     (3, 65, 'active', NULL, NULL),
@@ -2527,19 +2555,38 @@ INSERT INTO enroll_course (id_student_user, id_course, id_course_occurrence, sta
     (6506, 34, 345, 'active', '2026-03-01', '2026-08-01'),
     (6507, 34, 345, 'active', '2026-03-01', '2026-08-01'),
     (6508, 34, 345, 'active', '2026-03-01', '2026-08-01'),
-    (6509, 34, 345, 'active', '2026-03-01', '2026-08-01');
+    (6509, 34, 345, 'active', '2026-03-01', '2026-08-01'),
+    (6510, 34, 345, 'active', '2025-09-01', '2026-08-01'),
+    (6510, 34, 346, 'active', '2026-09-01', '2027-08-01'),
+    (6510, 34, 347, 'active', '2027-09-01', '2028-08-01'),
+    (6510, 1005, 10050, 'active', '2026-01-01', '2026-12-31'),
+    (6510, 1006, 10060, 'active', '2026-01-01', '2026-12-31'),
+    (6510, 1007, 10070, 'active', '2026-01-01', '2026-12-31'),
+    (6510, 3000, 30000, 'active', '2026-01-01', '2026-12-31'),
+    (6510, 3000, 30001, 'active', '2027-01-01', '2027-12-31'),
+    (6510, 3007, 30070, 'active', '2026-01-01', '2026-12-31'),
+    (6510, 3008, 30071, 'active', '2025-09-01', '2026-08-01');
 
 INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date) VALUES
-    (6505, 65, 'active', '2026-03-02', NULL),
-    (6506, 65, 'active', '2026-03-02', NULL),
-    (6507, 65, 'active', '2026-03-02', NULL),
-    (6508, 65, 'active', '2026-03-02', NULL),
-    (6509, 65, 'active', '2026-03-02', NULL),
-    (6500, 65, 'pending', '2026-07-01', NULL),
-    (6501, 65, 'pending', '2026-07-02', NULL),
-    (6502, 65, 'pending', '2026-07-03', NULL),
-    (6503, 65, 'pending', '2026-07-04', NULL),
-    (6504, 65, 'pending', '2026-07-05', NULL);
+    (6505, 65, 'active', '2026-03-01', '2026-08-01'),
+    (6506, 65, 'active', '2026-03-01', '2026-08-01'),
+    (6507, 65, 'active', '2026-03-01', '2026-08-01'),
+    (6508, 65, 'active', '2026-03-01', '2026-08-01'),
+    (6509, 65, 'active', '2026-03-01', '2026-08-01'),
+    (6500, 65, 'active', '2026-03-01', '2026-08-01'),
+    (6501, 65, 'active', '2026-03-01', '2026-08-01'),
+    (6502, 65, 'active', '2026-03-01', '2026-08-01'),
+    (6503, 65, 'active', '2026-03-01', '2026-08-01'),
+    (6504, 65, 'active', '2026-03-01', '2026-08-01'),
+    (6510, 61, 'active', '2026-03-01', '2026-08-01'),
+    (6510, 62, 'active', '2026-03-01', '2026-08-01'),
+    (6510, 63, 'active', '2026-03-01', '2026-08-01'),
+    (6510, 64, 'active', '2026-03-01', '2026-08-01'),
+    (6510, 65, 'active', '2026-03-01', '2026-08-01'),
+    (6510, 3007, 'active', '2026-03-01', '2026-08-01');
+
+INSERT INTO receive_schedule_event (id_user, id_schedule_event) VALUES
+    (6510, 4001);
 
 INSERT INTO content_block (
     id_content_block, id_class_group, cod_content_block, name, description, order_no, state
@@ -2564,28 +2611,56 @@ INSERT INTO assessment (
     id_assessment, id_subject, id_content_block, cod_physical_room, title, description, type, mode, correction_mode,
     max_grade, passing_grade, final_grade_weight, attempts_limit, enrollment_mode, state, available_from, available_until, order_no
 ) VALUES
-    (6500, 43, 6500, NULL, 'Functions Applied Checkpoint', 'Explain a function model and interpret its graph.', 'test', 'online', 'manual', 20.00, 9.50, 20.00, 1, 'auto_approve', 'completed', '2026-07-03 11:15:00', '2026-07-04 23:59:59', 1),
+    (6500, 43, 6500, NULL, 'Functions Applied Checkpoint', 'Explain a function model and interpret its graph through a varied 10-question checkpoint.', 'test', 'online', 'manual', 20.00, 9.50, 20.00, 5, 'manual', 'active', '2026-07-03 11:15:00', '2026-07-25 23:59:59', 1),
     (6501, 43, 6501, NULL, 'Algebraic Reasoning Checkpoint', 'Show the intermediate steps for a system of equations.', 'test', 'online', 'manual', 20.00, 9.50, 20.00, 1, 'auto_approve', 'completed', '2026-07-08 11:15:00', '2026-07-09 23:59:59', 1),
     (6502, 43, 6502, NULL, 'Sequences Investigation', 'Justify the behaviour of a sequence in a real scenario.', 'test', 'online', 'manual', 20.00, 9.50, 20.00, 1, 'auto_approve', 'completed', '2026-07-10 11:15:00', '2026-07-11 23:59:59', 1),
     (6503, 43, 6503, NULL, 'Probability Interpretation', 'Analyse a distribution and support a conclusion with data.', 'test', 'online', 'manual', 20.00, 9.50, 20.00, 1, 'auto_approve', 'completed', '2026-07-13 11:15:00', '2026-07-14 23:59:59', 1),
-    (6504, 43, 6504, 'SALA-EX02', 'Mathematical Modelling Portfolio', 'Present and defend the final mathematical model.', 'exam', 'onsite', 'manual', 20.00, 9.50, 20.00, 1, 'auto_approve', 'active', '2026-07-15 13:00:00', '2026-07-18 17:00:00', 1);
+    (6504, 43, 6504, 'SALA-EX02', 'Mathematical Modelling Portfolio', 'Present and defend the final mathematical model.', 'exam', 'onsite', 'manual', 20.00, 9.50, 20.00, 1, 'auto_approve', 'active', '2026-07-15 13:00:00', '2026-07-19 17:00:00', 1);
 
 INSERT INTO question (
     id_question, id_assessment, cod_question, statement, type, order_no, required_flag, score, expected_answer
 ) VALUES
-    (6500, 6500, 'RCM-F-01', 'Explain how the domain affects the interpretation of your function model.', 'paragraph', 1, 1, 20.00, 'The answer must connect the admissible input values to the real situation.'),
+    (6500, 6500, 'RCM-F-01', 'Explain how the domain affects the interpretation of your function model.', 'paragraph', 1, 1, 2.00, 'The answer must connect the admissible input values to the real situation.'),
     (6501, 6501, 'RCM-A-01', 'Solve the system and explain the algebraic operations used.', 'paragraph', 1, 1, 20.00, 'A complete solution with justified elimination or substitution steps.'),
     (6502, 6502, 'RCM-S-01', 'Describe the long-term behaviour of the sequence and justify it.', 'paragraph', 1, 1, 20.00, 'A justified conclusion based on the general term or recurrence.'),
     (6503, 6503, 'RCM-P-01', 'Interpret the observed distribution and state a supported conclusion.', 'paragraph', 1, 1, 20.00, 'The conclusion must refer to centre, spread and the contextual implication.'),
-    (6504, 6504, 'RCM-M-01', 'Present the assumptions, calculations and validation of your model.', 'paragraph', 1, 1, 20.00, 'A complete model must state assumptions, show calculations and validate the result.');
-
-INSERT INTO enroll_assessment (id_student_user, id_assessment, state) VALUES
-    (6505, 6500, 'active'), (6506, 6501, 'active'), (6507, 6502, 'active'), (6508, 6503, 'active'), (6509, 6504, 'active');
+    (6504, 6504, 'RCM-M-01', 'Present the assumptions, calculations and validation of your model.', 'paragraph', 1, 1, 20.00, 'A complete model must state assumptions, show calculations and validate the result.'),
+    (6505, 6500, 'RCM-F-02', 'Explain how function concept 2 supports interpretation of the applied model.', 'short_text', 2, 1, 2.00, 'A concise explanation relating inputs, outputs and the context.'),
+    (6506, 6500, 'RCM-F-03', 'Explain how function concept 3 supports interpretation of the applied model.', 'short_text', 3, 1, 2.00, 'A concise explanation relating inputs, outputs and the context.'),
+    (6507, 6500, 'RCM-F-04', 'Explain how function concept 4 supports interpretation of the applied model.', 'short_text', 4, 1, 2.00, 'A concise explanation relating inputs, outputs and the context.'),
+    (6508, 6500, 'RCM-F-05', 'Explain how function concept 5 supports interpretation of the applied model.', 'short_text', 5, 1, 2.00, 'A concise explanation relating inputs, outputs and the context.'),
+    (6509, 6500, 'RCM-F-06', 'Explain how function concept 6 supports interpretation of the applied model.', 'short_text', 6, 1, 2.00, 'A concise explanation relating inputs, outputs and the context.'),
+    (6510, 6500, 'RCM-F-07', 'Explain how function concept 7 supports interpretation of the applied model.', 'short_text', 7, 1, 2.00, 'A concise explanation relating inputs, outputs and the context.'),
+    (6511, 6500, 'RCM-F-08', 'Explain how function concept 8 supports interpretation of the applied model.', 'short_text', 8, 1, 2.00, 'A concise explanation relating inputs, outputs and the context.'),
+    (6512, 6500, 'RCM-F-09', 'Explain how function concept 9 supports interpretation of the applied model.', 'short_text', 9, 1, 2.00, 'A concise explanation relating inputs, outputs and the context.'),
+    (6513, 6500, 'RCM-F-10', 'Explain how function concept 10 supports interpretation of the applied model.', 'short_text', 10, 1, 2.00, 'A concise explanation relating inputs, outputs and the context.')
+;
+INSERT INTO enroll_assessment (id_student_user, id_assessment, state, start_date, end_date) VALUES
+    (6505, 6500, 'active', '2026-07-03', '2026-07-25'),
+    (6506, 6500, 'active', '2026-07-03', '2026-07-25'),
+    (6507, 6500, 'active', '2026-07-03', '2026-07-25'),
+    (6508, 6500, 'active', '2026-07-03', '2026-07-25'),
+    (6509, 6500, 'active', '2026-07-03', '2026-07-25'),
+    (6500, 6500, 'pending', '2026-07-03', '2026-07-25'),
+    (6501, 6500, 'pending', '2026-07-03', '2026-07-25'),
+    (6502, 6500, 'pending', '2026-07-03', '2026-07-25'),
+    (6503, 6500, 'pending', '2026-07-03', '2026-07-25'),
+    (6504, 6500, 'pending', '2026-07-03', '2026-07-25'),
+    (6506, 6501, 'completed', '2026-07-08', '2026-07-09'),
+    (6507, 6502, 'completed', '2026-07-10', '2026-07-11'),
+    (6508, 6503, 'completed', '2026-07-13', '2026-07-14'),
+    (6509, 6504, 'active', '2026-07-15', '2026-07-18'),
+    (6510, 4001, 'active', '2026-07-22', '2026-07-22'),
+    (6510, 6504, 'active', '2026-07-15', '2026-07-18');
 
 INSERT INTO attempt (
     id_attempt, id_student_user, id_assessment, attempt_number, score, state, started_at, submitted_at
 ) VALUES
     (6500, 6505, 6500, 1, NULL, 'submitted', '2026-07-03 12:00:00', '2026-07-03 12:28:00'),
+    (6700, 6506, 6500, 1, NULL, 'submitted', '2026-07-04 12:00:00', '2026-07-04 12:28:00'),
+    (6701, 6507, 6500, 1, NULL, 'submitted', '2026-07-05 12:00:00', '2026-07-05 12:28:00'),
+    (6702, 6508, 6500, 1, 20.00, 'corrected', '2026-07-06 12:00:00', '2026-07-06 12:28:00'),
+    (6703, 6509, 6500, 1, 18.25, 'corrected', '2026-07-07 12:00:00', '2026-07-07 12:28:00'),
     (6501, 6506, 6501, 1, NULL, 'submitted', '2026-07-08 12:00:00', '2026-07-08 12:33:00'),
     (6502, 6507, 6502, 1, NULL, 'submitted', '2026-07-10 12:00:00', '2026-07-10 12:24:00'),
     (6503, 6508, 6503, 1, NULL, 'submitted', '2026-07-13 12:00:00', '2026-07-13 12:37:00'),
@@ -2595,6 +2670,10 @@ INSERT INTO response (
     id_response, id_attempt, id_question, cod_response, answer, attachment, score, answered_at
 ) VALUES
     (6500, 6500, 6500, 'RCM-R-01', 'The number of units cannot be negative, so the model is interpreted only for non-negative production values.', NULL, NULL, '2026-07-03 12:28:00'),
+    (6700, 6700, 6500, 'RCM-R-02', 'The domain is restricted by the quantities represented in the model.', NULL, NULL, '2026-07-04 12:28:00'),
+    (6701, 6701, 6500, 'RCM-R-03', 'The graph and the context determine the admissible input values.', NULL, NULL, '2026-07-05 12:28:00'),
+    (6702, 6702, 6500, 'RCM-R-04', 'The model is interpreted over the real-world domain stated in the checkpoint.', NULL, 2.00, '2026-07-06 12:28:00'),
+    (6703, 6703, 6500, 'RCM-R-05', 'The function domain connects the mathematical inputs to the practical quantities.', NULL, 2.00, '2026-07-07 12:28:00'),
     (6501, 6501, 6501, 'RCM-R-02', 'I eliminated y by subtracting the equations, solved for x, then substituted x back to obtain y.', NULL, NULL, '2026-07-08 12:33:00'),
     (6502, 6502, 6502, 'RCM-R-03', 'The sequence approaches a stable value because the successive differences become smaller and tend to zero.', NULL, NULL, '2026-07-10 12:24:00'),
     (6503, 6503, 6503, 'RCM-R-04', 'Most observations cluster near the centre, but the upper tail shows a small group with substantially higher values.', NULL, NULL, '2026-07-13 12:37:00'),
@@ -2612,5 +2691,263 @@ INSERT INTO associate_grade_sheet_class_group (id_grade_sheet, id_class_group) V
 INSERT INTO based_on_assessment (id_grade_sheet, id_assessment, weight) VALUES
     (6500, 6500, 20.00), (6500, 6501, 20.00), (6500, 6502, 20.00),
     (6500, 6503, 20.00), (6500, 6504, 20.00);
+
+-- Student #6510, created interactively on 16-07-2026.  Keep the complete
+-- academic snapshot in full mode so the same student, profile and enrollments
+-- are available after a full bootstrap.
+INSERT INTO certificate (
+    id_certificate, id_course, id_course_occurrence, id_user_student, title, notes, type, template, validation_code, issued_at, state, final_grade
+) VALUES
+    (3015, 3008, 30071, 6510, 'Certificate - Mathematics 2', NULL, 'completion', NULL, NULL, NULL, 'draft', NULL),
+    (3016, 3007, 30070, 6510, 'Certificate - Full Coverage Trimester Programme', NULL, 'completion', NULL, NULL, NULL, 'draft', NULL),
+    (3017, 3000, 30000, 6510, 'Certificate - Full Coverage Programme', NULL, 'completion', NULL, NULL, NULL, 'draft', NULL),
+    (3018, 3000, 30001, 6510, 'Certificate - Full Coverage Programme', NULL, 'completion', NULL, NULL, NULL, 'draft', NULL),
+    (3019, 1007, 10070, 6510, 'Certificate - Full Matrix Hundred Point Certificate Course', NULL, 'completion', NULL, NULL, NULL, 'draft', NULL),
+    (3020, 1006, 10060, 6510, 'Certificate - Full Matrix Draft And Empty Grades Course', NULL, 'completion', NULL, NULL, NULL, 'draft', NULL),
+    (3021, 1005, 10050, 6510, 'Certificate - Full Matrix All Passed Course', 'Issued from the published all-passed result.', 'completion', 'student-coverage', 'CERT-6510-PASS-2026', '2026-07-16 16:00:00', 'issued', 16.40),
+    (3022, 34, 346, 6510, 'Certificate - Mathematics 1', 'Prepared certificate for the next occurrence.', 'completion', 'student-coverage', NULL, NULL, 'draft', NULL),
+    (3023, 34, 345, 6510, 'Certificate - Mathematics 1', NULL, 'completion', NULL, NULL, NULL, 'draft', NULL),
+    (3024, 34, 347, 6510, 'Certificate - Mathematics 1', NULL, 'completion', NULL, NULL, NULL, 'draft', NULL);
+
+-- Student #6510 is the complete student-facing test matrix.  Every row below
+-- uses an existing valid curricular context and intentionally covers a distinct
+-- lifecycle state without weakening any database invariant.
+INSERT INTO enroll_course (id_student_user, id_course, id_course_occurrence, state, start_date, end_date) VALUES
+    (6510, 1001, 10010, 'inactive', '2026-01-01', '2026-12-31'),
+    (6510, 1003, 10030, 'withdrawn', '2026-01-01', '2026-07-16'),
+    (6510, 1004, 10040, 'completed', '2026-01-01', '2026-04-30');
+
+INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date) VALUES
+    (6510, 1014, 'active', '2026-01-01', '2026-04-30'),
+    (6510, 1015, 'completed', '2026-01-01', '2026-06-30'),
+    (6510, 1016, 'inactive', '2026-07-01', '2026-12-31'),
+    (6510, 1017, 'rejected', '2026-01-01', '2026-12-31'),
+    (6510, 3006, 'pending', '2027-01-01', '2027-06-30'),
+    (6510, 3004, 'withdrawn', '2026-07-01', '2026-07-16');
+
+INSERT INTO lesson (
+    id_lesson, id_class_group, id_content_block, cod_physical_room, title, description, type, provider,
+    access_url, attendance_required, state, starts_at, ends_at, order_no
+) VALUES
+    (6510, 65, 6500, NULL, 'Student coverage scheduled lesson', 'Active lesson currently in progress for student #6510.', 'online', 'Teams', 'https://teams.microsoft.com/l/meetup-join/student-6510-scheduled', 0, 'active', '2026-07-17 09:00:00', '2026-07-25 23:59:00', 2),
+    (6511, 65, 6500, NULL, 'Student coverage scheduled lesson with a deliberately long calendar title that must be truncated inside its day cell', 'Scheduled lesson state and calendar truncation coverage for student #6510.', 'online', 'Teams', 'https://teams.microsoft.com/l/meetup-join/student-6510-scheduled', 1, 'scheduled', '2026-07-24 09:00:00', '2026-07-24 10:00:00', 2),
+    (6512, 65, 6500, NULL, 'Student coverage active lesson', 'Active lesson state coverage for student #6510.', 'online', 'Teams', 'https://teams.microsoft.com/l/meetup-join/student-6510-active', 1, 'active', '2026-07-17 00:00:00', '2026-07-25 23:59:00', 2),
+    (6513, 65, 6500, NULL, 'Student coverage completed lesson', 'Completed lesson state coverage for student #6510.', 'online', 'Teams', 'https://teams.microsoft.com/l/meetup-join/student-6510-completed', 1, 'completed', '2026-06-20 09:00:00', '2026-06-20 10:00:00', 2),
+    (6514, 65, 6500, NULL, 'Student coverage cancelled lesson', 'Cancelled lesson state coverage for student #6510.', 'online', 'Teams', 'https://teams.microsoft.com/l/meetup-join/student-6510-cancelled', 0, 'cancelled', '2026-06-21 09:00:00', '2026-06-21 10:00:00', 2);
+
+INSERT INTO assessment (
+    id_assessment, id_subject, id_content_block, cod_physical_room, title, description, type, mode, correction_mode,
+    max_grade, passing_grade, final_grade_weight, attempts_limit, enrollment_mode, state, available_from, available_until, order_no
+) VALUES
+    (6510, 43, 6500, NULL, 'Student coverage scheduled assessment', 'Scheduled assessment state coverage for student #6510.', 'form', 'online', 'manual', 20.00, 9.50, 0.00, 1, 'manual', 'scheduled', '2026-07-23 09:00:00', '2026-07-23 10:00:00', 2),
+    (6511, 43, 6500, NULL, 'Student coverage scheduled assessment', 'Scheduled assessment and attempt lifecycle coverage for student #6510.', 'test', 'online', 'manual', 20.00, 9.50, 100.00, 6, 'auto_approve', 'scheduled', '2026-07-24 09:00:00', '2026-07-24 12:00:00', 2),
+    (6512, 43, 6500, NULL, 'Student coverage active assessment', 'Active assessment enrollment coverage for student #6510.', 'form', 'online', 'automatic', 20.00, 9.50, 0.00, 1, 'manual', 'active', '2026-07-17 09:00:00', '2026-07-25 23:59:59', 2),
+    (6513, 43, 6500, NULL, 'Student coverage completed assessment', 'Completed assessment enrollment coverage for student #6510.', 'form', 'online', 'manual', 20.00, 9.50, 0.00, 1, 'auto_approve', 'completed', '2026-06-20 09:00:00', '2026-06-20 12:00:00', 2),
+    (6514, 43, 6500, NULL, 'Student coverage inactive enrollment assessment', 'Inactive assessment enrollment coverage for student #6510.', 'form', 'online', 'manual', 20.00, 9.50, 0.00, 1, 'manual', 'active', '2026-07-15 09:00:00', '2026-07-25 23:59:59', 2),
+    (6515, 43, 6500, NULL, 'Student coverage withdrawn enrollment assessment', 'Withdrawn assessment enrollment coverage for student #6510.', 'form', 'online', 'manual', 20.00, 9.50, 0.00, 1, 'manual', 'active', '2026-07-15 09:00:00', '2026-07-25 23:59:59', 3);
+
+INSERT INTO enroll_assessment (id_student_user, id_assessment, state, start_date, end_date) VALUES
+    (6510, 1002, 'active', '2026-03-01', '2026-03-01'),
+    (6510, 1003, 'active', '2026-04-10', '2026-04-10'),
+    (6510, 6510, 'pending', '2026-07-23', '2026-07-23'),
+    (6510, 6511, 'active', '2026-07-24', '2026-07-24'),
+    (6510, 6512, 'inactive', '2026-07-17', '2026-07-18'),
+    (6510, 6513, 'rejected', '2026-06-20', '2026-06-20'),
+    (6510, 6514, 'completed', '2026-07-15', '2026-07-18'),
+    (6510, 6515, 'withdrawn', '2026-07-15', '2026-07-18');
+
+INSERT INTO attempt (
+    id_attempt, id_student_user, id_assessment, attempt_number, score, state, started_at, submitted_at
+) VALUES
+    (6530, 6510, 1002, 1, 16.00, 'corrected', '2026-03-01 14:00:00', '2026-03-01 15:30:00'),
+    (6531, 6510, 1003, 1, 17.00, 'corrected', '2026-04-10 14:00:00', '2026-04-10 15:30:00');
+
+-- Student coverage scheduled assessment has not opened yet.  It must not
+-- contain attempts before its availability window; the attempt lifecycle
+-- is covered by the completed/active assessment fixtures below.
+
+INSERT INTO attendance_record (
+    id_attendance_record, id_lesson, id_user_student, status, source, check_in, check_out, notes, state
+) VALUES
+    (6510, 6500, 6510, 'present', 'manual', '2026-07-03 09:00:00', '2026-07-03 11:00:00', 'Present attendance coverage.', 'active'),
+    (6511, 6501, 6510, 'absent', 'automatic', NULL, NULL, 'Submitted justification coverage.', 'active'),
+    (6512, 6502, 6510, 'late', 'other', '2026-07-10 09:20:00', '2026-07-10 11:00:00', 'Under-review justification coverage.', 'corrected'),
+    (6513, 6503, 6510, 'partial', 'manual', '2026-07-13 09:00:00', '2026-07-13 10:00:00', 'Approved justification coverage.', 'active'),
+    (6514, 6504, 6510, 'partial', 'manual', '2026-07-14 09:00:00', '2026-07-14 10:00:00', 'Rejected justification coverage.', 'active'),
+    (6515, 6513, 6510, 'late', 'automatic', '2026-06-20 09:20:00', '2026-06-20 10:00:00', 'Cancelled justification coverage.', 'cancelled');
+
+INSERT INTO absence_justification (
+    id_absence_justification, id_attendance_record, id_user_student_submitter, id_user_processor,
+    submitted_at, reason, attachment, processed_at, decision_notes, state
+) VALUES
+    (6510, 6511, 6510, NULL, '2026-07-08 12:00:00', 'Medical appointment request.', 'justifications/3000.pdf', NULL, NULL, 'submitted'),
+    (6511, 6512, 6510, NULL, '2026-07-10 12:00:00', 'Transport incident under review.', NULL, NULL, NULL, 'under_review'),
+    (6512, 6513, 6510, 3002, '2026-07-13 12:00:00', 'Approved medical absence.', 'justifications/3002.pdf', '2026-07-14 09:00:00', 'Accepted with document.', 'approved'),
+    (6513, 6514, 6510, 3002, '2026-07-14 12:00:00', 'Rejected absence claim.', NULL, '2026-07-15 09:00:00', 'Evidence insufficient.', 'rejected'),
+    (6514, 6515, 6510, NULL, '2026-06-20 12:00:00', 'Cancelled by student.', NULL, NULL, NULL, 'cancelled');
+
+UPDATE attendance_record
+SET status = 'justified',
+    state = 'corrected',
+    notes = 'Absence justified by approved request.'
+WHERE id_attendance_record = 6513;
+
+INSERT INTO grade_record (
+    id_grade_record, id_grade_sheet, id_user_student, id_attempt, cod_grade_record, value, result, state, recorded_at, notes
+) VALUES
+    (6510, 1014, 6510, NULL, 'AUTO-1014-6510', 16.40, 'approved', 'published', '2026-04-16 15:00:00', 'Published student result coverage.');
+
+INSERT INTO based_on_grade_sheet_certificate (id_certificate, id_grade_sheet) VALUES
+    (3021, 1014);
+
+-- The checkpoint is a complete 10-question assessment.  Every question is
+-- required and every seeded attempt below has one response per question; this
+-- keeps the fixture aligned with the same submit/correction invariants used by
+-- the application instead of hiding missing answers as optional questions.
+
+-- Online assessments that already have attempts or are available to students
+-- must expose at least one question.  These rows complete the previously
+-- sparse lifecycle fixtures without removing any attempt/enrollment variety.
+INSERT INTO question (
+    id_question, id_assessment, cod_question, statement, type, order_no, required_flag, score, expected_answer
+) VALUES
+    (7000, 1000, 'FAIL-Q1', 'Explain why the model result is below the passing threshold.', 'paragraph', 1, 1, 20.00,
+     'A justified explanation based on the failed result.'),
+    (7001, 1002, 'PASS-Q1', 'Explain the key step that supports the successful project result.', 'paragraph', 1, 1, 20.00,
+     'A justified explanation of the successful method.'),
+    (7002, 1004, 'DRAFT-Q1', 'Select the operation used to validate the project data.', 'single_choice', 1, 1, 20.00, NULL),
+    (7003, 1005, 'DRAFT-P-Q1', 'Describe the evidence supporting the project grade.', 'paragraph', 1, 1, 20.00,
+     'A concise evidence-based explanation.'),
+    (7004, 1006, 'EMPTY-Q1', 'Select the statement that best describes the partial result.', 'single_choice', 1, 1, 20.00, NULL),
+    (7005, 1008, 'HUNDRED-Q1', 'Explain how the capstone result is justified on the 0–100 scale.', 'paragraph', 1, 1, 100.00,
+     'A justified explanation using the 0–100 grading scale.'),
+    (7006, 3001, 'FCOV-SCHEDULED-Q1', 'State the main objective of the scheduled coverage test.', 'short_text', 1, 1, 20.00,
+     'A concise statement of the test objective.'),
+    (7007, 1001, 'FAIL-FINAL-Q1', 'Explain the evidence supporting the final onsite result.', 'paragraph', 1, 1, 20.00,
+     'A concise explanation of the final onsite result.'),
+    (7008, 1003, 'PASS-FINAL-Q1', 'Explain the evidence supporting the successful onsite result.', 'paragraph', 1, 1, 20.00,
+     'A concise explanation of the successful onsite result.'),
+    (7009, 1007, 'EMPTY-FINAL-Q1', 'Explain the result recorded for the onsite final.', 'paragraph', 1, 1, 20.00,
+     'A concise explanation of the recorded onsite result.'),
+    (7010, 6511, 'STUDENT-SCHEDULED-Q1', 'Explain the main conclusion of the scheduled assessment.', 'short_text', 1, 1, 20.00,
+     'A concise conclusion based on the assessment material.'),
+    (7011, 6512, 'STUDENT-ACTIVE-Q1', 'Select the valid interpretation of the active assessment.', 'single_choice', 1, 1, 20.00, NULL),
+    (7012, 6513, 'STUDENT-COMPLETED-Q1', 'Upload the completed assessment evidence.', 'file_upload', 1, 1, 20.00,
+     'formats=pdf,image'),
+    (7013, 6514, 'STUDENT-INACTIVE-Q1', 'Rate the clarity of the assessment instructions.', 'rating', 1, 1, 20.00,
+     'rating_style=stars;rating_step=1;rating_max=5;expected_value=4'),
+    (7014, 6515, 'STUDENT-WITHDRAWN-Q1', 'Select all statements supported by the assessment.', 'multiple_choice', 1, 1, 20.00, NULL),
+    (7015, 1100, 'TSD-01-Q1', 'Explain the evidence supporting the subject 01 final result.', 'paragraph', 1, 1, 20.00,
+     'A justified subject 01 final result.'),
+    (7016, 1101, 'TSD-02-Q1', 'Explain the evidence supporting the subject 02 final result.', 'paragraph', 1, 1, 20.00,
+     'A justified subject 02 final result.'),
+    (7017, 1102, 'TSD-03-Q1', 'Explain the evidence supporting the subject 03 final result.', 'paragraph', 1, 1, 20.00,
+     'A justified subject 03 final result.'),
+    (7018, 1103, 'TSD-04-Q1', 'Explain the evidence supporting the subject 04 final result.', 'paragraph', 1, 1, 20.00,
+     'A justified subject 04 final result.'),
+    (7019, 1104, 'TSD-05-Q1', 'Explain the evidence supporting the subject 05 final result.', 'paragraph', 1, 1, 20.00,
+     'A justified subject 05 final result.'),
+    (7020, 1105, 'TSD-06-Q1', 'Explain the evidence supporting the subject 06 final result.', 'paragraph', 1, 1, 20.00,
+     'A justified subject 06 final result.'),
+    (7021, 1106, 'TSD-07-Q1', 'Explain the evidence supporting the subject 07 final result.', 'paragraph', 1, 1, 20.00,
+     'A justified subject 07 final result.'),
+    (7022, 1107, 'TSD-08-Q1', 'Explain the evidence supporting the subject 08 final result.', 'paragraph', 1, 1, 20.00,
+     'A justified subject 08 final result.'),
+    (7023, 1108, 'TSD-09-Q1', 'Explain the evidence supporting the subject 09 final result.', 'paragraph', 1, 1, 20.00,
+     'A justified subject 09 final result.'),
+    (7024, 1109, 'TSD-10-Q1', 'Explain the evidence supporting the subject 10 final result.', 'paragraph', 1, 1, 20.00,
+     'A justified subject 10 final result.'),
+    (7025, 1110, 'FEW-FOUNDATIONS-Q1', 'Explain the evidence supporting the foundations final result.', 'paragraph', 1, 1, 20.00,
+     'A justified foundations final result.'),
+    (7026, 1111, 'FEW-PRACTICE-Q1', 'Explain the evidence supporting the practice final result.', 'paragraph', 1, 1, 20.00,
+     'A justified practice final result.'),
+    (7027, 1112, 'ECTS-INTRO-Q1', 'Explain the evidence supporting the ECTS introduction result.', 'paragraph', 1, 1, 20.00,
+     'A justified ECTS introduction result.'),
+    (7028, 6510, 'STUDENT-SCHEDULED-FORM-Q1', 'Explain the main idea tested by the scheduled student assessment.', 'paragraph', 1, 1, 20.00,
+     'A concise explanation grounded in the assessment material.');
+
+INSERT INTO question_option (id_option, id_question, order_no, text, correct_flag) VALUES
+    (7100, 7002, 1, 'Validate the data against the stated constraints', 1),
+    (7101, 7002, 2, 'Ignore the data constraints', 0),
+    (7102, 7004, 1, 'The result is based on a partial assessment weight', 1),
+    (7103, 7004, 2, 'The result is unrelated to the configured weight', 0),
+    (7104, 7011, 1, 'The interpretation follows the stated assessment context', 1),
+    (7105, 7011, 2, 'The interpretation contradicts the assessment context', 0),
+    (7106, 7014, 1, 'The statement is supported by the assessment evidence', 1),
+    (7107, 7014, 2, 'The statement is unrelated to the assessment evidence', 0),
+    (7108, 7014, 3, 'The statement contradicts the assessment evidence', 0);
+
+-- Every submitted attempt in the fixture has a real answer payload.  The
+-- objective answers are already scorable while the manual ones remain
+-- deliberately unscored until correction.
+INSERT INTO response (
+    id_response, id_attempt, id_question, cod_response, answer, attachment, score, answered_at
+) VALUES
+    (3010, 3001, 3000, 'FCOV-P-R1', NULL, NULL, 2.00, '2026-07-02 09:20:00'),
+    (3011, 3001, 3001, 'FCOV-P-R2', NULL, NULL, 3.00, '2026-07-02 09:25:00'),
+    (3012, 3001, 3002, 'FCOV-P-R3', 'short coverage answer', NULL, NULL, '2026-07-02 09:30:00'),
+    (3013, 3001, 3004, 'FCOV-P-R4', NULL, 'attempts/3002/upload.pdf', NULL, '2026-07-02 09:35:00'),
+    (3014, 3001, 3005, 'FCOV-P-R5', '5', NULL, NULL, '2026-07-02 09:40:00'),
+    (3020, 3005, 3000, 'FCOV-C5-R1', NULL, NULL, 2.00, '2026-07-02 09:10:00'),
+    (3021, 3005, 3001, 'FCOV-C5-R2', NULL, NULL, 3.00, '2026-07-02 09:15:00'),
+    (3022, 3005, 3002, 'FCOV-C5-R3', 'short coverage answer', NULL, 3.00, '2026-07-02 09:20:00'),
+    (3023, 3005, 3004, 'FCOV-C5-R4', NULL, 'submissions/127/diagrama-er.pdf', 2.00, '2026-07-02 09:25:00'),
+    (3024, 3005, 3005, 'FCOV-C5-R5', '5', NULL, 2.00, '2026-07-02 09:30:00'),
+    (3030, 3006, 3000, 'FCOV-C6-R1', NULL, NULL, 2.00, '2026-07-02 09:10:00'),
+    (3031, 3006, 3001, 'FCOV-C6-R2', NULL, NULL, 3.00, '2026-07-02 09:15:00'),
+    (3032, 3006, 3002, 'FCOV-C6-R3', 'short coverage answer', NULL, 3.00, '2026-07-02 09:20:00'),
+    (3033, 3006, 3004, 'FCOV-C6-R4', NULL, 'submissions/501/correction-matrix.png', 4.00, '2026-07-02 09:25:00'),
+    (3034, 3006, 3005, 'FCOV-C6-R5', '5', NULL, 2.00, '2026-07-02 09:30:00');
+
+INSERT INTO response_option (id_response, id_option) VALUES
+    (3010, 3000), (3011, 3002), (3011, 3003),
+    (3020, 3000), (3021, 3002), (3021, 3003),
+    (3030, 3000), (3031, 3002), (3031, 3003);
+
+-- Functions Applied Checkpoint: complete the answer set for all five seeded
+-- attempts.  The first question already has the richer text answers above;
+-- this insert supplies questions 2..10 in one deterministic statement.
+-- Corrected attempt 6702 totals the full 20.00 (all ten questions at 2.00)
+-- and corrected attempt 6703 totals 18.25 (nine questions at 2.00 plus 0.25).
+-- Submitted attempts remain
+-- unscored because they are waiting for correction, but still contain every
+-- answer payload.
+INSERT INTO response (
+    id_attempt, id_question, cod_response, answer, attachment, score, answered_at
+)
+SELECT
+    at.id_attempt,
+    q.id_question,
+    CONCAT('RCM-', at.id_attempt, '-', q.order_no),
+    CASE
+        WHEN q.type IN ('single_choice', 'multiple_choice') THEN NULL
+        ELSE CONCAT('Completed response for checkpoint question ', q.order_no, '.')
+    END,
+    NULL,
+    CASE
+        WHEN at.state = 'corrected' AND at.id_attempt = 6702 THEN 2.00
+        WHEN at.state = 'corrected' AND at.id_attempt = 6703 AND q.order_no <= 9 THEN 2.00
+        WHEN at.state = 'corrected' AND at.id_attempt = 6703 AND q.order_no = 10 THEN 0.25
+        WHEN at.state = 'corrected' AND at.id_attempt = 6703 THEN 0.00
+        ELSE NULL
+    END,
+    at.submitted_at
+FROM attempt at
+JOIN question q ON q.id_assessment = at.id_assessment
+WHERE at.id_assessment = 6500
+  AND q.id_question <> 6500;
+
+-- Objective answers use the correct option for scored/awaiting-correction
+-- attempts.  The manual scores above remain the source of truth for corrected
+-- attempts, while the submitted attempts intentionally keep NULL scores.
+INSERT INTO response_option (id_response, id_option)
+SELECT r.id_response, qo.id_option
+FROM response r
+JOIN attempt at ON at.id_attempt = r.id_attempt
+JOIN question q ON q.id_question = r.id_question
+JOIN question_option qo ON qo.id_question = q.id_question
+WHERE at.id_assessment = 6500
+  AND q.type IN ('single_choice', 'multiple_choice')
+  AND qo.correct_flag = 1;
 
 COMMIT;

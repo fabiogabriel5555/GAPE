@@ -28,3 +28,12 @@
 27|Allow inactive subjects to retain existing associations|sql/migration/V027__allow_inactive_subjects_with_existing_associations.sql
 28|Add subject organic-unit context and allow cross-organization course associations|sql/migration/V028__add_subject_organic_unit_and_allow_cross_organization_associations.sql
 29|Derive class-group enrollment periods from their occurrence|sql/migration/V029__derive_class_group_enrollment_periods.sql
+30|Add management-view scope context and ownership|sql/migration/V030__add_management_view_scope_context.sql
+31|Add immutable activity-log scope snapshots|sql/migration/V031__add_activity_log_scope_snapshots.sql
+32|Protect sensitive data at rest schema|sql/migration/V032__protect_sensitive_data_at_rest.sql
+33|Expand sensitive-data envelopes for UTF-8|sql/migration/V033__expand_sensitive_data_envelopes_for_utf8.sql
+34|Allow parallel class-group enrollments|sql/migration/V034__allow_parallel_class_group_enrollments.sql
+35|Allow correction of completed assessment attempts|sql/migration/V035__allow_correction_of_completed_assessment_attempts.sql
+36|Normalize completed assessment enrollments|sql/migration/V036__normalize_completed_assessment_enrollments.sql
+37|Align legacy block content item identifiers|sql/migration/V037__align_legacy_block_content_item_identifiers.sql
+38|Allow certificate grade sheets from any course occurrence|sql/migration/V038__allow_cross_occurrence_certificate_grade_sheets.sql

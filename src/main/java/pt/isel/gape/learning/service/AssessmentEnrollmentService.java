@@ -329,9 +329,9 @@ public final class AssessmentEnrollmentService {
                         assessmentId,
                         sourceIp
                 );
-                assessmentEnrollmentDAO.deleteEnrollment(connection, studentUserId, assessment.id());
                 auditService.record(connection, actorUserId, sessionId, "ASSESSMENT_ENROLL_DELETE",
                         "assessment_enrollment", identifier(studentUserId, assessment.id()), "success", sourceIp);
+                assessmentEnrollmentDAO.deleteEnrollment(connection, studentUserId, assessment.id());
                 connection.commit();
             } catch (RuntimeException | SQLException exception) {
                 connection.rollback();

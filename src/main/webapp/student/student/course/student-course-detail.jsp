@@ -8,82 +8,45 @@
         return;
     }
 %>
-<c:set var="coursePhotoUrl" value=""/>
-<c:if test="${course.hasPhoto}">
-    <c:set var="coursePhotoUrl" value="${pageContext.request.contextPath}/media/${course.photo}?v=${mediaCacheVersion}"/>
-</c:if>
 <%@ include file="/WEB-INF/fragments/student-dashboard-start.jspf" %>
 
-<section class="gape-student-panel bg-white rounded-10 px-24 py-24 border border-neutral-30 mb-24">
-    <div class="gape-student-course-summary">
-        <div class="gape-student-course-visual-stack">
-            <div class="gape-student-course-detail-thumb">
-                <c:choose>
-                    <c:when test="${course.hasPhoto}">
-                        <img src="${coursePhotoUrl}" alt="" onerror="this.classList.add('d-none');this.nextElementSibling.classList.remove('d-none');">
-                        <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--table d-none" aria-label="No course photo">
-                            <i class="ph ph-image"></i>
-                        </span>
-                    </c:when>
-                    <c:otherwise>
-                        <span class="gape-photo-placeholder gape-photo-placeholder--image gape-photo-placeholder--table" aria-label="No course photo">
-                            <i class="ph ph-image"></i>
-                        </span>
-                    </c:otherwise>
-                </c:choose>
-            </div>
-            <div class="gape-student-course-side-grid">
-                <div class="gape-student-course-side-item">
-                    <span class="text-12 text-neutral-500 d-block mb-6">Acronym</span>
-                    <strong class="text-15 text-neutral-800"><c:out value="${course.acronym}"/></strong>
+<section class="gape-student-course-visual-stack gape-student-class-group-detail-hero px-24 py-24 mb-24">
+    <div class="d-flex align-items-start justify-content-between gap-18 flex-wrap mb-22">
+        <div class="d-flex align-items-start gap-14 min-w-0">
+            <span class="gape-student-class-group-card__icon text-26"><i class="ph ph-books"></i></span>
+            <div class="min-w-0">
+                <div class="d-flex align-items-center gap-8 flex-wrap mb-8">
+                    <h2 class="text-24 fw-semibold text-neutral-800 mb-0"><c:out value="${course.name}"/></h2>
+                    <span class="${course.enrollmentBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12">
+                        <c:out value="${course.enrollmentStateLabel}"/>
+                    </span>
+                    <span class="${course.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12">
+                        <c:out value="${course.stateLabel}"/>
+                    </span>
                 </div>
-                <div class="gape-student-course-side-item">
-                    <span class="text-12 text-neutral-500 d-block mb-6">Unit</span>
-                    <strong class="text-15 text-neutral-800"><c:out value="${course.organicUnitAcronym}"/></strong>
-                </div>
-                <div class="gape-student-course-side-item gape-student-course-side-item--wide">
-                    <span class="text-12 text-neutral-500 d-block mb-6">Context</span>
-                    <strong class="text-15 text-neutral-800"><c:out value="${course.courseManagementContextLabel}"/></strong>
-                </div>
+                <p class="text-14 text-neutral-500 mb-0"><c:out value="${course.description}"/></p>
             </div>
         </div>
+    </div>
 
-        <div class="min-w-0">
-            <div class="d-flex align-items-center gap-10 flex-wrap mb-16">
-                <span class="${course.enrollmentBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13">
-                    <c:out value="${course.enrollmentStateLabel}"/>
-                </span>
-                <span class="${course.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13">
-                    <c:out value="${course.stateLabel}"/>
-                </span>
-            </div>
-            <h2 class="text-24 fw-semibold text-neutral-800 mb-10"><c:out value="${course.name}"/></h2>
-            <p class="text-14 text-neutral-500 mb-20"><c:out value="${course.description}"/></p>
-
-            <div class="gape-student-course-metrics-grid">
-                <div class="gape-student-course-metric">
-                    <span class="text-13 text-neutral-500 d-block mb-8">Course</span>
-                    <strong class="text-16 text-neutral-800"><c:out value="${course.typeLabel}"/> | <c:out value="${course.ectsLabel}"/></strong>
-                </div>
-                <div class="gape-student-course-metric">
-                    <span class="text-13 text-neutral-500 d-block mb-8">Duration</span>
-                    <strong class="text-16 text-neutral-800"><c:out value="${course.durationLabel}"/></strong>
-                </div>
-                <div class="gape-student-course-metric">
-                    <span class="text-13 text-neutral-500 d-block mb-8">Subjects</span>
-                    <strong class="text-16 text-neutral-800">${curricularSubjectCount} in the curricular structure</strong>
-                </div>
-                <div class="gape-student-course-metric">
-                    <span class="text-13 text-neutral-500 d-block mb-8">Class groups</span>
-                    <strong class="text-16 text-neutral-800">${classGroupCount} listed | ${activeClassGroupCount} active</strong>
-                </div>
-            </div>
-
-            <div class="gape-student-course-actions">
-                <a href="${pageContext.request.contextPath}/student/courses" class="border border-neutral-30 px-16 py-9 rounded-8 text-14 fw-semibold text-neutral-600 hover-bg-neutral-20 transition-03">
-                    Back to Courses
-                </a>
-            </div>
+    <div class="gape-student-class-group-metrics">
+        <div class="gape-student-class-group-metric">
+            <span class="text-12 text-neutral-500 d-block mb-4">Course</span>
+            <span class="text-14 fw-semibold text-neutral-800"><c:out value="${course.typeLabel}"/> | <c:out value="${course.ectsLabel}"/></span>
+        </div>
+        <div class="gape-student-class-group-metric">
+            <span class="text-12 text-neutral-500 d-block mb-4">Subjects</span>
+            <span class="text-14 fw-semibold text-neutral-800">${curricularSubjectCount} in the curricular structure</span>
+        </div>
+        <div class="gape-student-class-group-metric">
+            <span class="text-12 text-neutral-500 d-block mb-4">Class groups</span>
+            <span class="text-14 fw-semibold text-neutral-800">${activeClassGroupCount} enrolled | ${classGroupCount} listed</span>
+        </div>
+        <div class="gape-student-class-group-metric">
+            <span class="text-12 text-neutral-500 d-block mb-4">Current enrollment period</span>
+            <span class="text-14 fw-semibold text-neutral-800" data-gape-datetime-display>
+                <c:out value="${course.enrollmentStartDate}"/> to <c:out value="${course.enrollmentEndDate}"/>
+            </span>
         </div>
     </div>
 </section>
@@ -100,7 +63,16 @@
     </div>
 
     <div class="row gy-4">
+        <c:set var="currentCurricularPeriod" value=""/>
         <c:forEach var="subject" items="${courseSubjects}">
+            <c:if test="${currentCurricularPeriod ne subject.curricularPositionLabel}">
+                <c:set var="currentCurricularPeriod" value="${subject.curricularPositionLabel}"/>
+                <div class="col-12">
+                    <div class="gape-student-subject-period-divider" role="separator" aria-label="<c:out value='${subject.curricularPositionLabel}'/>">
+                        <span><c:out value="${subject.curricularPositionLabel}"/></span>
+                    </div>
+                </div>
+            </c:if>
             <c:set var="subjectPhotoUrl" value=""/>
             <c:if test="${subject.subject.hasPhoto}">
                 <c:set var="subjectPhotoUrl" value="${pageContext.request.contextPath}/media/${subject.subject.photo}?v=${mediaCacheVersion}"/>
@@ -126,7 +98,7 @@
                     <div class="gape-student-structure-card__body px-16 py-16">
                         <div class="d-flex align-items-start justify-content-between gap-12 mb-12">
                             <span class="gape-student-icon gape-student-soft-green text-20"><i class="ph ph-book-open-text"></i></span>
-                            <span class="bg-neutral-20 text-neutral-600 px-12 py-7 border-neutral-30 border rounded-pill text-12"><c:out value="${subject.mandatoryLabel}"/></span>
+                            <span class="${subject.mandatory ? 'gape-student-mandatory-badge' : 'gape-student-optional-badge'} px-12 py-7 border rounded-pill text-12"><c:out value="${subject.mandatoryLabel}"/></span>
                         </div>
                         <h4 class="text-16 fw-semibold text-neutral-800 mb-6">
                             <a href="${pageContext.request.contextPath}/student/subjects/${course.id}/${subject.subjectId}" class="text-neutral-800 hover-text-main-600">
@@ -138,7 +110,7 @@
                             <span class="bg-neutral-20 text-neutral-600 px-9 py-5 rounded-8 text-12"><c:out value="${subject.subjectAcronym}"/></span>
                             <span class="bg-neutral-20 text-neutral-600 px-9 py-5 rounded-8 text-12"><c:out value="${subject.subjectEctsLabel}"/></span>
                             <span class="bg-neutral-20 text-neutral-600 px-9 py-5 rounded-8 text-12"><c:out value="${subject.curricularPositionLabel}"/></span>
-                            <span class="bg-neutral-20 text-neutral-600 px-9 py-5 rounded-8 text-12"><c:out value="${subject.mandatoryLabel}"/></span>
+                            <span class="${subject.mandatory ? 'gape-student-mandatory-badge' : 'gape-student-optional-badge'} px-9 py-5 border rounded-8 text-12"><c:out value="${subject.mandatoryLabel}"/></span>
                         </div>
                         <div class="gape-student-card-actions">
                             <a href="${pageContext.request.contextPath}/student/subjects/${course.id}/${subject.subjectId}" class="gape-student-card-icon-button" aria-label="Open subject" title="Open subject">

@@ -1,20 +1,39 @@
-<article class="gape-structure-node border border-neutral-30 rounded-8 px-18 py-16 bg-white"
-         data-course-detail-sort-row
-         data-sort-name="<c:out value='${enrollment.studentName}'/>"
-         data-sort-date="${fn:replace(enrollment.startDateValue, '-', '')}"
-         data-sort-status="<c:out value='${enrollment.stateLabel}'/>">
+<article class="gape-structure-node border border-neutral-30 rounded-8 px-18 py-16 bg-white ${courseEnrollmentGrouped ? 'gape-course-enrollment-occurrence-card' : ''}"
+         <c:if test="${not courseEnrollmentGrouped}">
+             data-course-detail-sort-row
+             data-sort-name="<c:out value='${enrollment.studentName}'/>"
+             data-sort-date="${fn:replace(enrollment.startDateValue, '-', '')}"
+             data-sort-status="<c:out value='${enrollment.stateLabel}'/>"
+         </c:if>>
     <div class="gape-structure-row gape-enrollment-row">
-        <div class="d-flex align-items-center gap-12 min-w-0">
-            <span class="bg-info-50 text-info-600 cd-mode-icon text-20 line-height-1"><i class="ph ph-student" aria-hidden="true"></i></span>
-            <div class="min-w-0">
-                <span class="fw-medium text-14 text-neutral-700 d-block"><c:out value="${enrollment.studentName}"/></span>
-                <span class="gape-node-meta text-12"><span><c:out value="${enrollment.studentEmail}"/></span></span>
-            </div>
-        </div>
-        <div class="min-w-0">
-            <span class="fw-medium text-14 text-neutral-700 d-block"><c:out value="${enrollment.courseOccurrenceCode}"/></span>
-            <span class="gape-node-meta text-12" data-gape-datetime-display><span><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></span></span>
-        </div>
+        <c:choose>
+            <c:when test="${courseEnrollmentGrouped}">
+                <div class="d-flex align-items-center gap-12 min-w-0">
+                    <span class="bg-main-50 text-main-600 cd-mode-icon text-20 line-height-1"><i class="ph ph-calendar-dots" aria-hidden="true"></i></span>
+                    <div class="min-w-0">
+                        <span class="fw-medium text-14 text-neutral-700 d-block"><c:out value="${enrollment.courseOccurrenceCode}"/></span>
+                        <span class="gape-node-meta text-12"><span>Course occurrence</span></span>
+                    </div>
+                </div>
+                <div class="min-w-0">
+                    <span class="fw-medium text-14 text-neutral-700 d-block" data-gape-datetime-display><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></span>
+                    <span class="gape-node-meta text-12"><span>Enrollment period</span></span>
+                </div>
+            </c:when>
+            <c:otherwise>
+                <div class="d-flex align-items-center gap-12 min-w-0">
+                    <span class="bg-info-50 text-info-600 cd-mode-icon text-20 line-height-1"><i class="ph ph-student" aria-hidden="true"></i></span>
+                    <div class="min-w-0">
+                        <span class="fw-medium text-14 text-neutral-700 d-block"><c:out value="${enrollment.studentName}"/></span>
+                        <span class="gape-node-meta text-12"><span><c:out value="${enrollment.studentEmail}"/></span></span>
+                    </div>
+                </div>
+                <div class="min-w-0">
+                    <span class="fw-medium text-14 text-neutral-700 d-block"><c:out value="${enrollment.courseOccurrenceCode}"/></span>
+                    <span class="gape-node-meta text-12" data-gape-datetime-display><span><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></span></span>
+                </div>
+            </c:otherwise>
+        </c:choose>
         <div>
             <span class="${enrollment.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
                 <c:out value="${enrollment.stateLabel}"/>

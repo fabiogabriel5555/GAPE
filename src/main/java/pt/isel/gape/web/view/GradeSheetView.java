@@ -1,11 +1,13 @@
 package pt.isel.gape.web.view;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import pt.isel.gape.common.time.ApplicationDateTimeFormat;
+import pt.isel.gape.common.time.ApplicationClock;
 import pt.isel.gape.common.validation.MediaPathValidator;
 import pt.isel.gape.learning.model.GradeSheet;
 import pt.isel.gape.learning.model.GradeSheetState;
@@ -535,7 +537,24 @@ public final class GradeSheetView {
     }
 
     public boolean isCourseOccurrenceCompleted() {
-        return "completed".equals(courseOccurrenceStateValue);
+        if ("completed".equals(courseOccurrenceStateValue)) {
+            return true;
+        }
+        // Seeded and legacy rows can retain an old database state after their
+        // end date.  The student archive must follow the real calendar, not
+        // that stale value, so an occurrence whose end date has passed is
+        // completed even when its persisted state still says active.
+        int separator = courseOccurrenceDateRangeLabel.indexOf(" to ");
+        if (separator < 0) {
+            return false;
+        }
+        String endDate = courseOccurrenceDateRangeLabel.substring(separator + 4).trim();
+        try {
+            LocalDate endsAt = LocalDate.parse(endDate, ApplicationDateTimeFormat.DISPLAY_DATE);
+            return LocalDate.now(ApplicationClock.ZONE).isAfter(endsAt);
+        } catch (RuntimeException ignored) {
+            return false;
+        }
     }
 
     public Long getPrimaryClassGroupId() {

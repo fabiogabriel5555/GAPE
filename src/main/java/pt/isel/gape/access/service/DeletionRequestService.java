@@ -20,6 +20,8 @@ import pt.isel.gape.transversal.service.AuditService;
 
 public final class DeletionRequestService {
 
+    private static final int REASON_MAX_LENGTH = 300;
+
     private final DeletionRequestDAO deletionRequestDAO;
     private final UserDAO userDAO;
     private final PermissionChecker permissionChecker;
@@ -53,8 +55,10 @@ public final class DeletionRequestService {
     public DeletionRequest submitDeletionRequest(long actorUserId, Long sessionId, String reason, String sourceIp) {
         try {
             requireUser(actorUserId);
+            String normalizedReason = optional(reason);
+            validateReason(normalizedReason);
             LocalDateTime submittedAt = LocalDateTime.now(clock);
-            long requestId = deletionRequestDAO.create(actorUserId, submittedAt, optional(reason));
+            long requestId = deletionRequestDAO.create(actorUserId, submittedAt, normalizedReason);
             record(actorUserId, sessionId, "DELETION_SUBMIT", requestId, "success", sourceIp);
             return deletionRequestDAO.findById(requestId)
                     .orElseThrow(() -> new IllegalStateException("Created deletion request could not be loaded"));
@@ -177,5 +181,11 @@ public final class DeletionRequestService {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private static void validateReason(String reason) {
+        if (reason != null && reason.length() > REASON_MAX_LENGTH) {
+            throw new IllegalArgumentException("Deletion request reason is too long");
+        }
     }
 }

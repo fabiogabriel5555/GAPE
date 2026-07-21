@@ -1,9 +1,20 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <c:set var="studentMessagesPage" value="${sessionScope['gape.auth.hasStudentProfile']
         and not sessionScope['gape.auth.hasAdministratorProfile']
         and not sessionScope['gape.auth.hasCoordinatorProfile']
         and not sessionScope['gape.auth.hasTeacherProfile']}"/>
+<c:set var="studentName" value="${sessionScope['gape.auth.userName']}"/>
+<c:set var="studentId" value="${sessionScope['gape.auth.userId']}"/>
+<c:set var="studentEmail" value="${sessionScope['gape.auth.userEmail']}"/>
+<c:set var="studentFirstName" value="Student"/>
+<c:set var="studentLastName" value="Student"/>
+<c:if test="${not empty studentName}">
+    <c:set var="studentNameParts" value="${fn:split(fn:trim(studentName), ' ')}"/>
+    <c:set var="studentFirstName" value="${studentNameParts[0]}"/>
+    <c:set var="studentLastName" value="${studentNameParts[fn:length(studentNameParts) - 1]}"/>
+</c:if>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,10 +22,16 @@
     <title>GAPE - Messages</title>
     <%@ include file="/WEB-INF/fragments/template-base-head.jspf" %>
     <style>
+        html:has(.messages-student-shell),
+        body:has(.messages-student-shell) {
+            background: var(--neutral-900);
+            overscroll-behavior-y: none;
+        }
+
         .messages-student-hero-band {
-            min-height: 134px;
-            padding-bottom: 65px !important;
-            padding-top: 28px !important;
+            min-height: 97px;
+            padding-bottom: 47px !important;
+            padding-top: 20px !important;
             z-index: 0 !important;
         }
 
@@ -27,20 +44,89 @@
             inset-inline-start: clamp(132px, 13vw, 214px);
         }
 
-        .messages-student-hero-heading {
-            bottom: 16px;
-            color: #fff;
-            font-size: 22px;
-            font-weight: 600;
-            inset-inline-start: 312px;
-            line-height: 1.1;
-            margin: 0;
-            position: absolute;
-            z-index: 2;
+        .messages-student-shell .gape-student-dashboard-layout {
+            align-items: flex-start;
+            margin-top: -38px !important;
         }
 
-        .messages-student-page .gape-dashboard-page-heading {
-            display: none;
+        .messages-student-shell .gape-student-dashboard-main {
+            min-width: 0;
+            padding-top: 0;
+        }
+
+        .messages-student-shell .gape-student-sidebar-avatar {
+            align-items: center;
+            background: var(--main-25);
+            border-radius: 50%;
+            color: var(--main-600);
+            display: inline-flex;
+            height: 112px;
+            justify-content: center;
+            margin: 0 auto 20px;
+            overflow: hidden;
+            width: 112px;
+        }
+
+        .messages-student-shell .gape-student-sidebar-avatar img {
+            height: 100%;
+            object-fit: cover;
+            width: 100%;
+        }
+
+        .messages-student-shell .student-dashboard-sidebar ul li:not(.activePage) > a {
+            background: transparent !important;
+            color: var(--neutral-500) !important;
+        }
+
+        .messages-student-shell .student-dashboard-sidebar ul li:not(.activePage) > a i {
+            color: var(--main-600) !important;
+        }
+
+        .messages-student-shell .student-dashboard-sidebar ul li:not(.activePage) > a:hover {
+            background: var(--main-600) !important;
+            color: #fff !important;
+        }
+
+        .messages-student-shell .student-dashboard-sidebar ul li:not(.activePage) > a:hover i {
+            color: #fff !important;
+        }
+
+        .messages-student-shell .gape-student-page-heading {
+            align-items: flex-start;
+            display: flex;
+            margin-block: 0 5px !important;
+            min-height: 48px;
+            padding-block-start: 3px;
+        }
+
+        .messages-student-shell .gape-student-page-heading h6 {
+            color: #fff;
+            font-size: 22px !important;
+            line-height: 1.1;
+            margin-bottom: 0;
+        }
+
+        .messages-student-shell .gape-student-mobile-menu-bar {
+            position: relative;
+            z-index: 5;
+        }
+
+        @media (min-width: 1200px) {
+            .messages-student-shell .student-dashboard-sidebar > .student-dashboard-sidebar-menu {
+                overflow: visible !important;
+            }
+
+            .messages-student-shell .student-dashboard-sidebar .student-dashbord-scrollbar {
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                padding-bottom: 0;
+            }
+
+            .messages-student-shell .student-dashboard-sidebar > .position-absolute.inset-block-end-0 {
+                margin-top: 28px;
+                position: static !important;
+            }
         }
 
         .messages-layout {
@@ -177,7 +263,7 @@
 
         @media (max-width: 575px) {
             .messages-student-hero-band {
-                min-height: 122px;
+                min-height: 88px;
             }
 
             .messages-student-hero-band .shape.one {
@@ -246,8 +332,23 @@
         }
 
         @media (max-width: 991px) {
-            .messages-student-hero-heading {
-                inset-inline-start: 24px;
+            .messages-student-shell .gape-student-dashboard-layout {
+                min-height: 420px;
+            }
+
+            .messages-student-shell .gape-student-dashboard-main {
+                padding-inline-start: 0;
+            }
+
+            .messages-student-shell .gape-student-page-heading {
+                margin-block: 0 5px !important;
+            }
+
+            .messages-student-shell .gape-student-mobile-menu-bar {
+                inset-block-start: 0;
+                inset-inline-end: 0;
+                margin-bottom: 0 !important;
+                position: absolute;
             }
 
             .messages-layout {
@@ -278,10 +379,8 @@
         }
 
         @media (max-width: 575px) {
-            .messages-student-hero-heading {
-                bottom: 14px;
+            .messages-student-shell .gape-student-page-heading h6 {
                 font-size: 20px;
-                inset-inline-start: 24px;
             }
 
             .messages-reply-input {
@@ -319,10 +418,37 @@
         <img src="${pageContext.request.contextPath}/assets/images/shapes/shape6.png" alt="" class="shape four animation-scalation">
         <img src="${pageContext.request.contextPath}/assets/images/shapes/shape7.png" alt="" class="shape seven animation-walking">
         <img src="${pageContext.request.contextPath}/assets/images/shapes/shape10.png" alt="" class="shape ten animation-upDown">
-        <h1 class="messages-student-hero-heading">Messages</h1>
     </section>
 </c:if>
-<div class="dashbord bg-main-25 w-100 overflow-hidden ${studentMessagesPage ? 'messages-student-page' : ''}"
+<c:choose>
+    <c:when test="${studentMessagesPage}">
+<section class="messages-student-shell bg-main-25 pb-80 w-100 h-100"
+                 data-messages-page
+                 data-csrf-token="${sessionScope['gape.auth.csrfToken']}"
+                 data-read-conversation-url="${pageContext.request.contextPath}/messages/read-conversation">
+            <div class="container container--xl">
+                <div class="d-flex gap-24 mt--120 z-2 position-relative gape-student-dashboard-layout">
+                    <div class="student-overlay-sidebar"></div>
+                    <%@ include file="/WEB-INF/fragments/student-dashboard-sidebar.jspf" %>
+                    <main class="w-100 gape-student-dashboard-main">
+                        <%@ include file="/WEB-INF/fragments/flash-messages.jspf" %>
+                        <div class="gape-student-mobile-menu-bar d-flex align-items-center justify-content-end mb-16 d-xl-none">
+                            <button type="button" class="toggle-student-dashbord-button text-white text-32" aria-label="Open dashboard menu">
+                                <i class="ph-bold ph-list"></i>
+                            </button>
+                        </div>
+                        <section class="gape-student-page-heading mb-24">
+                            <h6 class="text-28 fw-semibold">Messages</h6>
+                        </section>
+                        <%@ include file="/WEB-INF/fragments/messages-content.jspf" %>
+                    </main>
+                </div>
+            </div>
+        </section>
+        <%@ include file="/WEB-INF/fragments/student-template-footer.jspf" %>
+    </c:when>
+    <c:otherwise>
+<div class="dashbord bg-main-25 w-100 overflow-hidden"
      data-messages-page
      data-csrf-token="${sessionScope['gape.auth.csrfToken']}"
      data-read-conversation-url="${pageContext.request.contextPath}/messages/read-conversation">
@@ -411,6 +537,8 @@
         </div>
     </div>
 </div>
+    </c:otherwise>
+</c:choose>
 <%@ include file="/WEB-INF/fragments/template-base-scripts.jspf" %>
 <script>
     (function () {

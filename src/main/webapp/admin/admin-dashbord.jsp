@@ -1,4 +1,4 @@
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+﻿<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%
     request.setAttribute("activeMenu", "dashboard");
 %>
@@ -64,28 +64,28 @@
 <div class="mobile-menu scroll-sm d-lg-none d-block">
     <button type="button" class="close-button" aria-label="Close menu"><i class="ph ph-x" aria-hidden="true"></i></button>
     <div class="mobile-menu__inner">
-        <a href="index.jsp" class="mobile-menu__logo">
+        <a href="/login.jsp" class="mobile-menu__logo">
             <img src="assets/images/logo/logo.svg" alt="Logo">
         </a>
         <div class="mobile-menu__menu">
 
 <ul class="nav-menu flex-align nav-menu--mobile">
-    <li class="nav-menu__item"><a href="index.jsp" class="nav-menu__link">Home</a></li>
+    <li class="nav-menu__item"><a href="/login.jsp" class="nav-menu__link">Home</a></li>
 
     <li class="nav-menu__item has-submenu">
         <a href="javascript:void(0)" class="nav-menu__link">Courses</a>
          <ul class="nav-submenu scroll-sm">
             <li class="nav-submenu__item">
-                <a href="course.jsp" class="nav-submenu__link hover-bg-neutral-30"> Course Grid View</a>
+                <a href="${pageContext.request.contextPath}/courses" class="nav-submenu__link hover-bg-neutral-30"> Course Grid View</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="course-list-view.jsp" class="nav-submenu__link hover-bg-neutral-30"> Course List View</a>
+                <a href="${pageContext.request.contextPath}/courses" class="nav-submenu__link hover-bg-neutral-30"> Course List View</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="course-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Course Details</a>
+                <a href="${pageContext.request.contextPath}/courses" class="nav-submenu__link hover-bg-neutral-30"> Course Details</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="lesson-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Lesson Details</a>
+                <a href="/login.jsp" class="nav-submenu__link hover-bg-neutral-30"> Lesson Details</a>
             </li>
         </ul>
     </li>
@@ -93,28 +93,28 @@
         <a href="javascript:void(0)" class="nav-menu__link">Pages</a>
          <ul class="nav-submenu scroll-sm">
             <li class="nav-submenu__item">
-                <a href="about-four.jsp" class="nav-submenu__link hover-bg-neutral-30"> About Four</a>
+                <a href="/login.jsp" class="nav-submenu__link hover-bg-neutral-30"> About Four</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
+                <a href="${pageContext.request.contextPath}/login.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/tutor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
+                <a href="${pageContext.request.contextPath}/login.jsp" class="nav-submenu__link hover-bg-neutral-30"> Instructor Details</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="tutor.jsp" class="nav-submenu__link hover-bg-neutral-30"> Premium Tutors</a>
+                <a href="/login.jsp" class="nav-submenu__link hover-bg-neutral-30"> Premium Tutors</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="tutor-details.jsp" class="nav-submenu__link hover-bg-neutral-30"> Premium Tutors Details</a>
+                <a href="/login.jsp" class="nav-submenu__link hover-bg-neutral-30"> Premium Tutors Details</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="events.jsp" class="nav-submenu__link hover-bg-neutral-30">Events</a>
+                <a href="/login.jsp" class="nav-submenu__link hover-bg-neutral-30">Events</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="event-details.jsp" class="nav-submenu__link hover-bg-neutral-30">Event Details</a>
+                <a href="/login.jsp" class="nav-submenu__link hover-bg-neutral-30">Event Details</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="apply-admission.jsp" class="nav-submenu__link hover-bg-neutral-30">Apply Admission</a>
+                <a href="/login.jsp" class="nav-submenu__link hover-bg-neutral-30">Apply Admission</a>
             </li>
         </ul>
     </li>
@@ -128,13 +128,13 @@
                 <a href="${pageContext.request.contextPath}/admin/admin-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Messages</a>
+                <a href="${pageContext.request.contextPath}/messages" class="nav-submenu__link hover-bg-neutral-30">Messages</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
+                <a href="${pageContext.request.contextPath}/admin/courses" class="nav-submenu__link hover-bg-neutral-30">Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/admin/admin-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Reviews</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
@@ -143,55 +143,55 @@
                 <a href="${pageContext.request.contextPath}/profile" class="nav-submenu__link hover-bg-neutral-30">My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-home.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
+                <a href="${pageContext.request.contextPath}/dashboard" class="nav-submenu__link hover-bg-neutral-30">Student Admin Dashbord</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Profile</a>
+                <a href="${pageContext.request.contextPath}/student/student/profile/student-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Message</a>
+                <a href="${pageContext.request.contextPath}/messages" class="nav-submenu__link hover-bg-neutral-30">Student Message</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-enrolled-courses.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Enrolled Courses</a>
+                <a href="${pageContext.request.contextPath}/student/courses" class="nav-submenu__link hover-bg-neutral-30">Student Enrolled Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
+                <a href="${pageContext.request.contextPath}/student/lessons#assessments" class="nav-submenu__link hover-bg-neutral-30">Student Reviews</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/student/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-assignment.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
+                <a href="${pageContext.request.contextPath}/student/lessons#assessments" class="nav-submenu__link hover-bg-neutral-30">Student Assignment</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/student/student-settings.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Settings</a>
+                <a href="${pageContext.request.contextPath}/student/student/profile/student-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Student Settings</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
+                <a href="${pageContext.request.contextPath}/dashboard" class="nav-submenu__link hover-bg-neutral-30">Instructor Dashbord</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/instructor/instructor-my-profile.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor My Profile</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Message</a>
+                <a href="${pageContext.request.contextPath}/messages" class="nav-submenu__link hover-bg-neutral-30">Instructor Message</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Enrolled Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-reviews.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
+                <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Instructor Reviews</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/learning/assessments" class="nav-submenu__link hover-bg-neutral-30">Assessments</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-dashbord.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
+                <a href="${pageContext.request.contextPath}/dashboard" class="nav-submenu__link hover-bg-neutral-30">Instructor Order History</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor My Courses</a>
             </li>
             <li class="nav-submenu__item">
-                <a href="${pageContext.request.contextPath}/instructor/instructor-message.jsp" class="nav-submenu__link hover-bg-neutral-30">Instructor Announcements</a>
+                <a href="${pageContext.request.contextPath}/messages" class="nav-submenu__link hover-bg-neutral-30">Instructor Announcements</a>
             </li>
             <li class="nav-submenu__item">
                 <a href="${pageContext.request.contextPath}/learning/class-groups" class="nav-submenu__link hover-bg-neutral-30">Instructor Assignment</a>
@@ -205,7 +205,7 @@
         </ul>
     </li>
     <li class="nav-menu__item">
-        <a href="contact.jsp" class="nav-menu__link">Contact</a>
+        <a href="/login.jsp" class="nav-menu__link">Contact</a>
     </li>
 </ul>
 

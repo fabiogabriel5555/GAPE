@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 
 import pt.isel.gape.access.model.User;
 import pt.isel.gape.learning.model.AbsenceJustification;
+import pt.isel.gape.learning.model.AbsenceJustificationState;
 import pt.isel.gape.learning.model.AttendanceRecord;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.Lesson;
@@ -60,19 +61,45 @@ final class ScheduleAttendanceViewFactory {
                 .toList();
     }
 
+    List<AttendanceRecordView> attendanceRecordViews(
+            List<AttendanceRecord> records,
+            Map<Long, AbsenceJustificationState> justificationStates
+    ) {
+        return records.stream()
+                .map(record -> {
+                    AbsenceJustificationState state = justificationStates.get(record.id());
+                    return attendanceRecordView(record, state != null, isPendingJustification(state));
+                })
+                .toList();
+    }
+
     List<ClassGroupView> classGroupViews(List<ClassGroup> classGroups) {
         return learningViewFactory.classGroupViews(classGroups);
     }
 
     AttendanceRecordView attendanceRecordView(AttendanceRecord record, boolean hasJustification) {
+        return attendanceRecordView(record, hasJustification, hasJustification);
+    }
+
+    private AttendanceRecordView attendanceRecordView(
+            AttendanceRecord record,
+            boolean hasJustification,
+            boolean justificationPending
+    ) {
         User student = user(record.studentUserId());
         return AttendanceRecordView.from(
                 record,
                 lessonView(record.lessonId()),
                 student == null ? null : student.name(),
                 student == null ? null : student.email(),
-                hasJustification
+                hasJustification,
+                justificationPending
         );
+    }
+
+    private static boolean isPendingJustification(AbsenceJustificationState state) {
+        return state == AbsenceJustificationState.SUBMITTED
+                || state == AbsenceJustificationState.UNDER_REVIEW;
     }
 
     List<AbsenceJustificationView> justificationViews(

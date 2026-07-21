@@ -55,6 +55,7 @@ import pt.isel.gape.structure.service.OrganizationService;
 import pt.isel.gape.transversal.service.ApplicationReadService;
 import pt.isel.gape.web.media.ProfilePhotoStorage;
 import pt.isel.gape.web.view.ClassGroupView;
+import pt.isel.gape.web.view.CourseEnrollmentStudentGroupView;
 import pt.isel.gape.web.view.CourseOccurrenceView;
 import pt.isel.gape.web.view.CourseFormData;
 import pt.isel.gape.web.view.CoursePeriodTemplateView;
@@ -77,9 +78,15 @@ import pt.isel.gape.web.view.UserOptionView;
 public final class CourseManagementServlet extends DashboardServletSupport {
 
     private static final String COURSE_LIST_JSP = "/admin/admin/course/admin-courses.jsp";
+    private static final String COORDINATOR_COURSE_LIST_JSP =
+            "/coordinator/coordinator/course/coordinator-courses.jsp";
     private static final int LIST_PAGE_SIZE = 10;
     private static final String COURSE_FORM_JSP = "/admin/admin/course/admin-course-form.jsp";
+    private static final String COORDINATOR_COURSE_FORM_JSP =
+            "/coordinator/coordinator/course/coordinator-course-form.jsp";
     private static final String COURSE_DETAIL_JSP = "/admin/admin/course/admin-course-detail.jsp";
+    private static final String COORDINATOR_COURSE_DETAIL_JSP =
+            "/coordinator/coordinator/course/coordinator-course-detail.jsp";
     private static final String COURSE_OCCURRENCES_FRAGMENT_JSP = "/WEB-INF/fragments/course-occurrences-panel.jsp";
     private static final String COURSE_ENROLLMENTS_FRAGMENT_JSP = "/WEB-INF/fragments/course-enrollments-panel.jsp";
     private static final String COURSE_ASSOCIATE_SUBJECT_MODAL_FRAGMENT_JSP =
@@ -332,7 +339,7 @@ public final class CourseManagementServlet extends DashboardServletSupport {
                 (Boolean) request.getAttribute("canCreateCourses") ? courseBasePath(request) + "/new" : null,
                 (Boolean) request.getAttribute("canCreateCourses") ? "New Course" : null
         );
-        forward(request, response, COURSE_LIST_JSP);
+        forward(request, response, courseListJsp(request));
     }
 
     private void prepareCourseListRows(
@@ -440,7 +447,7 @@ public final class CourseManagementServlet extends DashboardServletSupport {
                 !isCoordinatorCourseRequest(request) && canManageCourseChildren);
         prepareCourseContext(request, courseView, "detail");
         prepareDashboard(request, "courses", "Course Details");
-        forward(request, response, COURSE_DETAIL_JSP);
+        forward(request, response, courseDetailJsp(request));
     }
 
     private void showOccurrencesFragment(
@@ -607,7 +614,7 @@ public final class CourseManagementServlet extends DashboardServletSupport {
             String error
     ) throws ServletException, IOException {
         prepareCourseForm(request, form, creating, error);
-        forward(request, response, COURSE_FORM_JSP);
+        forward(request, response, courseFormJsp(request));
     }
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response, long courseId, String error)
@@ -637,7 +644,7 @@ public final class CourseManagementServlet extends DashboardServletSupport {
         request.setAttribute("canManageCourseChildren", canManageCourseChildren);
         request.setAttribute("canManageCourseEnrollments",
                 !isCoordinatorCourseRequest(request) && canManageCourseChildren && !courseView.isInactive());
-        forward(request, response, COURSE_FORM_JSP);
+        forward(request, response, courseFormJsp(request));
     }
 
     private void createCourse(HttpServletRequest request, HttpServletResponse response)
@@ -800,7 +807,7 @@ public final class CourseManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, courseBasePath(request) + "/" + courseId + "#course-students");
+        redirectToReturnPath(request, response, courseBasePath(request) + "/" + courseId + "#course-enrollments");
     }
 
     private void updateCourseEnrollment(
@@ -825,7 +832,7 @@ public final class CourseManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, courseBasePath(request) + "/" + courseId + "#course-students");
+        redirectToReturnPath(request, response, courseBasePath(request) + "/" + courseId + "#course-enrollments");
     }
 
     private void withdrawStudentFromCourse(
@@ -849,7 +856,7 @@ public final class CourseManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, courseBasePath(request) + "/" + courseId + "#course-students");
+        redirectToReturnPath(request, response, courseBasePath(request) + "/" + courseId + "#course-enrollments");
     }
 
     private void deleteCourseEnrollment(
@@ -873,7 +880,7 @@ public final class CourseManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, courseBasePath(request) + "/" + courseId + "#course-students");
+        redirectToReturnPath(request, response, courseBasePath(request) + "/" + courseId + "#course-enrollments");
     }
 
     private void createCourseOccurrence(HttpServletRequest request, HttpServletResponse response, long courseId)
@@ -1162,16 +1169,27 @@ public final class CourseManagementServlet extends DashboardServletSupport {
                 .sorted(Comparator.comparingLong(EnrollmentManagementView::getCourseOccurrenceId).reversed()
                         .thenComparing(Comparator.comparingLong(EnrollmentManagementView::getStudentUserId).reversed()))
                 .toList();
-        request.setAttribute("courseEnrollments", newestFirstEnrollments);
-        request.setAttribute("activeCourseEnrollments", newestFirstEnrollments.stream()
+        List<EnrollmentManagementView> activeEnrollments = newestFirstEnrollments.stream()
                 .filter(EnrollmentManagementView::isActive)
-                .toList());
-        request.setAttribute("currentCourseEnrollments", newestFirstEnrollments.stream()
+                .toList();
+        List<EnrollmentManagementView> currentEnrollments = newestFirstEnrollments.stream()
                 .filter(enrollment -> !enrollment.isCompleted())
-                .toList());
-        request.setAttribute("completedCourseEnrollments", newestFirstEnrollments.stream()
+                .toList();
+        List<EnrollmentManagementView> completedEnrollments = newestFirstEnrollments.stream()
                 .filter(EnrollmentManagementView::isCompleted)
-                .toList());
+                .toList();
+        request.setAttribute("courseEnrollments", newestFirstEnrollments);
+        request.setAttribute("activeCourseEnrollments", activeEnrollments);
+        request.setAttribute("currentCourseEnrollments", currentEnrollments);
+        request.setAttribute("completedCourseEnrollments", completedEnrollments);
+        request.setAttribute(
+                "currentCourseEnrollmentStudentGroups",
+                CourseEnrollmentStudentGroupView.group(currentEnrollments)
+        );
+        request.setAttribute(
+                "completedCourseEnrollmentStudentGroups",
+                CourseEnrollmentStudentGroupView.group(completedEnrollments)
+        );
         request.setAttribute("activeEnrollmentByStudent", activeCourseEnrollmentByStudent(newestFirstEnrollments));
         request.setAttribute("activeCourseEnrollmentCount", activeCourseEnrollmentCount(newestFirstEnrollments));
     }
@@ -1553,6 +1571,18 @@ public final class CourseManagementServlet extends DashboardServletSupport {
 
     private static String courseBasePath(HttpServletRequest request) {
         return isCoordinatorCourseRequest(request) ? "/coordinator/courses" : "/admin/courses";
+    }
+
+    private static String courseListJsp(HttpServletRequest request) {
+        return isCoordinatorCourseRequest(request) ? COORDINATOR_COURSE_LIST_JSP : COURSE_LIST_JSP;
+    }
+
+    private static String courseFormJsp(HttpServletRequest request) {
+        return isCoordinatorCourseRequest(request) ? COORDINATOR_COURSE_FORM_JSP : COURSE_FORM_JSP;
+    }
+
+    private static String courseDetailJsp(HttpServletRequest request) {
+        return isCoordinatorCourseRequest(request) ? COORDINATOR_COURSE_DETAIL_JSP : COURSE_DETAIL_JSP;
     }
 
     private static boolean isAjaxRequest(HttpServletRequest request) {

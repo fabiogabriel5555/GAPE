@@ -1061,19 +1061,24 @@ public final class GradeSheetDAO implements pt.isel.gape.transversal.service.App
                     }
                 }
             }
+            return List.copyOf(studentUserIds);
         }
         String sql = """
-                SELECT DISTINCT id_user_student
-                FROM grade_record
-                WHERE id_grade_sheet = ?
-                  AND state IN ('draft', 'published', 'corrected')
-                ORDER BY id_user_student
+                SELECT DISTINCT ecg.id_student_user
+                FROM class_group cg
+                JOIN enroll_class_group ecg
+                  ON ecg.id_class_group = cg.id_class_group
+                WHERE cg.id_subject = ?
+                  AND cg.id_course_occurrence = ?
+                  AND ecg.state IN ('active', 'completed')
+                ORDER BY ecg.id_student_user
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, gradeSheet.id());
+            statement.setLong(1, gradeSheet.subjectId());
+            statement.setLong(2, gradeSheet.courseOccurrenceId());
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    studentUserIds.add(resultSet.getLong("id_user_student"));
+                    studentUserIds.add(resultSet.getLong("id_student_user"));
                 }
             }
         }
@@ -1092,9 +1097,13 @@ public final class GradeSheetDAO implements pt.isel.gape.transversal.service.App
                     FROM associate_grade_sheet_class_group agscg
                     JOIN class_group cg ON cg.id_class_group = agscg.id_class_group
                     JOIN enroll_class_group ecg ON ecg.id_class_group = cg.id_class_group
+                    JOIN enroll_course ec ON ec.id_student_user = ecg.id_student_user
+                        AND ec.id_course = cg.id_course
+                        AND ec.id_course_occurrence = cg.id_course_occurrence
                     WHERE agscg.id_grade_sheet = ?
                       AND ecg.id_student_user = ?
                       AND ecg.state IN ('active', 'completed')
+                      AND ec.state IN ('active', 'completed')
                     ORDER BY cg.id_course
                     """;
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -1112,10 +1121,14 @@ public final class GradeSheetDAO implements pt.isel.gape.transversal.service.App
                 SELECT DISTINCT cg.id_course
                 FROM class_group cg
                 JOIN enroll_class_group ecg ON ecg.id_class_group = cg.id_class_group
+                JOIN enroll_course ec ON ec.id_student_user = ecg.id_student_user
+                    AND ec.id_course = cg.id_course
+                    AND ec.id_course_occurrence = cg.id_course_occurrence
                 WHERE cg.id_subject = ?
                   AND cg.id_course_occurrence = ?
                   AND ecg.id_student_user = ?
                   AND ecg.state IN ('active', 'completed')
+                  AND ec.state IN ('active', 'completed')
                 ORDER BY cg.id_course
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -1302,6 +1315,50 @@ public final class GradeSheetDAO implements pt.isel.gape.transversal.service.App
             }
         }
         return true;
+    }
+
+    public List<Long> findGradeSheetIdsForCompletedClassGroups(Connection connection) throws SQLException {
+        String sql = """
+                SELECT DISTINCT gs.id_grade_sheet
+                FROM grade_sheet gs
+                JOIN associate_grade_sheet_class_group agscg
+                  ON agscg.id_grade_sheet = gs.id_grade_sheet
+                JOIN class_group cg
+                  ON cg.id_class_group = agscg.id_class_group
+                WHERE gs.state IN ('draft', 'published')
+                  AND gs.scope = 'class_group'
+                  AND cg.state = 'completed'
+                ORDER BY gs.id_grade_sheet
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+            return longList(resultSet, "id_grade_sheet");
+        }
+    }
+
+    public boolean allClassGroupsCompleted(Connection connection, List<Long> classGroupIds)
+            throws SQLException {
+        List<Long> uniqueClassGroupIds = orderedUnique(classGroupIds, "Class group ids must be positive");
+        if (uniqueClassGroupIds.isEmpty()) {
+            return false;
+        }
+        String placeholders = String.join(",", Collections.nCopies(uniqueClassGroupIds.size(), "?"));
+        String sql = """
+                SELECT COUNT(*)
+                FROM class_group
+                WHERE id_class_group IN (%s)
+                  AND state = 'completed'
+                """.formatted(placeholders);
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            for (Long classGroupId : uniqueClassGroupIds) {
+                statement.setLong(index++, classGroupId);
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                return resultSet.getLong(1) == uniqueClassGroupIds.size();
+            }
+        }
     }
 
     public boolean classGroupsEndedBefore(List<Long> classGroupIds, LocalDate date) throws SQLException {

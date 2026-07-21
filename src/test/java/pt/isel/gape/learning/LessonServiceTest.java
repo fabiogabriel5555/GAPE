@@ -77,6 +77,34 @@ class LessonServiceTest {
     }
 
     @Test
+    void newLessonUsesNextPedagogicalIdInItsContentBlock() throws SQLException {
+        long blockMaximum;
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT GREATEST(
+                         COALESCE((SELECT MAX(id_content_item) FROM associate_block_content WHERE id_content_block = 60), 0),
+                         COALESCE((SELECT MAX(id_lesson) FROM lesson WHERE id_content_block = 60), 0),
+                         COALESCE((SELECT MAX(id_assessment) FROM assessment WHERE id_content_block = 60), 0)
+                     )
+                     """)) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                blockMaximum = resultSet.getLong(1);
+            }
+        }
+
+        Lesson lesson = lessonService.createLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                onlineLesson("Lesson Pedagogical ID", "https://meet.google.com/pedagogical-id"),
+                "127.0.0.1"
+        );
+
+        assertTrue(lesson.id() > blockMaximum);
+    }
+
+    @Test
     void coordinatorCanCreateLessonForCoordinatedSubject() {
         Lesson lesson = lessonService.createLesson(
                 2L,
@@ -246,6 +274,49 @@ class LessonServiceTest {
     }
 
     @Test
+    void lessonCreateRejectsPastAndReversedDateRanges() {
+        LessonCreateCommand pastStart = new LessonCreateCommand(
+                50L,
+                60L,
+                null,
+                "Lesson Past Start",
+                null,
+                LessonType.ONLINE,
+                "Meet",
+                "https://meet.google.com/past-start",
+                true,
+                LessonState.SCHEDULED,
+                LocalDateTime.of(2026, 6, 19, 10, 15),
+                LocalDateTime.of(2026, 6, 19, 11, 15)
+        );
+        IllegalArgumentException pastStartException = assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(3L, null, AccessProfileType.TEACHER, pastStart, "127.0.0.1")
+        );
+        assertEquals("Lesson start date cannot be in the past", pastStartException.getMessage());
+
+        LessonCreateCommand reversed = new LessonCreateCommand(
+                50L,
+                60L,
+                null,
+                "Lesson Reversed Dates",
+                null,
+                LessonType.ONLINE,
+                "Meet",
+                "https://meet.google.com/reversed-dates",
+                true,
+                LessonState.SCHEDULED,
+                FUTURE_START,
+                FUTURE_START.minusMinutes(1)
+        );
+        IllegalArgumentException reversedException = assertThrows(
+                IllegalArgumentException.class,
+                () -> lessonService.createLesson(3L, null, AccessProfileType.TEACHER, reversed, "127.0.0.1")
+        );
+        assertEquals("Lesson end date must be after start date", reversedException.getMessage());
+    }
+
+    @Test
     void lessonCreatedForCurrentSlotIsActive() {
         LocalDateTime currentMinute = LocalDateTime.of(2026, 6, 20, 10, 15);
 
@@ -401,6 +472,28 @@ class LessonServiceTest {
                         "127.0.0.1"
                 )
         );
+    }
+
+    @Test
+    void onsiteLessonsMayOverlapWhenTheyUseDifferentPhysicalRooms() throws SQLException {
+        insertPhysicalRoom("SALA-B2", 35);
+        lessonService.createLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                onsiteLesson("Lesson Room A", "SALA-A1", FUTURE_START),
+                "127.0.0.1"
+        );
+
+        Lesson secondLesson = lessonService.createLesson(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                onsiteLesson("Lesson Room B", "SALA-B2", FUTURE_START.plusMinutes(30)),
+                "127.0.0.1"
+        );
+
+        assertEquals("SALA-B2", secondLesson.physicalRoomCode());
     }
 
     @Test

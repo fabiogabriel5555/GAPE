@@ -89,12 +89,22 @@ final class GradeLifecycleService {
                         "Grade sheet - " + subject.name() + " - " + classGroup.code(),
                         GradeSheetType.FINAL
                 ));
-        synchronizeSubjectGradeSheetForClassGroupContext(
-                connection,
-                subject.id(),
-                classGroup.courseOccurrenceId()
-        );
+        synchronizeGradeSheetAndCertificates(connection, gradeSheetId);
         return gradeSheetId;
+    }
+
+    void synchronizeAfterClassGroupEnrollmentChange(
+            Connection connection,
+            long classGroupId
+    ) throws SQLException {
+        gradeSheetDAO.findFinalByClassGroupId(connection, classGroupId)
+                .ifPresent(sheet -> {
+                    try {
+                        synchronizeGradeSheetAndCertificates(connection, sheet.id());
+                    } catch (SQLException exception) {
+                        throw new GradeSheetSynchronizationException(exception);
+                    }
+                });
     }
 
     void synchronizeAfterAssessmentCorrection(
@@ -104,6 +114,36 @@ final class GradeLifecycleService {
     ) throws SQLException {
         for (Long gradeSheetId : gradeSheetDAO.findGradeSheetIdsForAssessmentContext(connection, assessmentId)) {
             synchronizeGradeSheetAndCertificates(connection, gradeSheetId, currentStudentUserId);
+        }
+    }
+
+    /**
+     * Reconciles every sheet that used an assessment which has just been
+     * removed.  The assessment FK removes the association rows atomically;
+     * this method then keeps the remaining weights valid and recalculates the
+     * automatic grade records before the enclosing mutation is committed.
+     */
+    void synchronizeAfterAssessmentDeletion(
+            Connection connection,
+            List<Long> affectedGradeSheetIds
+    ) throws SQLException {
+        if (affectedGradeSheetIds == null || affectedGradeSheetIds.isEmpty()) {
+            return;
+        }
+        for (Long gradeSheetId : new LinkedHashSet<>(affectedGradeSheetIds)) {
+            GradeSheet gradeSheet = gradeSheetDAO.findById(connection, gradeSheetId).orElse(null);
+            if (gradeSheet == null) {
+                continue;
+            }
+            List<GradeAssessmentWeight> remainingWeights = gradeSheetDAO.findAssessmentWeights(
+                    connection,
+                    gradeSheetId
+            );
+            // Deleting an assessment removes only that assessment.  The
+            // remaining weights must stay untouched; balancing is reserved for
+            // the explicit completed-class-group exception.
+            gradeSheetDAO.updateWeightAlert(connection, gradeSheetId, alertForTotal(remainingWeights));
+            synchronizeGradeSheetAndCertificates(connection, gradeSheetId);
         }
     }
 
@@ -147,6 +187,12 @@ final class GradeLifecycleService {
             // persisted.  The certificate service still rejects incomplete
             // academic results.
             synchronizeGradeSheetAndCertificates(connection, synchronizedSheet.id());
+        }
+    }
+
+    void synchronizeCompletedClassGroupPublications(Connection connection) throws SQLException {
+        for (Long gradeSheetId : gradeSheetDAO.findGradeSheetIdsForCompletedClassGroups(connection)) {
+            synchronizeGradeSheetAndCertificates(connection, gradeSheetId);
         }
     }
 
@@ -231,18 +277,47 @@ final class GradeLifecycleService {
         if (isSubjectGradeSheet(gradeSheet)) {
             return synchronizeSubjectGradeSheetState(connection, gradeSheet);
         }
+        gradeSheet = synchronizeAssessmentWeightTopology(connection, gradeSheet);
         gradeSheet = normalizeWeightsAfterClassGroupEnd(connection, gradeSheet);
         boolean complete = isComplete(connection, gradeSheet);
-        if (complete && gradeSheet.state() == GradeSheetState.DRAFT) {
-            gradeSheetDAO.updateState(connection, gradeSheet.id(), GradeSheetState.PUBLISHED, LocalDateTime.now(clock));
-            return gradeSheetDAO.findById(connection, gradeSheetId)
-                    .orElseThrow(() -> new IllegalArgumentException("Grade sheet not found: " + gradeSheetId));
+        boolean forcePublication = classGroupCompletionReached(connection, gradeSheet);
+        if (complete || forcePublication) {
+            String explanation = forcePublication && !complete
+                    ? publicationExplanation(connection, gradeSheet)
+                    : null;
+            if (gradeSheet.state() == GradeSheetState.DRAFT) {
+                gradeSheetDAO.updateState(
+                        connection,
+                        gradeSheet.id(),
+                        GradeSheetState.PUBLISHED,
+                        LocalDateTime.now(clock),
+                        explanation
+                );
+                return gradeSheetDAO.findById(connection, gradeSheetId)
+                        .orElseThrow(() -> new IllegalArgumentException("Grade sheet not found: " + gradeSheetId));
+            }
+            if (gradeSheet.state() == GradeSheetState.PUBLISHED) {
+                String currentExplanation = gradeSheet.publicationExplanation();
+                if ((explanation == null && currentExplanation != null && !currentExplanation.isBlank())
+                        || (explanation != null && (currentExplanation == null || currentExplanation.isBlank()))) {
+                    gradeSheetDAO.updatePublicationExplanation(connection, gradeSheet.id(), explanation);
+                    return gradeSheetDAO.findById(connection, gradeSheetId)
+                            .orElseThrow(() -> new IllegalArgumentException("Grade sheet not found: " + gradeSheetId));
+                }
+            }
+            return gradeSheet;
         }
-        if (complete
-                && gradeSheet.state() == GradeSheetState.PUBLISHED
-                && gradeSheet.publicationExplanation() != null
-                && !gradeSheet.publicationExplanation().isBlank()) {
-            gradeSheetDAO.updatePublicationExplanation(connection, gradeSheet.id(), null);
+        if (gradeSheet.state() == GradeSheetState.PUBLISHED) {
+            // Publication is dynamic while the class group is open: removing
+            // a student, changing a weight, or losing a positive-weight grade
+            // immediately returns the sheet to Draft.
+            gradeSheetDAO.updateState(
+                    connection,
+                    gradeSheet.id(),
+                    GradeSheetState.DRAFT,
+                    null,
+                    null
+            );
             return gradeSheetDAO.findById(connection, gradeSheetId)
                     .orElseThrow(() -> new IllegalArgumentException("Grade sheet not found: " + gradeSheetId));
         }
@@ -261,13 +336,10 @@ final class GradeLifecycleService {
         if (!weightsAreConfigured(assessmentWeights)) {
             return false;
         }
-        List<Long> assessmentIds = assessmentWeights.stream()
+        List<Long> assessmentIds = positiveWeightAssessments(assessmentWeights).stream()
                 .map(GradeAssessmentWeight::assessmentId)
                 .toList();
         for (Long studentUserId : studentUserIds) {
-            if (!gradeSheetDAO.hasActiveGradeRecord(connection, gradeSheet.id(), studentUserId)) {
-                return false;
-            }
             for (Long assessmentId : assessmentIds) {
                 if (!gradeSheetDAO.hasCorrectedAssessmentScore(connection, studentUserId, assessmentId)) {
                     return false;
@@ -287,13 +359,17 @@ final class GradeLifecycleService {
             return recalculateSubjectGradeRecords(connection, gradeSheet);
         }
         List<Long> studentUserIds = gradeSheetDAO.findStudentUserIdsForSheetContext(connection, gradeSheet);
-        List<GradeAssessmentWeight> assessmentWeights = gradeSheetAssessmentWeights(connection, gradeSheet);
-        if (studentUserIds.isEmpty() || !weightsAreConfigured(assessmentWeights)) {
+        List<GradeAssessmentWeight> configuredAssessmentWeights = gradeSheetAssessmentWeights(
+                connection,
+                gradeSheet
+        );
+        if (studentUserIds.isEmpty() || !weightsAreConfigured(configuredAssessmentWeights)) {
             for (Long studentUserId : studentUserIds) {
                 gradeRecordDAO.deactivateActiveBySheetAndStudent(connection, gradeSheet.id(), studentUserId);
             }
             return gradeSheet;
         }
+        List<GradeAssessmentWeight> assessmentWeights = positiveWeightAssessments(configuredAssessmentWeights);
         for (Long studentUserId : studentUserIds) {
             Optional<BigDecimal> finalGrade = calculateFinalGrade(
                     connection,
@@ -485,6 +561,14 @@ final class GradeLifecycleService {
                 && subjectGradeSheet.publicationExplanation() != null
                 && !subjectGradeSheet.publicationExplanation().isBlank()) {
             gradeSheetDAO.updatePublicationExplanation(connection, subjectGradeSheet.id(), null);
+        } else if (!complete && subjectGradeSheet.state() == GradeSheetState.PUBLISHED) {
+            gradeSheetDAO.updateState(
+                    connection,
+                    subjectGradeSheet.id(),
+                    GradeSheetState.DRAFT,
+                    null,
+                    null
+            );
         }
         return gradeSheetDAO.findById(connection, subjectGradeSheet.id())
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -500,10 +584,13 @@ final class GradeLifecycleService {
                 subjectGradeSheet.courseOccurrenceId()
         );
         if (classGroupGradeSheets.isEmpty()
-                || hasIncompleteOrUnavailableClassGroupGradeSheet(connection, classGroupGradeSheets)) {
+                || hasUnavailableClassGroupGradeSheet(classGroupGradeSheets)) {
             return false;
         }
-        return !publishedClassGroupRecordsByStudent(connection, subjectGradeSheet).isEmpty();
+        // The occurrence sheet is an aggregator: its publication depends on
+        // every source class-group sheet being published, not on whether each
+        // source student already has a final value. Missing values remain '-'.
+        return true;
     }
 
     private Map<Long, GradeRecord> publishedClassGroupRecordsByStudent(
@@ -516,22 +603,86 @@ final class GradeLifecycleService {
                 subjectGradeSheet.courseOccurrenceId()
         );
         if (classGroupGradeSheets.isEmpty()
-                || hasIncompleteOrUnavailableClassGroupGradeSheet(connection, classGroupGradeSheets)) {
+                || hasUnavailableClassGroupGradeSheet(classGroupGradeSheets)) {
             return Map.of();
         }
         Map<Long, GradeRecord> recordsByStudent = new LinkedHashMap<>();
+        Map<Long, BigDecimal> sourceMaximums = new LinkedHashMap<>();
         for (GradeSheet classGroupGradeSheet : classGroupGradeSheets) {
+            BigDecimal sourceMaximum = classGroupGradeSheet.maxGrade();
+            if (sourceMaximum == null || sourceMaximum.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            sourceMaximums.put(classGroupGradeSheet.id(), sourceMaximum);
             for (GradeRecord record : gradeRecordDAO.findByGradeSheet(connection, classGroupGradeSheet.id())) {
-                if (record.state().toDatabaseValue().equals("published")) {
-                    recordsByStudent.merge(
-                            record.studentUserId(),
-                            record,
-                            GradeLifecycleService::mostRecentGradeRecord
-                    );
+                if (!record.state().toDatabaseValue().equals("published") || record.value() == null) {
+                    continue;
+                }
+                GradeRecord previous = recordsByStudent.get(record.studentUserId());
+                if (previous == null
+                        || isHigherClassification(record, previous, sourceMaximums, connection)) {
+                    recordsByStudent.put(record.studentUserId(), record);
                 }
             }
         }
         return Map.copyOf(recordsByStudent);
+    }
+
+    private boolean isHigherClassification(
+            GradeRecord candidate,
+            GradeRecord current,
+            Map<Long, BigDecimal> sourceMaximums,
+            Connection connection
+    ) throws SQLException {
+        BigDecimal candidateMaximum = sourceMaximums.computeIfAbsent(
+                candidate.gradeSheetId(),
+                id -> {
+                    try {
+                        return gradeSheetDAO.findById(connection, id)
+                                .map(GradeSheet::maxGrade)
+                                .orElse(BigDecimal.ZERO);
+                    } catch (SQLException exception) {
+                        throw new GradeSheetSynchronizationException(exception);
+                    }
+                }
+        );
+        BigDecimal currentMaximum = sourceMaximums.computeIfAbsent(
+                current.gradeSheetId(),
+                id -> {
+                    try {
+                        return gradeSheetDAO.findById(connection, id)
+                                .map(GradeSheet::maxGrade)
+                                .orElse(BigDecimal.ZERO);
+                    } catch (SQLException exception) {
+                        throw new GradeSheetSynchronizationException(exception);
+                    }
+                }
+        );
+        BigDecimal candidateClassification = normalizedClassification(candidate.value(), candidateMaximum);
+        BigDecimal currentClassification = normalizedClassification(current.value(), currentMaximum);
+        int comparison = candidateClassification.compareTo(currentClassification);
+        if (comparison != 0) {
+            return comparison > 0;
+        }
+        return isAfter(current, candidate);
+    }
+
+    private static BigDecimal normalizedClassification(BigDecimal value, BigDecimal maximum) {
+        if (value == null || maximum == null || maximum.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        return value.divide(maximum, 8, RoundingMode.HALF_UP);
+    }
+
+    private static boolean isAfter(GradeRecord current, GradeRecord candidate) {
+        if (candidate.recordedAt() == null) {
+            return false;
+        }
+        if (current.recordedAt() == null) {
+            return true;
+        }
+        return candidate.recordedAt().isAfter(current.recordedAt())
+                || (candidate.recordedAt().isEqual(current.recordedAt()) && candidate.id() > current.id());
     }
 
     private BigDecimal sourceGradeSheetMaximum(
@@ -548,19 +699,6 @@ final class GradeLifecycleService {
                 .orElseThrow(() -> new IllegalStateException("Class group grade sheet scale is invalid"));
     }
 
-    private static GradeRecord mostRecentGradeRecord(GradeRecord left, GradeRecord right) {
-        if (left.recordedAt() == null) {
-            return right;
-        }
-        if (right.recordedAt() == null) {
-            return left;
-        }
-        return right.recordedAt().isAfter(left.recordedAt())
-                || (right.recordedAt().isEqual(left.recordedAt()) && right.id() > left.id())
-                ? right
-                : left;
-    }
-
     private static boolean isSubjectGradeSheet(GradeSheet gradeSheet) {
         return gradeSheet.classGroupIds().isEmpty();
     }
@@ -569,17 +707,9 @@ final class GradeLifecycleService {
         return !isSubjectGradeSheet(gradeSheet);
     }
 
-    private static boolean isPublishedForAcademicUse(GradeSheet gradeSheet) {
-        return gradeSheet.state() == GradeSheetState.PUBLISHED || gradeSheet.state() == GradeSheetState.CLOSED;
-    }
-
-    private boolean hasIncompleteOrUnavailableClassGroupGradeSheet(
-            Connection connection,
-            List<GradeSheet> classGroupGradeSheets
-    ) throws SQLException {
+    private static boolean hasUnavailableClassGroupGradeSheet(List<GradeSheet> classGroupGradeSheets) {
         for (GradeSheet classGroupGradeSheet : classGroupGradeSheets) {
-            if (!isPublishedForAcademicUse(classGroupGradeSheet)
-                    || !isComplete(connection, classGroupGradeSheet)) {
+            if (classGroupGradeSheet.state() != GradeSheetState.PUBLISHED) {
                 return true;
             }
         }
@@ -614,7 +744,7 @@ final class GradeLifecycleService {
             reasons.add("Assessment weights are not configured to a total of 100%.");
         }
 
-        List<Long> assessmentIds = assessmentWeights.stream()
+        List<Long> assessmentIds = positiveWeightAssessments(assessmentWeights).stream()
                 .map(GradeAssessmentWeight::assessmentId)
                 .toList();
         boolean hasMissingAssessmentScore = false;
@@ -650,13 +780,7 @@ final class GradeLifecycleService {
             return List.of("There are no class group grade sheets available for consolidation.");
         }
         long incompleteSheets = classGroupGradeSheets.stream()
-                .filter(sheet -> {
-                    try {
-                        return !isComplete(connection, sheet);
-                    } catch (SQLException exception) {
-                        throw new GradeSheetSynchronizationException(exception);
-                    }
-                })
+                .filter(sheet -> sheet.state() != GradeSheetState.PUBLISHED)
                 .count();
         List<String> reasons = new ArrayList<>();
         if (incompleteSheets > 0) {
@@ -684,7 +808,7 @@ final class GradeLifecycleService {
             throws SQLException {
         List<GradeAssessmentWeight> assessmentWeights = gradeSheetAssessmentWeights(connection, gradeSheet);
         if (weightsAreConfigured(assessmentWeights)
-                || !gradeSheetDAO.classGroupsEndedBefore(connection, gradeSheet.classGroupIds(), LocalDate.now(clock))) {
+                || !classGroupCompletionReached(connection, gradeSheet)) {
             return gradeSheet;
         }
         List<Long> assessmentIds = gradeSheetAssessmentIds(connection, gradeSheet);
@@ -696,10 +820,20 @@ final class GradeLifecycleService {
         gradeSheetDAO.updateWeightAlert(
                 connection,
                 gradeSheet.id(),
-                "Assessment weights were automatically redistributed equally at the end of the class group period so the sum is 100%."
+                "Assessment weights were automatically redistributed equally because the class group was completed so the sum is 100%."
         );
         return gradeSheetDAO.findById(connection, gradeSheet.id())
                 .orElseThrow(() -> new IllegalArgumentException("Grade sheet not found: " + gradeSheet.id()));
+    }
+
+    private boolean classGroupCompletionReached(Connection connection, GradeSheet gradeSheet)
+            throws SQLException {
+        return gradeSheetDAO.allClassGroupsCompleted(connection, gradeSheet.classGroupIds())
+                || gradeSheetDAO.classGroupsEndedBefore(
+                        connection,
+                        gradeSheet.classGroupIds(),
+                        LocalDate.now(clock)
+                );
     }
 
     private List<Long> gradeSheetAssessmentIds(Connection connection, GradeSheet gradeSheet) throws SQLException {
@@ -730,13 +864,50 @@ final class GradeLifecycleService {
                 gradeSheet.classGroupIds()
         );
         if (contextAssessmentIds.isEmpty()) {
-            return gradeSheet.assessmentWeights();
+            return isClassGroupGradeSheet(gradeSheet) ? List.of() : gradeSheet.assessmentWeights();
         }
         List<GradeAssessmentWeight> weights = new ArrayList<>();
         for (Long assessmentId : contextAssessmentIds) {
             weights.add(new GradeAssessmentWeight(assessmentId, configuredWeights.get(assessmentId)));
         }
         return List.copyOf(weights);
+    }
+
+    private GradeSheet synchronizeAssessmentWeightTopology(
+            Connection connection,
+            GradeSheet gradeSheet
+    ) throws SQLException {
+        if (!isClassGroupGradeSheet(gradeSheet)) {
+            return gradeSheet;
+        }
+        List<GradeAssessmentWeight> contextWeights = gradeSheetAssessmentWeights(connection, gradeSheet);
+        if (contextWeights.stream().anyMatch(weight -> weight == null || weight.weight() == null)) {
+            // A newly applicable assessment may not have a persisted weight
+            // yet.  Keep the missing value in the lifecycle view as Draft, but
+            // never write a NULL into based_on_assessment (the column is NOT
+            // NULL); the assessment create/update flow will upsert its weight.
+            return gradeSheet;
+        }
+        if (!contextWeights.equals(gradeSheet.assessmentWeights())) {
+            gradeSheetDAO.replaceAssessmentWeights(connection, gradeSheet.id(), contextWeights);
+            gradeSheetDAO.updateWeightAlert(connection, gradeSheet.id(), alertForTotal(contextWeights));
+            return gradeSheetDAO.findById(connection, gradeSheet.id())
+                    .orElseThrow(() -> new IllegalArgumentException("Grade sheet not found: " + gradeSheet.id()));
+        }
+        return gradeSheet;
+    }
+
+    private static List<GradeAssessmentWeight> positiveWeightAssessments(
+            List<GradeAssessmentWeight> assessmentWeights
+    ) {
+        if (assessmentWeights == null || assessmentWeights.isEmpty()) {
+            return List.of();
+        }
+        return assessmentWeights.stream()
+                .filter(weight -> weight != null
+                        && weight.weight() != null
+                        && weight.weight().compareTo(BigDecimal.ZERO) > 0)
+                .toList();
     }
 
     private static boolean weightsAreConfigured(List<GradeAssessmentWeight> assessmentWeights) {
@@ -768,8 +939,8 @@ final class GradeLifecycleService {
             return null;
         }
         return "Assessment weights total " + total.stripTrailingZeros().toPlainString()
-                + "%. If this is not regularized before the class group period ends, the system will redistribute "
-                + "the weights equally so the sum is 100%.";
+                + "%. The grade sheet remains Draft until the total reaches 100%; weights are redistributed equally "
+                + "only when the class group is completed.";
     }
 
     private static BigDecimal maxGrade(Subject subject) {
@@ -803,4 +974,5 @@ final class GradeLifecycleService {
         }
         return List.copyOf(weights);
     }
+
 }

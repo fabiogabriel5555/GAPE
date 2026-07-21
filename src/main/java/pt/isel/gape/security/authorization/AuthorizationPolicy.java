@@ -59,7 +59,9 @@ public final class AuthorizationPolicy {
                     AccessEntityType.GLOBAL
             ));
         }
-        if (path.equals("/dashboard") || path.equals("/profile") || isPathOrChild(path, "/messages")) {
+        if (path.equals("/dashboard")
+                || path.equals("/profile")
+                || isPathOrChild(path, "/messages")) {
             return Optional.of(new AuthorizationRule(
                     Set.of(AccessProfileType.ADMINISTRATOR, AccessProfileType.COORDINATOR,
                             AccessProfileType.TEACHER, AccessProfileType.STUDENT),
@@ -163,23 +165,13 @@ public final class AuthorizationPolicy {
     public static boolean isPublic(String servletPath) {
         String path = normalizePath(servletPath);
         return path.equals("/")
-                || path.equals("/index.jsp")
                 || path.equals("/login.jsp")
-                || path.equals("/sign-in.jsp")
-                || path.equals("/sign-up.jsp")
-                || path.equals("/contact.jsp")
                 || path.equals("/courses")
                 || isPathOrChild(path, "/courses")
                 || path.equals("/courses.jsp")
                 || path.equals("/course.jsp")
                 || path.equals("/course-list-view.jsp")
                 || path.equals("/course-details.jsp")
-                || path.equals("/about-four.jsp")
-                || path.equals("/tutor.jsp")
-                || path.equals("/tutor-details.jsp")
-                || path.equals("/events.jsp")
-                || path.equals("/event-details.jsp")
-                || path.equals("/apply-admission.jsp")
                 || path.equals("/error-403.jsp")
                 || path.equals("/error-404.jsp")
                 || path.equals("/error-500.jsp")
@@ -190,14 +182,8 @@ public final class AuthorizationPolicy {
     }
 
     private static boolean isProtectedRootPage(String path) {
-        return path.equals("/content.jsp")
-                || path.equals("/messages.jsp")
-                || path.equals("/forms.jsp")
-                || path.equals("/tables.jsp")
-                || path.equals("/profile.jsp")
-                || path.equals("/my-propyl.jsp")
-                || path.equals("/dashbord.jsp")
-                || path.equals("/lesson-details.jsp");
+        return path.equals("/messages.jsp")
+                || path.equals("/dashbord.jsp");
     }
 
     private static String normalizePath(String servletPath) {

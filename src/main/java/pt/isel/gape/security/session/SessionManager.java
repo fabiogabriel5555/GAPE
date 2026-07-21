@@ -20,6 +20,7 @@ public final class SessionManager {
     static final String SESSION_USER_ATTRIBUTE = "gape.auth.user";
     static final String DATABASE_SESSION_ID_ATTRIBUTE = "gape.auth.sessionId";
     static final String DATABASE_SESSION_TOKEN_ATTRIBUTE = "gape.auth.sessionToken";
+    static final String SESSION_USER_ID_ATTRIBUTE = "gape.auth.userId";
     static final String SESSION_USER_NAME_ATTRIBUTE = "gape.auth.userName";
     static final String SESSION_USER_EMAIL_ATTRIBUTE = "gape.auth.userEmail";
     static final String SESSION_USER_PHOTO_ATTRIBUTE = "gape.auth.userPhoto";
@@ -164,6 +165,7 @@ public final class SessionManager {
 
     private static void applySessionUserAttributes(HttpSession httpSession, SessionUser sessionUser) {
         httpSession.setAttribute(SESSION_USER_ATTRIBUTE, sessionUser);
+        httpSession.setAttribute(SESSION_USER_ID_ATTRIBUTE, sessionUser.userId());
         httpSession.setAttribute(SESSION_USER_NAME_ATTRIBUTE, sessionUser.name());
         httpSession.setAttribute(SESSION_USER_EMAIL_ATTRIBUTE, sessionUser.email());
         if (sessionUser.hasPhoto()) {

@@ -56,9 +56,8 @@ import pt.isel.gape.web.view.ResponseView;
 )
 public final class StudentAssessmentServlet extends DashboardServletSupport {
 
-    private static final String STUDENT_ASSESSMENTS_JSP = "/WEB-INF/views/student/assessment-list.jsp";
-    private static final String STUDENT_ATTEMPT_JSP = "/WEB-INF/views/student/assessment-attempt.jsp";
-    private static final String STUDENT_RESULT_JSP = "/WEB-INF/views/student/assessment-result.jsp";
+    private static final String STUDENT_ATTEMPT_JSP = "/student/student/assessment/student-assessment-attempt.jsp";
+    private static final String STUDENT_RESULT_JSP = "/student/student/assessment/student-assessment-result.jsp";
 
     private final AttemptService attemptService;
     private final AssessmentEnrollmentService assessmentEnrollmentService;
@@ -118,7 +117,7 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
         String[] segments = pathSegments(request.getPathInfo());
         try {
             if (segments.length == 0) {
-                showList(request, response);
+                redirect(request, response, "/student/lessons#assessments");
                 return;
             }
             if (segments.length == 2 && "attempts".equals(segments[0])) {
@@ -166,33 +165,6 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
         }
     }
 
-    private void showList(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        SessionUser actor = requireCurrentUser(request);
-        try {
-            assessmentEnrollmentDAO.syncAllAutomaticEnrollments();
-            List<AssessmentView> assessments = viewFactory.assessmentViews(
-                    assessmentDAO.findActiveAccessibleByStudent(actor.userId())
-            );
-            Map<Long, AttemptView> latestAttemptByAssessment = latestAttemptByAssessment(actor.userId());
-            Map<Long, AssessmentEnrollment> enrollmentByAssessment = assessmentEnrollmentByAssessment(actor.userId(), assessments);
-            request.setAttribute("assessments", assessments);
-            request.setAttribute("latestAttemptByAssessment", latestAttemptByAssessment);
-            request.setAttribute("assessmentEnrollmentByAssessment", enrollmentByAssessment);
-            request.setAttribute("assessmentEnrollmentStateByAssessment", assessmentEnrollmentStateByAssessment(enrollmentByAssessment));
-            request.setAttribute("assessmentCount", assessments.size());
-            request.setAttribute("availableForms", assessments.stream().filter(AssessmentView::isForm).count());
-            request.setAttribute("availableTests", assessments.stream().filter(AssessmentView::isTest).count());
-            request.setAttribute("availableExams", assessments.stream().filter(AssessmentView::isExam).count());
-            request.setAttribute("studentPageTitle", "Assessments");
-            request.setAttribute("studentPageDescription", "Forms, tests, exams, attempts and results available to your profile.");
-            prepareDashboard(request, "assessments", "Assessments");
-            forward(request, response, STUDENT_ASSESSMENTS_JSP);
-        } catch (SQLException exception) {
-            throw new ServletException("Failed to load student assessments", exception);
-        }
-    }
-
     private void requestEnrollment(HttpServletRequest request, HttpServletResponse response, long assessmentId)
             throws IOException {
         SessionUser actor = requireCurrentUser(request);
@@ -211,7 +183,7 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageForRuntime(exception));
         }
-        redirect(request, response, "/student/assessments");
+        redirect(request, response, "/student/lessons#assessments");
     }
 
     private void startAttempt(HttpServletRequest request, HttpServletResponse response, long assessmentId)
@@ -230,11 +202,10 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
                     assessmentId,
                     request.getRemoteAddr()
             );
-            flashSuccess(request, "Attempt started.");
             redirect(request, response, "/student/assessments/attempts/" + attempt.id());
         } catch (RuntimeException | SQLException exception) {
             flashError(request, messageForRuntime(exception));
-            redirect(request, response, "/student/assessments");
+            redirect(request, response, "/student/lessons#assessments");
         }
     }
 
@@ -256,7 +227,7 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
             );
         } catch (RuntimeException exception) {
             flashError(request, messageForRuntime(exception));
-            redirect(request, response, "/student/assessments");
+            redirect(request, response, "/student/lessons#assessments");
             return;
         }
         if (attempt.state() != AttemptState.IN_PROGRESS) {
@@ -273,12 +244,12 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
         request.setAttribute("responseByQuestionId", responseByQuestionId(responses));
         request.setAttribute("selectedOptionIdsByQuestionId", selectedOptionIdsByQuestionId(responses));
         request.setAttribute("uploadLimitLabelByQuestionId", uploadLimitLabelsByQuestionId(questions));
-        request.setAttribute("studentPageTitle", assessment.getTitle());
+        request.setAttribute("studentPageTitle", "Assessment");
         request.setAttribute("studentPageDescription", "Answer and submit your assessment attempt.");
         if (error != null) {
             request.setAttribute("errorMessage", error);
         }
-        prepareDashboard(request, "assessments", assessment.getTitle());
+        prepareDashboard(request, "learning", "Assessment");
         forward(request, response, STUDENT_ATTEMPT_JSP);
     }
 
@@ -294,7 +265,7 @@ public final class StudentAssessmentServlet extends DashboardServletSupport {
         request.setAttribute("responses", viewFactory.responseViews(attempt.id()));
         request.setAttribute("studentPageTitle", "Assessment Result");
         request.setAttribute("studentPageDescription", "Attempt status, answers and correction result.");
-        prepareDashboard(request, "assessments", "Assessment Result");
+        prepareDashboard(request, "learning", "Assessment Result");
         forward(request, response, STUDENT_RESULT_JSP);
     }
 

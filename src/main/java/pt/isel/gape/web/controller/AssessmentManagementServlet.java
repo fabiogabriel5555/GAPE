@@ -81,6 +81,15 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
     private static final String ASSESSMENT_LIST_JSP = "/WEB-INF/views/learning/assessment-list.jsp";
     private static final String ASSESSMENT_FORM_JSP = "/WEB-INF/views/learning/assessment-form.jsp";
     private static final String ASSESSMENT_DETAIL_JSP = "/WEB-INF/views/learning/assessment-builder.jsp";
+    private static final String ADMIN_ASSESSMENT_LIST_JSP = "/admin/admin/assessment/admin-assessments.jsp";
+    private static final String ADMIN_ASSESSMENT_FORM_JSP = "/admin/admin/assessment/admin-assessment-form.jsp";
+    private static final String ADMIN_ASSESSMENT_DETAIL_JSP = "/admin/admin/assessment/admin-assessment-builder.jsp";
+    private static final String COORDINATOR_ASSESSMENT_LIST_JSP = "/coordinator/coordinator/assessment/coordinator-assessments.jsp";
+    private static final String COORDINATOR_ASSESSMENT_FORM_JSP = "/coordinator/coordinator/assessment/coordinator-assessment-form.jsp";
+    private static final String COORDINATOR_ASSESSMENT_DETAIL_JSP = "/coordinator/coordinator/assessment/coordinator-assessment-builder.jsp";
+    private static final String INSTRUCTOR_ASSESSMENT_LIST_JSP = "/instructor/instructor/assessment/instructor-assessments.jsp";
+    private static final String INSTRUCTOR_ASSESSMENT_FORM_JSP = "/instructor/instructor/assessment/instructor-assessment-form.jsp";
+    private static final String INSTRUCTOR_ASSESSMENT_DETAIL_JSP = "/instructor/instructor/assessment/instructor-assessment-builder.jsp";
 
     private final AssessmentService assessmentService;
     private final AssessmentEnrollmentService assessmentEnrollmentService;
@@ -383,7 +392,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                     AttemptState.SUBMITTED
             ).values().stream().mapToInt(Integer::intValue).sum());
             prepareDashboard(request, "assessments", "Assessments", "/learning/assessments/new", "New Assessment");
-            forward(request, response, ASSESSMENT_LIST_JSP);
+            forward(request, response, assessmentListJsp(request));
         } catch (SQLException exception) {
             throw new ServletException("Failed to load assessments", exception);
         }
@@ -397,7 +406,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
             String error
     ) throws ServletException, IOException {
         prepareForm(request, form, creating, error);
-        forward(request, response, ASSESSMENT_FORM_JSP);
+        forward(request, response, assessmentFormJsp(request));
     }
 
     private void showEditForm(
@@ -478,7 +487,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         }
         prepareAssessmentContext(request, assessmentView, "detail");
         prepareDashboard(request, "assessments", "Assessment Details");
-        forward(request, response, ASSESSMENT_DETAIL_JSP);
+        forward(request, response, assessmentDetailJsp(request));
     }
 
     private static String requestedAssessmentLazyPanel(HttpServletRequest request) {
@@ -522,6 +531,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                     request.getRemoteAddr()
             );
             if (modalCreate) {
+                flashSuccess(request, "Assessment created.");
                 writeAssessmentCreated(request, response, assessment.id());
                 return;
             }
@@ -529,7 +539,9 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
             redirect(request, response, "/learning/assessments/" + assessment.id());
         } catch (RuntimeException exception) {
             if (modalCreate) {
-                writePlainError(response, HttpServletResponse.SC_BAD_REQUEST, messageFor(exception));
+                String message = messageFor(exception);
+                flashError(request, message);
+                writeAssessmentModalResult(response, false, message);
                 return;
             }
             showForm(request, response, AssessmentFormData.from(request, null), true, messageFor(exception));
@@ -556,6 +568,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
 
     private void updateAssessment(HttpServletRequest request, HttpServletResponse response, long assessmentId)
             throws ServletException, IOException {
+        boolean modalRequest = isAssessmentModalRequest(request);
         try {
             assessmentService.updateAssessment(
                     actorUserId(request),
@@ -566,9 +579,18 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                     request.getRemoteAddr()
             );
             flashSuccess(request, "Assessment updated.");
+            if (modalRequest) {
+                writeAssessmentModalResult(response, true, "Assessment updated.");
+                return;
+            }
             redirect(request, response, "/learning/assessments/" + assessmentId);
         } catch (RuntimeException exception) {
-            showForm(request, response, AssessmentFormData.from(request, assessmentId), false, messageFor(exception));
+            String message = messageFor(exception);
+            if (modalRequest) {
+                writeAssessmentModalResult(response, false, message);
+                return;
+            }
+            showForm(request, response, AssessmentFormData.from(request, assessmentId), false, message);
         }
     }
 
@@ -880,16 +902,58 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
                 || "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"));
     }
 
+    private static boolean isAssessmentModalRequest(HttpServletRequest request) {
+        return "1".equals(text(request, "modal"));
+    }
+
     private static void writeAssessmentCreated(
             HttpServletRequest request,
             HttpServletResponse response,
             long assessmentId
     ) throws IOException {
         String location = request.getContextPath() + "/learning/assessments/" + assessmentId;
-        response.setStatus(HttpServletResponse.SC_CREATED);
-        response.setHeader("Location", location);
-        response.setContentType("text/plain;charset=UTF-8");
-        response.getWriter().write(location);
+        boolean modalRequest = isAssessmentModalRequest(request);
+        // A modal submission must finish in the iframe response itself.  A
+        // Location header on a 201 response makes the browser navigate the
+        // iframe to the assessment detail page before the parent postMessage
+        // can run; that detail page is intentionally not frameable.  Keep the
+        // redirect metadata for the regular full-page flow only.
+        response.setStatus(modalRequest ? HttpServletResponse.SC_OK : HttpServletResponse.SC_CREATED);
+        if (!modalRequest) {
+            response.setHeader("Location", location);
+        }
+        response.setContentType("text/html;charset=UTF-8");
+        response.setHeader("Cache-Control", "no-store");
+        if (modalRequest) {
+            writeAssessmentModalResult(response, true, "Assessment created.");
+        } else {
+            response.getWriter().write(location);
+        }
+    }
+
+    private static void writeAssessmentModalResult(
+            HttpServletResponse response,
+            boolean success,
+            String message
+    ) throws IOException {
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("text/html;charset=UTF-8");
+        response.setHeader("Cache-Control", "no-store");
+        response.getWriter().write("<!doctype html><html><body><script>"
+                + "window.parent.postMessage({type:'gape:assessment:result',success:" + success
+                + ",message:" + jsonString(message) + "},window.location.origin);"
+                + "</script></body></html>");
+    }
+
+    private static String jsonString(String value) {
+        String normalized = value == null ? "" : value;
+        return "\"" + normalized
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("</", "<\\/")
+                + "\"";
     }
 
     private static void writePlainError(
@@ -1526,6 +1590,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
             String error
     ) throws ServletException {
         prepareAssessmentFormAttributes(request, form, creating, error);
+        request.setAttribute("assessmentModal", "1".equals(text(request, "modal")));
         request.setAttribute("learningAssessmentActiveChild", creating ? "new" : "edit");
         prepareDashboard(request, "assessments", creating ? "Create Assessment" : "Edit Assessment");
     }
@@ -2359,6 +2424,30 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
         return value == null ? AssessmentState.DRAFT : AssessmentState.parse(value);
     }
 
+    private String assessmentListJsp(HttpServletRequest request) {
+        return switch (primaryProfile(requireCurrentUser(request))) {
+            case COORDINATOR -> COORDINATOR_ASSESSMENT_LIST_JSP;
+            case TEACHER -> INSTRUCTOR_ASSESSMENT_LIST_JSP;
+            default -> ADMIN_ASSESSMENT_LIST_JSP;
+        };
+    }
+
+    private String assessmentFormJsp(HttpServletRequest request) {
+        return switch (primaryProfile(requireCurrentUser(request))) {
+            case COORDINATOR -> COORDINATOR_ASSESSMENT_FORM_JSP;
+            case TEACHER -> INSTRUCTOR_ASSESSMENT_FORM_JSP;
+            default -> ADMIN_ASSESSMENT_FORM_JSP;
+        };
+    }
+
+    private String assessmentDetailJsp(HttpServletRequest request) {
+        return switch (primaryProfile(requireCurrentUser(request))) {
+            case COORDINATOR -> COORDINATOR_ASSESSMENT_DETAIL_JSP;
+            case TEACHER -> INSTRUCTOR_ASSESSMENT_DETAIL_JSP;
+            default -> ADMIN_ASSESSMENT_DETAIL_JSP;
+        };
+    }
+
     private static EnrollmentApprovalMode enrollmentApprovalMode(String value) {
         return value == null || value.isBlank()
                 ? EnrollmentApprovalMode.AUTO_APPROVE
@@ -2423,7 +2512,7 @@ public final class AssessmentManagementServlet extends DashboardServletSupport {
     private static String attemptScoreOverMaxLabel(Attempt attempt, Assessment assessment) {
         BigDecimal score = visibleAttemptScore(attempt);
         return score == null
-                ? "Not assigned yet"
+                ? "-"
                 : grade(score) + " / " + grade(assessment.maxGrade());
     }
 

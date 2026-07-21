@@ -14,6 +14,10 @@ GAPE is a Jakarta Servlet/JSP academic and pedagogical management application. I
 Maven is required. Install Apache Maven 3.9.16 and restart the terminal before using the project. Confirm the installation with mvn --version.
 
 For a complete Portuguese setup and execution guide, see EXECUCAO.md.
+For production TLS, sensitive-data keys and daily backup/restore, see
+[`security/https.md`](security/https.md),
+[`security/sensitive-data.md`](security/sensitive-data.md) and
+[`security/backups.md`](security/backups.md).
 
 ## Date and time convention
 
@@ -90,9 +94,9 @@ Always stop the validation server when finished:
 
 See [`tests/browser-validation.md`](tests/browser-validation.md) for HTTP/resource checks, accessibility checks, screenshots, visual baselines and upload validation.
 
-## Docker
+## Docker (development only)
 
-The Compose stack creates an isolated MySQL service, builds the WAR and exposes GAPE at `http://localhost:8080/GAPE/`:
+The Compose stack creates an isolated MySQL service, builds the WAR and exposes GAPE at `http://localhost:8080/GAPE/`. It deliberately runs HTTP and local MySQL without TLS, so it is not a production deployment:
 
 ```powershell
 docker compose -f docs/dev/docker/compose.yaml up --build

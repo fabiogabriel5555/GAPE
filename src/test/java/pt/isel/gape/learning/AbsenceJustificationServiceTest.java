@@ -131,6 +131,45 @@ class AbsenceJustificationServiceTest {
     }
 
     @Test
+    void rejectedJustificationCanBeResubmitted() throws Exception {
+        AttendanceRecord record = createAttendance(AttendanceStatus.PARTIAL);
+        AbsenceJustification first = justificationService.submitJustification(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                new AbsenceJustificationCreateCommand(record.id(), "First explanation", null, null),
+                IP
+        );
+        justificationService.processJustification(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                first.id(),
+                new AbsenceJustificationProcessCommand(
+                        AbsenceJustificationState.REJECTED,
+                        NOW,
+                        "Evidence was insufficient"
+                ),
+                IP
+        );
+
+        AbsenceJustification resubmitted = justificationService.submitJustification(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                new AbsenceJustificationCreateCommand(record.id(), "Second explanation", "attendance/second.pdf", null),
+                IP
+        );
+
+        assertEquals(first.id(), resubmitted.id());
+        assertEquals(AbsenceJustificationState.SUBMITTED, resubmitted.state());
+        assertEquals("Second explanation", resubmitted.reason());
+        assertEquals("attendance/second.pdf", resubmitted.attachment());
+        assertNull(resubmitted.processorUserId());
+        assertNull(resubmitted.processedAt());
+    }
+
+    @Test
     void teacherProcessesJustificationAsApproved() {
         AbsenceJustification processed = justificationService.processJustification(
                 3L,

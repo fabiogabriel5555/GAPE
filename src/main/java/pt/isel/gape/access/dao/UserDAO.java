@@ -19,13 +19,22 @@ import pt.isel.gape.access.model.UserCreateCommand;
 import pt.isel.gape.access.model.UserState;
 import pt.isel.gape.access.model.UserUpdateCommand;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.security.crypto.SensitiveDataCipher;
 
 public final class UserDAO implements pt.isel.gape.transversal.service.ApplicationReadService.Users {
 
+    private static final String DOCUMENT_NUMBER_PURPOSE = "user_account.document_number";
+
     private final ConnectionProvider connectionProvider;
+    private final SensitiveDataCipher sensitiveDataCipher;
 
     public UserDAO(ConnectionProvider connectionProvider) {
+        this(connectionProvider, SensitiveDataCipher.fromRuntimeConfiguration());
+    }
+
+    UserDAO(ConnectionProvider connectionProvider, SensitiveDataCipher sensitiveDataCipher) {
         this.connectionProvider = connectionProvider;
+        this.sensitiveDataCipher = sensitiveDataCipher;
     }
 
     public Optional<User> findByEmail(String email) throws SQLException {
@@ -214,8 +223,9 @@ public final class UserDAO implements pt.isel.gape.transversal.service.Applicati
         String sql = """
                 INSERT INTO user_account (
                     name, email, state, language, photo, created_at,
-                    credential_hash, credential_salt, document_type, document_number
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    credential_hash, credential_salt, document_type, document_number,
+                    document_number_fingerprint
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -228,7 +238,8 @@ public final class UserDAO implements pt.isel.gape.transversal.service.Applicati
             statement.setString(7, command.credentialHash());
             statement.setString(8, command.credentialSalt());
             statement.setString(9, command.documentType());
-            statement.setString(10, command.documentNumber());
+            setNullableString(statement, 10, protectDocumentNumber(command.documentNumber()));
+            setNullableString(statement, 11, documentFingerprint(command.documentNumber()));
             statement.executeUpdate();
 
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
@@ -250,7 +261,7 @@ public final class UserDAO implements pt.isel.gape.transversal.service.Applicati
         String sql = """
                 UPDATE user_account
                 SET name = ?, email = ?, state = ?, language = ?, photo = ?,
-                    document_type = ?, document_number = ?
+                    document_type = ?, document_number = ?, document_number_fingerprint = ?
                 WHERE id_user = ?
                 """;
 
@@ -261,8 +272,9 @@ public final class UserDAO implements pt.isel.gape.transversal.service.Applicati
             statement.setString(4, command.language());
             statement.setString(5, command.photo());
             statement.setString(6, command.documentType());
-            statement.setString(7, command.documentNumber());
-            statement.setLong(8, userId);
+            setNullableString(statement, 7, protectDocumentNumber(command.documentNumber()));
+            setNullableString(statement, 8, documentFingerprint(command.documentNumber()));
+            statement.setLong(9, userId);
             return statement.executeUpdate() > 0;
         }
     }
@@ -314,7 +326,7 @@ public final class UserDAO implements pt.isel.gape.transversal.service.Applicati
         String sql = """
                 UPDATE user_account
                 SET name = ?, email = ?, language = ?, photo = ?,
-                    document_type = ?, document_number = ?
+                    document_type = ?, document_number = ?, document_number_fingerprint = ?
                 WHERE id_user = ?
                 """;
 
@@ -324,8 +336,9 @@ public final class UserDAO implements pt.isel.gape.transversal.service.Applicati
             statement.setString(3, language);
             statement.setString(4, photo);
             statement.setString(5, documentType);
-            statement.setString(6, documentNumber);
-            statement.setLong(7, userId);
+            setNullableString(statement, 6, protectDocumentNumber(documentNumber));
+            setNullableString(statement, 7, documentFingerprint(documentNumber));
+            statement.setLong(8, userId);
             return statement.executeUpdate() > 0;
         }
     }
@@ -436,17 +449,28 @@ public final class UserDAO implements pt.isel.gape.transversal.service.Applicati
             String documentNumber,
             Long excludingUserId
     ) throws SQLException {
-        String sql = """
-                SELECT COUNT(*)
-                FROM user_account
-                WHERE document_type = ?
-                  AND document_number = ?
-                  AND (? IS NULL OR id_user <> ?)
-                """;
+        boolean protectedDocument = sensitiveDataCipher.isEnabled();
+        String sql = protectedDocument
+                ? """
+                        SELECT COUNT(*)
+                        FROM user_account
+                        WHERE document_type = ?
+                          AND document_number_fingerprint = ?
+                          AND (? IS NULL OR id_user <> ?)
+                        """
+                : """
+                        SELECT COUNT(*)
+                        FROM user_account
+                        WHERE document_type = ?
+                          AND document_number = ?
+                          AND (? IS NULL OR id_user <> ?)
+                        """;
 
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, documentType);
-            statement.setString(2, documentNumber);
+            statement.setString(2, protectedDocument
+                    ? documentFingerprint(documentNumber)
+                    : documentNumber);
             if (excludingUserId == null) {
                 statement.setNull(3, java.sql.Types.BIGINT);
                 statement.setNull(4, java.sql.Types.BIGINT);
@@ -511,9 +535,20 @@ public final class UserDAO implements pt.isel.gape.transversal.service.Applicati
                 resultSet.getString("credential_hash"),
                 resultSet.getString("credential_salt"),
                 resultSet.getString("document_type"),
-                resultSet.getString("document_number"),
+                sensitiveDataCipher.decryptNullable(resultSet.getString("document_number"), DOCUMENT_NUMBER_PURPOSE),
                 profiles
         );
+    }
+
+    private String protectDocumentNumber(String documentNumber) {
+        return sensitiveDataCipher.encryptNullable(documentNumber, DOCUMENT_NUMBER_PURPOSE);
+    }
+
+    private String documentFingerprint(String documentNumber) {
+        if (documentNumber == null || documentNumber.isBlank() || !sensitiveDataCipher.isEnabled()) {
+            return null;
+        }
+        return sensitiveDataCipher.fingerprint(documentNumber, DOCUMENT_NUMBER_PURPOSE);
     }
 
     private static void setNullableString(PreparedStatement statement, int index, String value) throws SQLException {

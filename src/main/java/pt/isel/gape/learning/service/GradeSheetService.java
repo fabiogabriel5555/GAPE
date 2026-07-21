@@ -304,12 +304,12 @@ public final class GradeSheetService {
                     gradeSheet,
                     sourceIp
             );
-            // Reading a page must never recalculate grades, issue certificates
-            // or write aggregate sheets.  Those lifecycle writes occur on the
-            // corresponding mutation paths and in the centralized temporal
-            // synchronizer, which prevents parallel page requests from
-            // deadlocking while rendering Subject Details.
-            return gradeSheet;
+            // Keep the persisted state current at the read boundary as well:
+            // publication can become invalid after a roster/assessment change
+            // and completion can force publication without a separate button.
+            // This is state/topology synchronization only; automatic records
+            // and certificates remain on mutation paths.
+            return gradeLifecycleService.synchronizeGradeSheetState(connection, gradeSheetId);
         } catch (SQLException exception) {
             throw wrap(exception, "Failed to read grade sheet");
         }
@@ -333,11 +333,21 @@ public final class GradeSheetService {
         if (studentUserIds.isEmpty()) {
             return false;
         }
-        List<Long> assessmentIds = gradeSheetAssessmentIds(connection, gradeSheet);
-        for (Long studentUserId : studentUserIds) {
-            if (!gradeSheetDAO.hasActiveGradeRecord(connection, gradeSheet.id(), studentUserId)) {
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        List<Long> assessmentIds = new ArrayList<>();
+        for (GradeAssessmentWeight weight : gradeSheet.assessmentWeights()) {
+            if (weight.weight() == null || weight.weight().compareTo(BigDecimal.ZERO) < 0) {
                 return false;
             }
+            totalWeight = totalWeight.add(weight.weight());
+            if (weight.weight().compareTo(BigDecimal.ZERO) > 0) {
+                assessmentIds.add(weight.assessmentId());
+            }
+        }
+        if (totalWeight.compareTo(ONE_HUNDRED) != 0) {
+            return false;
+        }
+        for (Long studentUserId : studentUserIds) {
             for (Long assessmentId : assessmentIds) {
                 if (!gradeSheetDAO.hasCorrectedAssessmentScore(connection, studentUserId, assessmentId)) {
                     return false;
@@ -553,8 +563,8 @@ public final class GradeSheetService {
             return null;
         }
         return "Assessment weights total " + total.stripTrailingZeros().toPlainString()
-                + "%. If this is not regularized before the class group period ends, the system will redistribute "
-                + "the weights equally so the sum is 100%.";
+                + "%. The grade sheet remains Draft until the total reaches 100%; weights are redistributed equally "
+                + "only when the class group is completed.";
     }
 
     private static List<GradeAssessmentWeight> equalWeights(List<Long> assessmentIds) {

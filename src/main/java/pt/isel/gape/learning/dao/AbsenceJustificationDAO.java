@@ -16,13 +16,23 @@ import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.model.AbsenceJustification;
 import pt.isel.gape.learning.model.AbsenceJustificationCreateCommand;
 import pt.isel.gape.learning.model.AbsenceJustificationState;
+import pt.isel.gape.security.crypto.SensitiveDataCipher;
 
 public final class AbsenceJustificationDAO {
 
+    private static final String REASON_PURPOSE = "absence_justification.reason";
+    private static final String DECISION_NOTES_PURPOSE = "absence_justification.decision_notes";
+
     private final ConnectionProvider connectionProvider;
+    private final SensitiveDataCipher sensitiveDataCipher;
 
     public AbsenceJustificationDAO(ConnectionProvider connectionProvider) {
+        this(connectionProvider, SensitiveDataCipher.fromRuntimeConfiguration());
+    }
+
+    AbsenceJustificationDAO(ConnectionProvider connectionProvider, SensitiveDataCipher sensitiveDataCipher) {
         this.connectionProvider = connectionProvider;
+        this.sensitiveDataCipher = sensitiveDataCipher;
     }
 
     public long create(
@@ -40,7 +50,7 @@ public final class AbsenceJustificationDAO {
             statement.setLong(1, command.attendanceRecordId());
             statement.setLong(2, studentSubmitterUserId);
             statement.setTimestamp(3, Timestamp.valueOf(command.submittedAt()));
-            statement.setString(4, command.reason().trim());
+            statement.setString(4, sensitiveDataCipher.encrypt(command.reason().trim(), REASON_PURPOSE));
             setNullableString(statement, 5, command.attachment());
             statement.executeUpdate();
             try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
@@ -229,11 +239,36 @@ public final class AbsenceJustificationDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, processorUserId);
             statement.setTimestamp(2, Timestamp.valueOf(processedAt));
-            setNullableString(statement, 3, decisionNotes);
+            setNullableString(statement, 3, encryptOptional(decisionNotes, DECISION_NOTES_PURPOSE));
             statement.setString(4, decision.toDatabaseValue());
             statement.setLong(5, justificationId);
             if (statement.executeUpdate() == 0) {
                 throw new SQLException("Absence justification not found: " + justificationId);
+            }
+        }
+    }
+
+    public void resubmit(
+            Connection connection,
+            long justificationId,
+            LocalDateTime submittedAt,
+            String reason,
+            String attachment
+    ) throws SQLException {
+        String sql = """
+                UPDATE absence_justification
+                SET id_user_processor = NULL, submitted_at = ?, reason = ?, attachment = ?,
+                    processed_at = NULL, decision_notes = NULL, state = 'submitted'
+                WHERE id_absence_justification = ?
+                  AND state IN ('rejected', 'cancelled')
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setTimestamp(1, Timestamp.valueOf(submittedAt));
+            statement.setString(2, sensitiveDataCipher.encrypt(reason.trim(), REASON_PURPOSE));
+            setNullableString(statement, 3, attachment);
+            statement.setLong(4, justificationId);
+            if (statement.executeUpdate() == 0) {
+                throw new SQLException("Absence justification is not eligible for resubmission: " + justificationId);
             }
         }
     }
@@ -247,7 +282,7 @@ public final class AbsenceJustificationDAO {
                 """;
     }
 
-    private static List<AbsenceJustification> findVisible(Connection connection, String sql, long userId)
+    private List<AbsenceJustification> findVisible(Connection connection, String sql, long userId)
             throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, userId);
@@ -257,7 +292,7 @@ public final class AbsenceJustificationDAO {
         }
     }
 
-    private static List<AbsenceJustification> mapJustifications(ResultSet resultSet) throws SQLException {
+    private List<AbsenceJustification> mapJustifications(ResultSet resultSet) throws SQLException {
         List<AbsenceJustification> justifications = new ArrayList<>();
         while (resultSet.next()) {
             justifications.add(mapJustification(resultSet));
@@ -265,19 +300,26 @@ public final class AbsenceJustificationDAO {
         return justifications;
     }
 
-    private static AbsenceJustification mapJustification(ResultSet resultSet) throws SQLException {
+    private AbsenceJustification mapJustification(ResultSet resultSet) throws SQLException {
         return new AbsenceJustification(
                 resultSet.getLong("id_absence_justification"),
                 resultSet.getLong("id_attendance_record"),
                 resultSet.getLong("id_user_student_submitter"),
                 nullableLong(resultSet, "id_user_processor"),
                 resultSet.getTimestamp("submitted_at").toLocalDateTime(),
-                resultSet.getString("reason"),
+                sensitiveDataCipher.decrypt(resultSet.getString("reason"), REASON_PURPOSE),
                 resultSet.getString("attachment"),
                 getTimestamp(resultSet, "processed_at"),
-                resultSet.getString("decision_notes"),
+                sensitiveDataCipher.decryptNullable(resultSet.getString("decision_notes"), DECISION_NOTES_PURPOSE),
                 AbsenceJustificationState.fromDatabaseValue(resultSet.getString("state"))
         );
+    }
+
+    private String encryptOptional(String value, String purpose) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return sensitiveDataCipher.encrypt(value.trim(), purpose);
     }
 
     private static Long nullableLong(ResultSet resultSet, String column) throws SQLException {

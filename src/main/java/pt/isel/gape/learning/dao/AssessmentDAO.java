@@ -68,6 +68,22 @@ public final class AssessmentDAO implements pt.isel.gape.transversal.service.App
         }
     }
 
+    public long create(Connection connection, long assessmentId, AssessmentCreateCommand command) throws SQLException {
+        String sql = """
+                INSERT INTO assessment (
+                    id_assessment, id_subject, id_content_block, cod_physical_room, title, description, type, mode,
+                    correction_mode, max_grade, passing_grade, final_grade_weight, attempts_limit, enrollment_mode,
+                    state, available_from, available_until
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, assessmentId);
+            setStatementValues(statement, command, 2);
+            statement.executeUpdate();
+            return assessmentId;
+        }
+    }
+
     public Optional<Assessment> findById(long assessmentId) throws SQLException {
         try (Connection connection = connectionProvider.getConnection()) {
             return findById(connection, assessmentId);
@@ -793,20 +809,24 @@ public final class AssessmentDAO implements pt.isel.gape.transversal.service.App
             long classGroupId
     ) throws SQLException {
         String sql = """
-                SELECT COUNT(*) AS assessment_count,
-                       COALESCE(SUM(final_grade_weight), 0) AS total_weight
+                SELECT COUNT(boa.id_assessment) AS assessment_count,
+                       COALESCE(SUM(boa.weight), 0) AS total_weight
                 FROM (
-                    SELECT DISTINCT a.id_assessment, a.final_grade_weight
-                    FROM assessment a
-                    LEFT JOIN content_block cb ON cb.id_content_block = a.id_content_block
-                    LEFT JOIN assessment_class_group acg ON acg.id_assessment = a.id_assessment
-                    WHERE cb.id_class_group = ?
-                       OR acg.id_class_group = ?
-                ) weights
+                    SELECT gs.id_grade_sheet
+                    FROM grade_sheet gs
+                    JOIN associate_grade_sheet_class_group agscg
+                      ON agscg.id_grade_sheet = gs.id_grade_sheet
+                    WHERE agscg.id_class_group = ?
+                      AND gs.scope = 'class_group'
+                      AND gs.type = 'final'
+                    ORDER BY gs.id_grade_sheet
+                    LIMIT 1
+                ) selected_sheet
+                LEFT JOIN based_on_assessment boa
+                  ON boa.id_grade_sheet = selected_sheet.id_grade_sheet
                 """;
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setLong(1, classGroupId);
-            statement.setLong(2, classGroupId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 resultSet.next();
                 return new ClassGroupAssessmentWeightSummary(
@@ -1066,22 +1086,30 @@ public final class AssessmentDAO implements pt.isel.gape.transversal.service.App
 
     private static void setStatementValues(PreparedStatement statement, AssessmentCreateCommand command)
             throws SQLException {
-        setNullableLong(statement, 1, command.subjectId());
-        setNullableLong(statement, 2, command.contentBlockId());
-        setNullableString(statement, 3, command.physicalRoomCode());
-        statement.setString(4, command.title().trim());
-        setNullableString(statement, 5, command.description());
-        statement.setString(6, command.type().toDatabaseValue());
-        statement.setString(7, command.mode().toDatabaseValue());
-        statement.setString(8, command.correctionMode().toDatabaseValue());
-        statement.setBigDecimal(9, command.maxGrade());
-        statement.setBigDecimal(10, command.passingGrade());
-        statement.setBigDecimal(11, command.finalGradeWeight());
-        setNullableInteger(statement, 12, command.attemptsLimit());
-        statement.setString(13, command.enrollmentMode().toDatabaseValue());
-        statement.setString(14, command.state().toDatabaseValue());
-        setTimestamp(statement, 15, command.availableFrom());
-        setTimestamp(statement, 16, command.availableUntil());
+        setStatementValues(statement, command, 1);
+    }
+
+    private static void setStatementValues(
+            PreparedStatement statement,
+            AssessmentCreateCommand command,
+            int offset
+    ) throws SQLException {
+        setNullableLong(statement, offset, command.subjectId());
+        setNullableLong(statement, offset + 1, command.contentBlockId());
+        setNullableString(statement, offset + 2, command.physicalRoomCode());
+        statement.setString(offset + 3, command.title().trim());
+        setNullableString(statement, offset + 4, command.description());
+        statement.setString(offset + 5, command.type().toDatabaseValue());
+        statement.setString(offset + 6, command.mode().toDatabaseValue());
+        statement.setString(offset + 7, command.correctionMode().toDatabaseValue());
+        statement.setBigDecimal(offset + 8, command.maxGrade());
+        statement.setBigDecimal(offset + 9, command.passingGrade());
+        statement.setBigDecimal(offset + 10, command.finalGradeWeight());
+        setNullableInteger(statement, offset + 11, command.attemptsLimit());
+        statement.setString(offset + 12, command.enrollmentMode().toDatabaseValue());
+        statement.setString(offset + 13, command.state().toDatabaseValue());
+        setTimestamp(statement, offset + 14, command.availableFrom());
+        setTimestamp(statement, offset + 15, command.availableUntil());
     }
 
     private static void setStatementValues(PreparedStatement statement, AssessmentUpdateCommand command)

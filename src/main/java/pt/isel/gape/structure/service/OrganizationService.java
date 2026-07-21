@@ -350,9 +350,9 @@ public final class OrganizationService {
                     if (organizationDAO.hasDomainDependencies(connection, organizationId)) {
                         throw new IllegalStateException("Organization with domain dependencies cannot be deleted");
                     }
-                    organizationDAO.delete(connection, organizationId);
                     auditService.record(connection, actorUserId, sessionId, "ORGANIZATION_DELETE",
                             "organization", Long.toString(organizationId), "success", sourceIp);
+                    organizationDAO.delete(connection, organizationId);
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();

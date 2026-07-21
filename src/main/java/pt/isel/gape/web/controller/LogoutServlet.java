@@ -54,7 +54,7 @@ public final class LogoutServlet extends HttpServlet {
         if (sessionId.isPresent() && sessionToken.isPresent()) {
             Optional<Session> currentSession = sessionService.findById(sessionId.getAsLong());
             currentSession
-                    .filter(session -> session.token().equals(sessionToken.get()))
+                    .filter(session -> sessionService.matchesToken(session, sessionToken.get()))
                     .ifPresent(session -> sessionService.close(session, request.getRemoteAddr()));
         }
 

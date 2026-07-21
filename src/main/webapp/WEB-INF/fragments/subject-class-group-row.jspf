@@ -1,13 +1,13 @@
 <c:set var="canModifyClassGroup" value="${canModifyClassGroupById[classGroup.id]}" />
 <c:set var="canManageClassGroupStructure" value="${canManageClassGroupStructureById[classGroup.id]}" />
 <c:set var="activityPanelId" value="subjectDetailClassGroupActivities${subject.id}_${classGroup.id}" />
-<article class="gape-structure-node gape-class-group-node border border-neutral-30 rounded-8 px-16 py-12 bg-white"
+<article class="gape-structure-node gape-class-group-node gape-subject-class-group-card border border-neutral-30 rounded-8 px-16 py-12 bg-white"
          data-subject-detail-sort-row
          data-sort-index="${classGroupLoop.index}"
          data-sort-name="<c:out value='${classGroup.code}'/>"
          data-sort-date="${fn:replace(classGroup.startsAt, '-', '')}"
          data-sort-status="<c:out value='${classGroup.stateLabel}'/>">
-    <div class="gape-structure-row">
+    <div class="gape-structure-row gape-enrollment-row">
         <div class="d-flex align-items-start gap-12 min-w-0">
             <span class="bg-warning-50 text-warning-600 cd-mode-icon text-20 line-height-1"><i class="ph ph-users-three"></i></span>
             <div class="min-w-0">
@@ -22,8 +22,10 @@
                 </span>
             </div>
         </div>
-        <div class="text-13 text-neutral-500"><c:out value="${classGroup.modalityLabel}"/></div>
-        <div><span class="cd-element-count">${classGroupActivityCountByClassGroup[classGroup.id]}</span></div>
+        <div class="min-w-0">
+            <span class="fw-medium text-14 text-neutral-700 d-block"><c:out value="${classGroup.modalityLabel}"/></span>
+            <span class="gape-node-meta text-12"><span><c:out value="${classGroupActivityCountByClassGroup[classGroup.id]}"/> activities</span></span>
+        </div>
         <div>
             <span class="${classGroup.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13">
                 <c:out value="${classGroup.stateLabel}"/>

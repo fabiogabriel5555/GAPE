@@ -65,6 +65,7 @@ class DatabaseBootstrapServiceTest {
             assertTrue(DatabaseTestSupport.countRows(connection, "certificate") >= 7);
             assertTrue(DatabaseTestSupport.countRows(connection, "activity_log") >= 25);
             assertFullSeedValueCoverage(connection);
+            assertStudent6510FullCoverage(connection);
             assertFullSeedAcademicLifecycleConformance(connection);
             assertTemporalAssessmentStatesMatchAvailability(connection);
             assertFullSeedEmailsAreValid(connection);
@@ -72,6 +73,7 @@ class DatabaseBootstrapServiceTest {
             assertFullSeedLongDirectMessageChat(connection);
             assertFullSeedCertificateLifecycle(connection);
             assertFullSeedServiceDomainRules(connection);
+            assertFullSeedAssessmentQuestionAttemptConformance(connection);
             assertFullSeedRuntimeCoherence(connection);
             assertFullSeedGradeSheetTopology(connection);
             assertComputerNetworksUsesIndependentCourseCalendars(connection);
@@ -296,6 +298,16 @@ class DatabaseBootstrapServiceTest {
                   AND class_group_row.state = 'completed'
                 ORDER BY enrollment.id_student_user, enrollment.id_class_group
                 """);
+        assertNoRows(connection, "Completed assessments cannot retain actionable pending enrollment requests", """
+                SELECT enrollment.id_student_user, enrollment.id_assessment,
+                       enrollment.state, assessment_row.state AS assessment_state
+                FROM enroll_assessment enrollment
+                JOIN assessment assessment_row
+                  ON assessment_row.id_assessment = enrollment.id_assessment
+                WHERE enrollment.state = 'pending'
+                  AND assessment_row.state = 'completed'
+                ORDER BY enrollment.id_student_user, enrollment.id_assessment
+                """);
         assertNoRows(connection, "Full seed active teaching assignments cannot outlive their class group", """
                 SELECT teaching.id_teacher_user, teaching.id_class_group,
                        teaching.state, class_group_row.state AS class_group_state
@@ -512,6 +524,25 @@ class DatabaseBootstrapServiceTest {
                 WHERE (state IN ('submitted', 'corrected') AND submitted_at IS NULL)
                    OR (state <> 'corrected' AND score IS NOT NULL)
                 ORDER BY id_attempt
+                """);
+        assertNoRows(connection, "Full seed attempts must have an actionable assessment enrollment", """
+                SELECT attempt.id_attempt, attempt.id_student_user, attempt.id_assessment,
+                       enrollment.state AS enrollment_state
+                FROM attempt
+                LEFT JOIN enroll_assessment enrollment
+                  ON enrollment.id_student_user = attempt.id_student_user
+                 AND enrollment.id_assessment = attempt.id_assessment
+                WHERE enrollment.id_student_user IS NULL
+                   OR enrollment.state NOT IN ('active', 'completed')
+                ORDER BY attempt.id_attempt
+                """);
+        assertNoRows(connection, "Full seed scheduled assessments must not already contain attempts", """
+                SELECT attempt.id_attempt, attempt.id_assessment, assessment.title,
+                       assessment.available_from, attempt.started_at
+                FROM attempt
+                JOIN assessment ON assessment.id_assessment = attempt.id_assessment
+                WHERE assessment.state = 'scheduled'
+                ORDER BY attempt.id_attempt
                 """);
         assertNoRows(connection, "Full seed attachment messages must have an attachment", """
                 SELECT id_message, title, type, attachment
@@ -828,6 +859,39 @@ class DatabaseBootstrapServiceTest {
                   )
                 ORDER BY ea.id_student_user, ea.id_assessment
                 """);
+        assertNoRows(connection, "Full seed pending assessment enrollments must be eligible for the assessment context", """
+                SELECT ea.id_student_user, ea.id_assessment, ea.state
+                FROM enroll_assessment ea
+                JOIN assessment a ON a.id_assessment = ea.id_assessment
+                WHERE ea.state = 'pending'
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM content_block cb
+                        JOIN class_group cg ON cg.id_class_group = cb.id_class_group
+                        JOIN enroll_class_group ecg
+                          ON ecg.id_class_group = cg.id_class_group
+                         AND ecg.id_student_user = ea.id_student_user
+                         AND ecg.state = 'active'
+                        WHERE cb.id_content_block = a.id_content_block
+                          AND cg.state = 'active'
+                          AND ecg.start_date <= DATE(a.available_from)
+                          AND ecg.end_date >= DATE(a.available_until)
+                  )
+                  AND NOT EXISTS (
+                        SELECT 1
+                        FROM assessment_class_group acg
+                        JOIN class_group cg ON cg.id_class_group = acg.id_class_group
+                        JOIN enroll_class_group ecg
+                          ON ecg.id_class_group = cg.id_class_group
+                         AND ecg.id_student_user = ea.id_student_user
+                         AND ecg.state = 'active'
+                        WHERE acg.id_assessment = ea.id_assessment
+                          AND cg.state = 'active'
+                          AND ecg.start_date <= DATE(a.available_from)
+                          AND ecg.end_date >= DATE(a.available_until)
+                  )
+                ORDER BY ea.id_student_user, ea.id_assessment
+                """);
         assertNoRows(connection, "Full seed question scores must not exceed assessment maximums", """
                 SELECT a.id_assessment, a.title, a.max_grade, SUM(q.score) AS question_total
                 FROM assessment a
@@ -846,6 +910,35 @@ class DatabaseBootstrapServiceTest {
                    OR (a.type IN ('form', 'test') AND a.id_content_block IS NULL)
                    OR (a.type = 'exam' AND a.id_subject IS NULL AND a.id_content_block IS NULL)
                 ORDER BY a.id_assessment
+                """);
+        assertNoRows(connection, "Functions Applied Checkpoint question scores must reach its assessment maximum", """
+                SELECT a.id_assessment, a.title, a.max_grade, COALESCE(SUM(q.score), 0) AS question_total
+                FROM assessment a
+                LEFT JOIN question q ON q.id_assessment = a.id_assessment
+                WHERE a.id_assessment = 6500
+                GROUP BY a.id_assessment, a.title, a.max_grade
+                HAVING ABS(question_total - a.max_grade) > 0.001
+                """);
+        assertNoRows(connection, "Functions Applied Checkpoint must keep its rich correction fixture", """
+                SELECT a.id_assessment, a.title,
+                       COUNT(DISTINCT q.id_question) AS question_count,
+                       COUNT(DISTINCT CASE WHEN ea.state = 'active' THEN ea.id_student_user END) AS active_enrollments,
+                       COUNT(DISTINCT CASE WHEN ea.state = 'pending' THEN ea.id_student_user END) AS pending_enrollments,
+                       COUNT(DISTINCT CASE WHEN at.state = 'submitted' THEN at.id_attempt END) AS pending_corrections,
+                       COUNT(DISTINCT CASE WHEN at.state = 'corrected' THEN at.id_attempt END) AS corrected_attempts
+                FROM assessment a
+                LEFT JOIN question q ON q.id_assessment = a.id_assessment
+                LEFT JOIN enroll_assessment ea ON ea.id_assessment = a.id_assessment
+                LEFT JOIN attempt at ON at.id_assessment = a.id_assessment
+                WHERE a.id_assessment = 6500
+                GROUP BY a.id_assessment, a.title
+                HAVING question_count <> 10
+                    OR active_enrollments <> 5
+                    OR pending_enrollments <> 5
+                    OR pending_corrections <> 3
+                    OR corrected_attempts <> 2
+                    OR MAX(a.state) <> 'active'
+                    OR MAX(a.enrollment_mode) <> 'manual'
                 """);
         assertNoRows(connection, "Full seed active or scheduled assessments cannot use inactive contexts", """
                 SELECT a.id_assessment, a.title, a.state, s.state AS subject_state,
@@ -1414,6 +1507,186 @@ class DatabaseBootstrapServiceTest {
         assertColumnCovers(connection, "receive_message", "state", "pending", "delivered", "read");
     }
 
+    private static void assertFullSeedAssessmentQuestionAttemptConformance(Connection connection)
+            throws SQLException {
+        assertNoRows(connection, "Full seed available online assessments must have active questions", """
+                SELECT a.id_assessment, a.title, a.state
+                FROM assessment a
+                LEFT JOIN question q ON q.id_assessment = a.id_assessment
+                WHERE a.mode = 'online'
+                  AND a.state IN ('active', 'scheduled')
+                GROUP BY a.id_assessment, a.title, a.state
+                HAVING COUNT(q.id_question) = 0
+                ORDER BY a.id_assessment
+                """);
+        assertNoRows(connection, "Full seed attempts must have assessment questions", """
+                SELECT at.id_attempt, at.id_assessment, at.state
+                FROM attempt at
+                WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM question q
+                        WHERE q.id_assessment = at.id_assessment
+                  )
+                ORDER BY at.id_attempt
+                """);
+        assertNoRows(connection, "Full seed submitted attempts must include every required response", """
+                SELECT at.id_attempt, at.id_assessment,
+                       COUNT(DISTINCT q.id_question) AS required_questions,
+                       COUNT(DISTINCT r.id_question) AS answered_required_questions
+                FROM attempt at
+                JOIN question q
+                  ON q.id_assessment = at.id_assessment
+                 AND q.required_flag = 1
+                LEFT JOIN response r
+                  ON r.id_attempt = at.id_attempt
+                 AND r.id_question = q.id_question
+                WHERE at.state = 'submitted'
+                GROUP BY at.id_attempt, at.id_assessment
+                HAVING answered_required_questions <> required_questions
+                ORDER BY at.id_attempt
+                """);
+        assertNoRows(connection, "Full seed submitted attempts must contain an answer payload", """
+                SELECT at.id_attempt, at.id_assessment
+                FROM attempt at
+                LEFT JOIN response r ON r.id_attempt = at.id_attempt
+                WHERE at.state = 'submitted'
+                GROUP BY at.id_attempt, at.id_assessment
+                HAVING COUNT(r.id_response) = 0
+                ORDER BY at.id_attempt
+                """);
+        assertNoRows(connection, "Full seed automatic assessments cannot contain manual questions", """
+                SELECT a.id_assessment, a.title, q.id_question, q.type
+                FROM assessment a
+                JOIN question q ON q.id_assessment = a.id_assessment
+                WHERE a.correction_mode = 'automatic'
+                  AND q.type IN ('short_text', 'paragraph', 'file_upload')
+                ORDER BY a.id_assessment, q.id_question
+                """);
+        assertNoRows(connection, "Full seed option questions must expose their options", """
+                SELECT q.id_question, q.id_assessment, q.type
+                FROM question q
+                LEFT JOIN question_option qo ON qo.id_question = q.id_question
+                WHERE q.type IN ('single_choice', 'multiple_choice')
+                GROUP BY q.id_question, q.id_assessment, q.type
+                HAVING COUNT(qo.id_option) = 0
+                ORDER BY q.id_assessment, q.id_question
+                """);
+        assertNoRows(connection, "Functions Applied Checkpoint questions must all be required", """
+                SELECT id_question, required_flag
+                FROM question
+                WHERE id_assessment = 6500
+                  AND required_flag <> 1
+                ORDER BY id_question
+                """);
+        assertNoRows(connection, "Functions Applied Checkpoint attempts must answer all 10 questions", """
+                SELECT at.id_attempt,
+                       COUNT(DISTINCT q.id_question) AS question_count,
+                       COUNT(DISTINCT r.id_question) AS response_question_count,
+                       COUNT(DISTINCT r.id_response) AS response_count
+                FROM attempt at
+                JOIN question q ON q.id_assessment = at.id_assessment
+                LEFT JOIN response r
+                  ON r.id_attempt = at.id_attempt
+                 AND r.id_question = q.id_question
+                WHERE at.id_assessment = 6500
+                GROUP BY at.id_attempt
+                HAVING question_count <> 10
+                    OR response_question_count <> 10
+                    OR response_count <> 10
+                ORDER BY at.id_attempt
+                """);
+        assertNoRows(connection, "Functions Applied Checkpoint attempts must contain an answer payload for every question", """
+                SELECT at.id_attempt, q.id_question
+                FROM attempt at
+                JOIN question q ON q.id_assessment = at.id_assessment
+                LEFT JOIN response r
+                  ON r.id_attempt = at.id_attempt
+                 AND r.id_question = q.id_question
+                WHERE at.id_assessment = 6500
+                  AND NOT (
+                      (r.answer IS NOT NULL AND TRIM(r.answer) <> '')
+                      OR (r.attachment IS NOT NULL AND TRIM(r.attachment) <> '')
+                      OR EXISTS (
+                          SELECT 1
+                          FROM response_option ro
+                          WHERE ro.id_response = r.id_response
+                      )
+                  )
+                ORDER BY at.id_attempt, q.id_question
+                """);
+        assertNoRows(connection, "Functions Applied Checkpoint corrected totals must equal response scores", """
+                SELECT at.id_attempt,
+                       at.score AS attempt_score,
+                       COALESCE(SUM(r.score), 0) AS response_score,
+                       COUNT(r.id_response) AS response_count,
+                       COUNT(r.score) AS scored_response_count
+                FROM attempt at
+                JOIN response r ON r.id_attempt = at.id_attempt
+                WHERE at.id_assessment = 6500
+                  AND at.state = 'corrected'
+                GROUP BY at.id_attempt, at.score
+                HAVING response_count <> 10
+                    OR scored_response_count <> 10
+                    OR ABS(attempt_score - response_score) > 0.001
+                ORDER BY at.id_attempt
+                """);
+        assertNoRows(connection, "Functions Applied Checkpoint must retain a full-score corrected attempt", """
+                SELECT a.id_assessment, a.max_grade
+                FROM assessment a
+                LEFT JOIN attempt at
+                  ON at.id_assessment = a.id_assessment
+                 AND at.state = 'corrected'
+                 AND ABS(at.score - a.max_grade) <= 0.001
+                WHERE a.id_assessment = 6500
+                GROUP BY a.id_assessment, a.max_grade
+                HAVING COUNT(at.id_attempt) = 0
+                """);
+        assertNoRows(connection, "Functions Applied Checkpoint submitted attempts must remain unscored until correction", """
+                SELECT at.id_attempt, at.score, COUNT(r.score) AS scored_response_count
+                FROM attempt at
+                JOIN response r ON r.id_attempt = at.id_attempt
+                WHERE at.id_assessment = 6500
+                  AND at.state = 'submitted'
+                GROUP BY at.id_attempt, at.score
+                HAVING at.score IS NOT NULL OR scored_response_count <> 0
+                ORDER BY at.id_attempt
+                """);
+    }
+
+    private static void assertStudent6510FullCoverage(Connection connection) throws SQLException {
+        assertStudentColumnCovers(connection, "enroll_course", "id_student_user", "state", 6510,
+                "active", "inactive", "completed", "withdrawn");
+        assertStudentColumnCovers(connection, "enroll_class_group", "id_student_user", "state", 6510,
+                "pending", "active", "inactive", "rejected", "completed", "withdrawn");
+        assertStudentColumnCovers(connection, "enroll_assessment", "id_student_user", "state", 6510,
+                "pending", "active", "inactive", "rejected", "completed", "withdrawn");
+        // The scheduled student assessment is intentionally attempt-free until
+        // its availability window opens.  Attempt-state variety is covered by
+        // the independent full-seed assessment fixtures; this student retains
+        // historical corrected results without violating the schedule.
+        assertStudentColumnCovers(connection, "attempt", "id_student_user", "state", 6510,
+                "corrected");
+        assertStudentColumnCovers(connection, "attendance_record", "id_user_student", "status", 6510,
+                "present", "absent", "justified", "late", "partial");
+        assertStudentColumnCovers(connection, "attendance_record", "id_user_student", "state", 6510,
+                "active", "corrected", "cancelled");
+        assertStudentColumnCovers(connection, "absence_justification", "id_user_student_submitter", "state", 6510,
+                "submitted", "under_review", "approved", "rejected", "cancelled");
+        assertStudentColumnCovers(connection, "grade_record", "id_user_student", "state", 6510, "published");
+        assertStudentColumnCovers(connection, "grade_record", "id_user_student", "result", 6510, "approved");
+        assertStudentColumnCovers(connection, "certificate", "id_user_student", "state", 6510,
+                "draft", "issued");
+        // RC-MATH-05 is a published student-facing class-group fixture: its
+        // pedagogical items must never remain Draft, otherwise they are
+        // correctly hidden from the student.  Keep Draft state coverage in
+        // the independent full-seed coverage context (class group 3002 and
+        // subject 3002) instead of weakening this rule for the real class.
+        assertStudentColumnCovers(connection, "lesson", "id_class_group", "state", 65,
+                "scheduled", "active", "completed", "cancelled");
+        assertStudentColumnCovers(connection, "assessment", "id_subject", "state", 43,
+                "scheduled", "active", "completed");
+    }
+
     private static void assertFullSeedEmailsAreValid(Connection connection) throws SQLException {
         List<String> invalidEmails = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement("""
@@ -1530,19 +1803,6 @@ class DatabaseBootstrapServiceTest {
                 }
             }
         }
-        try (PreparedStatement statement = connection.prepareStatement("""
-                SELECT c.id_certificate, c.title
-                FROM certificate c
-                JOIN based_on_grade_sheet_certificate bgsc ON bgsc.id_certificate = c.id_certificate
-                WHERE c.state = 'draft'
-                ORDER BY c.id_certificate
-                """);
-             ResultSet resultSet = statement.executeQuery()) {
-            while (resultSet.next()) {
-                mismatches.add(resultSet.getLong("id_certificate") + " "
-                        + resultSet.getString("title") + " draft has grade sheet links");
-            }
-        }
         assertTrue(
                 mismatches.isEmpty(),
                 "Full seed certificates must match service lifecycle: " + String.join("; ", mismatches)
@@ -1581,9 +1841,11 @@ class DatabaseBootstrapServiceTest {
                             + calculation.finalGrade() + " but was " + persistedFinalGrade);
                 }
                 List<Long> linkedGradeSheetIds = certificateGradeSheetIds(connection, certificateId);
-                if (!linkedGradeSheetIds.equals(calculation.gradeSheetIds())) {
-                    mismatches.add(certificateId + " " + title + " grade sheet links expected "
-                            + calculation.gradeSheetIds() + " but were " + linkedGradeSheetIds);
+                if (!gradeSheetSubjectIds(connection, linkedGradeSheetIds)
+                        .equals(gradeSheetSubjectIds(connection, calculation.gradeSheetIds()))) {
+                    mismatches.add(certificateId + " " + title + " grade sheet subjects expected "
+                            + gradeSheetSubjectIds(connection, calculation.gradeSheetIds())
+                            + " but were " + gradeSheetSubjectIds(connection, linkedGradeSheetIds));
                 }
             }
         }
@@ -1621,11 +1883,12 @@ class DatabaseBootstrapServiceTest {
         }
         BigDecimal subjectEctsTotal = BigDecimal.ZERO;
         for (CourseSubjectScaleAudit subject : subjects) {
-            subjectEctsTotal = subjectEctsTotal.add(subject.ects());
+            if (subject.mandatory()) {
+                subjectEctsTotal = subjectEctsTotal.add(subject.ects());
+            }
         }
-        if (subjectEctsTotal.compareTo(course.ects()) != 0) {
-            mismatches.add(certificateId + " " + title + " course active subject ECTS expected "
-                    + course.ects() + " but was " + subjectEctsTotal);
+        if (subjectEctsTotal.compareTo(BigDecimal.ZERO) <= 0) {
+            mismatches.add(certificateId + " " + title + " course has no positive mandatory subject ECTS");
             return null;
         }
 
@@ -1639,9 +1902,12 @@ class DatabaseBootstrapServiceTest {
                     studentUserId
             );
             if (approvedGrade == null) {
-                mismatches.add(certificateId + " " + title
-                        + " has no approved published complete grade for subject " + subject.subjectId());
-                return null;
+                if (subject.mandatory()) {
+                    mismatches.add(certificateId + " " + title
+                            + " has no approved published complete grade for mandatory subject " + subject.subjectId());
+                    return null;
+                }
+                continue;
             }
             BigDecimal subjectFinalGrade = approvedGrade.value()
                     .divide(approvedGrade.gradeSheetMaxGrade(), 8, RoundingMode.HALF_UP)
@@ -1649,10 +1915,18 @@ class DatabaseBootstrapServiceTest {
             BigDecimal courseScaleGrade = subjectFinalGrade
                     .divide(subject.finalGradeMax(), 8, RoundingMode.HALF_UP)
                     .multiply(course.certificateMaxGrade());
-            weightedTotal = weightedTotal.add(courseScaleGrade.multiply(subject.ects()));
+            if (subject.mandatory()) {
+                weightedTotal = weightedTotal.add(courseScaleGrade.multiply(subject.ects()));
+                if (approvedGrade.value().divide(approvedGrade.gradeSheetMaxGrade(), 8, RoundingMode.HALF_UP)
+                        .compareTo(new BigDecimal("0.50")) <= 0) {
+                    mismatches.add(certificateId + " " + title
+                            + " mandatory subject " + subject.subjectId() + " is not positive");
+                    return null;
+                }
+            }
             gradeSheetIds.add(approvedGrade.gradeSheetId());
         }
-        BigDecimal finalGrade = weightedTotal.divide(course.ects(), 2, RoundingMode.HALF_UP);
+        BigDecimal finalGrade = weightedTotal.divide(subjectEctsTotal, 2, RoundingMode.HALF_UP);
         if (finalGrade.compareTo(BigDecimal.ZERO) < 0 || finalGrade.compareTo(course.certificateMaxGrade()) > 0) {
             mismatches.add(certificateId + " " + title + " final grade is outside course scale: " + finalGrade);
             return null;
@@ -1714,10 +1988,11 @@ class DatabaseBootstrapServiceTest {
     private static List<CourseSubjectScaleAudit> activeCourseSubjects(Connection connection, long courseId)
             throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("""
-                SELECT s.id_subject, s.ects, s.final_grade_max
+                SELECT s.id_subject, s.ects, s.final_grade_max, isub.mandatory
                 FROM integrate_subject isub
                 JOIN subject s ON s.id_subject = isub.id_subject
                 WHERE isub.id_course = ?
+                  AND isub.state = 'active'
                   AND s.state = 'active'
                 ORDER BY isub.curricular_year, isub.term, s.id_subject
                 """)) {
@@ -1728,7 +2003,8 @@ class DatabaseBootstrapServiceTest {
                     subjects.add(new CourseSubjectScaleAudit(
                             resultSet.getLong("id_subject"),
                             resultSet.getBigDecimal("ects"),
-                            resultSet.getBigDecimal("final_grade_max")
+                            resultSet.getBigDecimal("final_grade_max"),
+                            resultSet.getBoolean("mandatory")
                     ));
                 }
                 return List.copyOf(subjects);
@@ -1770,7 +2046,9 @@ class DatabaseBootstrapServiceTest {
                             )
                         )
                   )
-                ORDER BY gr.recorded_at DESC, gr.id_grade_record DESC
+                ORDER BY (gr.value / NULLIF(gs.max_grade, 0)) DESC,
+                         gr.recorded_at DESC,
+                         gr.id_grade_record DESC
                 """)) {
             statement.setLong(1, studentUserId);
             statement.setLong(2, subjectId);
@@ -1798,16 +2076,48 @@ class DatabaseBootstrapServiceTest {
             long gradeSheetId,
             long studentUserId
     ) throws SQLException {
-        List<Long> assessmentIds = assessmentIds(connection, gradeSheetId);
-        if (!weightsAreConfigured(connection, gradeSheetId, assessmentIds)) {
-            return false;
-        }
-        for (Long assessmentId : assessmentIds) {
-            if (!hasCorrectedAssessmentScore(connection, studentUserId, assessmentId)) {
-                return false;
+        long subjectId;
+        long courseOccurrenceId;
+        String state;
+        boolean hasClassGroups;
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT gs.id_subject, gs.id_course_occurrence, gs.state,
+                       EXISTS (
+                           SELECT 1
+                           FROM associate_grade_sheet_class_group agscg
+                           WHERE agscg.id_grade_sheet = gs.id_grade_sheet
+                       ) AS has_class_groups
+                FROM grade_sheet gs
+                WHERE gs.id_grade_sheet = ?
+                """)) {
+            statement.setLong(1, gradeSheetId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return false;
+                }
+                subjectId = resultSet.getLong("id_subject");
+                courseOccurrenceId = resultSet.getLong("id_course_occurrence");
+                state = resultSet.getString("state");
+                hasClassGroups = resultSet.getBoolean("has_class_groups");
             }
         }
-        return true;
+        if (!("published".equals(state) || "closed".equals(state))) {
+            return false;
+        }
+        try (PreparedStatement statement = connection.prepareStatement("""
+                SELECT 1
+                FROM grade_record
+                WHERE id_grade_sheet = ?
+                  AND id_user_student = ?
+                  AND state = 'published'
+                LIMIT 1
+                """)) {
+            statement.setLong(1, gradeSheetId);
+            statement.setLong(2, studentUserId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        }
     }
 
     private static boolean weightsAreConfigured(
@@ -1869,7 +2179,12 @@ class DatabaseBootstrapServiceTest {
     private record CourseScaleAudit(BigDecimal ects, BigDecimal certificateMaxGrade) {
     }
 
-    private record CourseSubjectScaleAudit(long subjectId, BigDecimal ects, BigDecimal finalGradeMax) {
+    private record CourseSubjectScaleAudit(
+            long subjectId,
+            BigDecimal ects,
+            BigDecimal finalGradeMax,
+            boolean mandatory
+    ) {
     }
 
     private record SubjectApprovedGradeAudit(long gradeSheetId, BigDecimal gradeSheetMaxGrade, BigDecimal value) {
@@ -1916,6 +2231,33 @@ class DatabaseBootstrapServiceTest {
         );
     }
 
+    private static void assertStudentColumnCovers(
+            Connection connection,
+            String tableName,
+            String studentColumn,
+            String stateColumn,
+            long studentId,
+            String... expectedValues
+    ) throws SQLException {
+        List<String> missing = new ArrayList<>();
+        String sql = "SELECT 1 FROM " + tableName + " WHERE " + studentColumn + " = ? AND " + stateColumn + " = ? LIMIT 1";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            for (String expectedValue : expectedValues) {
+                statement.setLong(1, studentId);
+                statement.setString(2, expectedValue);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (!resultSet.next()) {
+                        missing.add(expectedValue);
+                    }
+                }
+            }
+        }
+        assertTrue(
+                missing.isEmpty(),
+                "Student #6510 " + tableName + "." + stateColumn + " missing states: " + String.join(", ", missing)
+        );
+    }
+
     private static boolean existsValue(
             Connection connection,
             String tableName,
@@ -1929,6 +2271,27 @@ class DatabaseBootstrapServiceTest {
                 return resultSet.next();
             }
         }
+    }
+
+    private static Set<Long> gradeSheetSubjectIds(Connection connection, List<Long> gradeSheetIds)
+            throws SQLException {
+        Set<Long> subjectIds = new java.util.LinkedHashSet<>();
+        if (gradeSheetIds == null || gradeSheetIds.isEmpty()) {
+            return subjectIds;
+        }
+        String placeholders = String.join(",", java.util.Collections.nCopies(gradeSheetIds.size(), "?"));
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT DISTINCT id_subject FROM grade_sheet WHERE id_grade_sheet IN (" + placeholders + ")")) {
+            for (int index = 0; index < gradeSheetIds.size(); index++) {
+                statement.setLong(index + 1, gradeSheetIds.get(index));
+            }
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    subjectIds.add(resultSet.getLong("id_subject"));
+                }
+            }
+        }
+        return subjectIds;
     }
 
     private static boolean gradeSheetComplete(Connection connection, long gradeSheetId) throws SQLException {
@@ -1991,8 +2354,11 @@ class DatabaseBootstrapServiceTest {
                 while (resultSet.next()) {
                     foundSource = true;
                     String state = resultSet.getString("state");
-                    if (!("published".equals(state) || "closed".equals(state))
-                            || !gradeSheetComplete(connection, resultSet.getLong("id_grade_sheet"))) {
+                    // A subject-occurrence sheet is an aggregator: its
+                    // publication depends on every source class-group sheet
+                    // being Published. Missing source values are represented
+                    // as '-' and do not make the aggregate Draft.
+                    if (!"published".equals(state)) {
                         return false;
                     }
                 }

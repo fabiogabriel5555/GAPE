@@ -58,6 +58,42 @@ public final class ContentItemDAO implements pt.isel.gape.transversal.service.Ap
         }
     }
 
+    /**
+     * Inserts a content item with an identifier allocated from its target
+     * pedagogical block. Content items associated with a block share the
+     * block's identifier namespace with lessons and assessments, so the
+     * generated-key overload must not be used for that path.
+     */
+    public long create(
+            Connection connection,
+            long contentItemId,
+            long authorUserId,
+            ContentItemCreateCommand command,
+            LocalDateTime createdAt
+    ) throws SQLException {
+        if (contentItemId <= 0) {
+            throw new IllegalArgumentException("contentItemId must be positive");
+        }
+        String sql = """
+                INSERT INTO content_item (
+                    id_content_item, author_user_id, title, description, format, source, state, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, contentItemId);
+            statement.setLong(2, authorUserId);
+            statement.setString(3, command.title().trim());
+            setNullableString(statement, 4, command.description());
+            statement.setString(5, command.format().toDatabaseValue());
+            setNullableString(statement, 6, command.source());
+            statement.setString(7, command.state().toDatabaseValue());
+            statement.setTimestamp(8, Timestamp.valueOf(createdAt));
+            statement.executeUpdate();
+            return contentItemId;
+        }
+    }
+
     public Optional<ContentItem> findById(long contentItemId) throws SQLException {
         try (Connection connection = connectionProvider.getConnection()) {
             return findById(connection, contentItemId);

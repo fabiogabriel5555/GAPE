@@ -352,7 +352,7 @@ class UserServiceTest {
     }
 
     @Test
-    void administratorOrganizationContextConflictsWithOtherProfileInsideSameOrganization() {
+    void studentCourseContextIsRejectedFromUserManagementService() {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> userService.createUser(
@@ -389,7 +389,7 @@ class UserServiceTest {
                 )
         );
 
-        assertTrue(exception.getMessage().contains("multiple access profiles"));
+        assertTrue(exception.getMessage().contains("managed exclusively from enrollment pages"));
     }
 
     @Test

@@ -15,10 +15,9 @@ public final class BlockActivityView {
 
     private static final int UNORDERED = Integer.MAX_VALUE;
     private static final Comparator<BlockActivityView> PEDAGOGICAL_ORDER = Comparator
-            .comparingInt(BlockActivityView::getSortOrder)
+            .comparingLong(BlockActivityView::getSortId)
             .thenComparing(BlockActivityView::getSortDate)
-            .thenComparingInt(BlockActivityView::getSortKind)
-            .thenComparingLong(BlockActivityView::getSortId);
+            .thenComparingInt(BlockActivityView::getSortKind);
 
     private BlockActivityView(
             BlockContentItemView content,

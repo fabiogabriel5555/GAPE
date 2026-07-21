@@ -87,7 +87,7 @@
                                     <i class="ph ph-eye"></i>
                                 </a>
                                 <c:if test="${canModifyClassGroup}">
-                                    <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit?returnTo=${currentReturnToParam}" class="text-20 text-neutral-500 hover-text-main-600" title="Edit">
+                                    <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit?returnTo=${currentReturnToParam}" data-assessment-modal-url="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit?returnTo=${currentReturnToParam}" data-assessment-modal-title="Edit Assessment" class="text-20 text-neutral-500 hover-text-main-600" title="Edit Assessment" aria-label="Edit Assessment">
                                         <i class="ph ph-pencil-simple-line"></i>
                                     </a>
                                 </c:if>

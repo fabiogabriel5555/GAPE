@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import pt.isel.gape.security.transport.HttpsConfiguration;
 
 class SecurityHeadersFilterTest {
 
@@ -38,10 +39,14 @@ class SecurityHeadersFilterTest {
         assertEquals("same-origin", response.headers.get("Cross-Origin-Resource-Policy"));
         assertEquals("no-store", response.headers.get("Cache-Control"));
         assertEquals("no-cache", response.headers.get("Pragma"));
-        assertEquals(
-                "max-age=31536000; includeSubDomains",
-                response.headers.get("Strict-Transport-Security")
-        );
+        if (HttpsConfiguration.fromRuntimeConfiguration().requiresHttps()) {
+            assertEquals(
+                    "max-age=31536000; includeSubDomains",
+                    response.headers.get("Strict-Transport-Security")
+            );
+        } else {
+            assertNull(response.headers.get("Strict-Transport-Security"));
+        }
         String contentSecurityPolicy = response.headers.get("Content-Security-Policy");
         assertTrue(contentSecurityPolicy.contains("frame-ancestors 'none'"));
         assertTrue(contentSecurityPolicy.contains(
@@ -76,6 +81,20 @@ class SecurityHeadersFilterTest {
 
         filter.doFilter(
                 requestProxy("GET", "/learning/lessons", "/new", Map.of("modal", "1"), true),
+                responseProxy(response),
+                chainProxy(new TestChain())
+        );
+
+        assertEquals("SAMEORIGIN", response.headers.get("X-Frame-Options"));
+        assertTrue(response.headers.get("Content-Security-Policy").contains("frame-ancestors 'self'"));
+    }
+
+    @Test
+    void permitsModalCreationResponsesWithoutPathInfoToBeFramed() throws Exception {
+        TestResponse response = new TestResponse();
+
+        filter.doFilter(
+                requestProxy("POST", "/learning/assessments", null, Map.of("modal", "1"), true),
                 responseProxy(response),
                 chainProxy(new TestChain())
         );

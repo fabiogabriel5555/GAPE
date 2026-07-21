@@ -1,3 +1,5 @@
+# Development image only; production TLS terminates at a hardened proxy or
+# dedicated Tomcat connector documented in docs/security/https.md.
 FROM maven:3.9.16-eclipse-temurin-25 AS build
 
 WORKDIR /workspace

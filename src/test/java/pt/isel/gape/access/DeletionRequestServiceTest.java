@@ -269,6 +269,7 @@ class DeletionRequestServiceTest {
             statement.execute("SET FOREIGN_KEY_CHECKS = 0");
             try {
                 for (String tableName : List.of(
+                        "activity_log_scope",
                         "activity_log",
                         "deletion_request",
                         "grant_student",
@@ -473,6 +474,14 @@ class DeletionRequestServiceTest {
                     CONSTRAINT fk_activity_log_session
                         FOREIGN KEY (id_session) REFERENCES user_session (id_session)
                         ON UPDATE CASCADE ON DELETE SET NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """,
+                """
+                CREATE TABLE activity_log_scope (
+                    id_activity_log BIGINT UNSIGNED NOT NULL,
+                    scope_type VARCHAR(30) NOT NULL,
+                    scope_id BIGINT UNSIGNED NOT NULL,
+                    PRIMARY KEY (id_activity_log, scope_type, scope_id)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                 """
         );

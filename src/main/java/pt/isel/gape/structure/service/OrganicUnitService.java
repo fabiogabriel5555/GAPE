@@ -287,9 +287,9 @@ public final class OrganicUnitService {
                     if (organicUnitDAO.hasDomainDependencies(connection, organicUnitId)) {
                         throw new IllegalStateException("Organic unit with domain dependencies cannot be deleted");
                     }
-                    organicUnitDAO.delete(connection, organicUnitId);
                     auditService.record(connection, actorUserId, sessionId, "ORGANIC_UNIT_DELETE",
                             "organic_unit", Long.toString(organicUnitId), "success", sourceIp);
+                    organicUnitDAO.delete(connection, organicUnitId);
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();

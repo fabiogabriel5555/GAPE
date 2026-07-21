@@ -246,9 +246,9 @@ public final class ContentBlockService {
                     if (contentBlockDAO.hasDomainDependencies(connection, contentBlockId)) {
                         throw new IllegalStateException("Content block with domain dependencies cannot be deleted");
                     }
-                    contentBlockDAO.delete(connection, contentBlockId);
                     auditService.record(connection, actorUserId, sessionId, "CONTENT_BLOCK_DELETE",
                             "content_block", Long.toString(contentBlockId), "success", sourceIp);
+                    contentBlockDAO.delete(connection, contentBlockId);
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();

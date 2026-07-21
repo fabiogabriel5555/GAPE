@@ -398,6 +398,43 @@ class CorrectionServiceTest {
     }
 
     @Test
+    void maximumScoreIsReachableWhenEveryResponseReceivesItsQuestionMaximum() {
+        Assessment assessment = createAssessment("Form Full Score", AssessmentCorrectionMode.MANUAL);
+        Question first = createQuestion(assessment.id(), "Q-FULL-1", QuestionType.PARAGRAPH, 1, "10.00");
+        Question second = createQuestion(assessment.id(), "Q-FULL-2", QuestionType.SHORT_TEXT, 2, "10.00");
+        Attempt attempt = attemptService.startAttempt(4L, null, AccessProfileType.STUDENT, assessment.id(), IP);
+        Response firstResponse = responseService.saveResponse(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                attempt.id(),
+                new ResponseCommand(first.id(), "Resposta longa", null, List.of()),
+                IP
+        );
+        Response secondResponse = responseService.saveResponse(
+                4L,
+                null,
+                AccessProfileType.STUDENT,
+                attempt.id(),
+                new ResponseCommand(second.id(), "Resposta curta", null, List.of()),
+                IP
+        );
+        attemptService.submitAttempt(4L, null, AccessProfileType.STUDENT, attempt.id(), IP);
+
+        CorrectionResult result = correctionService.correctAttemptManually(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                attempt.id(),
+                Map.of(firstResponse.id(), bd("10.00"), secondResponse.id(), bd("10.00")),
+                IP
+        );
+
+        assertEquals(AttemptState.CORRECTED, result.state());
+        assertEquals(0, result.score().compareTo(assessment.maxGrade()));
+    }
+
+    @Test
     void manualCorrectionCannotExceedQuestionScore() {
         Assessment assessment = createAssessment("Form Invalid Manual", AssessmentCorrectionMode.MANUAL);
         Question text = createQuestion(assessment.id(), "Q-MAX", QuestionType.PARAGRAPH, 1, "5.00");

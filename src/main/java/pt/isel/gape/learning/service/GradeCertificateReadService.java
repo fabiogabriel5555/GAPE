@@ -14,6 +14,7 @@ import pt.isel.gape.learning.dao.CertificateDAO;
 import pt.isel.gape.learning.dao.ClassGroupDAO;
 import pt.isel.gape.learning.dao.CourseDAO;
 import pt.isel.gape.learning.dao.CourseOccurrenceDAO;
+import pt.isel.gape.learning.dao.CourseSubjectDAO;
 import pt.isel.gape.learning.dao.GradeAccessDAO;
 import pt.isel.gape.learning.dao.GradeRecordDAO;
 import pt.isel.gape.learning.dao.GradeSheetDAO;
@@ -22,6 +23,7 @@ import pt.isel.gape.learning.model.Assessment;
 import pt.isel.gape.learning.model.Certificate;
 import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.Course;
+import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.CourseOccurrence;
 import pt.isel.gape.learning.model.GradeRecord;
 import pt.isel.gape.learning.model.GradeSheet;
@@ -42,6 +44,7 @@ public final class GradeCertificateReadService {
     private final AssessmentDAO assessmentDAO;
     private final CourseDAO courseDAO;
     private final CourseOccurrenceDAO courseOccurrenceDAO;
+    private final CourseSubjectDAO courseSubjectDAO;
     private final UserDAO userDAO;
     private final GradeAccessDAO gradeAccessDAO;
     private final OrganizationDAO organizationDAO;
@@ -58,6 +61,7 @@ public final class GradeCertificateReadService {
                 new AssessmentDAO(connectionProvider),
                 new CourseDAO(connectionProvider),
                 new CourseOccurrenceDAO(connectionProvider),
+                new CourseSubjectDAO(connectionProvider),
                 new UserDAO(connectionProvider),
                 new GradeAccessDAO(),
                 new OrganizationDAO(connectionProvider),
@@ -75,6 +79,7 @@ public final class GradeCertificateReadService {
             AssessmentDAO assessmentDAO,
             CourseDAO courseDAO,
             CourseOccurrenceDAO courseOccurrenceDAO,
+            CourseSubjectDAO courseSubjectDAO,
             UserDAO userDAO,
             GradeAccessDAO gradeAccessDAO,
             OrganizationDAO organizationDAO,
@@ -89,6 +94,7 @@ public final class GradeCertificateReadService {
         this.assessmentDAO = assessmentDAO;
         this.courseDAO = courseDAO;
         this.courseOccurrenceDAO = courseOccurrenceDAO;
+        this.courseSubjectDAO = courseSubjectDAO;
         this.userDAO = userDAO;
         this.gradeAccessDAO = gradeAccessDAO;
         this.organizationDAO = organizationDAO;
@@ -142,6 +148,10 @@ public final class GradeCertificateReadService {
 
     public List<Subject> findAllSubjects() throws SQLException {
         return subjectDAO.findAll();
+    }
+
+    public List<CourseSubjectAssociation> findCourseSubjects(long courseId) throws SQLException {
+        return courseSubjectDAO.findByCourse(courseId);
     }
 
     public List<Subject> findSubjectsByCoordinator(long coordinatorUserId) throws SQLException {

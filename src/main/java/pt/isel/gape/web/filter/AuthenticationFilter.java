@@ -69,7 +69,7 @@ public final class AuthenticationFilter implements Filter {
         }
 
         Session session = persistedSession.get();
-        if (!session.token().equals(sessionToken.get()) || session.userId() != sessionUser.get().userId()) {
+        if (!sessionService.matchesToken(session, sessionToken.get()) || session.userId() != sessionUser.get().userId()) {
             sessionManager.clearSession(httpRequest);
             redirectToLogin(httpRequest, httpResponse, "invalid");
             return;

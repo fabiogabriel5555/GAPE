@@ -366,6 +366,12 @@ public final class LearningEventDAO implements pt.isel.gape.transversal.service.
         upsertAbsenceJustificationEvents(connection);
         upsertGradeSheetEvents(connection);
         upsertCertificateEvents(connection);
+        upsertStudentClassGroupEnrollmentAcceptedEvents(connection);
+        upsertStudentRunningLessonEvents(connection);
+        upsertStudentAssessmentEnrollmentRequiredEvents(connection);
+        upsertStudentAssessmentAttemptRequiredEvents(connection);
+        upsertStudentGradeAvailableEvents(connection);
+        upsertStudentCertificatePublishedEvents(connection);
         upsertClassGroupEnrollmentEvents(connection);
         upsertAssessmentEnrollmentEvents(connection);
         upsertCourseEnrollmentEvents(connection);
@@ -416,7 +422,13 @@ public final class LearningEventDAO implements pt.isel.gape.transversal.service.
         StringBuilder sql = new StringBuilder(baseSql);
         List<Object> parameters = new ArrayList<>();
 
-        sql.append(" AND occurred_at <= ?");
+        // Actionable requests/corrections are immediate even when an imported
+        // membership date is in the future (and even when the DB and JVM use
+        // different time zones). Historical events still respect the viewer's
+        // time boundary.
+        sql.append(" AND (occurred_at <= ? OR event_type IN ("
+                + "'class_group_enrollment_pending', 'assessment_enrollment_pending', "
+                + "'assessment_correction_pending'))");
         parameters.add(now);
 
         String normalizedCategory = normalizeCategory(category);
@@ -1233,6 +1245,248 @@ public final class LearningEventDAO implements pt.isel.gape.transversal.service.
                     badge_class = VALUES(badge_class),
                     state_badge_class = VALUES(state_badge_class),
                     visibility_state = 'visible'
+                """.formatted(
+                        courseContextSql("course", "ou", "o"),
+                        courseContextTitleSql("course", "ou", "o")
+                ));
+    }
+
+    /**
+     * Student event spans are deliberately derived from the current academic
+     * records.  The stable source key makes the read receipt durable: a span
+     * disappears after it is viewed, but an event that ceases to apply is also
+     * hidden on the next rebuild.
+     */
+    private static void upsertStudentClassGroupEnrollmentAcceptedEvents(Connection connection) throws SQLException {
+        executeUpdate(connection, """
+                INSERT INTO learning_event (
+                    source_type, source_key, event_type, category, category_label,
+                    title, description, context_label, context_title, id_class_group, id_course, id_subject, id_student_user,
+                    detail_href, occurred_at, state_label, state_value, icon_class, badge_class, state_badge_class
+                )
+                SELECT 'enroll_class_group', CONCAT('student-accepted:', ecg.id_student_user, ':', ecg.id_class_group),
+                       'student_class_group_enrollment_accepted', 'class_group_enrollments', 'Class group enrollment',
+                       CONCAT('Class group enrollment accepted: ', cg.cod_class_group),
+                       'Your class group enrollment is active.',
+                       %s, %s,
+                       cg.id_class_group, cg.id_course, cg.id_subject, ecg.id_student_user,
+                       CONCAT('/student/class-groups/', cg.id_class_group, '#student-class-group-overview'),
+                       LEAST(CAST(ecg.start_date AS DATETIME), CURRENT_TIMESTAMP),
+                       'Enrollment accepted', 'active',
+                       'ph ph-user-check', 'bg-success-50 text-success-600', 'bg-success-50 text-success-600'
+                FROM enroll_class_group ecg
+                JOIN class_group cg ON cg.id_class_group = ecg.id_class_group
+                JOIN subject s ON s.id_subject = cg.id_subject
+                JOIN course c ON c.id_course = cg.id_course
+                LEFT JOIN organic_unit ou ON ou.id_organic_unit = c.id_organic_unit
+                JOIN organization o ON o.id_organization = c.id_organization
+                WHERE ecg.state = 'active'
+                  AND ecg.start_date IS NOT NULL
+                ON DUPLICATE KEY UPDATE
+                    title = VALUES(title), description = VALUES(description),
+                    context_label = VALUES(context_label), context_title = VALUES(context_title),
+                    id_class_group = VALUES(id_class_group), id_course = VALUES(id_course), id_subject = VALUES(id_subject),
+                    id_student_user = VALUES(id_student_user), detail_href = VALUES(detail_href),
+                    occurred_at = VALUES(occurred_at), state_label = VALUES(state_label), state_value = VALUES(state_value),
+                    icon_class = VALUES(icon_class), badge_class = VALUES(badge_class),
+                    state_badge_class = VALUES(state_badge_class), visibility_state = 'visible'
+                """.formatted(
+                        classGroupContextSql("cg", "s", "c", "ou", "o"),
+                        classGroupContextTitleSql("cg", "s", "c", "ou", "o")
+                ));
+    }
+
+    private static void upsertStudentRunningLessonEvents(Connection connection) throws SQLException {
+        executeUpdate(connection, """
+                INSERT INTO learning_event (
+                    source_type, source_key, event_type, category, category_label,
+                    title, description, context_label, context_title, id_class_group, id_course, id_subject, id_student_user,
+                    detail_href, occurred_at, state_label, state_value, icon_class, badge_class, state_badge_class
+                )
+                SELECT 'lesson', CONCAT('student-running:', ecg.id_student_user, ':', l.id_lesson),
+                       'student_lesson_running', 'lessons', 'Lesson',
+                       CONCAT('Lesson running: ', l.title),
+                       'This lesson is currently in progress.',
+                       %s, %s,
+                       cg.id_class_group, cg.id_course, cg.id_subject, ecg.id_student_user,
+                       CONCAT('/student/class-groups/', cg.id_class_group, '#student-lesson-', l.id_lesson),
+                       LEAST(l.starts_at, CURRENT_TIMESTAMP),
+                       'Running now', 'active',
+                       'ph ph-play-circle', 'bg-main-50 text-main-600', 'bg-success-50 text-success-600'
+                FROM lesson l
+                JOIN class_group cg ON cg.id_class_group = l.id_class_group
+                JOIN enroll_class_group ecg ON ecg.id_class_group = cg.id_class_group AND ecg.state = 'active'
+                JOIN subject s ON s.id_subject = cg.id_subject
+                JOIN course c ON c.id_course = cg.id_course
+                LEFT JOIN organic_unit ou ON ou.id_organic_unit = c.id_organic_unit
+                JOIN organization o ON o.id_organization = c.id_organization
+                WHERE l.state = 'active'
+                  AND l.starts_at <= CURRENT_TIMESTAMP
+                  AND (l.ends_at IS NULL OR l.ends_at >= CURRENT_TIMESTAMP)
+                ON DUPLICATE KEY UPDATE
+                    title = VALUES(title), description = VALUES(description),
+                    context_label = VALUES(context_label), context_title = VALUES(context_title),
+                    id_class_group = VALUES(id_class_group), id_course = VALUES(id_course), id_subject = VALUES(id_subject),
+                    id_student_user = VALUES(id_student_user), detail_href = VALUES(detail_href),
+                    occurred_at = VALUES(occurred_at), state_label = VALUES(state_label), state_value = VALUES(state_value),
+                    icon_class = VALUES(icon_class), badge_class = VALUES(badge_class),
+                    state_badge_class = VALUES(state_badge_class), visibility_state = 'visible'
+                """.formatted(
+                        classGroupContextSql("cg", "s", "c", "ou", "o"),
+                        classGroupContextTitleSql("cg", "s", "c", "ou", "o")
+                ));
+    }
+
+    private static void upsertStudentAssessmentEnrollmentRequiredEvents(Connection connection) throws SQLException {
+        upsertStudentAssessmentActionEvents(connection, false);
+    }
+
+    private static void upsertStudentAssessmentAttemptRequiredEvents(Connection connection) throws SQLException {
+        upsertStudentAssessmentActionEvents(connection, true);
+    }
+
+    private static void upsertStudentAssessmentActionEvents(Connection connection, boolean attemptRequired) throws SQLException {
+        String requiredState = attemptRequired ? "attempt" : "enrollment";
+        String eventType = attemptRequired
+                ? "student_assessment_attempt_required"
+                : "student_assessment_enrollment_required";
+        String titlePrefix = attemptRequired ? "Assessment ready to attempt: " : "Assessment enrollment required: ";
+        String description = attemptRequired
+                ? "You are enrolled and can make your first attempt."
+                : "Enroll in this assessment to make an attempt.";
+        String stateLabel = attemptRequired ? "Attempt required" : "Enrollment required";
+        String stateValue = attemptRequired ? "attempt_required" : "enrollment_required";
+        String icon = attemptRequired ? "ph ph-pencil-line" : "ph ph-user-circle-plus";
+        String badge = attemptRequired ? "bg-warning-50 text-warning-700" : "bg-info-50 text-info-600";
+        String enrollmentCondition = attemptRequired
+                ? "EXISTS (SELECT 1 FROM enroll_assessment ea WHERE ea.id_assessment = a.id_assessment AND ea.id_student_user = ecg.id_student_user AND ea.state = 'active')"
+                : "NOT EXISTS (SELECT 1 FROM enroll_assessment ea WHERE ea.id_assessment = a.id_assessment AND ea.id_student_user = ecg.id_student_user AND ea.state IN ('active', 'pending'))";
+        String attemptCondition = attemptRequired
+                ? "AND NOT EXISTS (SELECT 1 FROM attempt at WHERE at.id_assessment = a.id_assessment AND at.id_student_user = ecg.id_student_user)"
+                : "";
+        executeUpdate(connection, """
+                INSERT INTO learning_event (
+                    source_type, source_key, event_type, category, category_label,
+                    title, description, context_label, context_title, id_class_group, id_course, id_subject, id_student_user,
+                    detail_href, occurred_at, state_label, state_value, icon_class, badge_class, state_badge_class
+                )
+                SELECT 'assessment', CONCAT('student-%s:', ecg.id_student_user, ':', a.id_assessment, ':', cg.id_class_group),
+                       '%s', 'assessments', 'Assessment',
+                       CONCAT('%s', a.title), '%s',
+                       %s, %s,
+                       cg.id_class_group, cg.id_course, cg.id_subject, ecg.id_student_user,
+                       CONCAT('/student/class-groups/', cg.id_class_group, '#student-assessment-', a.id_assessment),
+                       LEAST(a.available_from, CURRENT_TIMESTAMP),
+                       '%s', '%s', '%s', '%s', '%s'
+                FROM assessment a
+                JOIN (
+                    SELECT a2.id_assessment, cb.id_class_group
+                    FROM assessment a2
+                    JOIN content_block cb ON cb.id_content_block = a2.id_content_block
+                    UNION
+                    SELECT acg.id_assessment, acg.id_class_group
+                    FROM assessment_class_group acg
+                ) ctx ON ctx.id_assessment = a.id_assessment
+                JOIN class_group cg ON cg.id_class_group = ctx.id_class_group
+                JOIN enroll_class_group ecg ON ecg.id_class_group = cg.id_class_group AND ecg.state = 'active'
+                JOIN subject s ON s.id_subject = cg.id_subject
+                JOIN course c ON c.id_course = cg.id_course
+                LEFT JOIN organic_unit ou ON ou.id_organic_unit = c.id_organic_unit
+                JOIN organization o ON o.id_organization = c.id_organization
+                WHERE a.state = 'active'
+                  AND a.available_from <= CURRENT_TIMESTAMP
+                  AND (a.available_until IS NULL OR a.available_until >= CURRENT_TIMESTAMP)
+                  AND %s
+                  %s
+                ON DUPLICATE KEY UPDATE
+                    title = VALUES(title), description = VALUES(description),
+                    context_label = VALUES(context_label), context_title = VALUES(context_title),
+                    id_class_group = VALUES(id_class_group), id_course = VALUES(id_course), id_subject = VALUES(id_subject),
+                    id_student_user = VALUES(id_student_user), detail_href = VALUES(detail_href),
+                    occurred_at = VALUES(occurred_at), state_label = VALUES(state_label), state_value = VALUES(state_value),
+                    icon_class = VALUES(icon_class), badge_class = VALUES(badge_class),
+                    state_badge_class = VALUES(state_badge_class), visibility_state = 'visible'
+                """.formatted(
+                        requiredState, eventType, titlePrefix, description,
+                        classGroupContextSql("cg", "s", "c", "ou", "o"),
+                        classGroupContextTitleSql("cg", "s", "c", "ou", "o"),
+                        stateLabel, stateValue, icon, badge, badge,
+                        enrollmentCondition, attemptCondition
+                ));
+    }
+
+    private static void upsertStudentGradeAvailableEvents(Connection connection) throws SQLException {
+        executeUpdate(connection, """
+                INSERT INTO learning_event (
+                    source_type, source_key, event_type, category, category_label,
+                    title, description, context_label, context_title, id_class_group, id_course, id_subject, id_student_user,
+                    detail_href, occurred_at, state_label, state_value, icon_class, badge_class, state_badge_class
+                )
+                SELECT 'grade_sheet', CONCAT('student-grade:', gr.id_grade_record, ':', cg.id_class_group),
+                       'student_grade_sheet_grade_available', 'grade_sheets', 'Grade sheet',
+                       CONCAT('Your grade is available: ', gs.title),
+                       'Your class group grade can now be viewed.',
+                       %s, %s,
+                       cg.id_class_group, cg.id_course, cg.id_subject, gr.id_user_student,
+                       CONCAT('/student/class-groups/', cg.id_class_group, '#student-class-group-grade-sheet'),
+                       LEAST(gr.recorded_at, CURRENT_TIMESTAMP),
+                       'Grade available', 'grade_available',
+                       'ph ph-table', 'bg-success-50 text-success-600', 'bg-success-50 text-success-600'
+                FROM grade_record gr
+                JOIN grade_sheet gs ON gs.id_grade_sheet = gr.id_grade_sheet
+                JOIN associate_grade_sheet_class_group agscg ON agscg.id_grade_sheet = gs.id_grade_sheet
+                JOIN class_group cg ON cg.id_class_group = agscg.id_class_group
+                JOIN enroll_class_group ecg ON ecg.id_class_group = cg.id_class_group
+                    AND ecg.id_student_user = gr.id_user_student AND ecg.state = 'active'
+                JOIN subject s ON s.id_subject = cg.id_subject
+                JOIN course c ON c.id_course = cg.id_course
+                LEFT JOIN organic_unit ou ON ou.id_organic_unit = c.id_organic_unit
+                JOIN organization o ON o.id_organization = c.id_organization
+                WHERE gr.state IN ('draft', 'published', 'corrected')
+                  AND gs.state IN ('draft', 'published')
+                ON DUPLICATE KEY UPDATE
+                    title = VALUES(title), description = VALUES(description),
+                    context_label = VALUES(context_label), context_title = VALUES(context_title),
+                    id_class_group = VALUES(id_class_group), id_course = VALUES(id_course), id_subject = VALUES(id_subject),
+                    id_student_user = VALUES(id_student_user), detail_href = VALUES(detail_href),
+                    occurred_at = VALUES(occurred_at), state_label = VALUES(state_label), state_value = VALUES(state_value),
+                    icon_class = VALUES(icon_class), badge_class = VALUES(badge_class),
+                    state_badge_class = VALUES(state_badge_class), visibility_state = 'visible'
+                """.formatted(
+                        classGroupContextSql("cg", "s", "c", "ou", "o"),
+                        classGroupContextTitleSql("cg", "s", "c", "ou", "o")
+                ));
+    }
+
+    private static void upsertStudentCertificatePublishedEvents(Connection connection) throws SQLException {
+        executeUpdate(connection, """
+                INSERT INTO learning_event (
+                    source_type, source_key, event_type, category, category_label,
+                    title, description, context_label, context_title, id_class_group, id_course, id_subject, id_student_user,
+                    detail_href, occurred_at, state_label, state_value, icon_class, badge_class, state_badge_class
+                )
+                SELECT 'certificate', CONCAT('student-published:', c.id_certificate),
+                       'student_certificate_published', 'certificates', 'Certificate',
+                       CONCAT('Certificate published: ', c.title),
+                       'Your course certificate is available to view.',
+                       %s, %s,
+                       NULL, c.id_course, NULL, c.id_user_student,
+                       CONCAT('/student/attendance#studentCertificateDetail', c.id_certificate),
+                       LEAST(c.issued_at, CURRENT_TIMESTAMP),
+                       'Published', 'published',
+                       'ph ph-certificate', 'bg-success-50 text-success-600', 'bg-success-50 text-success-600'
+                FROM certificate c
+                JOIN course ON course.id_course = c.id_course
+                LEFT JOIN organic_unit ou ON ou.id_organic_unit = course.id_organic_unit
+                JOIN organization o ON o.id_organization = course.id_organization
+                WHERE c.state = 'issued' AND c.issued_at IS NOT NULL
+                ON DUPLICATE KEY UPDATE
+                    title = VALUES(title), description = VALUES(description),
+                    context_label = VALUES(context_label), context_title = VALUES(context_title),
+                    id_course = VALUES(id_course), id_student_user = VALUES(id_student_user), detail_href = VALUES(detail_href),
+                    occurred_at = VALUES(occurred_at), state_label = VALUES(state_label), state_value = VALUES(state_value),
+                    icon_class = VALUES(icon_class), badge_class = VALUES(badge_class),
+                    state_badge_class = VALUES(state_badge_class), visibility_state = 'visible'
                 """.formatted(
                         courseContextSql("course", "ou", "o"),
                         courseContextTitleSql("course", "ou", "o")

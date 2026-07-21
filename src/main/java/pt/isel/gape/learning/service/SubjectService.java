@@ -459,9 +459,9 @@ public final class SubjectService {
                     if (subjectDAO.hasDomainDependencies(connection, subjectId)) {
                         throw new IllegalStateException("Subject with domain dependencies cannot be deleted");
                     }
-                    subjectDAO.delete(connection, subjectId);
                     auditService.record(connection, actorUserId, sessionId, "SUBJECT_DELETE",
                             "subject", Long.toString(subjectId), "success", sourceIp);
+                    subjectDAO.delete(connection, subjectId);
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();

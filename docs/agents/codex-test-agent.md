@@ -50,9 +50,13 @@ Deve criar testes executaveis, explicar como os executar, executar os testes, an
 - Cada suite deve ter objetivo claro e criterio de sucesso observavel.
 - Antes de executar `mvn -q test` ou validacao no browser, consultar `docs/tests/browser-validation.md` para usar os defaults locais de timeout, Brave/Playwright, Tomcat e limpeza de processos.
 - Nao usar o browser integrado `iab` neste workspace; ele falha de forma recorrente. Usar sempre Brave/Playwright ou os scripts CDP documentados.
+- Para uma alteracao frontend, exigir evidencia do estado visual exato antes de aceitar a correcao: ator, rota, entidade, estado interativo, viewport e seletores/medidas relevantes. Um check generico da pagina nao cobre um modal, accordion, seleccao ou linha aninhada.
+- A suite Maven completa e uma porta final de regressao, nao uma ferramenta de diagnostico visual. Executa-la uma unica vez depois dos testes focados e da verificacao visual passarem, quando o risco ou o pedido o exigir; nao a repetir sem alteracao de codigo ou de testes.
+- Antes de uma suite ou teste que possa recriar schema/dados, registar a fixture visual em uso e a respetiva restauracao. Nunca destruir uma fixture de QA sem saber como voltar a validar o mesmo cenario.
 - Testes invalidos devem falhar pelas razoes corretas.
 - Quando a falha estiver no codigo de producao, o agente deve encaminhar a correcao para o agente responsavel e retestar depois.
 - A documentacao de testes deve ser atualizada sempre que houver mudancas relevantes.
+- Registar no resultado os tempos medidos de cada comando e separar claramente tempos medidos de estimativas.
 
 ## Saidas Esperadas
 

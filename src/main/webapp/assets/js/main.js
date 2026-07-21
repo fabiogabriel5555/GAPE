@@ -775,7 +775,7 @@ function dynamicActiveMenuClass(selector) {
   let FileName = normalizeSidebarFileName(window.location.pathname);
 
   // If we are at the root path ("/" or no file name), keep the activePage class on the Home item
-  if (FileName === "" || FileName === "index.html" || FileName === "index.jsp") {
+  if (FileName === "" || FileName === "index.html" || FileName === "login.jsp") {
     selector.each(function () {
       $(this).find("li.nav-menu__item.has-submenu").eq(0).addClass("activePage");
     });

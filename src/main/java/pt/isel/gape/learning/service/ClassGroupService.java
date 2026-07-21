@@ -236,6 +236,42 @@ public final class ClassGroupService {
         }
     }
 
+    /**
+     * Loads a class group for an actor that is allowed to see it but is not
+     * necessarily allowed to manage its structure. Teachers need this read
+     * path for their own class-group detail page; using {@link #getClassGroup}
+     * here incorrectly required coordinator/administrator management rights.
+     */
+    public ClassGroup getReadableClassGroup(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            long classGroupId,
+            String sourceIp
+    ) {
+        try {
+            synchronized (AcademicLifecycleSynchronizationLock.monitor()) {
+                try (Connection connection = connectionProvider.getConnection()) {
+                    synchronizeTemporalStates(connection);
+                    ClassGroup classGroup = requireClassGroup(connection, classGroupId);
+                    AuthorizationDecision decision = classGroupReadDecision(
+                            actorUserId,
+                            sessionId,
+                            actorProfileType,
+                            classGroup,
+                            sourceIp
+                    );
+                    if (!decision.allowed()) {
+                        throw new SecurityException("Missing class group read context: " + decision.reason());
+                    }
+                    return classGroup;
+                }
+            }
+        } catch (RuntimeException | SQLException exception) {
+            throw wrap(exception, "Failed to read class group");
+        }
+    }
+
     public List<ClassGroup> listClassGroupsByCourse(
             long actorUserId,
             Long sessionId,
@@ -439,9 +475,9 @@ public final class ClassGroupService {
                     } else if (classGroupDAO.hasDomainDependencies(connection, classGroupId)) {
                         throw new IllegalStateException("Class group with domain dependencies cannot be deleted");
                     }
-                    classGroupDAO.delete(connection, classGroupId);
                     auditService.record(connection, actorUserId, sessionId, "CLASS_GROUP_DELETE",
                             "class_group", Long.toString(classGroupId), "success", sourceIp);
+                    classGroupDAO.delete(connection, classGroupId);
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();
@@ -1210,6 +1246,7 @@ public final class ClassGroupService {
 
     private int synchronizeTemporalStates(Connection connection) throws SQLException {
         int updatedClassGroups = classGroupDAO.synchronizeTemporalStates(connection, LocalDate.now(clock));
+        gradeLifecycleService.synchronizeCompletedClassGroupPublications(connection);
         return updatedClassGroups
                 + AcademicLifecycleSynchronizationService.synchronizeClassGroupEnrollmentLifecycle(connection);
     }

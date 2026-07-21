@@ -16,6 +16,7 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.Part;
+import pt.isel.gape.access.model.AccessProfileType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pt.isel.gape.common.config.ConnectionProvider;
@@ -45,6 +46,18 @@ public final class CommunicationServlet extends DashboardServletSupport {
     private static final String MESSAGES_JSP = "/WEB-INF/views/transversal/messages.jsp";
     private static final String THREAD_JSP = "/WEB-INF/views/transversal/messages-thread.jsp";
     private static final String THREAD_MESSAGES_JSP = "/WEB-INF/views/transversal/messages-thread-messages.jsp";
+    private static final String ADMIN_MESSAGES_JSP = "/admin/admin/message/admin-messages.jsp";
+    private static final String ADMIN_THREAD_JSP = "/admin/admin/message/admin-message-thread.jsp";
+    private static final String ADMIN_THREAD_MESSAGES_JSP = "/admin/admin/message/admin-message-thread-messages.jsp";
+    private static final String COORDINATOR_MESSAGES_JSP = "/coordinator/coordinator/message/coordinator-messages.jsp";
+    private static final String COORDINATOR_THREAD_JSP = "/coordinator/coordinator/message/coordinator-message-thread.jsp";
+    private static final String COORDINATOR_THREAD_MESSAGES_JSP = "/coordinator/coordinator/message/coordinator-message-thread-messages.jsp";
+    private static final String INSTRUCTOR_MESSAGES_JSP = "/instructor/instructor/message/instructor-messages.jsp";
+    private static final String INSTRUCTOR_THREAD_JSP = "/instructor/instructor/message/instructor-message-thread.jsp";
+    private static final String INSTRUCTOR_THREAD_MESSAGES_JSP = "/instructor/instructor/message/instructor-message-thread-messages.jsp";
+    private static final String STUDENT_MESSAGES_JSP = "/student/student/message/student-messages.jsp";
+    private static final String STUDENT_THREAD_JSP = "/student/student/message/student-message-thread.jsp";
+    private static final String STUDENT_THREAD_MESSAGES_JSP = "/student/student/message/student-message-thread-messages.jsp";
     private static final int MAX_ATTACHMENTS_PER_MESSAGE = 5;
 
     private final CommunicationReadService readService;
@@ -147,7 +160,34 @@ public final class CommunicationServlet extends DashboardServletSupport {
         request.setAttribute("notificationItems", pageData.getNotifications());
         request.setAttribute("messageUnreadCount", pageData.getUnreadCount());
         prepareDashboard(request, "message", "Messages");
-        forward(request, response, MESSAGES_JSP);
+        forward(request, response, messagesJsp(currentUser));
+    }
+
+    private String messagesJsp(SessionUser actor) {
+        return switch (primaryProfile(actor)) {
+            case COORDINATOR -> COORDINATOR_MESSAGES_JSP;
+            case TEACHER -> INSTRUCTOR_MESSAGES_JSP;
+            case STUDENT -> STUDENT_MESSAGES_JSP;
+            default -> ADMIN_MESSAGES_JSP;
+        };
+    }
+
+    private String threadJsp(SessionUser actor) {
+        return switch (primaryProfile(actor)) {
+            case COORDINATOR -> COORDINATOR_THREAD_JSP;
+            case TEACHER -> INSTRUCTOR_THREAD_JSP;
+            case STUDENT -> STUDENT_THREAD_JSP;
+            default -> ADMIN_THREAD_JSP;
+        };
+    }
+
+    private String threadMessagesJsp(SessionUser actor) {
+        return switch (primaryProfile(actor)) {
+            case COORDINATOR -> COORDINATOR_THREAD_MESSAGES_JSP;
+            case TEACHER -> INSTRUCTOR_THREAD_MESSAGES_JSP;
+            case STUDENT -> STUDENT_THREAD_MESSAGES_JSP;
+            default -> ADMIN_THREAD_MESSAGES_JSP;
+        };
     }
 
     private void showThread(HttpServletRequest request, HttpServletResponse response)
@@ -161,7 +201,7 @@ public final class CommunicationServlet extends DashboardServletSupport {
         CommunicationPageData pageData = viewFactory.pageData(snapshot, currentUser.userId());
         request.setAttribute("communicationPage", pageData);
         response.setContentType("text/html;charset=UTF-8");
-        forward(request, response, THREAD_JSP);
+        forward(request, response, threadJsp(currentUser));
     }
 
     private void showOlderThreadMessages(HttpServletRequest request, HttpServletResponse response)
@@ -175,7 +215,7 @@ public final class CommunicationServlet extends DashboardServletSupport {
         CommunicationPageData pageData = viewFactory.pageData(snapshot, currentUser.userId());
         request.setAttribute("communicationPage", pageData);
         response.setContentType("text/html;charset=UTF-8");
-        forward(request, response, THREAD_MESSAGES_JSP);
+        forward(request, response, threadMessagesJsp(currentUser));
     }
 
     private void sendMessage(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -282,7 +322,7 @@ public final class CommunicationServlet extends DashboardServletSupport {
         request.setAttribute("communicationPage", pageData);
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("text/html;charset=UTF-8");
-        forward(request, response, THREAD_JSP);
+        forward(request, response, threadJsp(currentUser));
     }
 
     private void renderConversationUpdate(
@@ -297,7 +337,7 @@ public final class CommunicationServlet extends DashboardServletSupport {
         request.setAttribute("communicationPage", pageData);
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("text/html;charset=UTF-8");
-        forward(request, response, THREAD_JSP);
+        forward(request, response, threadJsp(currentUser));
     }
 
     private void markRead(HttpServletRequest request, HttpServletResponse response) throws IOException {

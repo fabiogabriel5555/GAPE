@@ -254,9 +254,9 @@ class ClassGroupCourseContextConformanceTest {
              PreparedStatement statement = connection.prepareStatement(sql);
              var resultSet = statement.executeQuery()) {
             resultSet.next();
-            assertEquals(20L, resultSet.getLong(1));
+            assertEquals(21L, resultSet.getLong(1));
             assertEquals(5L, resultSet.getLong(2));
-            assertEquals(15L, resultSet.getLong(3));
+            assertEquals(16L, resultSet.getLong(3));
         }
     }
 }

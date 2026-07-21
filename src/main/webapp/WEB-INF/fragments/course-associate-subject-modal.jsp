@@ -7,14 +7,14 @@
                 <h5 class="modal-title text-18 fw-semibold" id="associateCourseSubjectModalLabel">Associate Subject</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/subjects" method="post" data-course-live-form data-course-live-panel="structure">
+            <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/subjects" method="post" data-course-live-form data-course-live-panel="structure" data-course-associate-subject-form>
                 <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                 <input type="hidden" name="returnTo" value="${currentReturnTo}#course-structure">
                 <div class="modal-body">
                     <p class="text-14 text-neutral-600 mb-20">Select an existing subject and its curricular position in this course.</p>
                     <div class="mb-20 gape-select-field">
                         <label for="courseDetailSubjectId" class="fw-medium text-base text-neutral-800 mb-12">Subject</label>
-                        <select id="courseDetailSubjectId" name="subjectId" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                        <select id="courseDetailSubjectId" name="subjectId" required data-course-associate-subject class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
                             <option value="">Select subject</option>
                             <c:forEach var="subject" items="${availableSubjectOptions}">
                                 <option value="${subject.id}"><c:out value="${subject.name}"/></option>
@@ -27,7 +27,7 @@
                     <div class="row gy-3">
                         <div class="col-sm-6 gape-select-field">
                             <label for="courseDetailSubjectYear" class="fw-medium text-base text-neutral-800 mb-12">Course year</label>
-                            <select id="courseDetailSubjectYear" name="curricularYear" required data-course-year-select data-fixed-duration-years="${course.durationYears}" data-placeholder="Select course year" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                            <select id="courseDetailSubjectYear" name="curricularYear" required disabled data-course-year-select data-fixed-duration-years="${course.durationYears}" data-placeholder="Select course year" data-course-associate-year class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
                                 <option value="">Select course year</option>
                                 <c:forEach var="yearOption" items="${course.durationYearOptions}">
                                     <option value="${yearOption.value}"><c:out value="${yearOption.label}"/></option>
@@ -36,12 +36,10 @@
                         </div>
                         <div class="col-sm-6 gape-select-field">
                             <label for="courseDetailSubjectTerm" class="fw-medium text-base text-neutral-800 mb-12">Period</label>
-                            <select id="courseDetailSubjectTerm" name="term" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                            <select id="courseDetailSubjectTerm" name="term" required disabled data-course-associate-period class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
                                 <option value="">Select period</option>
                                 <c:forEach var="period" items="${coursePeriodTemplates}">
-                                    <c:if test="${period.curricularYear == 1}">
-                                        <option value="${period.term}"><c:out value="${period.termLabel}"/></option>
-                                    </c:if>
+                                    <option value="${period.term}" data-course-associate-period-year="${period.curricularYear}"><c:out value="${period.termLabel}"/></option>
                                 </c:forEach>
                             </select>
                         </div>

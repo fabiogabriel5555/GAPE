@@ -8,6 +8,17 @@
     <title>GAPE - ${creating ? 'Create Assessment' : 'Edit Assessment'}</title>
     <%@ include file="/WEB-INF/fragments/template-base-head.jspf" %>
     <style>
+        <c:if test="${assessmentModal}">
+        html, body { background: #fff; min-height: 0; }
+        .preloader, .overlay, .side-overlay, .sidebar, .dashboard-sidebar, .dashbord-header, .dashboard-header,
+        .gape-dashboard-mobile-menu-slot, .gape-dashboard-page-heading,
+        .dashbord-body > .dashboard-footer, .dashbord-body > footer,
+        .dashbord-body > .bg-neutral-20.border-top { display: none !important; }
+        .dashbord, .dashbord > .d-flex, .dashbord-body { background: #fff !important; display: block !important; min-height: 0 !important; }
+        .dashbord-body { margin-inline-start: 0 !important; width: 100% !important; }
+        .dashbord-body > .px-24.py-24 { padding: 0 !important; width: 100% !important; }
+        .gape-assessment-form-modal { border: 0 !important; border-radius: 0 !important; padding: 24px !important; margin: 0 !important; width: 100% !important; max-width: none !important; box-sizing: border-box !important; }
+        </c:if>
         .gape-assessment-context-field select:disabled {
             background-color: #f5f6f8;
             border-color: #d8dde6;
@@ -27,6 +38,24 @@
 
         .gape-assessment-context-field.is-disabled label {
             color: #7b8494;
+        }
+
+        .gape-modal-submit-spinner {
+            align-items: center;
+            display: inline-flex;
+            height: 1em;
+            justify-content: center;
+            width: 1em;
+        }
+
+        .gape-modal-submit-spinner .ph-circle-notch {
+            animation: gape-modal-submit-spinner-rotation .8s linear infinite;
+            display: inline-block;
+            transform-origin: center;
+        }
+
+        @keyframes gape-modal-submit-spinner-rotation {
+            to { transform: rotate(360deg); }
         }
 
         .gape-eduall-select-dropdown .select2-results__option {
@@ -180,15 +209,18 @@
                     <c:set var="assessmentBackUrl" value="${pageContext.request.contextPath}/learning/assessments/${form.id}"/>
                 </c:if>
 
-                <form action="${assessmentFormAction}" method="post" class="bg-white rounded-10 px-32 py-32 border border-neutral-30" data-assessment-form data-creating="${creating}">
+                <form action="${assessmentFormAction}" method="post" class="bg-white rounded-10 px-32 py-32 border border-neutral-30 ${assessmentModal ? 'gape-assessment-form-modal' : ''}" data-assessment-form data-creating="${creating}">
                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap border-bottom-dashed pb-24 mb-28">
-                        <div>
-                            <h2 class="text-18 fw-medium text-neutral-700 mb-4">${creating ? 'Create Assessment' : 'Edit Assessment'}</h2>
-                            <span class="text-14 text-neutral-500">Configure type, context, grading, availability and correction mode.</span>
+                    <c:if test="${assessmentModal}"><input type="hidden" name="modal" value="1"><c:if test="${creating}"><input type="hidden" name="modalCreate" value="true"></c:if></c:if>
+                    <c:if test="${not assessmentModal}">
+                        <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap border-bottom-dashed pb-24 mb-28">
+                            <div>
+                                <h2 class="text-18 fw-medium text-neutral-700 mb-4">${creating ? 'Create Assessment' : 'Edit Assessment'}</h2>
+                                <span class="text-14 text-neutral-500">Configure type, context, grading, availability and correction mode.</span>
+                            </div>
+                            <a href="${assessmentBackUrl}" class="border-main-600 border px-20 py-10 fw-semibold rounded-8 hover-bg-main-50 transition-03">Back</a>
                         </div>
-                        <a href="${assessmentBackUrl}" class="border-main-600 border px-20 py-10 fw-semibold rounded-8 hover-bg-main-50 transition-03">Back</a>
-                    </div>
+                    </c:if>
 
                     <c:if test="${not empty errorMessage}">
                         <div class="alert alert-danger mb-24" role="alert">
@@ -317,14 +349,14 @@
                             <label for="availableFrom" class="fw-medium text-base text-neutral-800 mb-12">Available From</label>
                             <div class="gape-context-date-control">
                                 <i class="ph ph-calendar-dots"></i>
-                                <input id="availableFrom" name="availableFrom" type="datetime-local" required value="<c:out value='${form.availableFrom}'/>" class="form-control px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                <input id="availableFrom" name="availableFrom" type="datetime-local" step="1" required value="<c:out value='${form.availableFrom}'/>" class="form-control px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
                             </div>
                         </div>
                         <div class="col-lg-6 gape-context-date-field">
                             <label for="availableUntil" class="fw-medium text-base text-neutral-800 mb-12">Available Until</label>
                             <div class="gape-context-date-control">
                                 <i class="ph ph-calendar-check"></i>
-                                <input id="availableUntil" name="availableUntil" type="datetime-local" required value="<c:out value='${form.availableUntil}'/>" class="form-control px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
+                                <input id="availableUntil" name="availableUntil" type="datetime-local" step="1" required value="<c:out value='${form.availableUntil}'/>" class="form-control px-20 py-14 text-14 bg-neutral-20 border-neutral-30 border rounded-8">
                             </div>
                         </div>
                         <div class="col-12">
@@ -346,8 +378,8 @@
                     </div>
 
                     <div class="d-flex align-items-center gap-14 flex-wrap border-top-dashed pt-24 mt-28">
-                        <button type="submit" class="bg-main-600 px-24 py-12 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03">${creating ? 'Create Assessment' : 'Save Changes'}</button>
-                        <a href="${assessmentBackUrl}" class="text-neutral-600 fw-semibold hover-text-main-600 transition-03">Cancel</a>
+                        <button type="submit" class="bg-main-600 px-24 py-12 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03" data-create-submit="${creating}">${creating ? 'Create Assessment' : 'Save Changes'}</button>
+                        <c:choose><c:when test="${assessmentModal}"><button type="button" class="text-neutral-600 fw-semibold hover-text-main-600 transition-03 border-0 bg-transparent p-0" data-gape-assessment-modal-close>Cancel</button></c:when><c:otherwise><a href="${assessmentBackUrl}" class="text-neutral-600 fw-semibold hover-text-main-600 transition-03">Cancel</a></c:otherwise></c:choose>
                     </div>
                 </form>
 
@@ -1208,7 +1240,11 @@
                 var upperBound = dayEnd(dateWindow.end);
                 availableFrom.min = lowerBound;
                 availableFrom.max = upperBound;
-                availableUntil.min = maxDateTime(availableFrom.value || lowerBound, dayStart(dateWindow.start));
+                // The end picker must never offer a value before the current
+                // instant (on creation) or before the selected start value.
+                // Keep the lower bound in the comparison so a stale/pasted
+                // start value cannot make past dates selectable again.
+                availableUntil.min = maxDateTime(availableFrom.value || lowerBound, lowerBound);
                 availableUntil.max = upperBound;
                 availableFrom.required = true;
                 availableUntil.required = true;
@@ -1405,14 +1441,32 @@
             }
             if (availableFrom) {
                 availableFrom.addEventListener('input', syncAvailability);
+                availableFrom.addEventListener('change', syncAvailability);
             }
             if (availableUntil) {
                 availableUntil.addEventListener('input', syncAvailability);
+                availableUntil.addEventListener('change', syncAvailability);
             }
             form.querySelectorAll('[data-date-action]').forEach(function (button) {
                 button.addEventListener('click', function () {
                     applyDateAction(button.getAttribute('data-date-action'));
                 });
+            });
+            form.addEventListener('submit', function (event) {
+                syncContextFilters();
+                syncAvailability();
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    form.reportValidity();
+                    return;
+                }
+                var submit = form.querySelector('[data-create-submit="true"]');
+                if (submit && !submit.disabled) {
+                    submit.disabled = true;
+                    submit.setAttribute('aria-busy', 'true');
+                    submit.setAttribute('aria-label', submit.textContent.trim());
+                    submit.innerHTML = '<span class="gape-modal-submit-spinner" role="status" aria-label="Creating"><i class="ph ph-circle-notch" aria-hidden="true"></i></span>';
+                }
             });
             document.addEventListener('click', function () {
                 window.setTimeout(syncContextFilters, 50);

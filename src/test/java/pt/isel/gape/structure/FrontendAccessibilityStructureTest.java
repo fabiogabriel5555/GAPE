@@ -22,10 +22,10 @@ class FrontendAccessibilityStructureTest {
         String subjects = read("student/student/subject/student-subjects.jsp");
         String subjectDetail = read("student/student/subject/student-subject-detail.jsp");
         String courseDetail = read("student/student/course/student-course-detail.jsp");
-        String publicCourseDetail = read("course-details.jsp");
+        String publicCourseDetail = read("WEB-INF/views/public/course-detail.jsp");
 
         assertTrue(servlet.contains("curricularSubjects")
-                        && servlet.contains("activeCourseEnrollments")
+                        && servlet.contains("currentCourseEnrollments")
                         && servlet.contains("enrollment.state() == EnrollmentState.ACTIVE")
                         && servlet.contains("courseOccurrenceContextKey(")
                         && servlet.contains("classGroup.courseOccurrenceId() == enrollment.courseOccurrenceId()"));

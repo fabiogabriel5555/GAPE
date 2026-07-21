@@ -4,13 +4,48 @@
         <div class="d-flex align-items-center gap-12 min-w-0"><span class="bg-info-50 text-info-600 cg-mode-icon text-20 line-height-1"><i class="ph ph-student" aria-hidden="true"></i></span><div class="min-w-0"><span class="fw-medium text-14 text-neutral-700 d-block"><c:out value="${enrollment.studentName}"/></span><span class="cg-node-meta text-12"><c:out value="${enrollment.studentEmail}"/></span></div></div>
         <div class="min-w-0"><span class="fw-medium text-14 text-neutral-700 d-block"><c:out value="${classGroup.code}"/></span><span class="cg-node-meta text-12" data-gape-datetime-display><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></span></div>
         <div><span class="${enrollment.stateBadgeClass} px-14 py-6 border-neutral-30 border rounded-pill text-13"><c:out value="${enrollment.stateLabel}"/></span></div>
-        <div class="d-flex align-items-center gap-10 flex-wrap justify-content-end">
-            <c:if test="${not classGroup.completed and canManageClassGroupEnrollments and enrollment.pending}"><form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments/${enrollment.studentUserId}/approve" method="post" class="m-0" data-class-group-live-form data-class-group-live-panel="info" data-class-group-live-enrollment-request-action><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-enrollments"><button type="submit" class="cg-primary-button px-14 py-8 text-13" data-class-group-live-submit>Approve</button></form><form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments/${enrollment.studentUserId}/reject" method="post" class="m-0" data-class-group-live-form data-class-group-live-panel="info" data-class-group-live-enrollment-request-action><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-enrollments"><button type="submit" class="cg-outline-button px-14 py-8 text-13" data-class-group-live-submit>Reject</button></form></c:if>
+        <div class="cg-assignment-actions d-flex align-items-center gap-10 flex-nowrap justify-content-end">
+            <c:if test="${not classGroup.completed and canManageClassGroupEnrollments and enrollment.pending}"><button type="button" class="cg-detail-action cg-detail-action--decision" title="Decide enrollment request" aria-label="Decide enrollment request" data-bs-toggle="modal" data-bs-target="#classGroupEnrollmentDecision${classGroupEnrollmentModalKey}"><i class="ph ph-check-circle"></i></button></c:if>
             <button type="button" class="cg-detail-action" title="Detail" aria-label="Enrollment details" data-bs-toggle="modal" data-bs-target="#classGroupEnrollmentDetail${classGroupEnrollmentModalKey}"><i class="ph ph-eye"></i></button>
             <c:if test="${not classGroup.completed and canManageClassGroupEnrollments}"><button type="button" class="cg-detail-action cg-detail-action--danger" title="Delete" aria-label="Delete enrollment" data-bs-toggle="modal" data-bs-target="#deleteClassGroupEnrollment${classGroupEnrollmentModalKey}"><i class="ph ph-trash"></i></button></c:if>
         </div>
     </div>
 </article>
+
+<c:if test="${not classGroup.completed and canManageClassGroupEnrollments and enrollment.pending}">
+    <div class="modal fade" id="classGroupEnrollmentDecision${classGroupEnrollmentModalKey}" tabindex="-1" aria-hidden="true" data-class-group-rigid-modal>
+        <div class="modal-dialog modal-dialog-centered cg-enrollment-modal-dialog">
+            <div class="modal-content rounded-8 border-0 text-start">
+                <div class="modal-header border-neutral-30">
+                    <h5 class="modal-title text-18 fw-semibold">Decide Enrollment Request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-14 text-neutral-600 mb-16">Choose whether to approve or reject this request. The enrollment list updates immediately after the decision.</p>
+                    <div class="cg-enrollment-decision-summary">
+                        <span class="text-12 text-neutral-500">Student</span>
+                        <strong class="text-14 text-neutral-700">#<c:out value="${enrollment.studentUserId}"/> &middot; <c:out value="${enrollment.studentName}"/></strong>
+                        <span class="text-12 text-neutral-500 mt-8">Occurrence period</span>
+                        <span class="text-14 text-neutral-700" data-gape-datetime-display><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></span>
+                    </div>
+                </div>
+                <div class="modal-footer border-neutral-30">
+                    <button type="button" class="cg-outline-button" data-bs-dismiss="modal">Cancel</button>
+                    <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments/${enrollment.studentUserId}/reject" method="post" class="m-0" data-class-group-live-form data-class-group-live-panel="info" data-class-group-live-enrollment-request-action>
+                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                        <input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-enrollments">
+                        <button type="submit" class="cg-danger-button" data-class-group-live-submit>Reject</button>
+                    </form>
+                    <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments/${enrollment.studentUserId}/approve" method="post" class="m-0" data-class-group-live-form data-class-group-live-panel="info" data-class-group-live-enrollment-request-action>
+                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                        <input type="hidden" name="returnTo" value="${currentReturnTo}#class-group-enrollments">
+                        <button type="submit" class="cg-primary-button border-0" data-class-group-live-submit>Approve</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</c:if>
 
 <div class="modal fade" id="classGroupEnrollmentDetail${classGroupEnrollmentModalKey}" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-dialog-centered"><div class="modal-content rounded-12 border-0 text-start"><div class="modal-header border-neutral-30"><h5 class="modal-title text-18 fw-semibold">Enrollment Details</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><div class="row g-3"><div class="col-sm-6"><span class="text-12 text-neutral-500 d-block mb-6">Student</span><span class="fw-medium text-14 text-neutral-700">#<c:out value="${enrollment.studentUserId}"/> &middot; <c:out value="${enrollment.studentName}"/></span></div><div class="col-sm-6"><span class="text-12 text-neutral-500 d-block mb-6">Email</span><span class="fw-medium text-14 text-neutral-700"><c:out value="${enrollment.studentEmail}"/></span></div><div class="col-sm-6"><span class="text-12 text-neutral-500 d-block mb-6">Class group</span><span class="fw-medium text-14 text-neutral-700">#<c:out value="${classGroup.id}"/> &middot; <c:out value="${classGroup.code}"/></span></div><div class="col-sm-6"><span class="text-12 text-neutral-500 d-block mb-6">Occurrence period</span><span class="fw-medium text-14 text-neutral-700" data-gape-datetime-display><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></span></div><div class="col-12"><span class="text-12 text-neutral-500 d-block mb-6">State</span><span class="${enrollment.stateBadgeClass} px-12 py-5 border-neutral-30 border rounded-pill text-12"><c:out value="${enrollment.stateLabel}"/></span></div></div></div><div class="modal-footer border-neutral-30"><button type="button" class="cg-outline-button" data-bs-dismiss="modal">Close</button></div></div></div></div>
 

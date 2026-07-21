@@ -35,6 +35,7 @@ public final class CourseSubjectService {
     private final CourseDAO courseDAO;
     private final SubjectDAO subjectDAO;
     private final CourseSubjectDAO courseSubjectDAO;
+    private final CertificateService certificateService;
     private final PermissionChecker permissionChecker;
     private final AuditService auditService;
 
@@ -50,6 +51,7 @@ public final class CourseSubjectService {
         this.courseDAO = Objects.requireNonNull(courseDAO, "courseDAO is required");
         this.subjectDAO = Objects.requireNonNull(subjectDAO, "subjectDAO is required");
         this.courseSubjectDAO = Objects.requireNonNull(courseSubjectDAO, "courseSubjectDAO is required");
+        this.certificateService = new CertificateService(connectionProvider, Clock.systemUTC());
         this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
     }
@@ -100,6 +102,7 @@ public final class CourseSubjectService {
                     } else {
                         courseSubjectDAO.create(connection, command);
                     }
+                    certificateService.synchronizeCertificatesForCourse(connection, course.id());
                     auditService.record(connection, actorUserId, sessionId, "COURSE_SUBJECT_ASSOCIATE",
                             "course_subject", identifier(command.courseId(), command.subjectId()), "success", sourceIp);
                     connection.commit();
@@ -140,6 +143,7 @@ public final class CourseSubjectService {
                     validateActiveContext(course, subject);
                     validateCurricularYearWithinCourse(command, course);
                     courseSubjectDAO.update(connection, command);
+                    certificateService.synchronizeCertificatesForCourse(connection, course.id());
                     auditService.record(connection, actorUserId, sessionId, "COURSE_SUBJECT_UPDATE",
                             "course_subject", identifier(command.courseId(), command.subjectId()), "success", sourceIp);
                     connection.commit();
@@ -177,9 +181,10 @@ public final class CourseSubjectService {
                     requireAssociation(connection, courseId, subjectId);
                     requireCourseSubjectManager(actorUserId, sessionId, actorProfileType,
                             course.id(), subjectId, sourceIp);
-                    courseSubjectDAO.close(connection, courseId, subjectId, LocalDate.now());
                     auditService.record(connection, actorUserId, sessionId, "COURSE_SUBJECT_DELETE",
                             "course_subject", identifier(courseId, subjectId), "success", sourceIp);
+                    courseSubjectDAO.close(connection, courseId, subjectId, LocalDate.now());
+                    certificateService.synchronizeCertificatesForCourse(connection, course.id());
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();

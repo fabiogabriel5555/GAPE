@@ -13001,6 +13001,95 @@ body::after {
   color: #fff;
 }
 
+/*
+ * Responsive safety net for every GAPE surface.  Individual pages still own
+ * their intentional table/calendar scroll containers; these rules keep the
+ * dashboard shell, media and modal chrome from becoming wider than the
+ * viewport when a long label, attachment or form control is rendered.
+ */
+html,
+body {
+  max-width: 100%;
+}
+
+/*
+ * A large part of the application uses the semantic `min-w-0` utility on
+ * flex/grid children.  It was previously only a class name, not a rule, so
+ * intrinsic long labels could keep their minimum content width and push a
+ * sibling (most visibly the Actions column) outside its card.  Keep the
+ * utility global so every actor page gets the same shrink-safe contract.
+ */
+.min-w-0 {
+  min-width: 0 !important;
+}
+
+/* Bootstrap rows use negative gutters.  This selected dashboard section is
+ * not inside a padded `.row`, so those gutters made its KPI grid 24px wider
+ * than the section and created a hidden horizontal overlap at intermediate
+ * widths. */
+.gape-management-dashboard__selected > .row {
+  margin-inline: 0 !important;
+}
+
+/* Nested Subject/Structure cards intentionally borrow the outer grid lines
+ * with a small negative inset.  Keep that alignment without allowing the
+ * transformed action cell to create a visible horizontal scroll/clipping
+ * strip at the edge of the parent surface. */
+.gape-subject-occurrence-groups-panel,
+.gape-subject-occurrence-groups-content,
+.gape-subject-class-group-card {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+.dashbord,
+.dashbord-body,
+.dashboard-main,
+.dashboard-content,
+.student-dashboard-layout,
+.gape-student-dashboard-main {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.dashbord-body > *,
+.dashboard-main > *,
+.dashboard-content > *,
+.student-dashboard-layout > *,
+.gape-student-dashboard-main > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.table-responsive,
+.overflow-x-auto {
+  max-width: 100%;
+}
+
+@media (max-width: 575.98px) {
+  .modal-dialog {
+    max-width: calc(100vw - 1rem);
+    margin: .5rem auto;
+  }
+
+  .modal-content {
+    max-width: 100%;
+  }
+
+  .modal-body {
+    overflow-wrap: anywhere;
+  }
+}
+
 .gape-sidebar-event-badge {
   align-items: center;
   border: 2px solid #fff;
@@ -14143,6 +14232,376 @@ table.dataTable.display > tbody > tr > * {
 
 .gape-management-card {
   border: 1px solid #e5e7eb;
+}
+
+/* Scope-aware Dashboard.  These rules deliberately sit on top of the
+   existing EduAll dashboard cards instead of introducing a second visual
+   system for reports. */
+.gape-management-dashboard {
+  min-width: 0;
+  position: relative;
+}
+
+.gape-management-dashboard.is-management-dashboard-loading > * {
+  pointer-events: none;
+}
+
+.gape-management-dashboard.is-management-dashboard-loading::after {
+  animation: gape-management-dashboard-spinner 700ms linear infinite;
+  border: 3px solid rgba(6, 106, 201, 0.18);
+  border-radius: 50%;
+  border-top-color: #066ac9;
+  content: "";
+  height: 28px;
+  inset: 20px 24px auto auto;
+  position: absolute;
+  width: 28px;
+  z-index: 4;
+}
+
+/* Dashboard and Logs use the same bounded, card-first interaction contract
+   as Lessons & Assessments.  The card keeps its dimensions while the
+   requested view is loading and exposes one centred spinner instead of
+   shifting its label or the neighbouring card. */
+.gape-management-dashboard-mode-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gape-management-dashboard-mode-card {
+  align-items: flex-start;
+  background: #fff;
+  border: 1px solid #e6edf0;
+  border-radius: 8px;
+  color: #172033;
+  cursor: pointer;
+  display: flex;
+  gap: 14px;
+  min-height: 118px;
+  min-width: 0;
+  padding: 20px;
+  position: relative;
+  text-align: left;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease, background .2s ease;
+  width: 100%;
+}
+
+.gape-management-dashboard-mode-card > .min-w-0 {
+  flex: 1 1 0;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.gape-management-dashboard-mode-card > .min-w-0 > * {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.gape-management-dashboard-mode-card.is-active {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(20, 184, 166, 0.05)), #f7fbff;
+  border-color: rgba(37, 99, 235, 0.7);
+  box-shadow: 0 16px 36px rgba(37, 99, 235, 0.12);
+  color: #172033;
+  transform: translateY(-1px);
+}
+
+.gape-management-dashboard-mode-card:hover,
+.gape-management-dashboard-mode-card:focus-visible {
+  border-color: rgba(37, 99, 235, .28);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, .05);
+  color: #172033;
+  transform: none;
+}
+
+.gape-management-dashboard-mode-card.is-loading {
+  cursor: wait;
+  pointer-events: none;
+}
+
+.gape-management-dashboard-mode-card.is-loading > * {
+  visibility: hidden;
+}
+
+.gape-management-dashboard-mode-card.is-loading::after {
+  animation: gape-management-dashboard-spinner 700ms linear infinite;
+  border: 3px solid rgba(6, 106, 201, 0.18);
+  border-radius: 50%;
+  border-top-color: #066ac9;
+  content: "";
+  height: 28px;
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 28px;
+}
+
+.gape-management-dashboard-mode-card.is-active .gape-management-dashboard-mode-icon {
+  background: #2563eb !important;
+  color: #fff !important;
+}
+
+.gape-management-dashboard-mode-icon {
+  align-items: center;
+  border-radius: 8px;
+  display: inline-flex;
+  flex: 0 0 48px;
+  font-size: 24px;
+  height: 48px;
+  justify-content: center;
+  width: 48px;
+}
+
+.gape-management-dashboard.is-management-dashboard-tab-loading::after {
+  display: none;
+}
+
+@keyframes gape-management-dashboard-spinner {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.gape-management-dashboard-feedback[hidden] {
+  display: none;
+}
+
+.gape-management-dashboard__actions {
+  flex: 0 0 auto;
+}
+
+.gape-management-dashboard-kpi {
+  border: 1px solid #eef2f7;
+}
+
+.gape-management-dashboard-chart {
+  min-height: 310px;
+}
+
+.gape-management-dashboard-donut {
+  min-height: 230px;
+}
+
+.gape-management-dashboard-chart-legend {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  justify-content: center;
+  margin-top: -2px;
+}
+
+.gape-management-dashboard-chart-legend span {
+  align-items: center;
+  color: #6b7280;
+  display: inline-flex;
+  font-size: 12px;
+  gap: 6px;
+}
+
+.gape-management-dashboard-chart-legend i {
+  border-radius: 999px;
+  display: inline-block;
+  height: 8px;
+  width: 8px;
+}
+
+.gape-management-dashboard-table-wrap {
+  border: 1px solid #eef2f7;
+  border-radius: 8px;
+  overflow: auto;
+}
+
+.gape-management-dashboard-table-wrap .table > :not(caption) > * > * {
+  border-bottom-color: #eef2f7;
+}
+
+.gape-management-dashboard-note {
+  align-items: flex-start;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #64748b;
+  display: flex;
+  font-size: 13px;
+  gap: 9px;
+  line-height: 1.45;
+  padding: 12px;
+}
+
+.gape-management-dashboard-note > i {
+  color: #066ac9;
+  flex: 0 0 auto;
+  font-size: 17px;
+  margin-top: 1px;
+}
+
+.gape-management-dashboard-note--success {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.gape-management-dashboard-note--success > i {
+  color: #16a34a;
+}
+
+.gape-management-dashboard-empty {
+  border: 1px dashed #cbd5e1;
+}
+
+.gape-management-dashboard-empty__icon {
+  align-items: center;
+  background: #eff6ff;
+  border-radius: 999px;
+  color: #066ac9;
+  display: inline-flex;
+  font-size: 32px;
+  height: 64px;
+  justify-content: center;
+  width: 64px;
+}
+
+.gape-management-dashboard-search-wrap {
+  position: relative;
+  width: min(100%, 260px);
+}
+
+.gape-management-dashboard-search-wrap > i {
+  color: #94a3b8;
+  font-size: 17px;
+  inset-inline-start: 12px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.gape-management-dashboard-search-wrap .form-control {
+  border-color: #e5e7eb;
+  min-height: 38px;
+  padding-inline-start: 36px;
+}
+
+/* Dashboard and Logs remain two views of the same EduAll dashboard surface. */
+.gape-management-dashboard-tabs {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gape-management-dashboard-tab {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #64748b;
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 600;
+  gap: 7px;
+  line-height: 1.25;
+  min-height: 40px;
+  padding: 9px 14px;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease, transform 180ms ease;
+}
+
+.gape-management-dashboard-tab:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #066ac9;
+}
+
+.gape-management-dashboard-tab:focus-visible {
+  box-shadow: 0 0 0 3px rgba(6, 106, 201, 0.2);
+  outline: 0;
+}
+
+.gape-management-dashboard-tab.is-active {
+  background: #066ac9;
+  border-color: #066ac9;
+  color: #ffffff;
+}
+
+.gape-management-dashboard-audit-filters {
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+}
+
+.gape-management-dashboard-audit-filters .form-control,
+.gape-management-dashboard-audit-filters .form-select {
+  border-color: #dbe3ee;
+  min-height: 42px;
+}
+
+.gape-management-dashboard-audit-filters input[readonly] {
+  background: #eef2f7 !important;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.gape-management-dashboard-audit-table {
+  min-width: 820px;
+}
+
+.gape-management-dashboard-audit-table td {
+  vertical-align: middle;
+}
+
+/* Keep the management-view actions usable on short mobile viewports.  The
+   dialog owns the viewport height while only its form body may scroll, so the
+   close and save actions never fall below the browser chrome. */
+@media (max-width: 575.98px) {
+  #managementViewModal .modal-dialog,
+  #managementRecipientsModal .modal-dialog {
+    height: calc(100dvh - 16px);
+    margin: 8px;
+    max-height: calc(100dvh - 16px);
+  }
+
+  #managementViewModal .modal-content,
+  #managementRecipientsModal .modal-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 100%;
+  }
+
+  #managementViewModal .modal-content > form,
+  #managementRecipientsModal .modal-content > form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  #managementViewModal .modal-body,
+  #managementRecipientsModal .modal-body {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .gape-management-dashboard-tabs {
+    width: 100%;
+  }
+
+  .gape-management-dashboard-mode-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gape-management-dashboard-mode-card {
+    min-height: 104px;
+  }
+
+  .gape-management-dashboard-tab {
+    flex: 1 1 0;
+    justify-content: center;
+  }
 }
 
 .gape-management-card__header {
@@ -15326,6 +15785,104 @@ tr.gape-dynamic-group-row--class-group > td {
   grid-template-columns: minmax(260px, 1.45fr) minmax(180px, .95fr) minmax(105px, .45fr) minmax(115px, .5fr) minmax(110px, .45fr);
 }
 
+/*
+ * Intermediate-width contract.  Five fixed minimum tracks are readable on a
+ * wide desktop, but they cannot fit beside the dashboard sidebar on a zoomed
+ * laptop viewport.  Reflow management cards before their Actions track can
+ * be clipped; the first field and actions span the card and the remaining
+ * fields share the second row.
+ */
+@media (min-width: 576px) and (max-width: 1299.98px) {
+  .gape-structured-management-panel .gape-desktop-table > table > thead > tr,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > thead > tr,
+  .gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row],
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row],
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row],
+  .gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row,
+  .gape-deferred-management-archive-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    min-width: 0;
+  }
+
+  .gape-structured-management-panel .gape-desktop-table > table > thead,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > thead {
+    display: none;
+  }
+
+  .gape-structured-management-panel .gape-desktop-table > table > tbody,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody {
+    margin-top: 0;
+  }
+
+  .gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row] > td:first-child,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row] > td:first-child,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row] > td:first-child,
+  .gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row > td:first-child,
+  .gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row] > td:last-child,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row] > td:last-child,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row] > td:last-child,
+  .gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row > td:last-child {
+    grid-column: 1 / -1;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row] > td,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row] > td,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row] > td,
+  .gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row > td {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-wrap: anywhere;
+  }
+
+  .gape-class-group-management-panel {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .gape-class-group-structure-list-header {
+    display: none !important;
+  }
+
+  .gape-class-group-structure-row {
+    align-items: flex-start;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    min-width: 0;
+  }
+
+  .gape-class-group-structure-row > :first-child,
+  .gape-class-group-structure-row > :last-child {
+    grid-column: 1 / -1;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .gape-class-group-structure-row > * {
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .aac-tree-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    min-width: 0;
+  }
+
+  .aac-tree-main,
+  .aac-tree-actions {
+    grid-column: 1 / -1 !important;
+    max-width: 100%;
+    min-width: 0;
+    width: 100% !important;
+  }
+
+  .aac-tree-actions {
+    justify-content: flex-start !important;
+  }
+}
+
 @media (max-width: 575.98px) {
   .gape-structured-management-panel {
     max-width: calc(100vw - 48px);
@@ -15351,7 +15908,16 @@ tr.gape-dynamic-group-row--class-group > td {
   .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row],
   .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row],
   .gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
+  }
+
+  .gape-structured-management-panel .gape-desktop-table > table > tbody > tr[data-gape-sort-row] > td,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-gape-sort-row] > td,
+  .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row] > td,
+  .gape-structured-management-panel .gape-desktop-table > table > tbody > tr.aac-attendance-summary-row > td {
+    grid-column: auto !important;
+    max-width: 100% !important;
+    width: 100% !important;
   }
 
   .gape-structured-management-panel .gape-mobile-list {
@@ -15359,7 +15925,7 @@ tr.gape-dynamic-group-row--class-group > td {
   }
 
   .gape-structured-management-panel .gape-deferred-management-archive-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 }
 

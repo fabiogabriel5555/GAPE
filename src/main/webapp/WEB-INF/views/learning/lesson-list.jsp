@@ -506,6 +506,20 @@
             width: 100%;
         }
 
+        .la-mode-card > .min-w-0 {
+            flex: 1 1 0;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .la-mode-card > .min-w-0 > * {
+            display: block;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            white-space: normal;
+        }
+
         .la-mode-card.is-active {
             background: linear-gradient(135deg, rgba(37, 99, 235, 0.14), rgba(20, 184, 166, 0.05)), #f7fbff;
             border-color: rgba(37, 99, 235, 0.7);
@@ -995,6 +1009,227 @@
 
             .gape-event-rules-table td:nth-child(4)::before {
                 content: "Events";
+            }
+        }
+
+        /*
+         * Keep the three management tabs on the same fixed-grid contract as
+         * Subject Details > Structure.  These selectors intentionally start
+         * at this page's panels so the shared class names cannot alter another
+         * dashboard page.
+         */
+        #lessons-panel .gape-learning-management-panel,
+        #assessments-panel .gape-learning-management-panel {
+            --la-structure-columns: minmax(250px, 1.5fr) minmax(190px, 1fr) minmax(106px, .45fr) minmax(136px, .62fr) minmax(120px, auto);
+        }
+
+        #lessons-panel .gape-learning-management-list-header,
+        #lessons-panel .gape-learning-management-row,
+        #assessments-panel .gape-learning-management-list-header,
+        #assessments-panel .gape-learning-management-row {
+            grid-template-columns: var(--la-structure-columns);
+        }
+
+        #lessons-panel .gape-learning-management-row > :last-child,
+        #assessments-panel .gape-learning-management-row > :last-child {
+            flex-wrap: wrap !important;
+            justify-content: flex-end;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        #lessons-panel .gape-learning-management-list-header,
+        #lessons-panel .gape-learning-management-row,
+        #assessments-panel .gape-learning-management-list-header,
+        #assessments-panel .gape-learning-management-row,
+        #lessons-panel .gape-learning-management-row > *,
+        #assessments-panel .gape-learning-management-row > * {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        #lessons-panel .gape-learning-management-row > * > *,
+        #assessments-panel .gape-learning-management-row > * > * {
+            max-width: 100%;
+            overflow-wrap: anywhere;
+        }
+
+        #lessons-panel .gape-learning-management-row > :last-child > a,
+        #lessons-panel .gape-learning-management-row > :last-child > button,
+        #lessons-panel .gape-learning-management-row > :last-child > form,
+        #assessments-panel .gape-learning-management-row > :last-child > a,
+        #assessments-panel .gape-learning-management-row > :last-child > button,
+        #assessments-panel .gape-learning-management-row > :last-child > form {
+            flex: 0 0 20px;
+        }
+
+        #lessons-panel .gape-learning-management-node:hover,
+        #assessments-panel .gape-learning-management-node:hover {
+            background-color: #fff !important;
+            transform: none;
+        }
+
+        #attendance-panel .gape-structured-management-panel {
+            --la-attendance-columns: minmax(250px, 1.5fr) minmax(190px, 1fr) minmax(106px, .45fr) minmax(136px, .62fr) minmax(120px, auto);
+        }
+
+        #attendance-panel .gape-structured-management-panel .gape-learning-table-scroll > table > thead > tr,
+        #attendance-panel .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row],
+        #attendance-panel .gape-deferred-management-archive-row {
+            grid-template-columns: var(--la-attendance-columns);
+        }
+
+        #attendance-panel .gape-structured-management-panel .gape-learning-table-scroll > table > thead > tr > th,
+        #attendance-panel .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row] > td {
+            min-width: 0 !important;
+            width: auto !important;
+        }
+
+        #attendance-panel .gape-structured-management-panel .gape-learning-table-scroll > table > tbody > tr[data-learning-row] > td:last-child {
+            align-items: center;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        #attendance-panel .gape-structured-management-panel tr.hover-bg-neutral-20:hover,
+        #attendance-panel .aac-tree-node:hover {
+            background-color: #fff !important;
+            transform: none;
+        }
+
+        #attendance-panel .aac-expanded-cell {
+            border-left: 0 !important;
+            box-shadow: inset 4px 0 0 #18a34a;
+        }
+
+        #attendance-panel .aac-tree-row {
+            align-items: center;
+            display: grid;
+            gap: 14px;
+            grid-template-columns: minmax(0, 1.55fr) minmax(76px, .38fr) minmax(150px, .72fr) 120px;
+            justify-content: normal;
+        }
+
+        #attendance-panel .aac-tree-main {
+            flex: none;
+            grid-column: 1;
+            min-width: 0;
+        }
+
+        #attendance-panel .aac-tree-count {
+            flex: none;
+            grid-column: 2;
+            min-width: 0;
+        }
+
+        #attendance-panel .aac-tree-status {
+            flex: none;
+            grid-column: 3;
+            min-width: 0;
+        }
+
+        #attendance-panel .aac-tree-actions {
+            display: flex;
+            flex: none;
+            flex-wrap: nowrap;
+            gap: 10px;
+            grid-column: 4;
+            justify-content: flex-end;
+            min-width: 0;
+            width: 120px;
+        }
+
+        #attendance-panel .aac-icon-button {
+            box-sizing: border-box;
+            flex: 0 0 32px;
+            line-height: 1;
+            margin: 0 !important;
+            min-height: 32px;
+            min-width: 32px;
+            transform: none !important;
+        }
+
+        #attendance-panel .aac-icon-button[data-bs-toggle="collapse"] i {
+            transition: transform .2s ease;
+        }
+
+        #attendance-panel .aac-icon-button[data-bs-toggle="collapse"][aria-expanded="true"] i {
+            transform: rotate(180deg);
+        }
+
+        #attendance-panel .aac-icon-button:active {
+            background-color: var(--main-50) !important;
+            color: var(--main-600) !important;
+            transform: none !important;
+        }
+
+        @media (max-width: 575.98px) {
+            #lessons-panel .gape-learning-management-list-header,
+            #assessments-panel .gape-learning-management-list-header {
+                display: none;
+            }
+
+            #lessons-panel .gape-learning-management-row,
+            #assessments-panel .gape-learning-management-row,
+            #attendance-panel .aac-tree-row {
+                align-items: flex-start;
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            #lessons-panel .gape-learning-management-row > :last-child,
+            #assessments-panel .gape-learning-management-row > :last-child,
+            #attendance-panel .aac-tree-main,
+            #attendance-panel .aac-tree-count,
+            #attendance-panel .aac-tree-status,
+            #attendance-panel .aac-tree-actions {
+                grid-column: auto;
+                min-width: 0;
+                width: 100%;
+            }
+
+            #lessons-panel .gape-learning-management-row > :last-child,
+            #assessments-panel .gape-learning-management-row > :last-child {
+                flex-wrap: wrap !important;
+                justify-content: flex-start;
+            }
+
+            #attendance-panel .aac-tree-actions {
+                justify-content: flex-start;
+            }
+        }
+
+        /*
+         * The management table is a five-column desktop contract.  At the
+         * intermediate widths used by a zoomed browser (or a narrow laptop)
+         * its intrinsic minimums used to push the Actions track outside the
+         * card while body overflow stayed false.  Switch to a compact card
+         * grid before that happens so every field and action remains inside
+         * the same visible panel.
+         */
+        @media (min-width: 576px) and (max-width: 1299.98px) {
+            #lessons-panel .gape-learning-management-list-header,
+            #assessments-panel .gape-learning-management-list-header {
+                display: none;
+            }
+
+            #lessons-panel .gape-learning-management-row,
+            #assessments-panel .gape-learning-management-row {
+                align-items: start;
+                grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+                min-width: 0;
+            }
+
+            #lessons-panel .gape-learning-management-row > :first-child,
+            #assessments-panel .gape-learning-management-row > :first-child,
+            #lessons-panel .gape-learning-management-row > :last-child,
+            #assessments-panel .gape-learning-management-row > :last-child {
+                grid-column: 1 / -1;
+                width: 100%;
+            }
+
+            #lessons-panel .gape-learning-management-row > :last-child,
+            #assessments-panel .gape-learning-management-row > :last-child {
+                justify-content: flex-start;
             }
         }
     </style>
@@ -1818,7 +2053,7 @@
                                                 <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}" class="text-22 text-neutral-500 hover-text-main-600" title="Detail" aria-label="Detail">
                                                     <i class="ph ph-eye"></i>
                                                 </a>
-                                                <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit" class="text-22 text-neutral-500 hover-text-main-600" title="Edit" aria-label="Edit">
+                                                <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit" data-assessment-modal-url="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit" data-assessment-modal-title="Edit Assessment" class="text-22 text-neutral-500 hover-text-main-600" title="Edit Assessment" aria-label="Edit Assessment">
                                                     <i class="ph ph-pencil-simple-line"></i>
                                                 </a>
                                                 <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/pdf" class="text-22 text-neutral-500 hover-text-main-600" title="Download" aria-label="Download">
@@ -3235,7 +3470,7 @@
     }());
 </script>
 <%@ include file="/WEB-INF/fragments/template-base-scripts.jspf" %>
-<script src="${pageContext.request.contextPath}/assets/js/gape-learning-management-list.js?v=20260715-learning-management-3"></script>
+<script src="${pageContext.request.contextPath}/assets/js/gape-learning-management-list.js?v=20260719-learning-management-4"></script>
 <script src="${pageContext.request.contextPath}/assets/js/gape-deferred-management-list.js?v=20260715-deferred-management-1"></script>
 </body>
 </html>

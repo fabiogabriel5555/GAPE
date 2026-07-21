@@ -15,7 +15,7 @@
     <div class="container container--lg">
         <section class="bg-white rounded-8 px-32 py-32 border border-neutral-30 mx-auto" style="max-width: 720px;">
             <div class="text-center mb-28">
-                <a href="${pageContext.request.contextPath}/index.jsp" class="d-inline-flex mb-20">
+                <a href="${pageContext.request.contextPath}/login.jsp" class="d-inline-flex mb-20">
                     <img src="${pageContext.request.contextPath}/assets/images/logo/logo.svg" alt="GAPE" style="max-height: 44px;">
                 </a>
                 <h1 class="text-28 fw-semibold text-neutral-800 mb-8">Certificate Validation</h1>

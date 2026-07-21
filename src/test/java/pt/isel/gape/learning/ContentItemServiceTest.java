@@ -84,6 +84,21 @@ class ContentItemServiceTest {
         assertEquals(ContentItemState.ACTIVE, contentItem.state());
     }
 
+    @Test
+    void blockContentReceivesAnIdAfterEveryExistingPedagogicalItemInThatBlock() {
+        ContentItem contentItem = contentItemService.createContentItem(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                command("Block PDF", ContentFormat.PDF, "contents/block-pdf.pdf"),
+                SOURCE_IP,
+                60L
+        );
+
+        // Block 60 already contains content 70, lesson 80 and assessment 90.
+        assertTrue(contentItem.id() > 90, "block content must be placed after the existing item IDs");
+    }
+
     @ParameterizedTest
     @MethodSource("invalidContentReferences")
     void contentCreationRejectsInvalidReferencesForFormat(ContentFormat format, String source) {

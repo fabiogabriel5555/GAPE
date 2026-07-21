@@ -232,10 +232,12 @@
                                                     <span class="aac-tree-meta" data-gape-datetime-display><c:out value="${activity.activityMeta}"/> | <c:out value="${activity.activityScheduleLabel}"/> | <c:out value="${activity.timeLabel}"/> | <c:out value="${activity.permanenceLabel}"/></span>
                                                 </div>
                                             </div>
-                                            <div class="aac-tree-actions">
+                                            <div class="aac-tree-status">
                                                 <span class="${activity.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12" data-attendance-activity-badge="${activity.id}" data-student-id="${group.studentUserId}" data-state-value="${activity.stateValue}">
                                                     <c:out value="${activity.stateLabel}"/>
                                                 </span>
+                                            </div>
+                                            <div class="aac-tree-actions">
                                                 <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View attendance detail" data-bs-toggle="modal" data-bs-target="#${activity.detailModalId}">
                                                     <i class="ph ph-eye"></i>
                                                 </button>

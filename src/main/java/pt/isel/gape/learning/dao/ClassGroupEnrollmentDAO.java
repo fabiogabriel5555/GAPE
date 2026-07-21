@@ -411,6 +411,35 @@ public final class ClassGroupEnrollmentDAO implements pt.isel.gape.transversal.s
         }
     }
 
+    public List<Long> findClassGroupIdsByStudentCourseOccurrence(
+            Connection connection,
+            long studentUserId,
+            long courseId,
+            long courseOccurrenceId
+    ) throws SQLException {
+        String sql = """
+                SELECT ecg.id_class_group
+                FROM enroll_class_group ecg
+                JOIN class_group cg ON cg.id_class_group = ecg.id_class_group
+                WHERE ecg.id_student_user = ?
+                  AND cg.id_course = ?
+                  AND cg.id_course_occurrence = ?
+                ORDER BY ecg.id_class_group
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, studentUserId);
+            statement.setLong(2, courseId);
+            statement.setLong(3, courseOccurrenceId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<Long> ids = new ArrayList<>();
+                while (resultSet.next()) {
+                    ids.add(resultSet.getLong("id_class_group"));
+                }
+                return List.copyOf(ids);
+            }
+        }
+    }
+
     public Map<Long, Integer> countPendingByClassGroupIds(Collection<Long> classGroupIds) throws SQLException {
         if (classGroupIds == null || classGroupIds.isEmpty()) {
             return Map.of();
@@ -435,76 +464,6 @@ public final class ClassGroupEnrollmentDAO implements pt.isel.gape.transversal.s
                     counts.put(resultSet.getLong("id_class_group"), resultSet.getInt("pending_count"));
                 }
                 return counts;
-            }
-        }
-    }
-
-    public boolean hasOverlappingActiveEnrollment(
-            Connection connection,
-            long studentUserId,
-            long courseId,
-            long subjectId,
-            LocalDate startDate,
-            LocalDate endDate
-    ) throws SQLException {
-        String sql = """
-                SELECT COUNT(*)
-                FROM enroll_class_group ecg
-                JOIN class_group cg ON cg.id_class_group = ecg.id_class_group
-                WHERE ecg.id_student_user = ?
-                  AND cg.id_course = ?
-                  AND cg.id_subject = ?
-                  AND ecg.state = 'active'
-                  AND (ecg.start_date IS NULL OR ? IS NULL OR ecg.start_date <= ?)
-                  AND (ecg.end_date IS NULL OR ? IS NULL OR ecg.end_date >= ?)
-                """;
-
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, studentUserId);
-            statement.setLong(2, courseId);
-            statement.setLong(3, subjectId);
-            setDate(statement, 4, endDate);
-            setDate(statement, 5, endDate);
-            setDate(statement, 6, startDate);
-            setDate(statement, 7, startDate);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                resultSet.next();
-                return resultSet.getInt(1) > 0;
-            }
-        }
-    }
-
-    public boolean hasOpenEnrollmentInContext(
-            Connection connection,
-            long studentUserId,
-            long courseId,
-            long subjectId,
-            LocalDate startDate,
-            LocalDate endDate
-    ) throws SQLException {
-        String sql = """
-                SELECT COUNT(*)
-                FROM enroll_class_group ecg
-                JOIN class_group cg ON cg.id_class_group = ecg.id_class_group
-                WHERE ecg.id_student_user = ?
-                  AND cg.id_course = ?
-                  AND cg.id_subject = ?
-                  AND ecg.state IN ('active', 'pending')
-                  AND (ecg.start_date IS NULL OR ? IS NULL OR ecg.start_date <= ?)
-                  AND (ecg.end_date IS NULL OR ? IS NULL OR ecg.end_date >= ?)
-                """;
-
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, studentUserId);
-            statement.setLong(2, courseId);
-            statement.setLong(3, subjectId);
-            setDate(statement, 4, endDate);
-            setDate(statement, 5, endDate);
-            setDate(statement, 6, startDate);
-            setDate(statement, 7, startDate);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                resultSet.next();
-                return resultSet.getInt(1) > 0;
             }
         }
     }

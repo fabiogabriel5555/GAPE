@@ -13,6 +13,7 @@ import pt.isel.gape.access.dao.SessionDAO;
 import pt.isel.gape.access.model.Session;
 import pt.isel.gape.access.model.SessionState;
 import pt.isel.gape.common.config.ConnectionProvider;
+import pt.isel.gape.security.crypto.SessionTokenHasher;
 import pt.isel.gape.transversal.service.AuditService;
 
 public final class SessionService {
@@ -24,11 +25,22 @@ public final class SessionService {
     private final SessionDAO sessionDAO;
     private final AuditService auditService;
     private final Clock clock;
+    private final SessionTokenHasher sessionTokenHasher;
 
     public SessionService(SessionDAO sessionDAO, AuditService auditService, Clock clock) {
+        this(sessionDAO, auditService, clock, new SessionTokenHasher());
+    }
+
+    SessionService(
+            SessionDAO sessionDAO,
+            AuditService auditService,
+            Clock clock,
+            SessionTokenHasher sessionTokenHasher
+    ) {
         this.sessionDAO = Objects.requireNonNull(sessionDAO, "sessionDAO is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
         this.clock = Objects.requireNonNull(clock, "clock is required");
+        this.sessionTokenHasher = Objects.requireNonNull(sessionTokenHasher, "sessionTokenHasher is required");
     }
 
     public SessionService(ConnectionProvider connectionProvider, Clock clock) {
@@ -43,7 +55,8 @@ public final class SessionService {
         LocalDateTime now = LocalDateTime.now(clock);
         String token = generateToken();
         try {
-            return sessionDAO.create(userId, token, now, now);
+            Session persisted = sessionDAO.create(userId, sessionTokenHasher.hash(token), now, now);
+            return withBearerToken(persisted, token);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to create session for user " + userId, exception);
         }
@@ -59,10 +72,27 @@ public final class SessionService {
 
     public Optional<Session> findByToken(String token) {
         try {
-            return sessionDAO.findByToken(token);
+            Optional<Session> hashedSession = sessionDAO.findByStoredToken(sessionTokenHasher.hash(token));
+            if (hashedSession.isPresent()) {
+                return hashedSession.map(session -> withBearerToken(session, token));
+            }
+            // Temporary compatibility with sessions that were persisted before
+            // V032/runtime migration. A successful lookup still returns the
+            // caller's bearer token, never the stored representation.
+            return sessionDAO.findByStoredToken(token).map(session -> withBearerToken(session, token));
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load session by token", exception);
         }
+    }
+
+    /**
+     * Verifies a browser-held bearer token against the one-way database
+     * representation. Existing raw tokens are accepted only until the startup
+     * data migration replaces them.
+     */
+    public boolean matchesToken(Session session, String bearerToken) {
+        Objects.requireNonNull(session, "session is required");
+        return sessionTokenHasher.matches(session.token(), bearerToken);
     }
 
     public boolean isExpired(Session session) {
@@ -144,6 +174,18 @@ public final class SessionService {
         byte[] bytes = new byte[32];
         SECURE_RANDOM.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    private static Session withBearerToken(Session persisted, String bearerToken) {
+        return new Session(
+                persisted.id(),
+                persisted.userId(),
+                bearerToken,
+                persisted.state(),
+                persisted.startAt(),
+                persisted.lastActivity(),
+                persisted.endAt()
+        );
     }
 
     private static LocalDateTime max(LocalDateTime left, LocalDateTime right) {

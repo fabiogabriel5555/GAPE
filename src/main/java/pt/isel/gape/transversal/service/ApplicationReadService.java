@@ -289,6 +289,7 @@ public final class ApplicationReadService {
 
     public interface Courses {
         Optional<Course> findById(long courseId) throws SQLException;
+        List<Course> findAll() throws SQLException;
         List<Course> findByIds(Collection<Long> courseIds) throws SQLException;
         List<Course> findByOrganization(long organizationId) throws SQLException;
         List<Course> findCatalogCourses(Long organizationId, CourseType type, String query) throws SQLException;

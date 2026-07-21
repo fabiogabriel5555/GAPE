@@ -56,3 +56,12 @@ O Tomcat não precisa de configuração adicional para a biblioteca WebP. A
 conta que executa o Tomcat só precisa de permissão para escrever na pasta de
 utilizador ou temporária, onde a biblioteca nativa é extraída durante a
 conversão de imagens.
+
+## Segurança de produção
+
+Os exemplos HTTP e `useSSL=false` deste guia são exclusivos para desenvolvimento
+local. Antes de publicar dados reais, configure HTTPS, a chave de dados
+sensíveis e backups diários conforme
+[`security/https.md`](security/https.md),
+[`security/sensitive-data.md`](security/sensitive-data.md) e
+[`security/backups.md`](security/backups.md).

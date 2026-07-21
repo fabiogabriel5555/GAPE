@@ -242,6 +242,28 @@ class ClassGroupEnrollmentServiceTest {
     }
 
     @Test
+    void studentCanBeActivelyEnrolledInAnotherClassGroupInSameCourseOccurrence() throws Exception {
+        insertPrjParallelClassGroup();
+
+        ClassGroupEnrollment enrollment = classGroupEnrollmentService.enrollStudentInClassGroup(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                new ClassGroupEnrollmentCommand(
+                        4L,
+                        95L,
+                        LocalDate.of(2026, 3, 1),
+                        null
+                ),
+                "127.0.0.1"
+        );
+
+        assertEquals(EnrollmentState.ACTIVE, enrollment.state());
+        assertEquals(95L, enrollment.classGroupId());
+        assertEquals("active", classGroupEnrollmentState(4L, 50L));
+    }
+
+    @Test
     void studentCannotEnrollAnotherStudentInClassGroup() throws Exception {
         assertThrows(
                 SecurityException.class,

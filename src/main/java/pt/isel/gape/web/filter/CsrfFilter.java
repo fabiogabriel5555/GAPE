@@ -18,7 +18,7 @@ import pt.isel.gape.security.session.SessionManager;
 public final class CsrfFilter implements Filter {
 
     private static final Set<String> SAFE_METHODS = Set.of("GET", "HEAD", "OPTIONS", "TRACE");
-    private static final Set<String> LOGIN_GET_PATHS = Set.of("/login.jsp", "/sign-in.jsp", "/auth/login");
+    private static final Set<String> LOGIN_GET_PATHS = Set.of("/login.jsp", "/auth/login");
 
     private final SessionManager sessionManager;
 

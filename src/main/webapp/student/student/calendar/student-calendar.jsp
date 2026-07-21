@@ -1,108 +1,52 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
 <%
     request.setAttribute("activeMenu", "calendar");
     request.setAttribute("pageTitle", "Events");
     request.setAttribute("studentPageTitle", "Events");
-    request.setAttribute("studentPageDescription", "Lessons and assessment events from your active class group enrollments.");
+    request.setAttribute("studentPageDescription", "All your events, read and unread, in one calendar.");
 %>
 <%@ include file="/WEB-INF/fragments/student-dashboard-start.jspf" %>
+<style>
+    .gape-calendar-shell{min-width:0}.gape-calendar-toolbar{align-items:center;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}.gape-calendar-nav{align-items:center;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}.gape-calendar-scroll{min-width:0;overflow-x:auto;padding-bottom:4px}.gape-calendar-grid{background:#e6edf0;border:1px solid #d9e4ef;border-radius:8px;display:grid;gap:1px;grid-template-columns:repeat(7,minmax(132px,1fr));min-width:924px;overflow:hidden}.gape-calendar-weekday{background:#60a5e9;color:#fff;font-size:14px;font-weight:600;line-height:1.25;padding:10px 12px;text-align:center}.gape-calendar-day{background:#fff;min-height:154px;min-width:0;padding:10px}.gape-calendar-day.is-muted{background:#f5f7fa}.gape-calendar-day.is-muted .gape-calendar-day__number{color:#a3adba}.gape-calendar-day.is-today{box-shadow:inset 0 0 0 2px rgba(37,99,235,.45)}.gape-calendar-day__number{align-items:center;color:#526074;display:flex;font-size:16px;font-weight:600;justify-content:space-between;line-height:1;margin-bottom:8px}.gape-calendar-count{background:#eaf2ff;border-radius:999px;color:#2563eb;font-size:11px;font-weight:700;line-height:1;padding:5px 8px}.gape-calendar-events{display:flex;flex-direction:column;gap:7px}.gape-calendar-event{align-items:flex-start;background:#f8fbff;border:1px solid #e1eaf4;border-radius:8px;color:#172033;display:flex;gap:7px;min-width:0;padding:7px 8px;width:100%}.gape-calendar-event:hover{border-color:rgba(37,99,235,.4);color:#2563eb}.gape-calendar-event__icon{align-items:center;border-radius:6px;display:inline-flex;flex:0 0 24px;height:24px;justify-content:center;width:24px}.gape-calendar-event>span:last-child{flex:1 1 auto;min-width:0}.gape-calendar-event__title{display:block;font-size:12px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gape-calendar-event__meta{color:#64748b;display:block;font-size:11px;line-height:1.25;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gape-calendar-show-all{cursor:pointer;font:inherit;text-align:left}.gape-calendar-modal-list{display:flex;flex-direction:column;gap:10px}.gape-calendar-modal-item{align-items:flex-start;background:#fff;border:1px solid #e1eaf4;border-radius:8px;display:flex;gap:10px;min-width:0;padding:12px}
+</style>
 
-<section class="gape-student-panel bg-white rounded-10 px-24 py-24 border border-neutral-30">
-    <div class="d-flex align-items-center justify-content-between gap-16 flex-wrap mb-24">
-        <div>
-            <h6 class="text-20 fw-semibold text-neutral-800 mb-4">Events</h6>
-            <span class="text-14 text-neutral-500">Lessons and assessment events in your active class groups.</span>
-        </div>
-        <a href="${pageContext.request.contextPath}/student/lessons" class="gape-student-card-icon-button" aria-label="Open lessons" title="Open lessons">
-            <i class="ph ph-list-bullets"></i>
-        </a>
-    </div>
-    <div class="bg-warning-50 text-warning-700 rounded-10 px-18 py-14 mb-18 d-flex align-items-start gap-10 border border-warning-100">
-        <i class="ph ph-warning-circle text-20 mt-2"></i>
-        <span class="text-14">Future reminder: this page should show lessons, assessments, grade sheets, certificates, forums and comments according to context and permissions.</span>
-    </div>
-    <div class="d-flex flex-column gap-14">
-        <c:forEach var="item" items="${calendarItems}">
-            <c:choose>
-                <c:when test="${item.eventItem}">
-                    <c:set var="event" value="${item.event}"/>
-                    <article class="gape-student-line-card gape-student-timeline-item px-18 py-18 d-flex align-items-start justify-content-between gap-16 flex-wrap">
-                        <div class="d-flex align-items-start gap-14 min-w-0">
-                            <span class="${event.typeBadgeClass} w-48 h-48 rounded-12 d-inline-flex align-items-center justify-content-center text-24 flex-shrink-0">
-                                <i class="${event.typeIconClass}"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <h4 class="text-17 fw-semibold text-neutral-800 mb-0"><c:out value="${event.title}"/></h4>
-                                <div class="d-flex align-items-center gap-10 flex-wrap mt-8">
-                                    <span class="text-13 text-neutral-500" data-gape-datetime-display><i class="ph ph-clock me-6"></i><c:out value="${event.startsAt}"/> - <c:out value="${event.endsAt}"/></span>
-                                    <span class="text-13 text-neutral-500"><i class="ph ph-timer me-6"></i><c:out value="${event.durationLabel}"/></span>
-                                    <span class="text-13 text-neutral-500"><i class="ph ph-users-three me-6"></i><c:out value="${event.classGroupLabel}"/></span>
-                                    <span class="text-13 text-neutral-500"><i class="ph ph-bell-ringing me-6"></i><c:out value="${event.reminderLabel}"/></span>
-                                </div>
-                                <p class="text-13 text-neutral-500 mt-8 mb-0"><c:out value="${event.description}"/></p>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center gap-10 flex-wrap">
-                            <span class="${event.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12">
-                                <c:out value="${event.stateLabel}"/>
-                            </span>
-                        </div>
-                    </article>
-                </c:when>
-                <c:otherwise>
-                    <c:set var="lesson" value="${item.lesson}"/>
-                    <c:set var="classGroup" value="${classGroupById[lesson.classGroupId]}"/>
-                    <c:set var="block" value="${contentBlockById[lesson.contentBlockId]}"/>
-                    <article class="gape-student-line-card gape-student-timeline-item px-18 py-18 d-flex align-items-start justify-content-between gap-16 flex-wrap">
-                        <div class="d-flex align-items-start gap-14 min-w-0">
-                            <span class="${lesson.typeBadgeClass} w-48 h-48 rounded-12 d-inline-flex align-items-center justify-content-center text-24 flex-shrink-0">
-                                <i class="${lesson.typeIconClass}"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <h4 class="text-17 fw-semibold text-neutral-800 mb-0"><c:out value="${lesson.title}"/></h4>
-                                <div class="d-flex align-items-center gap-10 flex-wrap mt-8">
-                                    <span class="text-13 text-neutral-500" data-gape-datetime-display><i class="ph ph-clock me-6"></i><c:out value="${lesson.startsAt}"/> - <c:out value="${lesson.endsAt}"/></span>
-                                    <span class="text-13 text-neutral-500"><i class="ph ph-timer me-6"></i><c:out value="${lesson.durationLabel}"/></span>
-                                    <span class="text-13 text-neutral-500"><i class="ph ph-stack me-6"></i><c:out value="${block.name}"/></span>
-                                    <span class="text-13 text-neutral-500"><i class="ph ph-user-check me-6"></i><c:out value="${lesson.attendanceLabel}"/></span>
-                                    <c:if test="${lesson.hasRoom}">
-                                        <span class="text-13 text-neutral-500"><i class="ph ph-map-pin me-6"></i><c:out value="${lesson.physicalRoomCode}"/></span>
-                                    </c:if>
-                                    <c:if test="${(lesson.online or lesson.hybrid) and lesson.hasMeetingLink}">
-                                        <span class="text-13 text-neutral-500"><i class="ph ph-video-camera me-6"></i><c:out value="${lesson.providerLabel}"/></span>
-                                    </c:if>
-                                </div>
-                                <c:if test="${not empty classGroup}">
-                                    <div class="text-13 text-neutral-500 mt-8" title="<c:out value='${classGroup.contextTitle}'/>">
-                                        <i class="ph ph-users-three me-6"></i><c:out value="${classGroup.contextHtml}" escapeXml="false"/>
-                                    </div>
-                                </c:if>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center gap-10 flex-wrap">
-                            <span class="${lesson.stateBadgeClass} px-12 py-7 border-neutral-30 border rounded-pill text-12">
-                                <c:out value="${lesson.stateLabel}"/>
-                            </span>
-                            <c:if test="${(lesson.online or lesson.hybrid) and lesson.hasMeetingLink}">
-                                <a href="${pageContext.request.contextPath}/student/lessons/${lesson.id}/access" target="_blank" rel="noopener noreferrer" class="gape-student-card-icon-button gape-student-card-icon-button--meeting" aria-label="Open meeting" title="Open meeting">
-                                    <i class="ph ph-video-camera"></i>
-                                </a>
-                            </c:if>
-                        </div>
-                    </article>
-                </c:otherwise>
-            </c:choose>
-        </c:forEach>
-        <c:if test="${empty calendarItems}">
-            <div class="gape-student-empty text-center px-24 py-40">
-                <span class="gape-student-icon gape-student-soft-amber text-28 mb-16"><i class="ph ph-calendar-dots"></i></span>
-                <h4 class="text-18 fw-semibold text-neutral-800 mb-8">No events yet</h4>
-                <p class="text-14 text-neutral-500 mb-0">Your events page is filled automatically by assessment events and enrolled class group lessons.</p>
+<section id="student-events-calendar" class="gape-student-panel bg-white rounded-10 px-24 py-24 border border-neutral-30">
+    <div class="gape-calendar-shell" data-event-calendar-root data-current-month="${eventCalendar.monthValue}" data-total-events="${eventCalendar.totalEventCount}">
+        <div class="gape-calendar-toolbar mb-20">
+            <div>
+                <h2 class="text-18 fw-medium text-neutral-700 mb-4 d-flex align-items-center gap-8">Calendar</h2>
+                <span class="text-14 text-neutral-500">Monthly calendar for all your events. Showing <span data-event-calendar-month-count><c:out value="${eventCalendar.visibleMonthEventCount}"/></span> of <span data-event-calendar-total-count><c:out value="${eventCalendar.totalEventCount}"/></span> events in this month.</span>
             </div>
-        </c:if>
+            <div class="gape-calendar-nav">
+                <button type="button" class="w-40 h-40 rounded-8 border border-neutral-30 bg-white text-neutral-600 hover-bg-neutral-20 d-inline-flex align-items-center justify-content-center" title="Previous year" aria-label="Previous year" data-event-calendar-unit="year" data-event-calendar-step="-1"><i class="ph ph-caret-double-left"></i></button>
+                <button type="button" class="w-40 h-40 rounded-8 border border-neutral-30 bg-white text-neutral-600 hover-bg-neutral-20 d-inline-flex align-items-center justify-content-center" title="Previous month" aria-label="Previous month" data-event-calendar-unit="month" data-event-calendar-step="-1"><i class="ph ph-caret-left"></i></button>
+                <span class="px-16 py-10 rounded-8 bg-neutral-20 text-neutral-700 fw-semibold text-14" data-event-calendar-title><c:out value="${eventCalendar.title}"/></span>
+                <button type="button" class="w-40 h-40 rounded-8 border border-neutral-30 bg-white text-neutral-600 hover-bg-neutral-20 d-inline-flex align-items-center justify-content-center" title="Next month" aria-label="Next month" data-event-calendar-unit="month" data-event-calendar-step="1"><i class="ph ph-caret-right"></i></button>
+                <button type="button" class="w-40 h-40 rounded-8 border border-neutral-30 bg-white text-neutral-600 hover-bg-neutral-20 d-inline-flex align-items-center justify-content-center" title="Next year" aria-label="Next year" data-event-calendar-unit="year" data-event-calendar-step="1"><i class="ph ph-caret-double-right"></i></button>
+            </div>
+        </div>
+        <div class="gape-calendar-scroll">
+            <div class="gape-calendar-grid" role="grid" aria-label="Events calendar" data-event-calendar-grid>
+                <div class="gape-calendar-weekday" role="columnheader">Monday</div><div class="gape-calendar-weekday" role="columnheader">Tuesday</div><div class="gape-calendar-weekday" role="columnheader">Wednesday</div><div class="gape-calendar-weekday" role="columnheader">Thursday</div><div class="gape-calendar-weekday" role="columnheader">Friday</div><div class="gape-calendar-weekday" role="columnheader">Saturday</div><div class="gape-calendar-weekday" role="columnheader">Sunday</div>
+                <c:forEach var="day" items="${eventCalendar.days}">
+                    <div class="gape-calendar-day ${day.currentMonth ? '' : 'is-muted'} ${day.today ? 'is-today' : ''}" role="gridcell">
+                        <div class="gape-calendar-day__number"><span><c:out value="${day.dayLabel}"/></span><c:if test="${day.hasEvents}"><span class="gape-calendar-count"><c:out value="${day.eventCount}"/></span></c:if></div>
+                        <div class="gape-calendar-events">
+                            <c:forEach var="event" items="${day.events}" begin="0" end="0"><a href="${pageContext.request.contextPath}${event.actionHref}" class="gape-calendar-event" title="<c:out value='${event.title}'/>"><span class="${event.badgeClass} gape-calendar-event__icon text-13"><i class="${event.iconClass}"></i></span><span class="min-w-0"><span class="gape-calendar-event__title"><c:out value="${event.title}"/></span><span class="gape-calendar-event__meta"><c:out value="${event.categoryLabel}"/> | <c:out value="${event.stateLabel}"/></span></span></a></c:forEach>
+                            <c:if test="${day.eventCount > 1}"><button type="button" class="gape-calendar-event gape-calendar-show-all" data-event-calendar-show-all data-event-date="${day.date}"><span class="bg-main-50 text-main-600 gape-calendar-event__icon text-13"><i class="ph ph-list-bullets"></i></span><span class="min-w-0"><span class="gape-calendar-event__title">Show all</span><span class="gape-calendar-event__meta"><c:out value="${day.eventCount}"/> events</span></span></button></c:if>
+                        </div>
+                    </div>
+                </c:forEach>
+            </div>
+        </div>
+        <div data-event-calendar-source hidden>
+            <c:forEach var="event" items="${eventCalendarNotifications}"><span data-event-calendar-source-item data-event-date="<c:out value='${event.dateValue}'/>" data-event-time="<c:out value='${event.timeLabel}'/>" data-event-date-label="<c:out value='${event.dateLabel}'/>" data-event-title="<c:out value='${event.title}'/>" data-event-category="<c:out value='${event.categoryLabel}'/>" data-event-state="<c:out value='${event.stateLabel}'/>" data-event-context="<c:out value='${event.contextLabel}'/>" data-event-href="<c:out value='${pageContext.request.contextPath}${event.actionHref}'/>" data-event-icon-class="<c:out value='${event.iconClass}'/>" data-event-badge-class="<c:out value='${event.badgeClass}'/>" data-event-state-badge-class="<c:out value='${event.stateBadgeClass}'/>" data-event-read="${event.read}"></span></c:forEach>
+        </div>
     </div>
 </section>
-
+<div class="modal fade" id="eventCalendarEventsModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content rounded-8 border-0 bg-white"><div class="modal-header border-neutral-30"><div><h5 class="modal-title text-18 fw-semibold mb-4" data-event-calendar-modal-title>Events</h5><span class="text-13 text-neutral-500" data-event-calendar-modal-subtitle>All events in the selected date.</span></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div><div class="modal-body"><div class="gape-calendar-modal-list" data-event-calendar-modal-body></div></div></div></div></div>
+<script>
+document.addEventListener('DOMContentLoaded',function(){var root=document.querySelector('[data-event-calendar-root]');if(!root)return;var grid=root.querySelector('[data-event-calendar-grid]'),title=root.querySelector('[data-event-calendar-title]'),monthCount=root.querySelector('[data-event-calendar-month-count]'),totalCount=root.querySelector('[data-event-calendar-total-count]'),modal=document.getElementById('eventCalendarEventsModal'),modalTitle=modal&&modal.querySelector('[data-event-calendar-modal-title]'),modalSubtitle=modal&&modal.querySelector('[data-event-calendar-modal-subtitle]'),modalBody=modal&&modal.querySelector('[data-event-calendar-modal-body]'),sources=[].slice.call(root.querySelectorAll('[data-event-calendar-source-item]')).map(function(item){return{date:item.dataset.eventDate||'',time:item.dataset.eventTime||'',dateLabel:item.dataset.eventDateLabel||'',title:item.dataset.eventTitle||'',category:item.dataset.eventCategory||'',state:item.dataset.eventState||'',context:item.dataset.eventContext||'',href:item.dataset.eventHref||'#',iconClass:item.dataset.eventIconClass||'ph ph-calendar',badgeClass:item.dataset.eventBadgeClass||'bg-main-50 text-main-600',stateBadgeClass:item.dataset.eventStateBadgeClass||'bg-neutral-50 text-neutral-600',read:item.dataset.eventRead==='true'};}),value=(root.dataset.currentMonth||'').split('-'),active=value.length===2?new Date(Number(value[0]),Number(value[1])-1,1):new Date();active.setDate(1);var pad=function(v){return String(v).padStart(2,'0')},monthKey=function(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)},dayKey=function(d){return monthKey(d)+'-'+pad(d.getDate())},addDays=function(d,n){var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()+n);return x},monthTitle=function(d){return new Intl.DateTimeFormat('pt-PT',{timeZone:'Europe/Lisbon',month:'long',year:'numeric'}).format(new Date(Date.UTC(d.getFullYear(),d.getMonth(),15,12)))},forDate=function(v){return sources.filter(function(e){return e.date===v})},forMonth=function(d){var k=monthKey(d);return sources.filter(function(e){return e.date.indexOf(k)===0})},eventLink=function(e){var a=document.createElement('a');a.href=e.href;a.className='gape-calendar-event';a.title=e.title;a.innerHTML='<span class="'+e.badgeClass+' gape-calendar-event__icon text-13"><i class="'+e.iconClass+'"></i></span><span class="min-w-0"><span class="gape-calendar-event__title"></span><span class="gape-calendar-event__meta"></span></span>';a.querySelector('.gape-calendar-event__title').textContent=e.title;a.querySelector('.gape-calendar-event__meta').textContent=e.category+' | '+e.state;return a},showAll=function(date,count){var b=document.createElement('button');b.type='button';b.className='gape-calendar-event gape-calendar-show-all';b.dataset.eventCalendarShowAll='';b.dataset.eventDate=date;b.innerHTML='<span class="bg-main-50 text-main-600 gape-calendar-event__icon text-13"><i class="ph ph-list-bullets"></i></span><span class="min-w-0"><span class="gape-calendar-event__title">Show all</span><span class="gape-calendar-event__meta"></span></span>';b.querySelector('.gape-calendar-event__meta').textContent=count+(count===1?' event':' events');return b},modalItem=function(e){var a=document.createElement('a');a.href=e.href;a.className='gape-calendar-modal-item text-neutral-700 hover-text-main-600';a.innerHTML='<span class="'+e.badgeClass+' w-40 h-40 rounded-8 d-inline-flex align-items-center justify-content-center text-20 flex-shrink-0"><i class="'+e.iconClass+'"></i></span><span class="min-w-0 flex-grow-1"><span class="fw-medium text-14 text-neutral-700 d-block"></span><span class="d-block text-12 text-neutral-500 mt-2"></span></span><span class="'+e.stateBadgeClass+' px-12 py-7 border-neutral-30 border rounded-pill text-12 flex-shrink-0"></span>';var s=a.querySelectorAll('span');s[3].textContent=e.title;s[4].textContent=e.time+' | '+e.category+' | '+e.context;s[5].textContent=e.state;return a},render=function(){Array.prototype.slice.call(grid.querySelectorAll('.gape-calendar-day')).forEach(function(d){d.remove()});var start=new Date(active.getFullYear(),active.getMonth(),1),end=new Date(active.getFullYear(),active.getMonth()+1,0),cursor=addDays(start,-((start.getDay()+6)%7)),last=addDays(end,6-((end.getDay()+6)%7)),count=0,visible=forMonth(active);title.textContent=monthTitle(active);if(monthCount)monthCount.textContent=visible.length;if(totalCount)totalCount.textContent=sources.length;while(cursor<=last||count<35){var d=new Date(cursor),key=dayKey(d),events=forDate(key),cell=document.createElement('div');cell.className='gape-calendar-day'+(d.getMonth()===active.getMonth()?'':' is-muted')+(key===new Date().toISOString().slice(0,10)?' is-today':'');cell.setAttribute('role','gridcell');cell.innerHTML='<div class="gape-calendar-day__number"><span>'+d.getDate()+'</span>'+(events.length?'<span class="gape-calendar-count">'+events.length+'</span>':'')+'</div>';var wrap=document.createElement('div');wrap.className='gape-calendar-events';if(events.length){wrap.appendChild(eventLink(events[0]));if(events.length>1)wrap.appendChild(showAll(key,events.length))}cell.appendChild(wrap);grid.appendChild(cell);cursor=addDays(cursor,1);count++}};root.addEventListener('click',function(ev){var move=ev.target.closest('[data-event-calendar-step]');if(move){ev.preventDefault();var n=Number(move.dataset.eventCalendarStep||0);active=new Date(active.getFullYear()+(move.dataset.eventCalendarUnit==='year'?n:0),active.getMonth()+(move.dataset.eventCalendarUnit==='month'?n:0),1);render();if(history.replaceState){var u=new URL(location.href);u.searchParams.set('month',monthKey(active));history.replaceState(null,'',u.toString())}return}var more=ev.target.closest('[data-event-calendar-show-all]');if(more&&modal&&modalBody){var chosen=forDate(more.dataset.eventDate);modalTitle.textContent='Events on '+more.dataset.eventDate;modalSubtitle.textContent=chosen.length+(chosen.length===1?' event':' events')+' in this date.';modalBody.innerHTML='';chosen.forEach(function(e){modalBody.appendChild(modalItem(e))});if(window.bootstrap&&window.bootstrap.Modal)window.bootstrap.Modal.getOrCreateInstance(modal).show()}});render();});
+</script>
 <%@ include file="/WEB-INF/fragments/student-dashboard-end.jspf" %>

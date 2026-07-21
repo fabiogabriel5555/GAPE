@@ -127,6 +127,44 @@
             white-space: nowrap;
         }
 
+        .gape-course-modal-root .gape-select-field.is-disabled select,
+        .gape-course-modal-root .gape-select-field.is-disabled .select2-container {
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .gape-course-modal-root .gape-select-field.is-disabled .select2-selection--single {
+            background-color: #f3f4f6 !important;
+            border-color: #e5e7eb !important;
+        }
+
+        .gape-course-modal-root .gape-select-field.is-disabled .select2-selection__rendered {
+            color: #9ca3af !important;
+        }
+
+        .gape-course-modal-root .gape-select-field.is-disabled .select2-selection__arrow {
+            opacity: 0.45;
+        }
+
+        .gape-course-modal-root .gape-select-field.is-available .select2-selection__rendered {
+            color: #1f2937 !important;
+        }
+
+        .gape-course-modal-root .gape-select-field.is-available .select2-selection__placeholder {
+            color: #1f2937 !important;
+            opacity: 1;
+        }
+
+        .gape-course-modal-root [data-course-occurrence-submit]:disabled {
+            background-color: #e5e7eb !important;
+            border-color: #e5e7eb !important;
+            box-shadow: none !important;
+            color: #9ca3af !important;
+            cursor: not-allowed;
+            opacity: 1;
+            pointer-events: none;
+        }
+
         /* Keep every Course Details dialog fixed around its opening geometry.
            Select2 menus are rendered in a portal, outside the scrollable body,
            so opening or choosing an option never changes the dialog position. */
@@ -670,6 +708,58 @@
             grid-template-columns: minmax(250px, 1.25fr) minmax(220px, 1.05fr) minmax(135px, 0.55fr) minmax(92px, auto);
         }
 
+        .gape-course-enrollment-state-summaries {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .gape-course-enrollment-show {
+            /* Kept only as a semantic hook.  Enrollment toggles use the
+               same compact caret-only control as Occurrences. */
+        }
+
+        .gape-course-enrollment-student-panel {
+            border-top: 1px solid var(--cd-border);
+            margin-top: 16px;
+            padding-top: 14px;
+        }
+
+        .gape-course-enrollment-student-panel__heading {
+            align-items: center;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 0 8px;
+        }
+
+        .gape-course-enrollment-occurrence-card {
+            /* Match the concrete class-group layer in Subject Details: every
+               enrollment occurrence is a clearly bounded child record. */
+            background: #fff !important;
+            border: 1px solid var(--cd-border) !important;
+            border-radius: 8px !important;
+            padding: 12px 16px !important;
+        }
+
+        @media (min-width: 768px) {
+            /* The concrete occurrence is nested in the student's card.  Let
+               its grid use the same horizontal span as the student row, so
+               the period and state share the exact Enrollment and State
+               columns while retaining the card's visual inset. */
+            .gape-course-enrollment-occurrence-card .gape-enrollment-row {
+                margin-inline: -17px;
+            }
+
+            .gape-course-enrollment-occurrence-card .gape-enrollment-row > :first-child {
+                padding-left: 17px;
+            }
+
+            .gape-course-enrollment-occurrence-card .gape-enrollment-row > :last-child {
+                padding-right: 17px;
+            }
+        }
+
         .gape-occurrence-periods-panel {
             border-top: 1px solid var(--cd-border);
             margin-top: 16px;
@@ -789,7 +879,10 @@
             color: #475569;
             font-size: 13px;
             font-weight: 600;
-            padding: 0 16px 12px;
+            /* The header and every tree depth deliberately share the same
+               inline reference.  This keeps counters, states and actions
+               vertically aligned when a subject is expanded. */
+            padding: 0 18px 12px;
         }
 
         .gape-structure-node {
@@ -909,6 +1002,14 @@
             border-radius: 8px;
             margin-top: 14px;
             padding: 14px;
+        }
+
+        .gape-structure-panel .gape-structure-row {
+            /* Nested cards retain their border and hierarchy, while their
+               grid columns use the full parent width just like the subject. */
+            margin-left: -16px;
+            /* Keep the nested action slot visually inside its column. */
+            margin-right: -8px;
         }
 
         .gape-subject-node {
@@ -1501,14 +1602,14 @@
                                             <h5 class="modal-title text-18 fw-semibold" id="associateCourseSubjectModalLabel">Associate Subject</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
-                                        <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/subjects" method="post" data-course-live-form data-course-live-panel="structure">
+                                        <form action="${pageContext.request.contextPath}${courseBasePath}/${course.id}/subjects" method="post" data-course-live-form data-course-live-panel="structure" data-course-associate-subject-form>
                                             <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
                                             <input type="hidden" name="returnTo" value="${currentReturnTo}#course-structure">
                                             <div class="modal-body">
                                                 <p class="text-14 text-neutral-600 mb-20">Select an existing subject and its curricular position in this course.</p>
                                                 <div class="mb-20 gape-select-field">
                                                     <label for="courseDetailSubjectId" class="fw-medium text-base text-neutral-800 mb-12">Subject</label>
-                                                    <select id="courseDetailSubjectId" name="subjectId" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                                                    <select id="courseDetailSubjectId" name="subjectId" required data-course-associate-subject class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
                                                         <option value="">Select subject</option>
                                                         <c:forEach var="subject" items="${availableSubjectOptions}">
                                                             <option value="${subject.id}"><c:out value="${subject.name}"/></option>
@@ -1521,7 +1622,7 @@
                                                 <div class="row gy-3">
                                                     <div class="col-sm-6 gape-select-field">
                                                         <label for="courseDetailSubjectYear" class="fw-medium text-base text-neutral-800 mb-12">Course year</label>
-                                                        <select id="courseDetailSubjectYear" name="curricularYear" required data-course-year-select data-fixed-duration-years="${course.durationYears}" data-placeholder="Select course year" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                                                        <select id="courseDetailSubjectYear" name="curricularYear" required disabled data-course-year-select data-fixed-duration-years="${course.durationYears}" data-placeholder="Select course year" data-course-associate-year class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
                                                             <option value="">Select course year</option>
                                                             <c:forEach var="yearOption" items="${course.durationYearOptions}">
                                                                 <option value="${yearOption.value}"><c:out value="${yearOption.label}"/></option>
@@ -1530,12 +1631,10 @@
                                                     </div>
                                                     <div class="col-sm-6 gape-select-field">
                                                         <label for="courseDetailSubjectTerm" class="fw-medium text-base text-neutral-800 mb-12">Period</label>
-                                                        <select id="courseDetailSubjectTerm" name="term" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
+                                                        <select id="courseDetailSubjectTerm" name="term" required disabled data-course-associate-period class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
                                                             <option value="">Select period</option>
                                                             <c:forEach var="period" items="${coursePeriodTemplates}">
-                                                                <c:if test="${period.curricularYear == 1}">
-                                                                    <option value="${period.term}"><c:out value="${period.termLabel}"/></option>
-                                                                </c:if>
+                                                                <option value="${period.term}" data-course-associate-period-year="${period.curricularYear}"><c:out value="${period.termLabel}"/></option>
                                                             </c:forEach>
                                                         </select>
                                                     </div>
@@ -1832,7 +1931,7 @@
                                             </div>
                                             <div class="modal-footer border-neutral-30">
                                                 <button type="button" class="cd-outline-button" data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="cd-primary-button border-0"><i class="ph ph-plus-circle me-8"></i>Create Occurrence</button>
+                                                <button type="submit" class="cd-primary-button border-0" data-course-occurrence-submit disabled aria-disabled="true"><i class="ph ph-plus-circle me-8"></i>Create Occurrence</button>
                                             </div>
                                         </form>
                                     </div>
@@ -2035,8 +2134,15 @@
     (function () {
         var courseHashTarget = {
             '#course-occurrences': 'occurrences',
+            '#course-enrollments': 'enrollments',
             '#course-students': 'enrollments'
         };
+
+    var coursePanelHash = {
+        enrollments: '#course-enrollments',
+        occurrences: '#course-occurrences',
+        structure: '#course-structure'
+    };
 
     function courseRoot() {
         return document.getElementById('courseDetailLiveRoot');
@@ -2258,6 +2364,131 @@
         });
     }
 
+    function setCourseDependentSelectDisabled(select, disabled) {
+        if (!select) {
+            return;
+        }
+        select.disabled = disabled;
+        select.setAttribute('aria-disabled', String(disabled));
+        var field = select.closest('.gape-select-field');
+        if (field) {
+            field.classList.toggle('is-disabled', disabled);
+            field.classList.toggle('is-available', !disabled);
+            field.dataset.courseDependentState = disabled ? 'disabled' : 'available';
+        }
+        var container = select.nextElementSibling;
+        if (container && container.classList.contains('select2-container')) {
+            container.classList.toggle('select2-container--disabled', disabled);
+            var selection = container.querySelector('.select2-selection');
+            if (selection) {
+                selection.setAttribute('aria-disabled', String(disabled));
+            }
+        }
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2
+                && window.jQuery(select).data('select2')) {
+            window.jQuery(select).prop('disabled', disabled).trigger('change.select2');
+        }
+    }
+
+    function clearCourseDependentSelect(select) {
+        if (!select || !select.value) {
+            return;
+        }
+        select.value = '';
+        if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2
+                && window.jQuery(select).data('select2')) {
+            window.jQuery(select).val('').trigger('change.select2');
+        }
+    }
+
+    function bindCourseDependentSelectEvents(select, handler) {
+        select.addEventListener('change', handler);
+        if (!window.jQuery || !window.jQuery.fn || !window.jQuery.fn.select2
+                || !window.jQuery(select).data('select2')) {
+            return;
+        }
+        window.jQuery(select).on('select2:select.gapeCourseDependency select2:clear.gapeCourseDependency', function () {
+            window.setTimeout(handler, 0);
+        });
+    }
+
+    function configureCourseAssociateSubjectForms(scope) {
+        Array.prototype.slice.call((scope || document).querySelectorAll('[data-course-associate-subject-form]')).forEach(function (form) {
+            if (form.dataset.courseAssociateSubjectBound === 'true') {
+                return;
+            }
+            var subject = form.querySelector('[data-course-associate-subject]');
+            var year = form.querySelector('[data-course-associate-year]');
+            var period = form.querySelector('[data-course-associate-period]');
+            if (!subject || !year || !period) {
+                return;
+            }
+            form.dataset.courseAssociateSubjectBound = 'true';
+
+            function syncPeriodOptions() {
+                var selectedYear = year.value;
+                Array.prototype.slice.call(period.options).forEach(function (option) {
+                    var optionYear = option.dataset.courseAssociatePeriodYear;
+                    if (!optionYear) {
+                        return;
+                    }
+                    var available = optionYear === selectedYear;
+                    option.hidden = !available;
+                    option.disabled = !available;
+                });
+            }
+
+            function syncYear() {
+                var hasSubject = Boolean(subject.value);
+                if (!hasSubject) {
+                    clearCourseDependentSelect(year);
+                    clearCourseDependentSelect(period);
+                }
+                setCourseDependentSelectDisabled(year, !hasSubject);
+                syncPeriod();
+            }
+
+            function syncPeriod() {
+                var hasYear = Boolean(year.value) && !year.disabled;
+                if (!hasYear) {
+                    clearCourseDependentSelect(period);
+                }
+                syncPeriodOptions();
+                setCourseDependentSelectDisabled(period, !hasYear);
+            }
+
+            bindCourseDependentSelectEvents(subject, syncYear);
+            bindCourseDependentSelectEvents(year, function () {
+                clearCourseDependentSelect(period);
+                syncPeriod();
+            });
+            syncYear();
+        });
+    }
+
+    function configureCourseEnrollmentForms(scope) {
+        Array.prototype.slice.call((scope || document).querySelectorAll('[data-course-enrollment-form]')).forEach(function (form) {
+            if (form.dataset.courseEnrollmentBound === 'true') {
+                return;
+            }
+            var student = form.querySelector('[data-course-enrollment-student]');
+            var occurrence = form.querySelector('[data-course-enrollment-occurrence]');
+            if (!student || !occurrence) {
+                return;
+            }
+            form.dataset.courseEnrollmentBound = 'true';
+            var syncOccurrence = function () {
+                var hasStudent = Boolean(student.value);
+                if (!hasStudent) {
+                    clearCourseDependentSelect(occurrence);
+                }
+                setCourseDependentSelectDisabled(occurrence, !hasStudent);
+            };
+            bindCourseDependentSelectEvents(student, syncOccurrence);
+            syncOccurrence();
+        });
+    }
+
     function prepareCourseDetailModals(scope) {
         Array.prototype.slice.call((scope || document).querySelectorAll('.modal')).forEach(function (modal) {
             modal.classList.add('gape-course-modal-root');
@@ -2303,6 +2534,8 @@
         configureCourseDetailSorting(scope);
         configureCourseOccurrenceForm(scope);
         initCourseSelects(scope);
+        configureCourseAssociateSubjectForms(scope);
+        configureCourseEnrollmentForms(scope);
     }
 
     async function loadCourseLazyPanel(name) {
@@ -2441,7 +2674,7 @@
                 }
                 container.innerHTML = await response.text();
                 modal = container.querySelector('#associateCourseSubjectModal');
-                initCourseSelects(container);
+                initializeCourseFragment(container);
             } finally {
                 setCourseControlLoading(button, false);
             }
@@ -2619,6 +2852,7 @@
         var pickerGrid = form.querySelector('[data-academic-year-grid]');
         var previousButton = form.querySelector('[data-academic-year-previous]');
         var nextButton = form.querySelector('[data-academic-year-next]');
+        var submitButton = form.querySelector('[data-course-occurrence-submit]');
         var templateRows = Array.prototype.slice.call(form.querySelectorAll('[data-course-period-template]'));
         var existingOccurrences = Array.prototype.slice.call(form.querySelectorAll('[data-existing-course-occurrence]')).map(function (element) {
             return {
@@ -2803,7 +3037,12 @@
                     : 'Select an academic year';
             }
 
-            return validReferenceYear && templateRows.length > 0 && availability && availability.available;
+            var valid = validReferenceYear && templateRows.length > 0 && availability && availability.available;
+            if (submitButton) {
+                submitButton.disabled = !valid;
+                submitButton.setAttribute('aria-disabled', String(!valid));
+            }
+            return valid;
         }
 
         pickerGrid.addEventListener('click', function (event) {
@@ -2907,6 +3146,15 @@
         return replaceCourseRootFrom(html, panel);
     }
 
+    function coursePanelUrl(url, panel) {
+        var target = new URL(url, window.location.href);
+        var hash = coursePanelHash[panel];
+        if (hash) {
+            target.hash = hash;
+        }
+        return withCurrentCourseSession(target.toString());
+    }
+
     async function submitCourseLiveForm(form, trigger) {
         if (form.dataset.courseSubmitting === 'true') {
             return;
@@ -2931,7 +3179,7 @@
             });
             var html = await response.text();
             if (!replaceCourseRootFrom(html, panel) && !await reloadCourseRoot(panel)) {
-                window.location.assign(withCurrentCourseSession(response.url || form.action));
+                window.location.assign(coursePanelUrl(response.url || form.action, panel));
             }
         } catch (error) {
             try {
@@ -2941,7 +3189,7 @@
             } catch (ignored) {
                 // Fall back to a normal navigation if the partial refresh cannot recover.
             }
-            window.location.assign(withCurrentCourseSession(window.location.href));
+            window.location.assign(coursePanelUrl(window.location.href, panel));
         } finally {
             setCourseControlLoading(trigger || form.querySelector('button[type="submit"]'), false);
             setCourseFormBusy(form, false);
@@ -2956,6 +3204,11 @@
         }
         prepareCourseDetailModals(document);
         var target = preferredPanel || courseHashTarget[window.location.hash] || currentCoursePanel() || 'structure';
+        if (preferredPanel || courseHashTarget[window.location.hash]) {
+            /* Keep the requested card visible while its lazy content loads,
+               including after a normal-navigation fallback. */
+            revealCoursePanel(target);
+        }
         activateCoursePanel(target);
         initializeCourseFragment(root);
     }

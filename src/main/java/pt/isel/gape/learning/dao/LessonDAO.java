@@ -50,6 +50,21 @@ public final class LessonDAO implements pt.isel.gape.transversal.service.Applica
         }
     }
 
+    public long create(Connection connection, long lessonId, LessonCreateCommand command) throws SQLException {
+        String sql = """
+                INSERT INTO lesson (
+                    id_lesson, id_class_group, id_content_block, cod_physical_room, title, description,
+                    type, provider, access_url, attendance_required, state, starts_at, ends_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, lessonId);
+            setStatementValues(statement, command, 2);
+            statement.executeUpdate();
+            return lessonId;
+        }
+    }
+
     public Optional<Lesson> findById(long lessonId) throws SQLException {
         try (Connection connection = connectionProvider.getConnection()) {
             return findById(connection, lessonId);
@@ -581,18 +596,26 @@ public final class LessonDAO implements pt.isel.gape.transversal.service.Applica
 
     private static void setStatementValues(PreparedStatement statement, LessonCreateCommand command)
             throws SQLException {
-        statement.setLong(1, command.classGroupId());
-        statement.setLong(2, command.contentBlockId());
-        setNullableString(statement, 3, command.physicalRoomCode());
-        statement.setString(4, command.title().trim());
-        setNullableString(statement, 5, command.description());
-        statement.setString(6, command.type().toDatabaseValue());
-        setNullableString(statement, 7, command.provider());
-        setNullableString(statement, 8, command.accessUrl());
-        statement.setBoolean(9, command.attendanceRequired());
-        statement.setString(10, command.state().toDatabaseValue());
-        setTimestamp(statement, 11, command.startsAt());
-        setTimestamp(statement, 12, command.endsAt());
+        setStatementValues(statement, command, 1);
+    }
+
+    private static void setStatementValues(
+            PreparedStatement statement,
+            LessonCreateCommand command,
+            int offset
+    ) throws SQLException {
+        statement.setLong(offset, command.classGroupId());
+        statement.setLong(offset + 1, command.contentBlockId());
+        setNullableString(statement, offset + 2, command.physicalRoomCode());
+        statement.setString(offset + 3, command.title().trim());
+        setNullableString(statement, offset + 4, command.description());
+        statement.setString(offset + 5, command.type().toDatabaseValue());
+        setNullableString(statement, offset + 6, command.provider());
+        setNullableString(statement, offset + 7, command.accessUrl());
+        statement.setBoolean(offset + 8, command.attendanceRequired());
+        statement.setString(offset + 9, command.state().toDatabaseValue());
+        setTimestamp(statement, offset + 10, command.startsAt());
+        setTimestamp(statement, offset + 11, command.endsAt());
     }
 
     private static void setStatementValues(PreparedStatement statement, LessonUpdateCommand command)

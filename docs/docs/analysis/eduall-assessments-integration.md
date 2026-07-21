@@ -60,7 +60,7 @@ Manager:
 
 Student:
 
-- `/student/assessments`
+- `/student/lessons` is the single student **Lessons & Assessments** catalogue; `/student/assessments` remains a compatibility redirect to its assessments section.
 - `/student/assessments/attempts/{attemptId}`
 - `/student/assessments/attempts/{attemptId}/result`
 - `/student/assessments/responses/{responseId}/attachment`
@@ -95,7 +95,7 @@ Class group integration:
 - response attachments are downloaded through authorized servlet routes. Hidden attachment fields can only preserve an existing response attachment; first uploads must come from a real multipart upload saved under `contents/`.
 - assessment form selectors are filtered by the manager context; failed creation posts do not re-expose unauthorized subjects or class groups from submitted ids.
 - student class-group detail cards only expose active online assessments that have active questions and current student access.
-- legacy static quiz-attempt JSPs now redirect to `/learning/assessments` or `/student/assessments`, and copied template links were updated to the assessment routes.
+- legacy static quiz-attempt JSPs now redirect to `/learning/assessments` or `/student/lessons#assessments`; deep student attempt and result routes remain under `/student/assessments`.
 - reusable repository files can be listed, selected and previewed freely by non-student actors; students still need normal content access and cannot use repository reuse.
 - services reject responses after the availability window closes and reject responses/correction against inactive questions.
 - changing `attemptsLimit` is treated as a structural assessment change once attempts exist.
@@ -147,7 +147,7 @@ Manager forms use the service command fields:
 
 ## Notes
 
-- The static EduAll quiz pages remain present only as compatibility entry points; they redirect to the real `/learning/assessments` and `/student/assessments` flows.
+- The static EduAll quiz pages remain present only as compatibility entry points; they redirect to the real `/learning/assessments` and `/student/lessons#assessments` flows.
 - Binary file upload answers are implemented through multipart submission and `PdfUploadService`; accepted formats are stored in question configuration.
 - Started attempts lock assessment structure through the services and the Builder UI.
 - Automatic correction is exposed only for `automatic` and `mixed` assessments and scores single-choice, multiple-choice and rating responses; manual score editing is exposed only for `manual` and `mixed` assessments.

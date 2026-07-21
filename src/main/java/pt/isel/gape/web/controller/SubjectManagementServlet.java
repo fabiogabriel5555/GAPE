@@ -94,6 +94,12 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
             "/coordinator/coordinator/subject/coordinator-subject-form.jsp";
     private static final String COORDINATOR_SUBJECT_DETAIL_JSP =
             "/coordinator/coordinator/subject/coordinator-subject-detail.jsp";
+    private static final String INSTRUCTOR_SUBJECT_LIST_JSP =
+            "/instructor/instructor/subject/instructor-subjects.jsp";
+    private static final String INSTRUCTOR_SUBJECT_FORM_JSP =
+            "/instructor/instructor/subject/instructor-subject-form.jsp";
+    private static final String INSTRUCTOR_SUBJECT_DETAIL_JSP =
+            "/instructor/instructor/subject/instructor-subject-detail.jsp";
 
     private final SubjectService subjectService;
     private final CourseService courseService;
@@ -905,7 +911,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId);
+        redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "#subject-coordinators");
     }
 
     private void updateCoordinatorAssignment(
@@ -929,7 +935,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId);
+        redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "#subject-coordinators");
     }
 
     private void removeCoordinatorAssignment(
@@ -952,7 +958,7 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
         } catch (RuntimeException exception) {
             flashError(request, messageFor(exception));
         }
-        redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId);
+        redirectToReturnPath(request, response, subjectBasePath(request) + "/" + subjectId + "#subject-coordinators");
     }
 
     private void archiveSubject(HttpServletRequest request, HttpServletResponse response, long subjectId)
@@ -1225,15 +1231,24 @@ public final class SubjectManagementServlet extends DashboardServletSupport {
     }
 
     private static String subjectListJsp(HttpServletRequest request) {
-        return isLimitedSubjectRequest(request) ? COORDINATOR_SUBJECT_LIST_JSP : ADMIN_SUBJECT_LIST_JSP;
+        if (isCoordinatorSubjectRequest(request)) {
+            return COORDINATOR_SUBJECT_LIST_JSP;
+        }
+        return isTeacherSubjectRequest(request) ? INSTRUCTOR_SUBJECT_LIST_JSP : ADMIN_SUBJECT_LIST_JSP;
     }
 
     private static String subjectFormJsp(HttpServletRequest request) {
-        return isCoordinatorSubjectRequest(request) ? COORDINATOR_SUBJECT_FORM_JSP : ADMIN_SUBJECT_FORM_JSP;
+        if (isCoordinatorSubjectRequest(request)) {
+            return COORDINATOR_SUBJECT_FORM_JSP;
+        }
+        return isTeacherSubjectRequest(request) ? INSTRUCTOR_SUBJECT_FORM_JSP : ADMIN_SUBJECT_FORM_JSP;
     }
 
     private static String subjectDetailJsp(HttpServletRequest request) {
-        return isLimitedSubjectRequest(request) ? COORDINATOR_SUBJECT_DETAIL_JSP : ADMIN_SUBJECT_DETAIL_JSP;
+        if (isCoordinatorSubjectRequest(request)) {
+            return COORDINATOR_SUBJECT_DETAIL_JSP;
+        }
+        return isTeacherSubjectRequest(request) ? INSTRUCTOR_SUBJECT_DETAIL_JSP : ADMIN_SUBJECT_DETAIL_JSP;
     }
 
     private static boolean isCoordinatorSubjectRequest(HttpServletRequest request) {

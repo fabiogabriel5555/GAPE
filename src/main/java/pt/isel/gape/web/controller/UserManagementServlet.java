@@ -65,7 +65,6 @@ public final class UserManagementServlet extends DashboardServletSupport {
     private final ApplicationReadService.Courses courseDAO;
     private final ApplicationReadService.CourseSubjects courseSubjectDAO;
     private final ApplicationReadService.Subjects subjectDAO;
-    private final ApplicationReadService.Enrollments enrollmentDAO;
     private final ApplicationReadService.CoordinateSubjects coordinateSubjectDAO;
     private final ApplicationReadService.TeachClassGroups teachClassGroupDAO;
     private final ApplicationReadService.ManageOrganizations manageOrganizationDAO;
@@ -94,7 +93,6 @@ public final class UserManagementServlet extends DashboardServletSupport {
         this.courseDAO = readService.courses();
         this.courseSubjectDAO = readService.courseSubjects();
         this.subjectDAO = readService.subjects();
-        this.enrollmentDAO = readService.enrollments();
         this.coordinateSubjectDAO = readService.coordinateSubjects();
         this.teachClassGroupDAO = readService.teachClassGroups();
         this.manageOrganizationDAO = readService.manageOrganizations();
@@ -734,7 +732,6 @@ public final class UserManagementServlet extends DashboardServletSupport {
     private void prepareProfileContextOptions(HttpServletRequest request, SessionUser actor) throws ServletException {
         List<Organization> organizations = assignableOrganizations(actor);
         request.setAttribute("teacherContextOptions", teacherContextOptions(organizations));
-        request.setAttribute("studentContextOptions", studentContextOptions(organizations));
     }
 
     private List<Organization> assignableOrganizations(SessionUser actor)
@@ -850,56 +847,7 @@ public final class UserManagementServlet extends DashboardServletSupport {
         }
     }
 
-    private List<ProfileContextOptionView> studentContextOptions(List<Organization> organizations)
-            throws ServletException {
-        try {
-            List<ProfileContextOptionView> options = new ArrayList<>();
-            for (Organization organization : organizations) {
-                List<Course> courses = activeProfileCourses(organization.id());
-                if (courses.isEmpty()) {
-                    continue;
-                }
-                String organizationKey = profileNodeKey("STUDENT_ORGANIZATION", organization.id());
-                options.add(profileHeading(
-                        AccessProfileType.STUDENT,
-                        AccessEntityType.ORGANIZATION,
-                        organization.id(),
-                        organization.name(),
-                        "Organization",
-                        organizationKey,
-                        "",
-                        0
-                ));
-                for (Course course : courses) {
-                    String courseKey = profileNodeKey("STUDENT_COURSE", course.id());
-                    options.add(new ProfileContextOptionView(
-                            AccessProfileType.STUDENT,
-                            AccessEntityType.COURSE,
-                            course.id(),
-                            null,
-                            course.name(),
-                            "Course",
-                            courseKey,
-                            organizationKey,
-                            1,
-                            true
-                    ));
-                }
-            }
-            return options;
-        } catch (SQLException exception) {
-            throw new ServletException("Could not load student profile contexts", exception);
-        }
-    }
-
     private List<Course> activeCourses(long organizationId) throws SQLException {
-        return courseDAO.findByOrganization(organizationId).stream()
-                .filter(course -> course.state() == CourseState.ACTIVE)
-                .sorted(Comparator.comparing(Course::name))
-                .toList();
-    }
-
-    private List<Course> activeProfileCourses(long organizationId) throws SQLException {
         return courseDAO.findByOrganization(organizationId).stream()
                 .filter(course -> course.state() == CourseState.ACTIVE)
                 .sorted(Comparator.comparing(Course::name))
@@ -1550,14 +1498,6 @@ public final class UserManagementServlet extends DashboardServletSupport {
                         AccessProfileType.TEACHER,
                         AccessEntityType.CLASS_GROUP,
                         classGroupId,
-                        null
-                ));
-            }
-            for (Long courseId : enrollmentDAO.findActiveCourseIdsByStudent(userId)) {
-                assignments.add(new AccessProfileContextAssignment(
-                        AccessProfileType.STUDENT,
-                        AccessEntityType.COURSE,
-                        courseId,
                         null
                 ));
             }

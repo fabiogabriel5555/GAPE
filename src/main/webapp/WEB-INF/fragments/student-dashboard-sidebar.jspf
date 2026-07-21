@@ -1,21 +1,24 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <c:set var="sidebarEventUnreadCount" value="${empty eventUnreadCount ? 0 : eventUnreadCount}" />
 <c:set var="sidebarMessageUnreadCount" value="${empty messageUnreadCount ? 0 : messageUnreadCount}" />
+<c:set var="sidebarStudentClassGroupEventCount" value="${empty studentClassGroupEventCount ? 0 : studentClassGroupEventCount}" />
+<c:set var="sidebarStudentCertificateEventCount" value="${empty studentCertificateEventCount ? 0 : studentCertificateEventCount}" />
 <div class="student-dashboard-sidebar px-20 py-24 max-w-288-px bg-white rounded-10 w-100 position-relative" data-active-menu="${activeMenu}">
     <div class="text-center">
         <div class="gape-student-sidebar-avatar text-56">
             <%@ include file="/WEB-INF/fragments/user-avatar-content.jspf" %>
         </div>
-        <h5 class="mb-4 text-neutral-500 text-line-1"><c:out value="${studentName}"/></h5>
+        <h5 class="mb-4 text-neutral-500 text-line-1" title="#<c:out value='${studentId}'/> - <c:out value='${studentFirstName}'/> <c:out value='${studentLastName}'/>">
+            #<c:out value="${studentId}"/> - <c:out value="${studentFirstName}"/> <c:out value="${studentLastName}"/>
+        </h5>
         <span class="text-neutral-500 text-14 fw-normal text-line-1 d-block"><c:out value="${studentEmail}"/></span>
     </div>
     <span class="w-100 bg-neutral-40 mb-24 mt-24 h-1"></span>
-    <div class="student-dashboard-sidebar-menu">
+        <div class="student-dashboard-sidebar-menu">
         <div class="student-dashbord-scrollbar">
-            <span class="text-neutral-500 fw-normal text-14 mb-8">Welcome <c:out value="${studentFirstName}"/>,</span>
             <ul>
                 <li class="mb-8 ${activeMenu == 'dashboard' ? 'activePage' : ''}" data-menu-key="dashboard">
-                    <a href="${pageContext.request.contextPath}/student/student/dashboard/student-dashboard.jsp" aria-current="${activeMenu == 'dashboard' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                    <a href="${pageContext.request.contextPath}/dashboard" aria-current="${activeMenu == 'dashboard' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                         <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph-bold ph-house"></i></span>
                         Dashboard
                     </a>
@@ -77,9 +80,12 @@
                     </c:if>
                 </li>
                 <li class="mb-8 ${activeMenu == 'class-groups' ? 'activePage' : ''}" data-menu-key="class-groups">
-                    <a href="${pageContext.request.contextPath}/student/class-groups" aria-current="${activeMenu == 'class-groups' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                    <a href="${pageContext.request.contextPath}/student/class-groups" aria-current="${activeMenu == 'class-groups' ? 'page' : 'false'}" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                         <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-users-three"></i></span>
                         Class Groups
+                        <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarStudentClassGroupEventCount > 0 ? '' : ' d-none'}" data-student-class-group-event-badge>
+                            ${sidebarStudentClassGroupEventCount}
+                        </span>
                     </a>
                     <c:if test="${not empty studentClassGroupContextId}">
                         <ul class="mt-8 ps-24">
@@ -92,22 +98,19 @@
                         </ul>
                     </c:if>
                 </li>
-                <li class="mb-8 ${activeMenu == 'lessons' ? 'activePage' : ''}" data-menu-key="lessons">
-                    <a href="${pageContext.request.contextPath}/student/lessons" aria-current="${activeMenu == 'lessons' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-file-text"></i></span>
-                        Lessons
-                    </a>
-                </li>
-                <li class="mb-8 ${activeMenu == 'assessments' ? 'activePage' : ''}" data-menu-key="assessments">
-                    <a href="${pageContext.request.contextPath}/student/assessments" aria-current="${activeMenu == 'assessments' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
-                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-seal-question"></i></span>
-                        Assessments
+                <li class="mb-8 ${activeMenu == 'learning' or activeMenu == 'lessons' or activeMenu == 'assessments' ? 'activePage' : ''}" data-menu-key="learning">
+                    <a href="${pageContext.request.contextPath}/student/lessons" aria-current="${activeMenu == 'learning' or activeMenu == 'lessons' or activeMenu == 'assessments' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                        <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-files"></i></span>
+                        Lessons &amp; Assessments
                     </a>
                 </li>
                 <li class="mb-8 ${activeMenu == 'attendance' or activeMenu == 'grades' ? 'activePage' : ''}" data-menu-key="attendance">
-                    <a href="${pageContext.request.contextPath}/student/attendance" aria-current="${activeMenu == 'attendance' or activeMenu == 'grades' ? 'page' : 'false'}" class="fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
+                    <a href="${pageContext.request.contextPath}/student/attendance" aria-current="${activeMenu == 'attendance' or activeMenu == 'grades' ? 'page' : 'false'}" class="gape-sidebar-badged-item position-relative fw-medium d-flex align-items-center text-14 gap-8 text-neutral-500 hover-bg-main-600 px-24 py-10 hover-text-white rounded-12 item-hover flex-wrap">
                         <span class="text-16 text-main-600 item-hover__text transition-03"><i class="ph ph-user-check"></i></span>
                         Enrollments &amp; Certificates
+                        <span class="gape-sidebar-event-badge badge rounded-pill bg-danger-600 text-white text-10 px-6 py-2${sidebarStudentCertificateEventCount > 0 ? '' : ' d-none'}" data-student-certificate-event-badge>
+                            ${sidebarStudentCertificateEventCount}
+                        </span>
                     </a>
                 </li>
             </ul>

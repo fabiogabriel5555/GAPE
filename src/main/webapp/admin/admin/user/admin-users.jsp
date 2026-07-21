@@ -268,7 +268,7 @@
                                                 </a>
                                             </c:if>
                                             <c:if test="${sessionScope['gape.auth.canViewReports']}">
-                                                <a href="${pageContext.request.contextPath}/admin/activity-log?userId=${user.id}" class="text-22 text-neutral-500 hover-text-main-600" title="Audit">
+                                                <a href="${pageContext.request.contextPath}/dashboard?tab=logs&amp;userId=${user.id}" class="text-22 text-neutral-500 hover-text-main-600" title="Logs">
                                                     <i class="ph ph-list-checks"></i>
                                                 </a>
                                             </c:if>

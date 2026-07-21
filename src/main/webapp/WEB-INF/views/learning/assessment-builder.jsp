@@ -343,17 +343,24 @@
         }
 
         .ad-correction-modal--corrected {
-            --ad-primary: #16a34a;
-            --ad-primary-dark: #15803d;
-            --ad-primary-soft: #f0fdf4;
-            --ad-primary-surface: #f7fef9;
-            --ad-primary-rgb: 22, 163, 74;
-            --ad-primary-highlight-rgb: 74, 222, 128;
+            --ad-correction-success-bg: #f0fdf4;
+            --ad-correction-success-surface: #f7fef9;
+            --ad-correction-success-border: #bbf7d0;
         }
 
-        .ad-correction-modal--corrected .modal-header {
-            background: linear-gradient(135deg, rgba(var(--ad-primary-rgb), .12), rgba(var(--ad-primary-highlight-rgb), .06)), #fff;
-            border-bottom-color: rgba(var(--ad-primary-rgb), .24);
+        .ad-correction-modal--corrected .modal-content {
+            background: var(--ad-correction-success-bg);
+            border: 1px solid var(--ad-correction-success-border);
+        }
+
+        .ad-correction-modal--corrected .modal-header,
+        .ad-correction-modal--corrected .modal-footer {
+            background: var(--ad-correction-success-bg);
+            border-color: var(--ad-correction-success-border);
+        }
+
+        .ad-correction-modal--corrected .modal-body {
+            background: var(--ad-correction-success-surface);
         }
 
         .ad-correction-modal .modal-content {
@@ -381,6 +388,23 @@
             padding: 16px 24px;
         }
 
+        /* Keep the corrected state visibly secondary-green without changing
+           the shared blue action token used by Submit Correction. */
+        .ad-correction-modal.ad-correction-modal--corrected .modal-content {
+            background: var(--ad-correction-success-bg);
+            border: 1px solid var(--ad-correction-success-border);
+        }
+
+        .ad-correction-modal.ad-correction-modal--corrected .modal-header,
+        .ad-correction-modal.ad-correction-modal--corrected .modal-footer {
+            background: var(--ad-correction-success-bg);
+            border-color: var(--ad-correction-success-border);
+        }
+
+        .ad-correction-modal.ad-correction-modal--corrected .modal-body {
+            background: var(--ad-correction-success-surface);
+        }
+
         .ad-correction-footer-actions {
             display: flex;
             align-items: center;
@@ -396,10 +420,14 @@
         }
 
         .ad-correction-summary-grid {
+            position: sticky;
+            top: -1px;
+            z-index: 5;
             display: grid;
             gap: 12px;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             margin-bottom: 18px;
+            padding: 4px 0 12px;
         }
 
         .ad-correction-summary-card {
@@ -886,7 +914,7 @@
         .ad-structure-list-header, .ad-structure-row { align-items: center; display: grid; gap: 14px; grid-template-columns: minmax(280px, 1.7fr) minmax(120px, .55fr) minmax(120px, .55fr) minmax(120px, .55fr) minmax(150px, auto); }
         .ad-structure-list-header { color: #475569; font-size: 13px; font-weight: 600; padding: 0 16px 12px; }
         .ad-assignment-list-header, .ad-assignment-row { grid-template-columns: minmax(250px, 1.25fr) minmax(220px, 1.05fr) minmax(135px, .55fr) minmax(92px, auto); }
-        .ad-attempt-list-header, .ad-attempt-row { grid-template-columns: minmax(230px, 1.4fr) minmax(70px, .35fr) minmax(145px, .7fr) minmax(118px, .55fr) minmax(112px, .5fr) minmax(72px, auto); }
+        .ad-attempt-list-header, .ad-attempt-row { grid-template-columns: minmax(250px, 1.45fr) minmax(76px, .32fr) minmax(142px, .66fr) minmax(104px, .42fr) minmax(112px, .46fr) minmax(82px, auto); }
         /* A row may contain a two-line student identity beside one-line values.
            Let every grid cell occupy the same row height, then centre its own
            content.  This keeps the Attempt, Submitted, Score, State and Actions
@@ -904,11 +932,13 @@
         .ad-assignment-cell, .ad-attempt-cell { min-width: 0; }
         .ad-structure-cell-label { color: #64748b; display: none; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
         .ad-attempt-waiting { color: #94a3b8; font-size: 13px; white-space: nowrap; }
-        .ad-detail-action { background: transparent; border: 0; color: #64748b; font-size: 20px; line-height: 1; padding: 0; }
-        .ad-detail-action:hover { color: var(--ad-primary-dark); }
-        .ad-detail-action--danger:hover { color: #dc2626; }
-        .ad-detail-action--decision { align-items: center; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; color: var(--ad-primary); display: inline-flex; font-size: 18px; height: 34px; justify-content: center; transition: background-color .2s ease, border-color .2s ease, color .2s ease, transform .2s ease; width: 34px; }
-        .ad-detail-action--decision:hover { background: #dbeafe; border-color: #60a5fa; color: var(--ad-primary-dark); transform: translateY(-1px); }
+        .ad-detail-action { align-items: center; background: transparent; border: 1px solid transparent; border-radius: 8px; color: #64748b; display: inline-flex; font-size: 20px; height: 34px; justify-content: center; line-height: 1; padding: 0; transition: background-color .2s ease, border-color .2s ease, color .2s ease; width: 34px; }
+        .ad-detail-action:hover { background: #eff6ff; border-color: rgba(37, 99, 235, .28); color: var(--ad-primary-dark); }
+        .ad-detail-action--danger:hover { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
+        .ad-detail-action--decision { animation: ad-decision-attention 1.35s ease-in-out infinite; font-size: 18px; }
+        .ad-detail-action--decision:hover { background: #dbeafe; border-color: #60a5fa; color: var(--ad-primary-dark); }
+        @keyframes ad-decision-attention { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        @media (prefers-reduced-motion: reduce) { .ad-detail-action--decision { animation: none; } }
         .ad-enrollment-tabs { border-bottom: 1px solid var(--ad-border); display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 20px; padding-bottom: 12px; }
         .ad-enrollment-tab { align-items: center; background: #fff; border: 1px solid var(--ad-border); border-radius: 8px; color: var(--ad-ink); display: flex; font-size: 14px; font-weight: 600; gap: 10px; justify-content: center; min-height: 46px; padding: 10px 14px; transition: background-color .2s ease, border-color .2s ease, color .2s ease; }
         .ad-enrollment-tab:hover, .ad-enrollment-tab.is-active { background: #eff6ff; border-color: rgba(37, 99, 235, .55); color: var(--ad-primary-dark); }
@@ -925,11 +955,15 @@
         .modal-dialog.gape-assessment-modal-dialog .modal-footer, .modal-dialog.gape-assessment-modal-dialog .modal-header { flex: 0 0 auto; }
         .modal-dialog.gape-assessment-modal-dialog.ad-correction-dialog { width: min(1120px, calc(100vw - 32px)); }
         .modal-dialog.gape-assessment-modal-dialog.ad-enrollment-modal-dialog { width: min(620px, calc(100vw - 32px)); }
+        .modal-dialog.gape-assessment-modal-dialog.ad-enrollment-decision-modal-dialog { max-width: 500px; width: min(500px, calc(100vw - 32px)); }
         .ad-enrollment-modal-dialog .modal-content { border: 0; border-radius: 12px; }
         .ad-enrollment-modal-dialog .modal-header { padding: 20px 24px; }
         .ad-enrollment-modal-dialog .modal-body { padding: 22px 24px; }
         .ad-enrollment-modal-dialog .modal-footer { padding: 16px 24px; }
-        .ad-enrollment-decision-summary { background: #f8fafc; border: 1px solid var(--ad-border); border-radius: 8px; display: flex; flex-direction: column; padding: 14px 16px; }
+        .ad-enrollment-decision-modal-dialog .modal-header { padding: 18px 20px; }
+        .ad-enrollment-decision-modal-dialog .modal-body { padding: 20px; }
+        .ad-enrollment-decision-modal-dialog .modal-footer { align-items: center; gap: 8px; padding: 16px 20px; }
+        .ad-enrollment-decision-summary { background: #f8fafc; border: 1px solid var(--ad-border); border-radius: 8px; display: grid; gap: 6px; padding: 16px; }
         .ad-shell--completed .ad-hero .bg-info-50 { background: var(--ad-primary-soft) !important; color: var(--ad-primary) !important; }
         .ad-shell--completed .ad-sort-toggle:hover, .ad-shell--completed .ad-sort-toggle.is-active,
         .ad-shell--completed .ad-enrollment-tab:hover, .ad-shell--completed .ad-enrollment-tab.is-active { background: var(--ad-primary-soft); border-color: rgba(var(--ad-primary-rgb), .55); }
@@ -3311,7 +3345,7 @@
 
             function updateAttempt(payload) {
                 Array.prototype.slice.call(document.querySelectorAll('[data-ad-attempt-score="' + payload.attemptId + '"]')).forEach(function (target) {
-                    target.textContent = payload.scoreOverMax || 'Not assigned yet';
+                    target.textContent = payload.scoreOverMax || '-';
                 });
                 Array.prototype.slice.call(document.querySelectorAll('[data-ad-attempt-state="' + payload.attemptId + '"]')).forEach(function (target) {
                     target.textContent = payload.state || target.textContent;
@@ -3327,7 +3361,7 @@
                     }
                     var label = document.querySelector('[data-ad-response-score-label="' + item.id + '"]');
                     if (label) {
-                        label.textContent = item.scoreLabel || 'Not assigned yet';
+                        label.textContent = item.scoreLabel || '-';
                         label.classList.toggle('text-success-600', Boolean(item.score));
                         label.classList.toggle('text-warning-600', !item.score);
                     }
@@ -3353,9 +3387,6 @@
             }
 
             forms.forEach(function (form) {
-                if (form.hasAttribute('data-assessment-live-correction-form')) {
-                    return;
-                }
                 form.addEventListener('submit', function (event) {
                     event.preventDefault();
                     var attemptId = form.dataset.adAttemptId || '';
@@ -4919,7 +4950,9 @@
         function clearModalBackdrops() {
             document.querySelectorAll('.modal-backdrop').forEach(function (backdrop) { backdrop.remove(); });
             document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
             document.body.style.removeProperty('padding-right');
+            document.documentElement.style.removeProperty('overflow');
         }
 
         async function replaceRoot(html, requestedEnrollmentTab) {
@@ -4936,14 +4969,47 @@
             });
             current.innerHTML = incoming.innerHTML;
             clearModalBackdrops();
+            // A live correction response contains the already-rendered
+            // attempts panel.  Reattach its modal nodes explicitly; otherwise
+            // the new review buttons would point at missing targets after the
+            // first correction and Bootstrap would fail on the next click.
+            if (panel === 'attempts') {
+                appendCorrectionModals(parsed);
+            }
             await activatePanel(panel);
             syncEnrollmentTab(nestedTab);
             syncAttemptTab(nestedAttemptTab);
         }
 
         function closeModal(modal) {
-            if (!modal) { return; }
-            if (window.bootstrap && window.bootstrap.Modal) { window.bootstrap.Modal.getOrCreateInstance(modal).hide(); }
+            if (!modal) { return Promise.resolve(); }
+            if (!(window.bootstrap && window.bootstrap.Modal)) {
+                modal.classList.remove('show');
+                modal.setAttribute('aria-hidden', 'true');
+                modal.style.display = 'none';
+                return Promise.resolve();
+            }
+            var instance = window.bootstrap.Modal.getOrCreateInstance(modal);
+            if (!modal.classList.contains('show')) {
+                return Promise.resolve();
+            }
+            return new Promise(function (resolve) {
+                var settled = false;
+                var finish = function () {
+                    if (settled) { return; }
+                    settled = true;
+                    modal.removeEventListener('hidden.bs.modal', finish);
+                    unlockModalGeometry(modal);
+                    clearModalBackdrops();
+                    resolve();
+                };
+                modal.addEventListener('hidden.bs.modal', finish, { once: true });
+                instance.hide();
+                // The fallback protects the live-refresh path if a browser
+                // drops the Bootstrap transition event while the modal node
+                // is being replaced.
+                window.setTimeout(finish, 700);
+            });
         }
 
         function lockModalGeometry(modal) {
@@ -5026,13 +5092,30 @@
             return external || form.querySelector('[data-ad-auto-correct-button], [type="submit"]');
         }
 
+        function correctionFormBody(form) {
+            var body = new URLSearchParams();
+            new FormData(form).forEach(function (value, name) {
+                body.append(name, value);
+            });
+            // The score inputs are intentionally rendered beside the question cards,
+            // outside the small form that owns the CSRF and return fields.  Keep them
+            // in the request explicitly so every browser submits the same correction
+            // payload instead of relying on external form-owner serialization.
+            correctionInputs(form).forEach(function (input) {
+                if (input.name) {
+                    body.set(input.name, input.value);
+                }
+            });
+            return body.toString();
+        }
+
         function applyCorrectionPayload(payload) {
             if (!payload || !payload.attemptId) {
                 return;
             }
             var tones = ['bg-main-50', 'text-main-600', 'bg-warning-30', 'text-warning-600', 'bg-success-50', 'text-success-600', 'bg-neutral-30', 'text-neutral-600', 'bg-danger-50', 'text-danger-600'];
             document.querySelectorAll('[data-ad-attempt-score="' + payload.attemptId + '"]').forEach(function (target) {
-                target.textContent = payload.scoreOverMax || 'Not assigned yet';
+                target.textContent = payload.scoreOverMax || '-';
             });
             document.querySelectorAll('[data-ad-attempt-state="' + payload.attemptId + '"]').forEach(function (target) {
                 target.textContent = payload.state || target.textContent;
@@ -5047,7 +5130,7 @@
                 }
                 var label = document.querySelector('[data-ad-response-score-label="' + item.id + '"]');
                 if (label) {
-                    label.textContent = item.scoreLabel || 'Not assigned yet';
+                    label.textContent = item.scoreLabel || '-';
                     label.classList.toggle('text-success-600', item.score !== '');
                     label.classList.toggle('text-warning-600', item.score === '');
                 }
@@ -5062,6 +5145,25 @@
         }
 
         function bindCorrectionInteractions() {
+            function recalculateAttemptScore(modal) {
+                if (!modal) return;
+                var inputs = Array.prototype.slice.call(modal.querySelectorAll('[data-ad-response-score-input]'));
+                if (!inputs.length) return;
+                var total = 0;
+                var maximum = 0;
+                inputs.forEach(function (input) {
+                    var score = parseFloat(String(input.value || '').replace(',', '.'));
+                    var max = parseFloat(String(input.getAttribute('data-ad-score-max') || '').replace(',', '.'));
+                    if (Number.isFinite(score)) total += score;
+                    if (Number.isFinite(max)) maximum += max;
+                });
+                var target = modal.querySelector('[data-ad-attempt-score]');
+                if (target) {
+                    target.textContent = (Math.round(total * 100) / 100).toString().replace(/\.0+$/, '')
+                            + ' / ' + (Math.round(maximum * 100) / 100).toString().replace(/\.0+$/, '');
+                }
+            }
+
             document.addEventListener('click', function (event) {
                 var toggle = event.target.closest('[data-ad-expected-toggle]');
                 if (!toggle || !toggle.closest('[data-assessment-correction-modal]')) {
@@ -5084,6 +5186,7 @@
                 var input = event.target.closest('[data-ad-response-score-input]');
                 if (input && input.closest('[data-assessment-correction-modal]')) {
                     validateCorrectionScore(input, true);
+                    recalculateAttemptScore(input.closest('[data-assessment-correction-modal]'));
                 }
             });
 
@@ -5099,6 +5202,12 @@
                 if (!form) {
                     return;
                 }
+                // Automatic correction is an in-place recalculation.  It must
+                // never enter the manual submit path (which is the only path
+                // allowed to close the Correct Attempt dialog).
+                if (form.hasAttribute('data-ad-auto-correct-form')) {
+                    return;
+                }
                 event.preventDefault();
                 if (form.dataset.assessmentCorrectionSubmitting === 'true') {
                     return;
@@ -5112,18 +5221,25 @@
                 try {
                     var response = await fetch(withCurrentSession(form.action), {
                         method: (form.method || 'POST').toUpperCase(),
-                        body: new FormData(form),
+                        body: correctionFormBody(form),
                         credentials: 'same-origin',
-                        headers: { 'Accept': 'application/json, text/html', 'X-Requested-With': 'XMLHttpRequest' }
+                        headers: {
+                            'Accept': 'application/json, text/html',
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
                     });
+                    var responseBody = await response.text();
                     if (!response.ok) {
-                        throw new Error('The correction could not be completed.');
+                        throw new Error(responseBody.trim() || 'The correction could not be completed.');
                     }
                     var contentType = response.headers.get('content-type') || '';
                     if (contentType.indexOf('application/json') !== -1) {
-                        applyCorrectionPayload(await response.json());
+                        applyCorrectionPayload(JSON.parse(responseBody));
+                        await closeModal(form.closest('.modal'));
                     } else {
-                        await replaceRoot(await response.text());
+                        await closeModal(form.closest('.modal'));
+                        await replaceRoot(responseBody);
                     }
                 } catch (error) {
                     window.alert(error.message || 'The correction could not be completed.');
@@ -5183,7 +5299,7 @@
                     });
                     var html = await response.text();
                     if (!response.ok) { throw new Error('The enrollment action could not be completed.'); }
-                    closeModal(modal);
+                    await closeModal(modal);
                     await replaceRoot(html, requested);
                 } catch (error) {
                     window.alert(error.message || 'The enrollment action could not be completed.');

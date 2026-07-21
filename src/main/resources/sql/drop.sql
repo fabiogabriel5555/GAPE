@@ -95,9 +95,15 @@ DROP TRIGGER IF EXISTS bi_message_validate;
 DROP TRIGGER IF EXISTS bu_message_validate;
 DROP TRIGGER IF EXISTS bi_receive_message_validate;
 DROP TRIGGER IF EXISTS bi_activity_log_validate;
+DROP TRIGGER IF EXISTS ai_activity_log_scope_actor;
+DROP TRIGGER IF EXISTS bu_activity_log_immutable;
+DROP TRIGGER IF EXISTS bd_activity_log_immutable;
+DROP TRIGGER IF EXISTS bu_activity_log_scope_immutable;
+DROP TRIGGER IF EXISTS bd_activity_log_scope_immutable;
 DROP TRIGGER IF EXISTS bi_deletion_request_validate;
 DROP TRIGGER IF EXISTS bu_deletion_request_validate;
 
+DROP TABLE IF EXISTS activity_log_scope;
 DROP TABLE IF EXISTS activity_log;
 DROP TABLE IF EXISTS associate_channel_assessment;
 DROP TABLE IF EXISTS associate_channel_content_block;

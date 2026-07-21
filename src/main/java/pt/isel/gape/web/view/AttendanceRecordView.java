@@ -15,19 +15,25 @@ public final class AttendanceRecordView {
     private final String studentName;
     private final String studentEmail;
     private final boolean hasJustification;
+    private final boolean justificationPending;
+    private final AbsenceJustificationView justification;
 
     private AttendanceRecordView(
             AttendanceRecord record,
             LessonView lesson,
             String studentName,
             String studentEmail,
-            boolean hasJustification
+            boolean hasJustification,
+            boolean justificationPending,
+            AbsenceJustificationView justification
     ) {
         this.record = record;
         this.lesson = lesson;
         this.studentName = studentName == null || studentName.isBlank() ? "Unknown student" : studentName;
         this.studentEmail = studentEmail == null ? "" : studentEmail;
         this.hasJustification = hasJustification;
+        this.justificationPending = justificationPending;
+        this.justification = justification;
     }
 
     public static AttendanceRecordView from(
@@ -37,7 +43,18 @@ public final class AttendanceRecordView {
             String studentEmail,
             boolean hasJustification
     ) {
-        return new AttendanceRecordView(record, lesson, studentName, studentEmail, hasJustification);
+        return new AttendanceRecordView(record, lesson, studentName, studentEmail, hasJustification, hasJustification, null);
+    }
+
+    public static AttendanceRecordView from(
+            AttendanceRecord record,
+            LessonView lesson,
+            String studentName,
+            String studentEmail,
+            boolean hasJustification,
+            boolean justificationPending
+    ) {
+        return new AttendanceRecordView(record, lesson, studentName, studentEmail, hasJustification, justificationPending, null);
     }
 
     public long getId() {
@@ -189,15 +206,40 @@ public final class AttendanceRecordView {
     }
 
     public boolean isAllowsJustification() {
-        return record.status().allowsJustification() && record.state() != AttendanceState.CANCELLED;
+        return record.status() == AttendanceStatus.JUSTIFIED
+                || (record.status().allowsJustification() && record.state() != AttendanceState.CANCELLED);
     }
 
     public boolean isHasJustification() {
         return hasJustification;
     }
 
+    public boolean isJustificationPending() {
+        return justificationPending;
+    }
+
+    public AbsenceJustificationView getJustification() {
+        return justification;
+    }
+
+    public AttendanceRecordView withJustification(AbsenceJustificationView value) {
+        return new AttendanceRecordView(
+                record,
+                lesson,
+                studentName,
+                studentEmail,
+                hasJustification,
+                justificationPending,
+                value
+        );
+    }
+
     public boolean isCanSubmitJustification() {
-        return isAllowsJustification() && !hasJustification;
+        return record.status().allowsJustification()
+                && record.state() != AttendanceState.CANCELLED
+                && (justification == null
+                || "rejected".equalsIgnoreCase(justification.getStateValue())
+                || "cancelled".equalsIgnoreCase(justification.getStateValue()));
     }
 
     public boolean isAbsent() {

@@ -125,7 +125,10 @@ public final class LessonView {
             case DRAFT -> "bg-neutral-30 text-neutral-600";
             case SCHEDULED -> "bg-main-50 text-main-600";
             case ACTIVE -> "bg-success-50 text-success-600";
-            case COMPLETED -> "bg-info-50 text-info-600";
+            /* Completed is a terminal state across every pedagogical item.
+               Keep it on the same danger/red palette as Cancelled so that
+               students cannot mistake a finished lesson for an active one. */
+            case COMPLETED -> "bg-danger-50 text-danger-600";
             case CANCELLED -> "bg-danger-50 text-danger-600";
         };
     }

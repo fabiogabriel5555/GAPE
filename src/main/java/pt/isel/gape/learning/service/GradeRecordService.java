@@ -136,12 +136,12 @@ public final class GradeRecordService {
             return false;
         }
         List<Long> assessmentIds = assessmentWeights.stream()
+                .filter(weight -> weight != null
+                        && weight.weight() != null
+                        && weight.weight().compareTo(BigDecimal.ZERO) > 0)
                 .map(GradeAssessmentWeight::assessmentId)
                 .toList();
         for (Long studentUserId : studentUserIds) {
-            if (!gradeSheetDAO.hasActiveGradeRecord(connection, gradeSheet.id(), studentUserId)) {
-                return false;
-            }
             for (Long assessmentId : assessmentIds) {
                 if (!gradeSheetDAO.hasCorrectedAssessmentScore(connection, studentUserId, assessmentId)) {
                     return false;

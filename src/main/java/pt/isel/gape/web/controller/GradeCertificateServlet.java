@@ -56,6 +56,7 @@ import pt.isel.gape.learning.model.ClassGroup;
 import pt.isel.gape.learning.model.ClassGroupState;
 import pt.isel.gape.learning.model.Course;
 import pt.isel.gape.learning.model.CourseOccurrence;
+import pt.isel.gape.learning.model.CourseSubjectAssociation;
 import pt.isel.gape.learning.model.GradeAssessmentWeight;
 import pt.isel.gape.learning.model.GradeRecord;
 import pt.isel.gape.learning.model.GradeSheet;
@@ -88,7 +89,10 @@ import pt.isel.gape.web.view.SelectOptionView;
 public final class GradeCertificateServlet extends DashboardServletSupport {
 
     private static final String MANAGEMENT_JSP = "/WEB-INF/views/learning/grades-certificates.jsp";
-    private static final String STUDENT_JSP = "/WEB-INF/views/student/grades-certificates.jsp";
+    private static final String ADMIN_MANAGEMENT_JSP = "/admin/admin/grade/admin-grades-certificates.jsp";
+    private static final String COORDINATOR_MANAGEMENT_JSP = "/coordinator/coordinator/grade/coordinator-grades-certificates.jsp";
+    private static final String INSTRUCTOR_MANAGEMENT_JSP = "/instructor/instructor/grade/instructor-grades-certificates.jsp";
+    private static final String STUDENT_JSP = "/student/student/grade/student-grades-certificates.jsp";
     private static final String VALIDATION_JSP = "/WEB-INF/views/public/certificate-validation.jsp";
     private static final DateTimeFormatter DOCUMENT_DATE = ApplicationDateTimeFormat.DISPLAY_DATE;
     private static final int MANAGEMENT_PAGE_SIZE = 10;
@@ -229,6 +233,14 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         }
     }
 
+    private String managementJsp(HttpServletRequest request) {
+        return switch (primaryProfile(requireCurrentUser(request))) {
+            case COORDINATOR -> COORDINATOR_MANAGEMENT_JSP;
+            case TEACHER -> INSTRUCTOR_MANAGEMENT_JSP;
+            default -> ADMIN_MANAGEMENT_JSP;
+        };
+    }
+
     private static String failureRedirect(String[] segments) {
         if (segments.length > 0 && "certificates".equals(segments[0])) {
             return "/learning/attendance#certificates";
@@ -345,7 +357,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         try {
             populateManagementAttributes(request, actor, profile, sourceIp);
             prepareDashboard(request, "attendance", "Enrollments & Certificates");
-            forward(request, response, MANAGEMENT_JSP);
+            forward(request, response, managementJsp(request));
         } catch (SQLException exception) {
             throw new ServletException("Failed to load grade and certificate management", exception);
         }
@@ -585,6 +597,40 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 .orElse(null);
     }
 
+    /**
+     * Returns the class-group source sheet, including Draft sheets, for the
+     * student Class Group Details modal.  The caller must already have
+     * checked the student's active enrollment in that exact class group.
+     */
+    GradeSheetView studentClassGroupGradeSheet(long classGroupId) throws SQLException {
+        GradeSheet gradeSheet = readService.findAllGradeSheets().stream()
+                .filter(sheet -> sheet.classGroupIds().contains(classGroupId))
+                .findFirst()
+                .orElse(null);
+        if (gradeSheet == null) {
+            return null;
+        }
+        Map<Long, Subject> subjects = mapById(readService.findAllSubjects(), Subject::id);
+        Map<Long, ClassGroup> classGroups = mapById(readService.findAllClassGroups(), ClassGroup::id);
+        Map<Long, Assessment> assessments = mapById(readService.findAllAssessments(), Assessment::id);
+        Map<Long, Course> courses = mapById(readService.findCatalogCourses(), Course::id);
+        Map<Long, CourseOccurrence> occurrences = mapById(readService.findAllCourseOccurrences(), CourseOccurrence::id);
+        Map<Long, Organization> organizations = mapById(readService.findActiveOrganizations(), Organization::id);
+        Map<Long, OrganicUnit> organicUnits = loadOrganicUnits(organizations);
+        Map<Long, User> users = mapById(readService.findAllUsers(), User::id);
+        return gradeSheetView(
+                gradeSheet,
+                subjects,
+                classGroups,
+                assessments,
+                courses,
+                occurrences,
+                organizations,
+                organicUnits,
+                users
+        );
+    }
+
     private List<GradeSheetView> visibleGradeSheetViews(
             SessionUser actor,
             AccessProfileType profile,
@@ -691,6 +737,15 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         List<GradeRecordView> recordViews = records.stream()
                 .map(record -> gradeRecordView(record, subjects, Map.of()))
                 .toList();
+        Map<Long, ClassGroup> classGroups = mapById(readService.findAllClassGroups(), ClassGroup::id);
+        Map<Long, Assessment> assessments = mapById(readService.findAllAssessments(), Assessment::id);
+        Map<Long, CourseOccurrence> occurrences = mapById(readService.findAllCourseOccurrences(), CourseOccurrence::id);
+        Map<Long, User> users = mapById(readService.findAllUsers(), User::id);
+        List<Long> ownSheetIds = records.stream().map(GradeRecord::gradeSheetId).distinct().toList();
+        List<GradeSheetView> ownGradeSheets = readService.findAllGradeSheets().stream()
+                .filter(sheet -> ownSheetIds.contains(sheet.id()))
+                .map(sheet -> gradeSheetView(sheet, subjects, classGroups, assessments, courses, occurrences, Map.of(), Map.of(), users))
+                .toList();
         List<CertificateView> certificateViews = certificateService.listOwnCertificates(
                         actor.userId(),
                         currentSessionId(request),
@@ -701,6 +756,8 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                 .toList();
 
         request.setAttribute("gradeRecords", recordViews);
+        request.setAttribute("gradeSheetGroups", gradeSheetGroups(ownGradeSheets));
+        request.setAttribute("studentGradeSheets", ownGradeSheets);
         request.setAttribute("certificates", certificateViews);
         request.setAttribute("gradeRecordCount", recordViews.size());
         request.setAttribute("approvedGradeRecordCount", recordViews.stream()
@@ -1217,6 +1274,7 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
         User student = users.get(certificate.studentUserId());
         Course course = courses.get(certificate.courseId());
         List<CertificateView.CertificateSubjectRowView> subjectRows = new ArrayList<>();
+        Map<Long, GradeSheet> linkedSheetsBySubject = new LinkedHashMap<>();
         String gradeSheetLabel = certificate.gradeSheetIds().stream()
                 .map(id -> {
                     GradeSheet gradeSheet = visibleGradeSheets == null ? null : visibleGradeSheets.get(id);
@@ -1228,16 +1286,37 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                         }
                     }
                     if (gradeSheet != null) {
-                        Subject subject = subjects.get(gradeSheet.subjectId());
-                        subjectRows.add(new CertificateView.CertificateSubjectRowView(
-                                subjectLabel(subject),
-                                subject == null ? null : subject.ects(),
-                                finalGradeForCertificateSheet(gradeSheet.id(), certificate.studentUserId())
-                        ));
+                        linkedSheetsBySubject.putIfAbsent(gradeSheet.subjectId(), gradeSheet);
                     }
                     return gradeSheet == null ? "Grade sheet " + id : gradeSheet.title();
                 })
                 .collect(Collectors.joining(", "));
+        if (course != null && certificate.state() != CertificateState.ISSUED) {
+            try {
+                for (CourseSubjectAssociation association : readService.findCourseSubjects(course.id())) {
+                    Subject subject = subjects.get(association.subjectId());
+                    GradeSheet gradeSheet = linkedSheetsBySubject.get(association.subjectId());
+                    subjectRows.add(new CertificateView.CertificateSubjectRowView(
+                            subjectLabel(subject),
+                            subject == null ? null : subject.ects(),
+                            gradeSheet == null
+                                    ? null
+                                    : finalGradeForCertificateSheet(gradeSheet.id(), certificate.studentUserId())
+                    ));
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to load certificate course subjects", exception);
+            }
+        } else {
+            for (GradeSheet gradeSheet : linkedSheetsBySubject.values()) {
+                Subject subject = subjects.get(gradeSheet.subjectId());
+                subjectRows.add(new CertificateView.CertificateSubjectRowView(
+                        subjectLabel(subject),
+                        subject == null ? null : subject.ects(),
+                        finalGradeForCertificateSheet(gradeSheet.id(), certificate.studentUserId())
+                ));
+            }
+        }
         return CertificateView.from(
                 certificate,
                 courseLabel(courses.get(certificate.courseId())),
@@ -2974,9 +3053,21 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
     public static final class GradeSheetCourseGroupView {
 
         private final List<GradeSheetSubjectGroupView> subjects;
+        private final List<GradeSheetCourseOccurrenceGroupView> occurrences;
 
         private GradeSheetCourseGroupView(List<GradeSheetSubjectGroupView> subjects) {
             this.subjects = subjects;
+            Map<Long, List<GradeSheetSubjectGroupView>> byOccurrence = new LinkedHashMap<>();
+            subjects.stream()
+                    .sorted(Comparator
+                            .comparing(GradeSheetSubjectGroupView::getOccurrenceLabel, String.CASE_INSENSITIVE_ORDER)
+                            .thenComparing(GradeSheetSubjectGroupView::getSubjectLabel, String.CASE_INSENSITIVE_ORDER))
+                    .forEach(subject -> byOccurrence
+                            .computeIfAbsent(subject.getOccurrenceId(), ignored -> new ArrayList<>())
+                            .add(subject));
+            this.occurrences = byOccurrence.values().stream()
+                    .map(GradeSheetCourseOccurrenceGroupView::new)
+                    .toList();
         }
 
         public long getCourseId() {
@@ -3051,6 +3142,35 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
             return subjects;
         }
 
+        /** Subject grade sheets grouped by their course occurrence. */
+        public List<GradeSheetCourseOccurrenceGroupView> getOccurrences() {
+            return occurrences;
+        }
+
+        public List<GradeSheetCourseOccurrenceGroupView> getActiveOccurrences() {
+            return occurrences.stream()
+                    .filter(occurrence -> !occurrence.isCompleted())
+                    .toList();
+        }
+
+        public List<GradeSheetCourseOccurrenceGroupView> getCompletedOccurrences() {
+            return occurrences.stream()
+                    .filter(GradeSheetCourseOccurrenceGroupView::isCompleted)
+                    .toList();
+        }
+
+        public List<GradeSheetSubjectGroupView> getActiveSubjects() {
+            return subjects.stream()
+                    .filter(subject -> !subject.isOccurrenceCompleted())
+                    .toList();
+        }
+
+        public List<GradeSheetSubjectGroupView> getCompletedSubjects() {
+            return subjects.stream()
+                    .filter(GradeSheetSubjectGroupView::isOccurrenceCompleted)
+                    .toList();
+        }
+
         public GradeSheetView getPrimarySheet() {
             return primarySheet();
         }
@@ -3083,6 +3203,52 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
 
         private GradeSheetView primarySheet() {
             return subjects.get(0).getSheets().get(0);
+        }
+    }
+
+    /** A visual grouping layer for one course occurrence inside a course. */
+    public static final class GradeSheetCourseOccurrenceGroupView {
+
+        private final List<GradeSheetSubjectGroupView> subjects;
+
+        private GradeSheetCourseOccurrenceGroupView(List<GradeSheetSubjectGroupView> subjects) {
+            this.subjects = List.copyOf(subjects);
+        }
+
+        public long getOccurrenceId() {
+            return primarySubject().getOccurrenceId();
+        }
+
+        public String getOccurrenceLabel() {
+            return primarySubject().getOccurrenceLabel();
+        }
+
+        public String getOccurrenceDateRangeLabel() {
+            return primarySubject().getOccurrenceDateRangeLabel();
+        }
+
+        public String getOccurrenceStateLabel() {
+            return primarySubject().getPrimarySheet().getCourseOccurrenceStateValue();
+        }
+
+        public boolean isCompleted() {
+            return primarySubject().isOccurrenceCompleted();
+        }
+
+        public int getSubjectCount() {
+            return subjects.size();
+        }
+
+        public int getSheetCount() {
+            return subjects.stream().mapToInt(GradeSheetSubjectGroupView::getSheetCount).sum();
+        }
+
+        public List<GradeSheetSubjectGroupView> getSubjects() {
+            return subjects;
+        }
+
+        private GradeSheetSubjectGroupView primarySubject() {
+            return subjects.get(0);
         }
     }
 
@@ -3256,6 +3422,28 @@ public final class GradeCertificateServlet extends DashboardServletSupport {
                     .filter(sheet -> !sheet.getClassGroupIds().isEmpty()
                             && "final".equals(sheet.getTypeValue()))
                     .toList();
+        }
+
+        public List<GradeSheetView> getActiveClassGroupSheets() {
+            return getClassGroupSheets().stream()
+                    .filter(sheet -> !isCompletedClassGroupSheet(sheet))
+                    .toList();
+        }
+
+        public List<GradeSheetView> getCompletedClassGroupSheets() {
+            return getClassGroupSheets().stream()
+                    .filter(this::isCompletedClassGroupSheet)
+                    .toList();
+        }
+
+        private boolean isCompletedClassGroupSheet(GradeSheetView sheet) {
+            return sheet.isPrimaryClassGroupCompleted()
+                    || "closed".equals(sheet.getStateValue())
+                    || "inactive".equals(sheet.getStateValue());
+        }
+
+        public boolean isOccurrenceCompleted() {
+            return primarySheet().isCourseOccurrenceCompleted();
         }
 
         public GradeSheetView getPrimarySheet() {

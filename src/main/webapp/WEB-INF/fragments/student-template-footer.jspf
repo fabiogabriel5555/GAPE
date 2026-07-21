@@ -10,3 +10,4 @@
         </div>
     </div>
 </footer>
+<%@ include file="/WEB-INF/fragments/event-read-receipt-script.jspf" %>

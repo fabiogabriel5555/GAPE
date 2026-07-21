@@ -394,8 +394,16 @@ public final class UserFormData {
                 throw new IllegalArgumentException("Invalid access profile context assignment");
             }
             long parentContextId = Long.parseLong(parts[3]);
+            AccessProfileType profileType = AccessProfileType.valueOf(parts[0]);
+            // Course enrollments are deliberately managed from the enrollment
+            // surfaces, never from Create/Edit User.  Ignore a stale or
+            // manually forged student-context field so this form cannot
+            // overwrite an existing student enrollment.
+            if (profileType == AccessProfileType.STUDENT) {
+                continue;
+            }
             assignments.add(new AccessProfileContextAssignment(
-                    AccessProfileType.valueOf(parts[0]),
+                    profileType,
                     AccessEntityType.valueOf(parts[1]),
                     Long.parseLong(parts[2]),
                     parentContextId <= 0L ? null : parentContextId

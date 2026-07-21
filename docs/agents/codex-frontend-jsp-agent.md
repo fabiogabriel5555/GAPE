@@ -60,10 +60,13 @@ Deve analisar o template EduAll completo e decidir autonomamente todas as pagina
 - Registar o que foi alterado e por que motivo, para facilitar manutencao.
 - Para validacao visual ou funcional no browser, consultar primeiro `docs/tests/browser-validation.md` e usar os defaults locais de Brave/Playwright, Tomcat e limpeza de processos.
 - Nao usar o browser integrado `iab` neste workspace; ele falha de forma recorrente. Usar sempre Brave/Playwright ou os scripts CDP documentados.
-- Para alteracoes visuais pequenas, seguir o fast visual QA loop de `docs/tests/browser-validation.md`: testes estruturais focados, um unico `mvn -q -DskipTests package`, um unico arranque de Browser Tomcat, checks `-NoScreenshot` primeiro, screenshots finais so depois dos checks passarem, e um unico `browser-stop.ps1` no `finally`.
+- Antes de alterar uma correcao visual, reproduzir e registar o estado exato: ator, rota, entidade, aba/modal/accordion/seleccao, viewport e os elementos que provam o defeito. Uma pagina aberta no estado default nao valida um defeito que so aparece num estado aninhado ou interativo.
+- Para alteracoes visuais pequenas, seguir o fast visual QA loop de `docs/tests/browser-validation.md`: testes estruturais focados, um unico `mvn -q -DskipTests package`, um unico arranque de Browser Tomcat, checks `-NoScreenshot` primeiro com os seletores do estado exato, screenshots finais so depois dos checks passarem, e um unico `browser-stop.ps1` no `finally`.
+- Para tabelas e grids, comparar o cabecalho e cada camada visivel com `-InspectSelector`; as ancoras da mesma coluna devem ficar a ate 2 CSS pixels, salvo indentacao documentada. Um check generico da rota nunca substitui esta medicao.
 - Nao alternar repetidamente entre arrancar e parar Tomcat durante a mesma correcao visual. Se o Tomcat ja estiver aberto para QA e a alteracao for apenas JSP/CSS/JS em `src/main/webapp`, sincronizar o ficheiro alterado para `target/browser-tomcat10/webapps/GAPE` conforme `Sync-WebappFile` na documentacao de browser, e repetir o check sem redeploy completo.
-- Nao executar a suite Maven completa para uma correcao estreita de alinhamento/layout, salvo pedido explicito ou risco claro de regressao backend.
+- Nao executar a suite Maven completa para diagnosticar uma correcao estreita de alinhamento/layout. Quando a validacao final a exigir, executa-la uma unica vez depois de a verificacao visual exata passar; nunca antes como substituto dessa verificacao, nem novamente sem alteracao de codigo ou de testes.
 - Alteracoes Java podem exigir recompilar e redeployar a webapp, mas nao implicam reset/reseed da base de dados. Recriar schema/dados so quando SQL, seed/demo data, bootstrap/migracao ou o cenario de teste realmente depender disso.
+- Antes de qualquer teste que possa reinicializar dados, registar a fixture visual e o modo documentado de a restaurar. No hand-off, indicar os tempos medidos de baseline, iteracoes, testes e evidencia final.
 
 ## Saidas Esperadas
 

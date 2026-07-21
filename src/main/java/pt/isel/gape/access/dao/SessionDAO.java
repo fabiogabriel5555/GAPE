@@ -72,7 +72,12 @@ public final class SessionDAO {
         }
     }
 
-    public Optional<Session> findByToken(String token) throws SQLException {
+    /**
+     * Looks up the database representation of a token. Callers handling a
+     * bearer token must hash it in {@code SessionService} before using this
+     * method.
+     */
+    public Optional<Session> findByStoredToken(String storedToken) throws SQLException {
         String sql = """
                 SELECT id_session, id_user, token, state, start_at, last_activity, end_at
                 FROM user_session
@@ -81,7 +86,7 @@ public final class SessionDAO {
 
         try (Connection connection = connectionProvider.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, token);
+            statement.setString(1, storedToken);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next()) {
                     return Optional.empty();

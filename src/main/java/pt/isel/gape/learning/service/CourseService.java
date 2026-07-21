@@ -377,9 +377,9 @@ public final class CourseService {
                     if (courseDAO.hasDomainDependencies(connection, courseId)) {
                         throw new IllegalStateException("Course with domain dependencies cannot be deleted");
                     }
-                    courseDAO.delete(connection, courseId);
                     auditService.record(connection, actorUserId, sessionId, "COURSE_DELETE",
                             "course", Long.toString(courseId), "success", sourceIp);
+                    courseDAO.delete(connection, courseId);
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();

@@ -157,7 +157,7 @@ class CsrfFilterTest {
         TestFilterChain chain = new TestFilterChain();
 
         filter.doFilter(
-                requestProxy("GET", "/sign-in.jsp", session, null),
+                requestProxy("GET", "/login.jsp", session, null),
                 responseProxy(new TestHttpServletResponse()),
                 chainProxy(chain)
         );
@@ -202,7 +202,7 @@ class CsrfFilterTest {
         TestFilterChain chain = new TestFilterChain();
 
         filter.doFilter(
-                requestProxy("POST", "/admin/admin-courses.jsp", null, null),
+                requestProxy("POST", "/admin/courses", null, null),
                 responseProxy(response),
                 chainProxy(chain)
         );

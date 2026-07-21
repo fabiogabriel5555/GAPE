@@ -8,7 +8,6 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -229,6 +228,7 @@ public final class UserService {
                             ? null
                             : normalizeProfileContextAssignments(profileContextAssignments);
                     rejectCoordinatorSubjectContextAssignments(selectedProfileContexts);
+                    rejectStudentCourseContextAssignments(selectedProfileContexts);
                     validateNoOverlappingProfileScopes(
                             connection,
                             normalizedCommand.accessProfiles(),
@@ -396,6 +396,7 @@ public final class UserService {
                             ? null
                             : normalizeProfileContextAssignments(profileContextAssignments);
                     rejectCoordinatorSubjectContextAssignments(selectedProfileContexts);
+                    rejectStudentCourseContextAssignments(selectedProfileContexts);
                     validateNoOverlappingProfileScopes(
                             connection,
                             normalizedCommand.accessProfiles(),
@@ -583,12 +584,12 @@ public final class UserService {
             if (connectionProvider != null) {
                 inTransaction(connection -> {
                     requireUser(connection, targetUserId);
+                    record(connection, actorUserId, sessionId, "USER_DELETE", "user_account", Long.toString(targetUserId), "success", sourceIp);
                     if (!userDAO.delete(connection, targetUserId)) {
                         throw new IllegalArgumentException("Unknown user: " + targetUserId);
                     }
                     ensureAllActiveOrganizationsHaveAdministrators(connection);
                     ensureActiveManageAllAdministratorExists(connection);
-                    record(connection, actorUserId, sessionId, "USER_DELETE", "user_account", Long.toString(targetUserId), "success", sourceIp);
                     return null;
                 });
                 return;
@@ -903,31 +904,17 @@ public final class UserService {
         }
         Set<AccessProfileContextAssignment> selected = normalizeProfileContextAssignments(selectedAssignments);
         boolean teacherProfile = hasProfile(targetProfiles, AccessProfileType.TEACHER);
-        boolean studentProfile = hasProfile(targetProfiles, AccessProfileType.STUDENT);
 
         Set<Long> teacherClassGroupIds = selectedContextIds(selected, AccessProfileType.TEACHER, AccessEntityType.CLASS_GROUP);
-        Set<Long> studentCourseIds = selectedContextIds(selected, AccessProfileType.STUDENT, AccessEntityType.COURSE);
 
         requireProfileContextState(AccessProfileType.TEACHER, teacherProfile, teacherClassGroupIds, targetState);
-        requireProfileContextState(AccessProfileType.STUDENT, studentProfile, studentCourseIds, targetState);
 
-        Set<Long> teacherSubjectIds = new LinkedHashSet<>();
-        Set<Long> teacherCourseIds = new LinkedHashSet<>();
         for (long classGroupId : teacherClassGroupIds) {
-            ClassGroupProfileContext context = requireActiveClassGroupContext(connection, classGroupId);
-            teacherCourseIds.add(context.courseId());
-            teacherSubjectIds.add(context.subjectId());
-        }
-        for (long courseId : studentCourseIds) {
-            requireActiveCourse(connection, courseId);
-        }
-        if (!disjoint(teacherCourseIds, studentCourseIds)) {
-            throw new IllegalArgumentException("The same user cannot teach and study the same learning context");
+            requireActiveClassGroupContext(connection, classGroupId);
         }
 
         LocalDate startDate = LocalDate.now(clock);
         synchronizeTeacherClassGroups(connection, targetUserId, teacherClassGroupIds, startDate);
-        synchronizeStudentCourseEnrollments(connection, targetUserId, studentCourseIds);
     }
 
     private static void validateNoOverlappingProfileScopes(
@@ -1168,12 +1155,6 @@ public final class UserService {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
-    private static boolean disjoint(Set<Long> left, Set<Long> right) {
-        Set<Long> copy = new HashSet<>(left);
-        copy.retainAll(right);
-        return copy.isEmpty();
-    }
-
     private static Set<AccessProfileContextAssignment> normalizeProfileContextAssignments(
             Collection<AccessProfileContextAssignment> assignments
     ) {
@@ -1201,6 +1182,21 @@ public final class UserService {
         }
     }
 
+    private static void rejectStudentCourseContextAssignments(
+            Collection<AccessProfileContextAssignment> assignments
+    ) {
+        if (assignments == null) {
+            return;
+        }
+        boolean containsStudentContext = assignments.stream()
+                .anyMatch(assignment -> assignment.profileType() == AccessProfileType.STUDENT);
+        if (containsStudentContext) {
+            throw new IllegalArgumentException(
+                    "Student course enrollments are managed exclusively from enrollment pages"
+            );
+        }
+    }
+
     private static void synchronizeTeacherClassGroups(
             Connection connection,
             long userId,
@@ -1224,66 +1220,6 @@ public final class UserService {
                 statement.setLong(2, classGroupId);
                 setDate(statement, 3, startDate);
                 statement.executeUpdate();
-            }
-        }
-    }
-
-    private static void synchronizeStudentCourseEnrollments(
-            Connection connection,
-            long userId,
-            Set<Long> courseIds
-    ) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "UPDATE enroll_course SET state = 'withdrawn' WHERE id_student_user = ?"
-        )) {
-            statement.setLong(1, userId);
-            statement.executeUpdate();
-        }
-        for (long courseId : courseIds) {
-            long courseOccurrenceId = resolveActiveCourseOccurrence(connection, courseId);
-            try (PreparedStatement statement = connection.prepareStatement("""
-                    INSERT INTO enroll_course (id_student_user, id_course, id_course_occurrence, state, start_date, end_date)
-                    VALUES (?, ?, ?, 'active', NULL, NULL)
-                    ON DUPLICATE KEY UPDATE state = 'active'
-                    """)) {
-                statement.setLong(1, userId);
-                statement.setLong(2, courseId);
-                statement.setLong(3, courseOccurrenceId);
-                statement.executeUpdate();
-            }
-        }
-    }
-
-    private static long resolveActiveCourseOccurrence(Connection connection, long courseId) throws SQLException {
-        String sql = """
-                SELECT id_course_occurrence
-                FROM course_occurrence
-                WHERE id_course = ?
-                  AND CURRENT_DATE BETWEEN starts_at AND ends_at
-                ORDER BY starts_at DESC, id_course_occurrence DESC
-                LIMIT 1
-                """;
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, courseId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                if (resultSet.next()) {
-                    return resultSet.getLong("id_course_occurrence");
-                }
-            }
-        }
-        throw new IllegalArgumentException("Active course occurrence not found for course: " + courseId);
-    }
-
-    private static void requireActiveCourse(Connection connection, long courseId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT COUNT(*) FROM course WHERE id_course = ? AND state = 'active'"
-        )) {
-            statement.setLong(1, courseId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                resultSet.next();
-                if (resultSet.getInt(1) == 0) {
-                    throw new IllegalArgumentException("Active course context not found: " + courseId);
-                }
             }
         }
     }

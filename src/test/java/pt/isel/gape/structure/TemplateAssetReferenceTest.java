@@ -80,8 +80,6 @@ class TemplateAssetReferenceTest {
     private static final Set<String> APPLICATION_ENDPOINTS = Set.of(
             "account/deletion-requests",
             "/account/deletion-requests",
-            "admin/activity-log",
-            "/admin/activity-log",
             "admin/deletion-requests",
             "/admin/deletion-requests",
             "admin/courses",
@@ -369,7 +367,7 @@ class TemplateAssetReferenceTest {
         if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
             return false;
         }
-        if (isApplicationEndpoint(normalized)) {
+        if (isApplicationEndpoint(stripQueryAndFragment(normalized))) {
             return false;
         }
 

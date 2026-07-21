@@ -1,11 +1,13 @@
 package pt.isel.gape.learning;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Clock;
@@ -25,6 +27,8 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import pt.isel.gape.access.model.AccessProfileType;
 import pt.isel.gape.common.config.ConnectionProvider;
 import pt.isel.gape.learning.dao.AssessmentDAO;
+import pt.isel.gape.learning.dao.GradeSheetDAO;
+import pt.isel.gape.learning.model.GradeAssessmentWeight;
 import pt.isel.gape.learning.model.Assessment;
 import pt.isel.gape.learning.model.AssessmentCorrectionMode;
 import pt.isel.gape.learning.model.AssessmentCreateCommand;
@@ -49,6 +53,7 @@ class AssessmentServiceTest {
     private AssessmentService assessmentService;
     private QuestionService questionService;
     private AssessmentDAO assessmentDAO;
+    private GradeSheetDAO gradeSheetDAO;
 
     @BeforeAll
     static void initializeDatabase() throws Exception {
@@ -60,6 +65,7 @@ class AssessmentServiceTest {
         DatabaseTestSupport.beginTestTransaction();
         ConnectionProvider connectionProvider = DatabaseTestSupport::openConnection;
         assessmentDAO = new AssessmentDAO(connectionProvider);
+        gradeSheetDAO = new GradeSheetDAO(connectionProvider);
         assessmentService = new AssessmentService(connectionProvider, FIXED_CLOCK);
         questionService = new QuestionService(connectionProvider, FIXED_CLOCK);
     }
@@ -177,6 +183,35 @@ class AssessmentServiceTest {
     }
 
     @Test
+    void newBlockAssessmentUsesNextPedagogicalIdInItsContentBlock() throws SQLException {
+        long blockMaximum;
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     SELECT GREATEST(
+                         COALESCE((SELECT MAX(id_content_item) FROM associate_block_content WHERE id_content_block = 60), 0),
+                         COALESCE((SELECT MAX(id_lesson) FROM lesson WHERE id_content_block = 60), 0),
+                         COALESCE((SELECT MAX(id_assessment) FROM assessment WHERE id_content_block = 60), 0)
+                     )
+                     """)) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                blockMaximum = resultSet.getLong(1);
+            }
+        }
+
+        Assessment assessment = assessmentService.createAssessment(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                blockExam("Assessment Pedagogical ID", AssessmentMode.ONLINE),
+                IP
+        );
+
+        assertEquals(60L, assessment.contentBlockId());
+        org.junit.jupiter.api.Assertions.assertTrue(assessment.id() > blockMaximum);
+    }
+
+    @Test
     void passingGradeCannotExceedMaximumGrade() {
         AssessmentCreateCommand command = new AssessmentCreateCommand(
                 null,
@@ -259,6 +294,51 @@ class AssessmentServiceTest {
         ));
 
         assertEquals("Assessment availability end is required", exception.getMessage());
+    }
+
+    @Test
+    void assessmentCreateRejectsPastAndReversedAvailability() {
+        AssessmentCreateCommand past = new AssessmentCreateCommand(
+                null,
+                60L,
+                "Past assessment availability",
+                null,
+                AssessmentType.FORM,
+                AssessmentMode.ONLINE,
+                AssessmentCorrectionMode.AUTOMATIC,
+                bd("20.00"),
+                bd("10.00"),
+                1,
+                AssessmentState.SCHEDULED,
+                start().minusDays(1),
+                end().minusDays(1)
+        );
+        IllegalArgumentException pastException = assertThrows(
+                IllegalArgumentException.class,
+                () -> assessmentService.createAssessment(3L, null, AccessProfileType.TEACHER, past, IP)
+        );
+        assertEquals("Assessment availability start cannot be in the past", pastException.getMessage());
+
+        AssessmentCreateCommand reversed = new AssessmentCreateCommand(
+                null,
+                60L,
+                "Reversed assessment availability",
+                null,
+                AssessmentType.FORM,
+                AssessmentMode.ONLINE,
+                AssessmentCorrectionMode.AUTOMATIC,
+                bd("20.00"),
+                bd("10.00"),
+                1,
+                AssessmentState.SCHEDULED,
+                start().plusDays(2),
+                start().plusDays(1)
+        );
+        IllegalArgumentException reversedException = assertThrows(
+                IllegalArgumentException.class,
+                () -> assessmentService.createAssessment(3L, null, AccessProfileType.TEACHER, reversed, IP)
+        );
+        assertEquals("Assessment availability end cannot be before start", reversedException.getMessage());
     }
 
     @Test
@@ -484,6 +564,92 @@ class AssessmentServiceTest {
                 command,
                 IP
         ));
+    }
+
+    @Test
+    void deletingAssessmentReconcilesDependentGradeSheetAndRedistributesWeights() throws SQLException {
+        Assessment assessment = assessmentService.createAssessment(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                blockExam("Assessment To Remove From Grade Sheet", AssessmentMode.ONLINE),
+                IP
+        );
+
+        assertFalse(gradeSheetDAO.findAssessmentWeights(
+                DatabaseTestSupport.openConnection(),
+                170L
+        ).isEmpty());
+
+        assessmentService.deleteAssessment(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                assessment.id(),
+                IP
+        );
+
+        assertTrueAssessmentWasDeleted(assessment.id());
+        assertEquals(
+                List.of(new GradeAssessmentWeight(90L, bd("100.00"))),
+                gradeSheetDAO.findAssessmentWeights(DatabaseTestSupport.openConnection(), 170L)
+        );
+    }
+
+    @Test
+    void deletingAssessmentDoesNotRedistributeRemainingGradeSheetWeights() throws SQLException {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    UPDATE based_on_assessment
+                    SET weight = 40.00
+                    WHERE id_grade_sheet = 170 AND id_assessment = 90
+                    """)) {
+                statement.executeUpdate();
+            }
+            try (PreparedStatement statement = connection.prepareStatement("""
+                    INSERT INTO based_on_assessment (id_grade_sheet, id_assessment, weight)
+                    VALUES (170, 92, 30.00)
+                    ON DUPLICATE KEY UPDATE weight = VALUES(weight)
+                    """)) {
+                statement.executeUpdate();
+            }
+        }
+
+        Assessment assessment = assessmentService.createAssessment(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                blockExam("Assessment Weight Preservation", AssessmentMode.ONLINE),
+                IP
+        );
+
+        assessmentService.deleteAssessment(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                assessment.id(),
+                IP
+        );
+
+        assertEquals(
+                List.of(
+                        new GradeAssessmentWeight(90L, bd("40.00")),
+                        new GradeAssessmentWeight(92L, bd("30.00"))
+                ),
+                gradeSheetDAO.findAssessmentWeights(DatabaseTestSupport.openConnection(), 170L)
+        );
+    }
+
+    private void assertTrueAssessmentWasDeleted(long assessmentId) throws SQLException {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT COUNT(*) FROM assessment WHERE id_assessment = ?")) {
+            statement.setLong(1, assessmentId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                resultSet.next();
+                assertEquals(0L, resultSet.getLong(1));
+            }
+        }
     }
 
     @Test

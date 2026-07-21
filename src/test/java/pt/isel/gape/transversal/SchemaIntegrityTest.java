@@ -48,7 +48,7 @@ class SchemaIntegrityTest {
                 "management_view", "access_management_view", "channel", "participate_channel",
                 "direct_message_channel", "message",
                 "receive_message", "associate_channel_class_group", "associate_channel_content_block",
-                "associate_channel_assessment", "activity_log"
+                "associate_channel_assessment", "activity_log", "activity_log_scope"
         );
 
         Set<String> existing = new HashSet<>();
@@ -80,6 +80,7 @@ class SchemaIntegrityTest {
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "schedule_event", "PRIMARY", "PRIMARY KEY"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "learning_event", "PRIMARY", "PRIMARY KEY"));
             assertTrue(DatabaseTestSupport.existsConstraint(connection, "learning_event_read", "PRIMARY", "PRIMARY KEY"));
+            assertTrue(DatabaseTestSupport.existsConstraint(connection, "activity_log_scope", "PRIMARY", "PRIMARY KEY"));
 
             List<String[]> fkChecks = List.of(
                     new String[]{"user_session", "fk_user_session_user"},
@@ -168,6 +169,11 @@ class SchemaIntegrityTest {
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_direct_message_channel_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bu_direct_message_channel_validate"));
             assertTrue(DatabaseTestSupport.existsTrigger(connection, "bi_message_validate"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "ai_activity_log_scope_actor"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bu_activity_log_immutable"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bd_activity_log_immutable"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bu_activity_log_scope_immutable"));
+            assertTrue(DatabaseTestSupport.existsTrigger(connection, "bd_activity_log_scope_immutable"));
         }
     }
 

@@ -74,10 +74,28 @@ import pt.isel.gape.web.media.JustificationAttachmentStorage;
 public final class AttendanceManagementServlet extends DashboardServletSupport {
 
     private static final String LEARNING_ATTENDANCE_JSP = "/WEB-INF/views/learning/attendance.jsp";
+    private static final String ADMIN_ATTENDANCE_JSP = "/admin/admin/attendance/admin-attendance.jsp";
+    private static final String COORDINATOR_ATTENDANCE_JSP = "/coordinator/coordinator/attendance/coordinator-attendance.jsp";
+    private static final String INSTRUCTOR_ATTENDANCE_JSP = "/instructor/instructor/attendance/instructor-attendance.jsp";
     private static final String STUDENT_ATTENDANCE_JSP = "/student/student/attendance/student-attendance.jsp";
     private static final DateTimeFormatter INPUT_DATE_TIME = ApplicationDateTimeFormat.TECHNICAL_DATE_TIME;
+    private static final DateTimeFormatter SHORT_PERIOD_DATE = DateTimeFormatter.ofPattern("dd-MM-yy");
     private static final int ATTENDANCE_MANAGEMENT_PAGE_SIZE = 10;
     private static final int ENROLLMENT_MANAGEMENT_PAGE_SIZE = 10;
+
+    private static String shortPeriod(LocalDate start, LocalDate end) {
+        String startLabel = start == null ? "-" : SHORT_PERIOD_DATE.format(start);
+        String endLabel = end == null ? "-" : SHORT_PERIOD_DATE.format(end);
+        return startLabel + " to " + endLabel;
+    }
+
+    private String managementAttendanceJsp(HttpServletRequest request) {
+        return switch (primaryProfile(requireCurrentUser(request))) {
+            case COORDINATOR -> COORDINATOR_ATTENDANCE_JSP;
+            case TEACHER -> INSTRUCTOR_ATTENDANCE_JSP;
+            default -> ADMIN_ATTENDANCE_JSP;
+        };
+    }
 
     private final AttendanceRecordService attendanceRecordService;
     private final AbsenceJustificationService justificationService;
@@ -329,7 +347,7 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
                     lessonsAttendance ? "lessons" : "attendance",
                     lessonsAttendance ? "Attendance" : "Enrollments & Certificates"
             );
-            forward(request, response, LEARNING_ATTENDANCE_JSP);
+            forward(request, response, managementAttendanceJsp(request));
         } catch (SQLException exception) {
             throw new ServletException("Failed to load attendance management", exception);
         }
@@ -463,6 +481,103 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
                 .filter(AttendanceRecordView::isCanSubmitJustification)
                 .count());
         try {
+            /*
+             * The student enrollment archive must be built from the student's
+             * own rows, not from the active course catalog.  The catalog
+             * intentionally hides inactive courses, which used to make their
+             * Inactive/Withdrawn enrollments disappear from Completed
+             * Enrollments as well.
+             */
+            List<CourseEnrollment> ownCourseEnrollments = enrollmentDAO.findCourseEnrollmentsByStudent(actor.userId());
+            Map<Long, Course> coursesById = courseDAO.findByIds(ownCourseEnrollments.stream()
+                            .map(CourseEnrollment::courseId)
+                            .collect(Collectors.toSet()))
+                    .stream()
+                    .collect(Collectors.toMap(Course::id, course -> course));
+            Map<Long, CourseOccurrence> occurrencesById = courseOccurrenceDAO.findAll().stream()
+                    .collect(Collectors.toMap(CourseOccurrence::id, occurrence -> occurrence));
+            List<StudentCourseEnrollmentView> studentCourseEnrollments = ownCourseEnrollments.stream()
+                    .sorted(Comparator.comparing(CourseEnrollment::startDate))
+                    .map(enrollment -> new StudentCourseEnrollmentView(
+                            enrollment,
+                            coursesById.get(enrollment.courseId()),
+                            occurrencesById.get(enrollment.courseOccurrenceId())
+                    ))
+                    .toList();
+            request.setAttribute("studentCourseEnrollments", studentCourseEnrollments);
+            request.setAttribute("studentActiveCourseEnrollments", studentCourseEnrollments.stream()
+                    .filter(enrollment -> enrollment.getState() != EnrollmentState.INACTIVE
+                            && enrollment.getState() != EnrollmentState.COMPLETED)
+                    .toList());
+            request.setAttribute("studentCompletedCourseEnrollments", studentCourseEnrollments.stream()
+                    .filter(enrollment -> enrollment.getState() == EnrollmentState.COMPLETED
+                            || enrollment.getState() == EnrollmentState.INACTIVE)
+                    .toList());
+            Map<Long, ClassGroupView> studentClassGroupsById = viewFactory.classGroupViews(classGroupDAO.findAll())
+                    .stream().collect(Collectors.toMap(ClassGroupView::getId, java.util.function.Function.identity()));
+            List<StudentClassEnrollmentView> allStudentClassEnrollments = classGroupEnrollmentDAO.findByStudent(actor.userId())
+                    .stream()
+                    .map(enrollment -> new StudentClassEnrollmentView(enrollment, studentClassGroupsById.get(enrollment.classGroupId())))
+                    .sorted(Comparator.comparing(StudentClassEnrollmentView::getOccurrenceLabel, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)).reversed())
+                    .toList();
+            List<StudentClassEnrollmentView> studentClassEnrollments = allStudentClassEnrollments.stream()
+                    .filter(enrollment -> enrollment.getState() != EnrollmentState.INACTIVE
+                            && enrollment.getState() != EnrollmentState.COMPLETED)
+                    .toList();
+            List<StudentClassEnrollmentView> studentCompletedClassEnrollments = allStudentClassEnrollments.stream()
+                    .filter(enrollment -> enrollment.getState() == EnrollmentState.INACTIVE
+                            || enrollment.getState() == EnrollmentState.COMPLETED)
+                    .toList();
+            request.setAttribute("studentClassEnrollments", studentClassEnrollments);
+            request.setAttribute("studentActiveClassEnrollments", studentClassEnrollments);
+            request.setAttribute("studentCompletedClassEnrollments", studentCompletedClassEnrollments);
+            request.setAttribute("studentClassEnrollmentGroups", enrollmentGroups(studentClassEnrollments, List.of()));
+            request.setAttribute("studentCompletedClassEnrollmentGroups", enrollmentGroups(studentCompletedClassEnrollments, List.of()));
+            List<StudentAssessmentEnrollmentView> allStudentAssessmentEnrollments = new ArrayList<>();
+            for (Assessment assessment : assessmentDAO.findAll()) {
+                assessmentEnrollmentDAO.findEnrollment(actor.userId(), assessment.id()).ifPresent(enrollment -> {
+                    try {
+                        List<Long> applicable = assessmentDAO.findApplicableClassGroupIds(assessment.id());
+                        if (applicable.isEmpty()) {
+                            allStudentAssessmentEnrollments.add(new StudentAssessmentEnrollmentView(assessment, enrollment.state(), null));
+                        } else {
+                            for (Long classGroupId : applicable) {
+                                allStudentAssessmentEnrollments.add(new StudentAssessmentEnrollmentView(
+                                        assessment,
+                                        enrollment.state(),
+                                        studentClassGroupsById.get(classGroupId)
+                                ));
+                            }
+                        }
+                    } catch (SQLException exception) {
+                        throw new IllegalStateException("Failed to load assessment enrollment context", exception);
+                    }
+                });
+            }
+            List<StudentAssessmentEnrollmentView> studentAssessmentEnrollments = allStudentAssessmentEnrollments.stream()
+                    .filter(enrollment -> enrollment.getState() != EnrollmentState.INACTIVE
+                            && enrollment.getState() != EnrollmentState.COMPLETED)
+                    .toList();
+            List<StudentAssessmentEnrollmentView> studentCompletedAssessmentEnrollments = allStudentAssessmentEnrollments.stream()
+                    .filter(enrollment -> enrollment.getState() == EnrollmentState.INACTIVE
+                            || enrollment.getState() == EnrollmentState.COMPLETED)
+                    .toList();
+            request.setAttribute("studentAssessmentEnrollments", studentAssessmentEnrollments);
+            request.setAttribute("studentActiveAssessmentEnrollments", studentAssessmentEnrollments);
+            request.setAttribute("studentCompletedAssessmentEnrollments", studentCompletedAssessmentEnrollments);
+            request.setAttribute("studentAssessmentEnrollmentGroups", enrollmentGroups(List.of(), studentAssessmentEnrollments));
+            request.setAttribute("studentCompletedAssessmentEnrollmentGroups", enrollmentGroups(List.of(), studentCompletedAssessmentEnrollments));
+            List<StudentCompletedEnrollmentCourseGroupView> completedEnrollmentGroups = completedEnrollmentGroups(
+                    studentCourseEnrollments,
+                    allStudentClassEnrollments,
+                    allStudentAssessmentEnrollments
+            );
+            request.setAttribute("studentCompletedEnrollmentGroups", completedEnrollmentGroups);
+            request.setAttribute("studentCompletedEnrollmentCount", studentCourseEnrollments.stream()
+                    .filter(enrollment -> enrollment.getState() == EnrollmentState.COMPLETED
+                            || enrollment.getState() == EnrollmentState.INACTIVE)
+                    .count() + studentCompletedClassEnrollments.size()
+                    + studentCompletedAssessmentEnrollments.size());
             gradeCertificateServlet.populateStudentAttributes(request, actor);
             prepareDashboard(request, "attendance", "Enrollments & Certificates");
             forward(request, response, STUDENT_ATTENDANCE_JSP);
@@ -981,7 +1096,7 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
         } catch (ServletException | IOException exception) {
             flashError(request, "Attachment upload failed.");
         }
-        redirect(request, response, "/student/attendance");
+        redirectToReturnPath(request, response, "/student/attendance");
     }
 
     private void processJustification(
@@ -2196,6 +2311,350 @@ public final class AttendanceManagementServlet extends DashboardServletSupport {
                     .sorted(enrollmentComparator())
                     .toList();
         }
+    }
+
+    public static final class StudentCourseEnrollmentView {
+        private final CourseEnrollment enrollment;
+        private final Course course;
+        private final CourseOccurrence occurrence;
+
+        private StudentCourseEnrollmentView(
+                CourseEnrollment enrollment,
+                Course course,
+                CourseOccurrence occurrence
+        ) {
+            this.enrollment = enrollment;
+            this.course = course;
+            this.occurrence = occurrence;
+        }
+
+        public long getCourseId() {
+            return enrollment.courseId();
+        }
+
+        public long getCourseOccurrenceId() {
+            return enrollment.courseOccurrenceId();
+        }
+
+        public String getCourseName() {
+            return course == null ? "Course" : course.name();
+        }
+
+        public String getCourseEctsLabel() {
+            return course == null || course.ects() == null ? "-" : course.ects().stripTrailingZeros().toPlainString() + " ECTS";
+        }
+
+        public String getCourseSubjectCountLabel() {
+            return "Course enrollment";
+        }
+
+        public String getOccurrenceLabel() {
+            return occurrence == null ? "-" : occurrence.label();
+        }
+
+        public EnrollmentState getState() {
+            return enrollment.state();
+        }
+
+        public LocalDate getStartDate() {
+            return enrollment.startDate();
+        }
+
+        public LocalDate getEndDate() {
+            return enrollment.endDate();
+        }
+
+        public String getPeriodLabel() {
+            return shortPeriod(enrollment.startDate(), enrollment.endDate());
+        }
+
+        public String getStateLabel() {
+            return switch (enrollment.state()) {
+                case PENDING -> "Pending approval";
+                case ACTIVE -> "Active";
+                case INACTIVE -> "Inactive";
+                case REJECTED -> "Rejected";
+                case COMPLETED -> "Completed";
+                case WITHDRAWN -> "Withdrawn";
+            };
+        }
+
+        public String getStateBadgeClass() {
+            return enrollment.state() == EnrollmentState.ACTIVE
+                    ? "bg-success-50 text-success-600"
+                    : enrollment.state() == EnrollmentState.COMPLETED
+                    ? "bg-info-50 text-info-600" : "bg-warning-30 text-warning-600";
+        }
+    }
+
+    public static final class StudentClassEnrollmentView {
+        private final ClassGroupEnrollment enrollment;
+        private final ClassGroupView classGroup;
+        StudentClassEnrollmentView(ClassGroupEnrollment enrollment, ClassGroupView classGroup) {
+            this.enrollment = enrollment; this.classGroup = classGroup;
+        }
+        public long getId() { return enrollment.classGroupId(); }
+        public EnrollmentState getState() { return enrollment.state(); }
+        public String getCourseName() { return classGroup == null ? "Course" : classGroup.getCourseName(); }
+        public String getSubjectName() { return classGroup == null ? "Subject" : classGroup.getSubjectName(); }
+        public String getCode() { return classGroup == null ? "Class group" : classGroup.getCode(); }
+        public String getOccurrenceLabel() {
+            String label = classGroup == null ? "-" : classGroup.getOccurrenceLabel();
+            return label + " · Period: " + getPeriodLabel();
+        }
+        public String getStateLabel() {
+            return switch (enrollment.state()) {
+                case PENDING -> "Pending approval"; case ACTIVE -> "Active"; case INACTIVE -> "Inactive";
+                case REJECTED -> "Rejected"; case COMPLETED -> "Completed"; case WITHDRAWN -> "Withdrawn";
+            };
+        }
+        public String getStateBadgeClass() { return enrollment.state() == EnrollmentState.ACTIVE ? "bg-success-50 text-success-600" : enrollment.state() == EnrollmentState.COMPLETED ? "bg-info-50 text-info-600" : "bg-warning-30 text-warning-600"; }
+        public String getStartDate() { return enrollment.startDate() == null ? "-" : ApplicationDateTimeFormat.date(enrollment.startDate()); }
+        public String getEndDate() { return enrollment.endDate() == null ? "-" : ApplicationDateTimeFormat.date(enrollment.endDate()); }
+        public String getPeriodLabel() { return shortPeriod(enrollment.startDate(), enrollment.endDate()); }
+        public String getOccurrenceGroupLabel() { return classGroup == null ? "-" : classGroup.getOccurrenceLabel(); }
+        public String getModalityLabel() { return classGroup == null ? "-" : classGroup.getModalityLabel(); }
+        public String getShiftLabel() { return classGroup == null ? "-" : classGroup.getShift(); }
+    }
+
+    public static final class StudentAssessmentEnrollmentView {
+        private final Assessment assessment;
+        private final EnrollmentState state;
+        private final ClassGroupView classGroup;
+        StudentAssessmentEnrollmentView(Assessment assessment, EnrollmentState state, ClassGroupView classGroup) { this.assessment = assessment; this.state = state; this.classGroup = classGroup; }
+        /** Legacy hidden cards need a context-aware key as one assessment can
+         * be applicable to several class groups. */
+        public long getId() { return assessment.id() * 1_000_000L + (classGroup == null ? 0 : classGroup.getId()); }
+        public EnrollmentState getState() { return state; }
+        public String getTitle() { return assessment.title(); }
+        public String getCourseName() { return classGroup == null ? "Course" : classGroup.getCourseName(); }
+        public String getSubjectName() { return classGroup == null ? "Subject" : classGroup.getSubjectName(); }
+        public String getClassGroupCode() { return classGroup == null ? "-" : classGroup.getCode(); }
+        public String getOccurrenceLabel() { return classGroup == null ? "-" : classGroup.getOccurrenceLabel(); }
+        public String getOccurrenceGroupLabel() { return classGroup == null ? "-" : classGroup.getOccurrenceLabel(); }
+        public String getPeriodLabel() { return shortPeriod(assessment.availableFrom() == null ? null : assessment.availableFrom().toLocalDate(), assessment.availableUntil() == null ? null : assessment.availableUntil().toLocalDate()); }
+        public String getModalKey() { return assessment.id() + "_" + (classGroup == null ? 0 : classGroup.getId()); }
+        public String getStateLabel() { return switch (state) { case PENDING -> "Pending approval"; case ACTIVE -> "Active"; case INACTIVE -> "Inactive"; case REJECTED -> "Rejected"; case COMPLETED -> "Completed"; case WITHDRAWN -> "Withdrawn"; }; }
+        public String getStateBadgeClass() { return state == EnrollmentState.ACTIVE ? "bg-success-50 text-success-600" : state == EnrollmentState.COMPLETED ? "bg-info-50 text-info-600" : "bg-warning-30 text-warning-600"; }
+    }
+
+    private static List<StudentEnrollmentCourseGroupView> enrollmentGroups(
+            List<StudentClassEnrollmentView> classEnrollments,
+            List<StudentAssessmentEnrollmentView> assessmentEnrollments
+    ) {
+        Map<String, StudentEnrollmentCourseGroupView> courses = new LinkedHashMap<>();
+        List<String> courseKeys = new ArrayList<>();
+        classEnrollments.forEach(enrollment -> courseKeys.add(enrollment.getCourseName()));
+        assessmentEnrollments.forEach(enrollment -> courseKeys.add(enrollment.getCourseName()));
+        courseKeys.stream().distinct().sorted(String.CASE_INSENSITIVE_ORDER).forEach(courseName ->
+                courses.put(courseName, new StudentEnrollmentCourseGroupView(courseName)));
+        classEnrollments.forEach(enrollment -> courses.get(enrollment.getCourseName())
+                .subject(enrollment.getSubjectName()).addClassEnrollment(enrollment));
+        assessmentEnrollments.forEach(enrollment -> courses.get(enrollment.getCourseName())
+                .subject(enrollment.getSubjectName()).addAssessmentEnrollment(enrollment));
+        courses.values().forEach(StudentEnrollmentCourseGroupView::sort);
+        return courses.values().stream()
+                .sorted(Comparator.comparing(StudentEnrollmentCourseGroupView::getCourseName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    private static List<StudentCompletedEnrollmentCourseGroupView> completedEnrollmentGroups(
+            List<StudentCourseEnrollmentView> courseEnrollments,
+            List<StudentClassEnrollmentView> classEnrollments,
+            List<StudentAssessmentEnrollmentView> assessmentEnrollments
+    ) {
+        Map<String, StudentCompletedEnrollmentCourseGroupView> courses = new LinkedHashMap<>();
+        courseEnrollments.stream().filter(enrollment -> enrollment.getState() == EnrollmentState.COMPLETED
+                        || enrollment.getState() == EnrollmentState.INACTIVE).forEach(enrollment ->
+                courses.computeIfAbsent(enrollment.getCourseName(), StudentCompletedEnrollmentCourseGroupView::new)
+                        .occurrence(enrollment.getOccurrenceLabel()).add(new StudentCompletedEnrollmentView(
+                                "Course", enrollment.getCourseName(), "-", "-", enrollment.getOccurrenceLabel(), enrollment.getStateLabel(), enrollment.getPeriodLabel())));
+        classEnrollments.stream().filter(enrollment -> enrollment.getState() == EnrollmentState.COMPLETED
+                        || enrollment.getState() == EnrollmentState.INACTIVE).forEach(enrollment ->
+                courses.computeIfAbsent(enrollment.getCourseName(), StudentCompletedEnrollmentCourseGroupView::new)
+                        .occurrence(enrollment.getOccurrenceLabel()).add(new StudentCompletedEnrollmentView(
+                                "Class group", enrollment.getCode(), enrollment.getSubjectName(), enrollment.getCode(), enrollment.getOccurrenceLabel(), enrollment.getStateLabel(), enrollment.getPeriodLabel())));
+        assessmentEnrollments.stream().filter(enrollment -> enrollment.getState() == EnrollmentState.COMPLETED
+                        || enrollment.getState() == EnrollmentState.INACTIVE).forEach(enrollment ->
+                courses.computeIfAbsent(enrollment.getCourseName(), StudentCompletedEnrollmentCourseGroupView::new)
+                        .occurrence(enrollment.getOccurrenceLabel()).add(new StudentCompletedEnrollmentView(
+                                "Assessment", enrollment.getTitle(), enrollment.getSubjectName(), enrollment.getClassGroupCode(), enrollment.getOccurrenceLabel(), enrollment.getStateLabel(), "-")));
+        courses.values().forEach(StudentCompletedEnrollmentCourseGroupView::sort);
+        return courses.values().stream().sorted(Comparator.comparing(StudentCompletedEnrollmentCourseGroupView::getCourseName, String.CASE_INSENSITIVE_ORDER)).toList();
+    }
+
+    public static final class StudentEnrollmentCourseGroupView {
+        private final String courseName;
+        private final Map<String, StudentEnrollmentSubjectGroupView> subjects = new LinkedHashMap<>();
+        StudentEnrollmentCourseGroupView(String courseName) { this.courseName = courseName; }
+        public String getCourseName() { return courseName; }
+        public List<StudentEnrollmentSubjectGroupView> getSubjects() { return List.copyOf(subjects.values()); }
+        StudentEnrollmentSubjectGroupView subject(String subjectName) {
+            return subjects.computeIfAbsent(subjectName, StudentEnrollmentSubjectGroupView::new);
+        }
+        void sort() {
+            subjects.values().forEach(StudentEnrollmentSubjectGroupView::sort);
+            List<Map.Entry<String, StudentEnrollmentSubjectGroupView>> ordered = new ArrayList<>(subjects.entrySet());
+            ordered.sort(Map.Entry.comparingByKey(String.CASE_INSENSITIVE_ORDER));
+            subjects.clear();
+            ordered.forEach(entry -> subjects.put(entry.getKey(), entry.getValue()));
+        }
+    }
+
+    public static final class StudentEnrollmentSubjectGroupView {
+        private final String subjectName;
+        private final List<StudentClassEnrollmentView> classEnrollments = new ArrayList<>();
+        private final Map<String, StudentEnrollmentOccurrenceGroupView> classOccurrences = new LinkedHashMap<>();
+        private final List<StudentAssessmentEnrollmentView> assessmentEnrollments = new ArrayList<>();
+        private final Map<String, StudentEnrollmentAssessmentOccurrenceGroupView> assessmentOccurrences = new LinkedHashMap<>();
+        StudentEnrollmentSubjectGroupView(String subjectName) { this.subjectName = subjectName; }
+        public String getSubjectName() { return subjectName; }
+        public List<StudentClassEnrollmentView> getClassEnrollments() { return List.copyOf(classEnrollments); }
+        public List<StudentEnrollmentOccurrenceGroupView> getClassOccurrences() { return List.copyOf(classOccurrences.values()); }
+        public List<StudentAssessmentEnrollmentView> getAssessmentEnrollments() { return List.copyOf(assessmentEnrollments); }
+        public List<StudentEnrollmentAssessmentOccurrenceGroupView> getAssessmentOccurrences() { return List.copyOf(assessmentOccurrences.values()); }
+        void addClassEnrollment(StudentClassEnrollmentView enrollment) {
+            classEnrollments.add(enrollment);
+            classOccurrences.computeIfAbsent(enrollment.getOccurrenceGroupLabel(), StudentEnrollmentOccurrenceGroupView::new)
+                    .add(enrollment);
+        }
+        void addAssessmentEnrollment(StudentAssessmentEnrollmentView enrollment) {
+            assessmentEnrollments.add(enrollment);
+            assessmentOccurrences.computeIfAbsent(enrollment.getOccurrenceGroupLabel(), StudentEnrollmentAssessmentOccurrenceGroupView::new)
+                    .add(enrollment);
+        }
+        void sort() {
+            classEnrollments.sort(Comparator.comparing(StudentClassEnrollmentView::getCode, String.CASE_INSENSITIVE_ORDER));
+            classOccurrences.values().forEach(StudentEnrollmentOccurrenceGroupView::sort);
+            List<Map.Entry<String, StudentEnrollmentOccurrenceGroupView>> orderedOccurrences = new ArrayList<>(classOccurrences.entrySet());
+            orderedOccurrences.sort(Map.Entry.<String, StudentEnrollmentOccurrenceGroupView>comparingByKey(
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)).reversed());
+            classOccurrences.clear();
+            orderedOccurrences.forEach(entry -> classOccurrences.put(entry.getKey(), entry.getValue()));
+            assessmentEnrollments.sort(Comparator.comparing(StudentAssessmentEnrollmentView::getTitle, String.CASE_INSENSITIVE_ORDER));
+            assessmentOccurrences.values().forEach(StudentEnrollmentAssessmentOccurrenceGroupView::sort);
+            List<Map.Entry<String, StudentEnrollmentAssessmentOccurrenceGroupView>> orderedAssessmentOccurrences = new ArrayList<>(assessmentOccurrences.entrySet());
+            orderedAssessmentOccurrences.sort(Map.Entry.<String, StudentEnrollmentAssessmentOccurrenceGroupView>comparingByKey(
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)).reversed());
+            assessmentOccurrences.clear();
+            orderedAssessmentOccurrences.forEach(entry -> assessmentOccurrences.put(entry.getKey(), entry.getValue()));
+        }
+    }
+
+    public static final class StudentEnrollmentOccurrenceGroupView {
+        private final String label;
+        private final List<StudentClassEnrollmentView> classEnrollments = new ArrayList<>();
+        StudentEnrollmentOccurrenceGroupView(String label) { this.label = label; }
+        public String getLabel() { return label; }
+        public List<StudentClassEnrollmentView> getClassEnrollments() { return List.copyOf(classEnrollments); }
+        public int getEnrollmentCount() { return classEnrollments.size(); }
+        void add(StudentClassEnrollmentView enrollment) { classEnrollments.add(enrollment); }
+        void sort() { classEnrollments.sort(Comparator.comparing(StudentClassEnrollmentView::getCode, String.CASE_INSENSITIVE_ORDER)); }
+    }
+
+    public static final class StudentEnrollmentAssessmentOccurrenceGroupView {
+        private final String label;
+        private final Map<String, StudentEnrollmentAssessmentClassGroupView> classGroups = new LinkedHashMap<>();
+        StudentEnrollmentAssessmentOccurrenceGroupView(String label) { this.label = label; }
+        public String getLabel() { return label; }
+        public List<StudentEnrollmentAssessmentClassGroupView> getClassGroups() { return List.copyOf(classGroups.values()); }
+        public int getEnrollmentCount() { return classGroups.values().stream().mapToInt(StudentEnrollmentAssessmentClassGroupView::getEnrollmentCount).sum(); }
+        void add(StudentAssessmentEnrollmentView enrollment) {
+            classGroups.computeIfAbsent(enrollment.getClassGroupCode(), StudentEnrollmentAssessmentClassGroupView::new)
+                    .add(enrollment);
+        }
+        void sort() {
+            classGroups.values().forEach(StudentEnrollmentAssessmentClassGroupView::sort);
+            List<Map.Entry<String, StudentEnrollmentAssessmentClassGroupView>> ordered = new ArrayList<>(classGroups.entrySet());
+            ordered.sort(Map.Entry.comparingByKey(String.CASE_INSENSITIVE_ORDER));
+            classGroups.clear();
+            ordered.forEach(entry -> classGroups.put(entry.getKey(), entry.getValue()));
+        }
+    }
+
+    public static final class StudentEnrollmentAssessmentClassGroupView {
+        private final String code;
+        private final List<StudentAssessmentEnrollmentView> assessmentEnrollments = new ArrayList<>();
+        StudentEnrollmentAssessmentClassGroupView(String code) { this.code = code; }
+        public String getCode() { return code; }
+        public List<StudentAssessmentEnrollmentView> getAssessmentEnrollments() { return List.copyOf(assessmentEnrollments); }
+        public int getEnrollmentCount() { return assessmentEnrollments.size(); }
+        void add(StudentAssessmentEnrollmentView enrollment) { assessmentEnrollments.add(enrollment); }
+        void sort() { assessmentEnrollments.sort(Comparator.comparing(StudentAssessmentEnrollmentView::getTitle, String.CASE_INSENSITIVE_ORDER)); }
+    }
+
+    public static final class StudentCompletedEnrollmentCourseGroupView {
+        private final String courseName;
+        private final Map<String, StudentCompletedEnrollmentOccurrenceGroupView> occurrences = new LinkedHashMap<>();
+        StudentCompletedEnrollmentCourseGroupView(String courseName) { this.courseName = courseName; }
+        public String getCourseName() { return courseName; }
+        public List<StudentCompletedEnrollmentOccurrenceGroupView> getOccurrences() { return List.copyOf(occurrences.values()); }
+        public int getEnrollmentCount() {
+            return occurrences.values().stream()
+                    .mapToInt(StudentCompletedEnrollmentOccurrenceGroupView::getEnrollmentCount)
+                    .sum();
+        }
+        StudentCompletedEnrollmentOccurrenceGroupView occurrence(String label) {
+            return occurrences.computeIfAbsent(label == null ? "-" : label, StudentCompletedEnrollmentOccurrenceGroupView::new);
+        }
+        void sort() {
+            occurrences.values().forEach(StudentCompletedEnrollmentOccurrenceGroupView::sort);
+            List<Map.Entry<String, StudentCompletedEnrollmentOccurrenceGroupView>> ordered = new ArrayList<>(occurrences.entrySet());
+            ordered.sort(Map.Entry.<String, StudentCompletedEnrollmentOccurrenceGroupView>comparingByKey(
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)).reversed());
+            occurrences.clear();
+            ordered.forEach(entry -> occurrences.put(entry.getKey(), entry.getValue()));
+        }
+    }
+
+    public static final class StudentCompletedEnrollmentOccurrenceGroupView {
+        private final String label;
+        private final Map<String, StudentCompletedEnrollmentSubjectGroupView> subjects = new LinkedHashMap<>();
+        StudentCompletedEnrollmentOccurrenceGroupView(String label) { this.label = label; }
+        public String getLabel() { return label; }
+        public List<StudentCompletedEnrollmentSubjectGroupView> getSubjects() { return List.copyOf(subjects.values()); }
+        public int getEnrollmentCount() { return subjects.values().stream().mapToInt(StudentCompletedEnrollmentSubjectGroupView::getEnrollmentCount).sum(); }
+        void add(StudentCompletedEnrollmentView enrollment) {
+            subjects.computeIfAbsent(enrollment.getSubjectName(), StudentCompletedEnrollmentSubjectGroupView::new).add(enrollment);
+        }
+        void sort() {
+            subjects.values().forEach(StudentCompletedEnrollmentSubjectGroupView::sort);
+            List<Map.Entry<String, StudentCompletedEnrollmentSubjectGroupView>> ordered = new ArrayList<>(subjects.entrySet());
+            ordered.sort(Map.Entry.comparingByKey(String.CASE_INSENSITIVE_ORDER));
+            subjects.clear();
+            ordered.forEach(entry -> subjects.put(entry.getKey(), entry.getValue()));
+        }
+    }
+
+    public static final class StudentCompletedEnrollmentSubjectGroupView {
+        private final String subjectName;
+        private final List<StudentCompletedEnrollmentView> enrollments = new ArrayList<>();
+        StudentCompletedEnrollmentSubjectGroupView(String subjectName) { this.subjectName = subjectName; }
+        public String getSubjectName() { return subjectName; }
+        public List<StudentCompletedEnrollmentView> getEnrollments() { return List.copyOf(enrollments); }
+        public int getEnrollmentCount() { return enrollments.size(); }
+        void add(StudentCompletedEnrollmentView enrollment) { enrollments.add(enrollment); }
+        void sort() { enrollments.sort(Comparator.comparing(StudentCompletedEnrollmentView::getType).thenComparing(StudentCompletedEnrollmentView::getTitle, String.CASE_INSENSITIVE_ORDER)); }
+    }
+
+    public static final class StudentCompletedEnrollmentView {
+        private final String type;
+        private final String title;
+        private final String subjectName;
+        private final String className;
+        private final String occurrenceLabel;
+        private final String stateLabel;
+        private final String periodLabel;
+        StudentCompletedEnrollmentView(String type, String title, String subjectName, String className, String occurrenceLabel, String stateLabel, String periodLabel) {
+            this.type = type; this.title = title; this.subjectName = subjectName; this.className = className; this.occurrenceLabel = occurrenceLabel; this.stateLabel = stateLabel; this.periodLabel = periodLabel;
+        }
+        public String getType() { return type; }
+        public String getTitle() { return title; }
+        public String getSubjectName() { return subjectName; }
+        public String getClassName() { return className; }
+        public String getOccurrenceLabel() { return occurrenceLabel; }
+        public String getStateLabel() { return stateLabel; }
+        public String getPeriodLabel() { return periodLabel; }
     }
 
     private static Comparator<EnrollmentOverviewView> enrollmentComparator() {

@@ -82,6 +82,7 @@
                                     <div class="modal-header border-neutral-30"><h5 class="modal-title text-18 fw-semibold">Edit Coordinator Assignment</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
                                     <form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/coordinators/${assignment.coordinatorUserId}/update" method="post" data-subject-live-form data-subject-live-panel="allocations">
                                         <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                                        <input type="hidden" name="returnTo" value="${currentReturnTo}#subject-coordinators">
                                         <div class="modal-body"><p class="text-14 text-neutral-600 mb-20"><strong><c:out value="${assignment.coordinatorName}"/></strong><span class="d-block text-12 text-neutral-500"><c:out value="${assignment.coordinatorEmail}"/></span></p><div class="gape-select-field"><label for="coordinatorAssignmentState${assignment.coordinatorUserId}" class="fw-medium text-base text-neutral-800 mb-12">State</label><select id="coordinatorAssignmentState${assignment.coordinatorUserId}" name="state" required class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8"><option value="active" ${assignment.stateValue == 'active' ? 'selected' : ''}>Active</option><option value="inactive" ${assignment.stateValue == 'inactive' ? 'selected' : ''}>Inactive</option></select></div></div>
                                         <div class="modal-footer border-neutral-30"><button type="button" class="cd-outline-button" data-bs-dismiss="modal">Cancel</button><button type="submit" class="cd-primary-button border-0">Save</button></div>
                                     </form>
@@ -94,7 +95,7 @@
                                 <div class="modal-content rounded-12 border-0 text-start">
                                     <div class="modal-header border-neutral-30"><h5 class="modal-title text-18 fw-semibold">Delete Coordinator Assignment</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
                                     <div class="modal-body"><p class="text-14 text-neutral-600 mb-0">Remove <strong><c:out value="${assignment.coordinatorName}"/></strong> as a coordinator for this subject?</p></div>
-                                    <div class="modal-footer border-neutral-30"><button type="button" class="cd-outline-button" data-bs-dismiss="modal">Cancel</button><form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/coordinators/${assignment.coordinatorUserId}/delete" method="post" class="m-0" data-subject-live-form data-subject-live-panel="allocations"><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><button type="submit" class="cd-danger-button border-0">Delete</button></form></div>
+                                    <div class="modal-footer border-neutral-30"><button type="button" class="cd-outline-button" data-bs-dismiss="modal">Cancel</button><form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/coordinators/${assignment.coordinatorUserId}/delete" method="post" class="m-0" data-subject-live-form data-subject-live-panel="allocations"><input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}"><input type="hidden" name="returnTo" value="${currentReturnTo}#subject-coordinators"><button type="submit" class="cd-danger-button border-0">Delete</button></form></div>
                                 </div>
                             </div>
                         </div>
@@ -116,6 +117,7 @@
                 </div>
                 <form action="${pageContext.request.contextPath}${subjectBasePath}/${subject.id}/assign-coordinator" method="post" data-subject-live-form data-subject-live-panel="allocations">
                     <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
+                    <input type="hidden" name="returnTo" value="${currentReturnTo}#subject-coordinators">
                     <div class="modal-body">
                         <p class="text-14 text-neutral-600 mb-20">Search and select a coordinator by ID, name or email.</p>
                         <div class="gape-select-field">

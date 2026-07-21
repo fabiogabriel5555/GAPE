@@ -126,7 +126,7 @@
                             </div>
                             <div class="col-12 col-md-6 gape-select-field">
                                 <label for="newSubjectCourseTerm" class="fw-medium text-base text-neutral-800 mb-12">Period</label>
-                                <select id="newSubjectCourseTerm" name="term" required data-course-term-select data-course-source="#newSubjectCourseId" data-placeholder="Select period" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select"><option value="">Select period</option></select>
+                                <select id="newSubjectCourseTerm" name="term" required disabled data-course-term-select data-course-source="#newSubjectCourseId" data-course-term-year-source="#newSubjectCourseYear" data-placeholder="Select period" class="form-select px-16 py-10 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select"><option value="">Select period</option></select>
                             </div>
                             <div class="col-12">
                                 <label for="newSubjectCourseMandatory" class="fw-medium text-base text-neutral-800 mb-12 d-block">Mandatory Subject</label>
@@ -134,7 +134,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer border-neutral-30"><button type="button" class="cd-outline-button" data-bs-dismiss="modal">Cancel</button><button type="submit" class="cd-primary-button border-0">Associate Course</button></div>
+                    <div class="modal-footer border-neutral-30"><button type="button" class="cd-outline-button" data-bs-dismiss="modal">Cancel</button><button type="submit" class="cd-primary-button border-0" data-course-term-submit disabled aria-disabled="true">Associate Course</button></div>
                 </form>
             </div>
         </div>

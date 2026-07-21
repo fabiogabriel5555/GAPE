@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -23,7 +24,6 @@ import pt.isel.gape.transversal.DatabaseTestSupport;
 
 class DatabaseMigrationServiceTest {
 
-    private static final long CURRENT_MIGRATION_VERSION = 29L;
     private static final long TEST_MIGRATION_VERSION = 900L;
     private static final String TEST_MIGRATION_RESOURCE = "sql/migration/V900__test_pending.sql";
 
@@ -69,7 +69,7 @@ class DatabaseMigrationServiceTest {
 
         assertTrue(tableExists("user_account"));
         assertTrue(tableExists(DatabaseMigrationService.HISTORY_TABLE));
-        assertEquals(CURRENT_MIGRATION_VERSION, installedMigrationCount());
+        assertEquals(currentMigrationVersion(), installedMigrationCount());
         assertEquals(1, installedMigrationCount(1L, true));
         assertEquals(1, installedMigrationCount(2L, true));
         assertEquals(1, installedMigrationCount(3L, true));
@@ -99,17 +99,34 @@ class DatabaseMigrationServiceTest {
         assertEquals(1, installedMigrationCount(27L, true));
         assertEquals(1, installedMigrationCount(28L, true));
         assertEquals(1, installedMigrationCount(29L, true));
+        assertEquals(1, installedMigrationCount(30L, true));
+        for (long version = 31L; version <= currentMigrationVersion(); version++) {
+            assertEquals(1, installedMigrationCount(version, true));
+        }
         assertFalse(columnExists("subject", "initial_course_id"));
         assertTrue(columnExists("subject", "id_organic_unit"));
+        assertTrue(columnExists("management_view", "scope_target_id"));
     }
 
     @Test
     void currentUnversionedSchemaIsValidatedBeforeBaselineIsRecorded() throws Exception {
         migrationService.migrate(connection);
 
-        assertEquals(CURRENT_MIGRATION_VERSION, installedMigrationCount());
+        assertEquals(currentMigrationVersion(), installedMigrationCount());
         assertEquals(1, installedMigrationCount(1L, true));
         assertEquals(1, installedMigrationCount(2L, true));
+    }
+
+    @Test
+    void fullBootstrapSchemaIsRecordedBeforeTheNextNormalStartup() throws Exception {
+        new DatabaseBootstrapService().initialize(connection, DatabaseBootstrapMode.FULL);
+
+        migrationService.migrate(connection);
+
+        assertEquals(currentMigrationVersion(), installedMigrationCount());
+        for (long version = 1L; version <= currentMigrationVersion(); version++) {
+            assertEquals(1, installedMigrationCount(version, true));
+        }
     }
 
     @Test
@@ -332,7 +349,7 @@ class DatabaseMigrationServiceTest {
         SQLException exception = assertThrows(SQLException.class, () -> migrationService.migrate(connection));
 
         assertTrue(exception.getMessage().contains("Checksum mismatch"));
-        assertEquals(CURRENT_MIGRATION_VERSION, installedMigrationCount());
+        assertEquals(currentMigrationVersion(), installedMigrationCount());
     }
 
     @Test
@@ -351,7 +368,7 @@ class DatabaseMigrationServiceTest {
         migrationService.migrate(connection, List.copyOf(migrations));
 
         assertTrue(tableExists("migration_test_probe"));
-        assertEquals(CURRENT_MIGRATION_VERSION + 1, installedMigrationCount());
+        assertEquals(currentMigrationVersion() + 1, installedMigrationCount());
         assertEquals(1, installedMigrationCount(TEST_MIGRATION_VERSION, true));
     }
 
@@ -369,6 +386,11 @@ class DatabaseMigrationServiceTest {
                 return resultSet.getInt(1) == 1;
             }
         }
+    }
+
+    private static long currentMigrationVersion() throws IOException {
+        List<DatabaseMigrationService.MigrationDefinition> migrations = DatabaseMigrationService.loadMigrations();
+        return migrations.get(migrations.size() - 1).version();
     }
 
     private boolean columnExists(String tableName, String columnName) throws SQLException {

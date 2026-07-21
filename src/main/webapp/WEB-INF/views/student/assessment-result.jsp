@@ -1,6 +1,7 @@
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ taglib prefix="fn" uri="jakarta.tags.functions" %>
+<% request.setAttribute("activeMenu", "learning"); request.setAttribute("pageTitle", "Assessment Result"); %>
 <%@ include file="/WEB-INF/fragments/student-dashboard-start.jspf" %>
 
 <section class="gape-student-panel bg-white rounded-10 px-24 py-24 border border-neutral-30">
@@ -15,7 +16,7 @@
                 <p class="text-14 text-neutral-500 mb-0">Attempt #${attempt.attemptNumber} | <c:out value="${assessment.contextLabel}"/></p>
             </div>
         </div>
-        <a href="${pageContext.request.contextPath}/student/assessments" class="gape-student-card-icon-button" aria-label="Back to assessments" title="Back to assessments">
+        <a href="${pageContext.request.contextPath}/student/lessons#assessments" class="gape-student-card-icon-button" aria-label="Back to lessons and assessments" title="Back to lessons and assessments">
             <i class="ph ph-arrow-left"></i>
         </a>
     </div>

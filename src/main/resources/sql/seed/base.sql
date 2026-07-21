@@ -18,7 +18,7 @@ INSERT INTO student_profile (id_user, cod_student) VALUES (5, 'STD-002');
 INSERT INTO user_session (
     id_session, id_user, token, state, start_at, last_activity, end_at
 ) VALUES
-    (100, 1, 'tok-admin-100', 'active', '2026-01-10 10:00:00', '2026-01-10 10:30:00', NULL);
+    (100, 1, CONCAT('sha256:', SHA2('tok-admin-100', 256)), 'active', '2026-01-10 10:00:00', '2026-01-10 10:30:00', NULL);
 
 INSERT INTO permission (cod_permission, name, state) VALUES
     ('MANAGE_ALL', 'Manage All', 'active'),
@@ -160,7 +160,7 @@ INSERT INTO assessment (
     (91, 41, 62, NULL, 'Form 2', 'Mathematics assessment', 'form', 'online', 'automatic',
      20.00, 10.00, 100.00, 1, 'active', '2026-03-02 00:00:00', '2026-03-10 23:59:59'),
     (92, 40, NULL, 'SALA-A1', 'Final Exam', 'Final subject assessment', 'exam', 'onsite', 'manual',
-     20.00, 9.50, 50.00, 1, 'draft', '2026-06-20 09:00:00', '2026-06-20 11:00:00');
+     20.00, 9.50, 50.00, 1, 'completed', '2026-06-20 09:00:00', '2026-06-20 11:00:00');
 
 INSERT INTO assessment_class_group (id_assessment, id_class_group) VALUES
     (92, 50);

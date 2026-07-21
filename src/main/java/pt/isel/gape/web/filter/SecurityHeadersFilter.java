@@ -10,8 +10,11 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import pt.isel.gape.security.authorization.AuthorizationPolicy;
+import pt.isel.gape.security.transport.HttpsConfiguration;
 
 public final class SecurityHeadersFilter implements Filter {
+
+    private static final HttpsConfiguration HTTPS_CONFIGURATION = HttpsConfiguration.fromRuntimeConfiguration();
 
     private static final String CONTENT_SECURITY_POLICY = String.join(" ",
             "default-src 'self';",
@@ -51,7 +54,7 @@ public final class SecurityHeadersFilter implements Filter {
     }
 
     private static void applySecurityHeaders(HttpServletRequest request, HttpServletResponse response) {
-        boolean sameOriginLessonModal = isSameOriginLessonModal(request);
+        boolean sameOriginLessonModal = isSameOriginEmbeddedModal(request);
         response.setHeader(
                 "Content-Security-Policy",
                 sameOriginLessonModal ? SAME_ORIGIN_LESSON_MODAL_POLICY : CONTENT_SECURITY_POLICY
@@ -65,7 +68,7 @@ public final class SecurityHeadersFilter implements Filter {
         );
         response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
         response.setHeader("Cross-Origin-Resource-Policy", "same-origin");
-        if (request.isSecure()) {
+        if (HTTPS_CONFIGURATION.requiresHttps() && HTTPS_CONFIGURATION.isSecure(request)) {
             response.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
         }
         if (AuthorizationPolicy.isProtected(request.getServletPath())) {
@@ -74,14 +77,13 @@ public final class SecurityHeadersFilter implements Filter {
         }
     }
 
-    /**
-     * Lesson create, edit and detail views are intentionally rendered in a fixed,
-     * same-origin dialog. All other responses remain non-frameable.
-     */
-    private static boolean isSameOriginLessonModal(HttpServletRequest request) {
-        return "/learning/lessons".equals(request.getServletPath())
-                && request.getPathInfo() != null
-                && !request.getPathInfo().isBlank()
+    /** Create/edit/detail learning forms are intentionally rendered in a fixed,
+     * same-origin dialog. All other responses remain non-frameable. */
+    private static boolean isSameOriginEmbeddedModal(HttpServletRequest request) {
+        boolean learningModal = "/learning/lessons".equals(request.getServletPath())
                 && "1".equals(request.getParameter("modal"));
+        boolean assessmentModal = "/learning/assessments".equals(request.getServletPath())
+                && "1".equals(request.getParameter("modal"));
+        return learningModal || assessmentModal;
     }
 }

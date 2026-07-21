@@ -7,10 +7,8 @@ import java.sql.SQLException;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,7 +27,6 @@ import pt.isel.gape.learning.model.CertificateType;
 import pt.isel.gape.learning.model.CertificateValidationResult;
 import pt.isel.gape.learning.model.CourseEnrollment;
 import pt.isel.gape.learning.model.EnrollmentState;
-import pt.isel.gape.learning.model.GradeAssessmentWeight;
 import pt.isel.gape.learning.model.GradeSheet;
 import pt.isel.gape.learning.model.GradeSheetState;
 import pt.isel.gape.security.authorization.PermissionChecker;
@@ -38,7 +35,6 @@ import pt.isel.gape.transversal.service.AuditService;
 
 public final class CertificateService {
 
-    private static final BigDecimal ONE_HUNDRED = new BigDecimal("100.00");
     private static final int VALIDATION_CODE_MAX_LENGTH = 80;
 
     private final ConnectionProvider connectionProvider;
@@ -158,8 +154,9 @@ public final class CertificateService {
                             command.studentUserId()
                     );
                     if (certificate == null || !isCompleted(certificate)) {
+                        connection.commit();
                         throw new IllegalStateException(
-                                "Certificates are published automatically only after all final grades exist"
+                                "Certificates are published automatically only after every mandatory subject has a positive final grade"
                         );
                     }
                     requireCertificateManager(connection, actorUserId, sessionId, actorProfileType, certificate, sourceIp);
@@ -189,6 +186,22 @@ public final class CertificateService {
         return synchronizeCertificateForStudentCourse(connection, courseId, enrollment.courseOccurrenceId(), studentUserId);
     }
 
+    void synchronizeCertificatesForCourse(Connection connection, long courseId) throws SQLException {
+        for (Certificate certificate : certificateDAO.findByCourse(connection, courseId)) {
+            try {
+                synchronizeCertificateForStudentCourse(
+                        connection,
+                        courseId,
+                        certificate.courseOccurrenceId(),
+                        certificate.studentUserId()
+                );
+            } catch (IllegalStateException ignored) {
+                // Withdrawn or otherwise ineligible enrollments stay as drafts;
+                // eligible certificates continue to be reconciled.
+            }
+        }
+    }
+
     Certificate synchronizeCertificateForStudentCourse(
             Connection connection,
             long courseId,
@@ -211,13 +224,23 @@ public final class CertificateService {
         if (isCompleted(current)) {
             return current;
         }
-        try {
-            CertificateCalculation calculation = calculateCertificate(
+        CertificateCalculation calculation = calculateCertificate(
+                connection,
+                courseId,
+                courseOccurrenceId,
+                studentUserId
+        );
+        if (!calculation.publishable()) {
+            certificateDAO.updateDraft(
                     connection,
-                    courseId,
-                    courseOccurrenceId,
-                    studentUserId
+                    certificateId,
+                    current.title(),
+                    current.notes(),
+                    current.type(),
+                    current.template()
             );
+            certificateDAO.replaceGradeSheets(connection, certificateId, calculation.gradeSheetIds());
+        } else {
             String validationCode = resolveValidationCode(
                     connection,
                     current.state() == CertificateState.ISSUED ? current.validationCode() : null,
@@ -235,22 +258,6 @@ public final class CertificateService {
                     calculation.finalGrade()
             );
             certificateDAO.replaceGradeSheets(connection, certificateId, calculation.gradeSheetIds());
-        } catch (IllegalStateException | IllegalArgumentException exception) {
-            if (current.state() == CertificateState.ISSUED
-                    || current.validationCode() != null
-                    || current.issuedAt() != null
-                    || current.finalGrade() != null
-                    || !current.gradeSheetIds().isEmpty()) {
-                certificateDAO.updateDraft(
-                        connection,
-                        certificateId,
-                        current.title(),
-                        current.notes(),
-                        current.type(),
-                        current.template()
-                );
-                certificateDAO.replaceGradeSheets(connection, certificateId, List.of());
-            }
         }
         return requireCertificate(connection, certificateId);
     }
@@ -265,8 +272,20 @@ public final class CertificateService {
             accessPolicy.requireStudentProfile(actorUserId, sessionId, actorProfileType, sourceIp);
             List<Certificate> certificates = new ArrayList<>();
             for (Certificate certificate : certificateDAO.findByStudent(connection, actorUserId)) {
-                if (isCompleted(certificate)) {
-                    certificates.add(certificate);
+                Certificate synchronizedCertificate = certificate;
+                try {
+                    synchronizedCertificate = synchronizeCertificateForStudentCourse(
+                            connection,
+                            certificate.courseId(),
+                            certificate.courseOccurrenceId(),
+                            actorUserId
+                    );
+                } catch (IllegalStateException ignored) {
+                    // A withdrawn/ineligible enrollment remains hidden from a
+                    // student's published list, without breaking other certificates.
+                }
+                if (synchronizedCertificate != null && isCompleted(synchronizedCertificate)) {
+                    certificates.add(synchronizedCertificate);
                 }
             }
             return List.copyOf(certificates);
@@ -284,6 +303,19 @@ public final class CertificateService {
     ) {
         try (Connection connection = connectionProvider.getConnection()) {
             Certificate certificate = requireCertificate(connection, certificateId);
+            try {
+                Certificate synchronizedCertificate = synchronizeCertificateForStudentCourse(
+                        connection,
+                        certificate.courseId(),
+                        certificate.courseOccurrenceId(),
+                        certificate.studentUserId()
+                );
+                if (synchronizedCertificate != null) {
+                    certificate = synchronizedCertificate;
+                }
+            } catch (IllegalStateException ignored) {
+                // Keep the stored draft for withdrawn/ineligible enrollments.
+            }
             if (actorProfileType == AccessProfileType.STUDENT) {
                 accessPolicy.requireStudentProfile(actorUserId, sessionId, actorProfileType, sourceIp);
                 if (certificate.studentUserId() != actorUserId) {
@@ -315,60 +347,80 @@ public final class CertificateService {
         CertificateDAO.CourseScale course = certificateDAO.findCourseScale(connection, courseId);
         List<CertificateDAO.CourseSubjectScale> subjects = certificateDAO.findActiveCourseSubjects(connection, courseId);
         if (subjects.isEmpty()) {
-            throw new IllegalStateException("Certificate requires at least one active course subject");
+            return new CertificateCalculation(null, List.of(), false);
         }
-        BigDecimal subjectEctsTotal = BigDecimal.ZERO;
+        BigDecimal mandatorySubjectEctsTotal = BigDecimal.ZERO;
         for (CertificateDAO.CourseSubjectScale subject : subjects) {
-            subjectEctsTotal = subjectEctsTotal.add(subject.ects());
+            if (subject.mandatory()) {
+                mandatorySubjectEctsTotal = mandatorySubjectEctsTotal.add(subject.ects());
+            }
         }
-        if (subjectEctsTotal.compareTo(course.ects()) != 0) {
-            throw new IllegalStateException("Course subject ECTS total must match course ECTS before certificates can be completed");
+        if (mandatorySubjectEctsTotal.compareTo(BigDecimal.ZERO) <= 0) {
+            return new CertificateCalculation(null, List.of(), false);
         }
 
         BigDecimal weightedTotal = BigDecimal.ZERO;
         List<Long> gradeSheetIds = new ArrayList<>();
+        boolean mandatoryGradesComplete = true;
         for (CertificateDAO.CourseSubjectScale subject : subjects) {
-            CertificateDAO.SubjectApprovedGrade approvedGrade = findApprovedSubjectGrade(
-                    connection,
-                    courseId,
-                    courseOccurrenceId,
-                    subject.subjectId(),
-                    studentUserId
-            ).orElseThrow(() -> new IllegalStateException(
-                    "Student has no approved published grade for every course subject"));
-            BigDecimal subjectFinalGrade = approvedGrade.value()
-                    .divide(approvedGrade.gradeSheetMaxGrade(), 8, RoundingMode.HALF_UP)
+            Optional<CertificateDAO.SubjectApprovedGrade> approvedGrade = findApprovedSubjectGrade(
+                    connection, courseId, subject.subjectId(), studentUserId);
+            if (approvedGrade.isEmpty()) {
+                if (subject.mandatory()) {
+                    mandatoryGradesComplete = false;
+                }
+                continue;
+            }
+            CertificateDAO.SubjectApprovedGrade grade = approvedGrade.get();
+            BigDecimal subjectFinalGrade = grade.value()
+                    .divide(grade.gradeSheetMaxGrade(), 8, RoundingMode.HALF_UP)
                     .multiply(subject.finalGradeMax());
             BigDecimal courseScaleGrade = subjectFinalGrade
                     .divide(subject.finalGradeMax(), 8, RoundingMode.HALF_UP)
                     .multiply(course.certificateMaxGrade());
-            weightedTotal = weightedTotal.add(courseScaleGrade.multiply(subject.ects()));
-            gradeSheetIds.add(approvedGrade.gradeSheetId());
+            if (subject.mandatory()) {
+                weightedTotal = weightedTotal.add(courseScaleGrade.multiply(subject.ects()));
+                if (normalizedGrade(grade).compareTo(new BigDecimal("0.50")) <= 0) {
+                    mandatoryGradesComplete = false;
+                }
+            }
+            // Optional subjects with an approved final grade are shown on the
+            // certificate, but never contribute to its weighted final grade.
+            gradeSheetIds.add(grade.gradeSheetId());
         }
-        BigDecimal finalGrade = weightedTotal.divide(course.ects(), 2, RoundingMode.HALF_UP);
+        if (!mandatoryGradesComplete) {
+            return new CertificateCalculation(null, List.copyOf(gradeSheetIds), false);
+        }
+        BigDecimal finalGrade = weightedTotal.divide(mandatorySubjectEctsTotal, 2, RoundingMode.HALF_UP);
         validateFinalGrade(finalGrade, course.certificateMaxGrade());
-        return new CertificateCalculation(finalGrade, List.copyOf(gradeSheetIds));
+        return new CertificateCalculation(finalGrade, List.copyOf(gradeSheetIds), true);
     }
 
     private Optional<CertificateDAO.SubjectApprovedGrade> findApprovedSubjectGrade(
             Connection connection,
             long courseId,
-            long courseOccurrenceId,
             long subjectId,
             long studentUserId
     ) throws SQLException {
+        CertificateDAO.SubjectApprovedGrade bestGrade = null;
         for (CertificateDAO.SubjectApprovedGrade grade : certificateDAO.findApprovedSubjectGradeCandidates(
-                connection,
-                courseId,
-                courseOccurrenceId,
-                subjectId,
-                studentUserId
+                connection, courseId, subjectId, studentUserId
         )) {
             if (gradeSheetCompleteForCertificateStudent(connection, grade.gradeSheetId(), studentUserId)) {
-                return Optional.of(grade);
+                if (bestGrade == null || normalizedGrade(grade).compareTo(normalizedGrade(bestGrade)) > 0) {
+                    bestGrade = grade;
+                }
             }
         }
-        return Optional.empty();
+        return Optional.ofNullable(bestGrade);
+    }
+
+    private static BigDecimal normalizedGrade(CertificateDAO.SubjectApprovedGrade grade) {
+        if (grade.value() == null || grade.gradeSheetMaxGrade() == null
+                || grade.gradeSheetMaxGrade().compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        return grade.value().divide(grade.gradeSheetMaxGrade(), 8, RoundingMode.HALF_UP);
     }
 
     private boolean gradeSheetCompleteForCertificateStudent(
@@ -377,105 +429,17 @@ public final class CertificateService {
             long studentUserId
     ) throws SQLException {
         GradeSheet gradeSheet = gradeSheetDAO.findById(connection, gradeSheetId).orElse(null);
-        if (gradeSheet == null || !gradeSheetIsAcademicallyComplete(connection, gradeSheet)) {
+        if (gradeSheet == null || !isPublishedForCertificate(gradeSheet)) {
             return false;
         }
+        // Certificate eligibility is student-specific: other students may
+        // still have '-' in the same published sheet without blocking a
+        // student who already has a final record in every mandatory subject.
         return gradeSheetDAO.hasActiveGradeRecord(connection, gradeSheet.id(), studentUserId);
-    }
-
-    /**
-     * Publication now means that a sheet is available to consult, including
-     * the mandatory publication at the end of a period.  Certificate issuance
-     * needs the stronger condition that no class-group/student result remains
-     * pending, so it cannot use Published as a proxy for completeness.
-     */
-    private boolean gradeSheetIsAcademicallyComplete(Connection connection, GradeSheet gradeSheet)
-            throws SQLException {
-        if (!isPublishedForCertificate(gradeSheet)) {
-            return false;
-        }
-        if (gradeSheet.classGroupIds().isEmpty()) {
-            List<GradeSheet> sourceSheets = gradeSheetDAO.findClassGroupGradeSheetsForSubjectOccurrence(
-                    connection,
-                    gradeSheet.subjectId(),
-                    gradeSheet.courseOccurrenceId()
-            );
-            if (sourceSheets.isEmpty()) {
-                return false;
-            }
-            for (GradeSheet sourceSheet : sourceSheets) {
-                if (!gradeSheetIsAcademicallyComplete(connection, sourceSheet)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        List<Long> studentUserIds = gradeSheetDAO.findStudentUserIdsForSheetContext(connection, gradeSheet);
-        if (studentUserIds.isEmpty()) {
-            return false;
-        }
-        List<GradeAssessmentWeight> assessmentWeights = gradeSheetAssessmentWeights(connection, gradeSheet);
-        if (!weightsAreConfigured(assessmentWeights)) {
-            return false;
-        }
-        List<Long> assessmentIds = assessmentWeights.stream()
-                .map(GradeAssessmentWeight::assessmentId)
-                .toList();
-        for (Long studentUserId : studentUserIds) {
-            if (!gradeSheetDAO.hasActiveGradeRecord(connection, gradeSheet.id(), studentUserId)) {
-                return false;
-            }
-            for (Long assessmentId : assessmentIds) {
-                if (!gradeSheetDAO.hasCorrectedAssessmentScore(connection, studentUserId, assessmentId)) {
-                    return false;
-                }
-            }
-        }
-        return true;
     }
 
     private static boolean isPublishedForCertificate(GradeSheet gradeSheet) {
         return gradeSheet.state() == GradeSheetState.PUBLISHED || gradeSheet.state() == GradeSheetState.CLOSED;
-    }
-
-    private List<GradeAssessmentWeight> gradeSheetAssessmentWeights(Connection connection, GradeSheet gradeSheet)
-            throws SQLException {
-        Map<Long, BigDecimal> configuredWeights = new LinkedHashMap<>();
-        for (GradeAssessmentWeight weight : gradeSheet.assessmentWeights()) {
-            configuredWeights.putIfAbsent(weight.assessmentId(), weight.weight());
-        }
-        List<Long> contextAssessmentIds = gradeSheetDAO.findAssessmentIdsForSheetContext(
-                connection,
-                gradeSheet.subjectId(),
-                gradeSheet.courseOccurrenceId(),
-                gradeSheet.classGroupIds()
-        );
-        if (contextAssessmentIds.isEmpty()) {
-            return gradeSheet.assessmentWeights();
-        }
-        List<GradeAssessmentWeight> weights = new ArrayList<>();
-        for (Long assessmentId : contextAssessmentIds) {
-            weights.add(new GradeAssessmentWeight(assessmentId, configuredWeights.get(assessmentId)));
-        }
-        return List.copyOf(weights);
-    }
-
-    private static boolean weightsAreConfigured(List<GradeAssessmentWeight> assessmentWeights) {
-        if (assessmentWeights == null || assessmentWeights.isEmpty()) {
-            return false;
-        }
-        BigDecimal total = BigDecimal.ZERO;
-        for (GradeAssessmentWeight assessmentWeight : assessmentWeights) {
-            if (assessmentWeight == null
-                    || assessmentWeight.weight() == null
-                    || assessmentWeight.weight().compareTo(BigDecimal.ZERO) < 0
-                    || assessmentWeight.weight().compareTo(ONE_HUNDRED) > 0) {
-                return false;
-            }
-            total = total.add(assessmentWeight.weight());
-        }
-        return total.compareTo(ONE_HUNDRED) == 0;
     }
 
     private CourseEnrollment requireCertificateCourseEnrollment(
@@ -484,11 +448,14 @@ public final class CertificateService {
             long courseId,
             Long courseOccurrenceId
     ) throws SQLException {
-        CourseEnrollment enrollment = enrollmentDAO.findCourseEnrollment(connection, studentUserId, courseId)
-                .orElseThrow(() -> new IllegalStateException("Student is not enrolled in this course"));
-        if (courseOccurrenceId != null && courseOccurrenceId > 0 && enrollment.courseOccurrenceId() != courseOccurrenceId) {
-            throw new IllegalStateException("Student is not enrolled in the requested course occurrence");
-        }
+        Optional<CourseEnrollment> enrollmentResult = courseOccurrenceId != null && courseOccurrenceId > 0
+                ? enrollmentDAO.findCourseEnrollment(connection, studentUserId, courseId, courseOccurrenceId)
+                : enrollmentDAO.findCourseEnrollment(connection, studentUserId, courseId);
+        CourseEnrollment enrollment = enrollmentResult.orElseThrow(() -> new IllegalStateException(
+                courseOccurrenceId != null && courseOccurrenceId > 0
+                        ? "Student is not enrolled in the requested course occurrence"
+                        : "Student is not enrolled in this course"
+        ));
         if (enrollment.state() == EnrollmentState.WITHDRAWN || enrollment.state() == EnrollmentState.REJECTED) {
             throw new IllegalStateException("Student is not eligible for a certificate in this course");
         }
@@ -554,7 +521,11 @@ public final class CertificateService {
         }
     }
 
-    private record CertificateCalculation(BigDecimal finalGrade, List<Long> gradeSheetIds) {
+    private record CertificateCalculation(
+            BigDecimal finalGrade,
+            List<Long> gradeSheetIds,
+            boolean publishable
+    ) {
     }
 
     private String resolveValidationCode(

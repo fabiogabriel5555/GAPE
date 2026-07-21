@@ -286,6 +286,124 @@ class GradeSheetServiceTest {
     }
 
     @Test
+    void zeroWeightedAssessmentDoesNotBlockPublication() {
+        GradeSheet gradeSheet = gradeSheetService.createGradeSheet(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                new GradeSheetCreateCommand(
+                        40L,
+                        "Zero Weighted Assessment",
+                        GradeSheetType.PARTIAL,
+                        bd("20.00"),
+                        bd("9.50"),
+                        GradeSheetState.DRAFT,
+                        List.of(50L),
+                        List.of(
+                                new GradeAssessmentWeight(90L, bd("100.00")),
+                                new GradeAssessmentWeight(92L, bd("0.00"))
+                        )
+                ),
+                IP
+        );
+
+        assertEquals(GradeSheetState.PUBLISHED, gradeSheet.state());
+    }
+
+    @Test
+    void zeroScoreCountsAsACompletedPositiveWeightGrade() {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     UPDATE attempt
+                     SET score = 0.00, state = 'corrected'
+                     WHERE id_attempt = 120
+                     """)) {
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to prepare zero-score fixture", exception);
+        }
+
+        GradeSheet gradeSheet = gradeSheetService.createGradeSheet(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                new GradeSheetCreateCommand(
+                        40L,
+                        "Zero Score Assessment",
+                        GradeSheetType.PARTIAL,
+                        bd("20.00"),
+                        bd("9.50"),
+                        GradeSheetState.DRAFT,
+                        List.of(50L),
+                        List.of(
+                                new GradeAssessmentWeight(90L, bd("100.00")),
+                                new GradeAssessmentWeight(92L, bd("0.00"))
+                        )
+                ),
+                IP
+        );
+
+        assertEquals(GradeSheetState.PUBLISHED, gradeSheet.state());
+    }
+
+    @Test
+    void publishedGradeSheetReturnsToDraftWhenPositiveWeightGradeIsRemoved() {
+        GradeSheet gradeSheet = gradeSheetService.createGradeSheet(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                new GradeSheetCreateCommand(
+                        40L,
+                        "Dynamic Publication",
+                        GradeSheetType.PARTIAL,
+                        bd("20.00"),
+                        bd("9.50"),
+                        GradeSheetState.DRAFT,
+                        List.of(50L),
+                        List.of(
+                                new GradeAssessmentWeight(90L, bd("100.00")),
+                                new GradeAssessmentWeight(92L, bd("0.00"))
+                        )
+                ),
+                IP
+        );
+        assertEquals(GradeSheetState.PUBLISHED, gradeSheet.state());
+
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     UPDATE attempt
+                     SET score = NULL, state = 'submitted'
+                     WHERE id_attempt = 120
+                     """)) {
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to remove positive-weight score", exception);
+        }
+
+        GradeSheet updated = gradeSheetService.updateGradeSheet(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                gradeSheet.id(),
+                new GradeSheetUpdateCommand(
+                        40L,
+                        "Dynamic Publication",
+                        GradeSheetType.PARTIAL,
+                        bd("20.00"),
+                        bd("9.50"),
+                        List.of(50L),
+                        List.of(
+                                new GradeAssessmentWeight(90L, bd("100.00")),
+                                new GradeAssessmentWeight(92L, bd("0.00"))
+                        )
+                ),
+                IP
+        );
+
+        assertEquals(GradeSheetState.DRAFT, updated.state());
+    }
+
+    @Test
     void incompleteGradeSheetCannotBePublished() {
         GradeSheet gradeSheet = gradeSheetService.createGradeSheet(
                 3L,
@@ -305,7 +423,7 @@ class GradeSheetServiceTest {
     }
 
     @Test
-    void publishedSheetWithMissingGradesRemainsPublishedOnRead() {
+    void publishedSheetWithMissingGradesReturnsToDraftOnRead() {
         GradeSheet gradeSheet = gradeSheetService.createGradeSheet(
                 3L,
                 null,
@@ -314,6 +432,16 @@ class GradeSheetServiceTest {
                 IP
         );
         forcePublishedState(gradeSheet.id());
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     UPDATE attempt
+                     SET score = NULL, state = 'submitted'
+                     WHERE id_attempt = 120
+                     """)) {
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to remove grade fixture", exception);
+        }
 
         GradeSheet synchronizedSheet = gradeSheetService.getGradeSheet(
                 3L,
@@ -323,7 +451,7 @@ class GradeSheetServiceTest {
                 IP
         );
 
-        assertEquals(GradeSheetState.PUBLISHED, synchronizedSheet.state());
+        assertEquals(GradeSheetState.DRAFT, synchronizedSheet.state());
     }
 
     @Test
@@ -352,7 +480,7 @@ class GradeSheetServiceTest {
     }
 
     @Test
-    void subjectGradeSheetKeepsItsPublishedAvailabilityWhenAnotherClassGroupSheetIsStillPending() {
+    void subjectGradeSheetReturnsToDraftWhenAnotherClassGroupSheetIsStillPending() {
         GradeSheet classGroupSheet = gradeSheetService.createGradeSheet(
                 3L,
                 null,
@@ -394,7 +522,43 @@ class GradeSheetServiceTest {
                 IP
         );
 
-        assertEquals(GradeSheetState.PUBLISHED, gradeSheetState(subjectGradeSheetId));
+        assertEquals(GradeSheetState.DRAFT, gradeSheetState(subjectGradeSheetId));
+    }
+
+    @Test
+    void subjectGradeSheetKeepsTheHighestClassificationWhenStudentHasMultipleClassGroups() {
+        publishBaseProjectGradeRecord();
+        insertSecondProjectClassGroup();
+        insertSecondProjectExamFixture();
+
+        GradeSheet secondClassGroupSheet = gradeSheetService.createGradeSheet(
+                3L,
+                null,
+                AccessProfileType.TEACHER,
+                new GradeSheetCreateCommand(
+                        40L,
+                        "Project T2 Highest Classification",
+                        GradeSheetType.FINAL,
+                        bd("20.00"),
+                        bd("9.50"),
+                        GradeSheetState.DRAFT,
+                        List.of(53L),
+                        List.of(new GradeAssessmentWeight(950L, bd("100.00")))
+                ),
+                IP
+        );
+
+        assertEquals(GradeSheetState.PUBLISHED, secondClassGroupSheet.state());
+        GradeSheet subjectSheet = gradeSheetService.getGradeSheet(
+                1L,
+                null,
+                AccessProfileType.ADMINISTRATOR,
+                subjectGradeSheetId(40L, 300L),
+                IP
+        );
+
+        assertEquals(GradeSheetState.PUBLISHED, subjectSheet.state());
+        assertEquals(bd("16.00"), classGroupFinalGrade(subjectSheet.id(), 4L));
     }
 
     @Test
@@ -602,8 +766,76 @@ class GradeSheetServiceTest {
                                '2026-01-01', '2026-06-30', 'morning')
                      """)) {
             statement.executeUpdate();
+            try (PreparedStatement teaching = connection.prepareStatement("""
+                    INSERT INTO teach_class_group (id_teacher_user, id_class_group, state, start_date, end_date)
+                    VALUES (3, 53, 'active', '2026-01-01', NULL)
+                    """)) {
+                teaching.executeUpdate();
+            }
+            try (PreparedStatement enrollment = connection.prepareStatement("""
+                    INSERT INTO enroll_class_group (id_student_user, id_class_group, state, start_date, end_date)
+                    VALUES (4, 53, 'active', '2026-01-01', '2026-06-30')
+                    """)) {
+                enrollment.executeUpdate();
+            }
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to create second class group fixture", exception);
+        }
+    }
+
+    private static void publishBaseProjectGradeRecord() {
+        try (Connection connection = DatabaseTestSupport.openConnection();
+             PreparedStatement statement = connection.prepareStatement("""
+                     UPDATE grade_record
+                     SET cod_grade_record = 'AUTO-170-4',
+                         value = 12.00,
+                         result = 'approved',
+                         state = 'published'
+                     WHERE id_grade_sheet = 170
+                       AND id_user_student = 4
+                     """)) {
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to publish base project grade record fixture", exception);
+        }
+    }
+
+    private static void insertSecondProjectExamFixture() {
+        try (Connection connection = DatabaseTestSupport.openConnection()) {
+            try (PreparedStatement assessment = connection.prepareStatement("""
+                    INSERT INTO assessment (
+                        id_assessment, id_subject, id_content_block, cod_physical_room, title, description,
+                        type, mode, correction_mode, max_grade, passing_grade, final_grade_weight,
+                        attempts_limit, state, available_from, available_until
+                    ) VALUES (950, 40, NULL, NULL, 'Project T2 Exam', 'Higher classification fixture',
+                              'exam', 'online', 'manual', 20.00, 9.50, 100.00, 1,
+                              'active', '2026-02-10 00:00:00', '2026-06-30 23:59:59')
+                    """)) {
+                assessment.executeUpdate();
+            }
+            try (PreparedStatement association = connection.prepareStatement("""
+                    INSERT INTO assessment_class_group (id_assessment, id_class_group)
+                    VALUES (950, 53)
+                    """)) {
+                association.executeUpdate();
+            }
+            try (PreparedStatement enrollment = connection.prepareStatement("""
+                    INSERT INTO enroll_assessment (id_student_user, id_assessment, state, start_date, end_date)
+                    VALUES (4, 950, 'active', '2026-02-10', '2026-06-30')
+                    """)) {
+                enrollment.executeUpdate();
+            }
+            try (PreparedStatement attempt = connection.prepareStatement("""
+                    INSERT INTO attempt (
+                        id_attempt, id_student_user, id_assessment, attempt_number, score, state,
+                        started_at, submitted_at
+                    ) VALUES (951, 4, 950, 1, 16.00, 'corrected',
+                              '2026-02-11 09:00:00', '2026-02-11 10:00:00')
+                    """)) {
+                attempt.executeUpdate();
+            }
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to create higher classification fixture", exception);
         }
     }
 }

@@ -1,5 +1,9 @@
 # Integracao EduAll: utilizadores, preferencias-removidas, eliminacao e auditoria
 
+> Estado de auditoria atualizado: a tabela autónoma foi substituída pela vista
+> `Logs` do Dashboard. Consultar `eduall-audit-integration.md` para a integração
+> atual, os filtros por âmbito e a validação.
+
 ## Paginas analisadas
 
 - `docs/templates/Cursus/HTML/setting.html`: base visual para perfil, preferencias-removidas e encerramento de conta.
@@ -30,7 +34,7 @@
 - `WEB-INF/views/access/account-deletion-requests.jsp`: submissao e historico de pedidos de eliminacao.
 - `WEB-INF/views/access/admin-removed-preferences.jsp`: gestao administrativa de preferencias por utilizador.
 - `WEB-INF/views/access/admin-deletion-requests.jsp`: processamento administrativo de pedidos de eliminacao.
-- `WEB-INF/views/access/activity-log.jsp`: auditoria visivel.
+- A auditoria deixou de ter JSP autónoma; é apresentada em `/dashboard?tab=logs`.
 
 ## Componentes reutilizados
 
@@ -47,9 +51,12 @@
 - `/account/removed-preferences` e `/admin/removed-preferences/{id}` ligam a `RemovedPreferenceService.createPreference` e `RemovedPreferenceService.updatePreference`; as opcoes sao fixas para impedir duplicados no UI e o service mantem a garantia.
 - `/account/deletion-requests` liga a `DeletionRequestService.submitDeletionRequest`.
 - `/admin/deletion-requests/{id}/process` liga a `DeletionRequestService.processDeletionRequest`.
-- `/admin/activity-log` liga a `ActivityLogService.listForActor`.
+- `/dashboard?tab=logs` liga a `ActivityLogService`; `/admin/activity-log` é
+  apenas um redirecionamento de compatibilidade para essa vista.
 
 ## Decisoes de interface
+
+- Create User e Edit User nao apresentam nem sincronizam `Student Course Context`. As inscricoes de curso do estudante (`enroll_course`) sao geridas exclusivamente nas paginas de inscricoes; o `UserService` rejeita esse contexto quando submetido pelo CRUD de utilizadores, preservando inscricoes existentes durante uma edicao.
 
 - O CRUD administrativo usa paginas separadas para listagem, detalhe e formulario para preservar clareza e o padrao de dashboard.
 - Bloquear, desbloquear, eliminar utilizador, submeter pedido de eliminacao e processar pedido usam modais de confirmacao.
@@ -62,5 +69,7 @@
 
 - Publicas: paginas ja existentes em `AuthorizationPolicy.isPublic`, incluindo `index.jsp`, `login.jsp`, `sign-in.jsp`, `sign-up.jsp`, `policy-page-removed.jsp`, assets e `/auth/*`.
 - Protegidas autenticadas: `/account/profile`, `/account/removed-preferences`, `/account/deletion-requests`.
-- Protegidas administrativas: `/admin/users`, `/admin/removed-preferences`, `/admin/deletion-requests`, `/admin/activity-log`.
+- Protegidas administrativas: `/admin/users`, `/admin/removed-preferences` e
+  `/admin/deletion-requests`; Logs segue a proteção autenticada de `/dashboard`
+  e reforça o âmbito no serviço.
 - As restricoes finais continuam no service layer: leitura/alteracao de dados pessoais, preferencias-removidas, eliminacao e auditoria registam operacoes criticas e validam permissoes.

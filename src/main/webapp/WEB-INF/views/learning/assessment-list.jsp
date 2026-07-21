@@ -55,7 +55,7 @@
                             <h2 class="text-18 fw-medium text-neutral-700 mb-4">Assessments</h2>
                             <span class="text-14 text-neutral-500">Manage questions, options, attempts, results and corrections.</span>
                         </div>
-                        <a href="${pageContext.request.contextPath}/learning/assessments/new" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03 d-inline-flex align-items-center" style="min-height: 44px;">
+                        <a href="${pageContext.request.contextPath}/learning/assessments/new" class="bg-main-600 px-20 py-10 rounded-8 fw-semibold text-white hover-bg-main-700 transition-03 d-inline-flex align-items-center" style="min-height: 44px;" data-assessment-modal-url="${pageContext.request.contextPath}/learning/assessments/new" data-assessment-modal-title="Create Assessment">
                             <i class="ph ph-plus-circle me-8"></i>New Assessment
                         </a>
                     </div>
@@ -113,7 +113,7 @@
                                             <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}" class="text-22 text-neutral-500 hover-text-main-600" title="Detail" aria-label="Detail">
                                                 <i class="ph ph-eye"></i>
                                             </a>
-                                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit" class="text-22 text-neutral-500 hover-text-main-600" title="Edit" aria-label="Edit">
+                                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit" data-assessment-modal-url="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/edit" data-assessment-modal-title="Edit Assessment" class="text-22 text-neutral-500 hover-text-main-600" title="Edit Assessment" aria-label="Edit Assessment">
                                                 <i class="ph ph-pencil-simple-line"></i>
                                             </a>
                                             <a href="${pageContext.request.contextPath}/learning/assessments/${assessment.id}/pdf" class="text-22 text-neutral-500 hover-text-main-600" title="Download" aria-label="Download">

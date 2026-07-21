@@ -88,6 +88,15 @@ public final class StudentClassGroupView {
         return enrollment != null;
     }
 
+    /**
+     * A pending request remains visible alongside the active class groups. A
+     * finished or withdrawn enrollment does not grant a current place and is
+     * therefore represented by the aggregated "without enrollment" card.
+     */
+    public boolean isCurrentOrPendingEnrollment() {
+        return enrollment != null && (enrollment.isActive() || enrollment.isPending());
+    }
+
     public boolean isActiveEnrollment() {
         return enrollment != null && enrollment.isActive();
     }

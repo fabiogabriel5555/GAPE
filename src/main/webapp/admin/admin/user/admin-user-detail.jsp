@@ -316,7 +316,7 @@
                             </c:otherwise>
                         </c:choose>
                         <a href="${pageContext.request.contextPath}/admin/users/${user.id}/edit" class="gape-action-button gape-critical-action gape-action-edit px-24 py-12 rounded-12 fw-semibold transition-03">Edit</a>
-                        <a href="${pageContext.request.contextPath}/admin/activity-log?userId=${user.id}" class="gape-action-button gape-critical-action gape-action-audit px-24 py-12 rounded-12 fw-semibold transition-03">View Audit</a>
+                        <a href="${pageContext.request.contextPath}/dashboard?tab=logs&amp;userId=${user.id}" class="gape-action-button gape-critical-action gape-action-audit px-24 py-12 rounded-12 fw-semibold transition-03">View Logs</a>
                     </div>
                 </div>
             </div>

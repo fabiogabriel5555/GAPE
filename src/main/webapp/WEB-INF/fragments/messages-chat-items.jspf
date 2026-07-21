@@ -17,7 +17,8 @@
                     <c:if test="${message.imageAttachment}">
                         <img src="${pageContext.request.contextPath}/messages/attachments/${message.id}?inline=1"
                              alt="<c:out value='${message.attachmentFileName}'/>"
-                             class="messages-media-preview rounded-8">
+                             class="messages-media-preview rounded-8"
+                             onerror="this.hidden=true;">
                     </c:if>
                     <c:if test="${message.videoAttachment}">
                         <video src="${pageContext.request.contextPath}/messages/attachments/${message.id}?inline=1"

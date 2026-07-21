@@ -401,9 +401,18 @@
             align-items: center;
             display: grid;
             gap: 14px;
-            grid-template-columns: minmax(0, 1fr) auto;
+            grid-template-columns: minmax(0, 1fr) 182px;
             min-height: 82px;
             padding: 16px 18px;
+        }
+
+        .cg-content-row > :first-child,
+        .cg-content-row > :first-child > .min-w-0 {
+            min-width: 0;
+        }
+
+        .cg-content-row > :first-child > .min-w-0 {
+            flex: 1 1 auto;
         }
 
         .cg-content-list .cg-content-row:first-child {
@@ -449,6 +458,39 @@
             -webkit-box-orient: vertical;
             -webkit-line-clamp: 2;
             overflow: hidden;
+        }
+
+        .cg-content-title {
+            display: block;
+            max-width: 100%;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .cg-content-meta-row {
+            align-items: center;
+            display: grid;
+            gap: 8px;
+            grid-template-columns: minmax(0, 1fr) 96px 82px;
+            min-width: 0;
+        }
+
+        .cg-content-meta-state,
+        .cg-content-meta-type {
+            min-width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .cg-content-meta-state > span,
+        .cg-content-meta-type > span {
+            display: inline-flex;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .cg-empty {
@@ -1161,6 +1203,19 @@
             grid-template-columns: minmax(250px, 1.25fr) minmax(220px, 1.05fr) minmax(135px, .55fr) minmax(92px, auto);
         }
 
+        /* Grade sheets need room for the two human-readable context columns.
+           Keep State adjacent to the fixed action slot instead of leaving a
+           large elastic gap before the icons. */
+        .cg-grade-sheet-list-header,
+        .cg-grade-sheet-row {
+            grid-template-columns: minmax(260px, 1.15fr) minmax(220px, 1fr) minmax(130px, .62fr) minmax(140px, .72fr) minmax(104px, auto);
+        }
+
+        .cg-assignment-actions,
+        .cg-grade-sheet-actions {
+            min-width: 88px;
+        }
+
         .cg-structure-node {
             transition: border-color .2s ease, box-shadow .2s ease;
         }
@@ -1183,16 +1238,90 @@
         }
 
         .cg-detail-action {
+            align-items: center;
             background: transparent;
-            border: 0;
+            border: 1px solid transparent;
+            border-radius: 8px;
             color: #64748b;
+            display: inline-flex;
             font-size: 20px;
+            height: 34px;
+            justify-content: center;
             line-height: 1;
             padding: 0;
+            transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+            width: 34px;
         }
 
-        .cg-detail-action:hover { color: var(--cg-primary-dark); }
-        .cg-detail-action--danger:hover { color: #dc2626; }
+        .cg-detail-action:hover {
+            background: var(--cg-primary-soft);
+            border-color: rgba(var(--cg-primary-rgb), .28);
+            color: var(--cg-primary-dark);
+        }
+
+        .cg-detail-action--danger:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #dc2626;
+        }
+
+        .cg-detail-action--decision {
+            animation: cg-decision-attention 1.35s ease-in-out infinite;
+        }
+
+        .cg-detail-action--decision:hover {
+            background: rgba(var(--cg-primary-rgb), .16);
+            border-color: rgba(var(--cg-primary-rgb), .7);
+            color: var(--cg-primary-dark);
+        }
+
+        @keyframes cg-decision-attention {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .cg-detail-action--decision { animation: none; }
+        }
+
+        /* Kept at the page's standard dialog width so the decision window
+           follows the same size and centred placement as Detail and Delete. */
+        .cg-enrollment-modal-dialog {
+            margin-inline: auto;
+            max-width: 500px;
+            width: min(500px, calc(100vw - 2rem));
+        }
+
+        .cg-enrollment-modal-dialog .modal-content {
+            border-radius: 12px;
+        }
+
+        .cg-enrollment-modal-dialog .modal-header {
+            padding: 18px 20px;
+        }
+
+        .cg-enrollment-modal-dialog .modal-body {
+            padding: 20px;
+        }
+
+        .cg-enrollment-modal-dialog .modal-footer {
+            align-items: center;
+            gap: 8px;
+            padding: 16px 20px;
+        }
+
+        .cg-enrollment-decision-summary {
+            background: #f8fafc;
+            border: 1px solid var(--cg-border);
+            border-radius: 8px;
+            display: grid;
+            gap: 6px;
+            padding: 16px;
+        }
+
+        .cg-enrollment-decision-summary strong {
+            line-height: 1.45;
+        }
 
         .cg-enrollment-tabs {
             border-bottom: 1px solid var(--cg-border);
@@ -1296,6 +1425,11 @@
         }
 
         @media (max-width: 767.98px) {
+            .cg-content-meta-row {
+                gap: 6px;
+                grid-template-columns: minmax(0, 1fr) 88px 58px;
+            }
+
             .cg-content-row,
             .cg-info-grid {
                 grid-template-columns: 1fr;
@@ -1456,6 +1590,9 @@
                                                             <h4 class="text-18 fw-semibold text-neutral-800 mb-0"><c:out value="${block.name}"/></h4>
                                                             <span class="${block.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${block.stateLabel}"/></span>
                                                         </div>
+                                                        <c:if test="${not empty block.description}">
+                                                            <p class="text-14 text-neutral-500 mb-0"><c:out value="${block.description}"/></p>
+                                                        </c:if>
                                                     </div>
                                                 </div>
                                                 <c:if test="${canManageClassGroupContent}">
@@ -1519,9 +1656,12 @@
                                                                             </c:otherwise>
                                                                         </c:choose>
                                                                         <div class="min-w-0">
-                                                                            <div class="d-flex align-items-center gap-8 flex-wrap mb-6">
-                                                                                <h5 class="text-15 fw-semibold text-neutral-800 mb-0"><c:out value="${content.title}"/></h5>
-                                                                                <span class="${content.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${content.stateLabel}"/></span>
+                                                                            <div class="cg-content-meta-row mb-6">
+                                                                                <h5 class="cg-content-title text-15 fw-semibold text-neutral-800 mb-0"><c:out value="${content.title}"/></h5>
+                                                                                <div class="cg-content-meta-state">
+                                                                                    <span class="${content.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${content.stateLabel}"/></span>
+                                                                                </div>
+                                                                                <div class="cg-content-meta-type" aria-hidden="true"></div>
                                                                             </div>
                                                                             <p class="text-13 text-neutral-500 mb-0 cg-truncate-2"><c:out value="${content.description}"/></p>
                                                                         </div>
@@ -1532,7 +1672,7 @@
                                                                                 <a href="${pageContext.request.contextPath}/learning/assessments/${content.assessmentReferenceId}" class="cg-outline-button text-13 px-12 py-8" title="Detail">
                                                                                     <i class="ph ph-eye"></i>
                                                                                 </a>
-                                                                                <a href="${pageContext.request.contextPath}/learning/assessments/${content.assessmentReferenceId}/edit" class="cg-icon-button" title="Edit">
+                                                                                <a href="${pageContext.request.contextPath}/learning/assessments/${content.assessmentReferenceId}/edit" data-assessment-modal-url="${pageContext.request.contextPath}/learning/assessments/${content.assessmentReferenceId}/edit" data-assessment-modal-title="Edit Assessment" class="cg-icon-button" title="Edit Assessment" aria-label="Edit Assessment">
                                                                                     <i class="ph ph-pencil-simple-line text-20"></i>
                                                                                 </a>
                                                                                 <a href="${pageContext.request.contextPath}/learning/assessments/${content.assessmentReferenceId}/pdf" class="cg-primary-button text-13 px-12 py-8" title="Download">
@@ -1582,9 +1722,12 @@
                                                                             <i class="${lesson.typeIconClass}"></i>
                                                                         </span>
                                                                         <div class="min-w-0">
-                                                                            <div class="d-flex align-items-center gap-8 flex-wrap mb-6">
-                                                                                <h5 class="text-15 fw-semibold text-neutral-800 mb-0"><c:out value="${lesson.title}"/></h5>
-                                                                                <span class="${lesson.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${lesson.stateLabel}"/></span>
+                                                                            <div class="cg-content-meta-row mb-6">
+                                                                                <h5 class="cg-content-title text-15 fw-semibold text-neutral-800 mb-0"><c:out value="${lesson.title}"/></h5>
+                                                                                <div class="cg-content-meta-state">
+                                                                                    <span class="${lesson.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${lesson.stateLabel}"/></span>
+                                                                                </div>
+                                                                                <div class="cg-content-meta-type" aria-hidden="true"></div>
                                                                             </div>
                                                                             <p class="text-13 text-neutral-500 mb-0" data-gape-datetime-display>
                                                                                 <c:out value="${lesson.startsAt}"/> to <c:out value="${lesson.endsAt}"/> | <c:out value="${lesson.typeLabel}"/>
@@ -1630,10 +1773,14 @@
                                                                             </span>
                                                                         </span>
                                                                         <div class="min-w-0">
-                                                                            <div class="d-flex align-items-center gap-8 flex-wrap mb-6">
-                                                                                <h5 class="text-15 fw-semibold text-neutral-800 mb-0"><c:out value="${assessmentItem.title}"/></h5>
-                                                                                <span class="${assessmentItem.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${assessmentItem.stateLabel}"/></span>
-                                                                                <span class="bg-neutral-20 text-neutral-600 px-10 py-5 rounded-pill text-12"><c:out value="${assessmentItem.typeLabel}"/></span>
+                                                                            <div class="cg-content-meta-row mb-6">
+                                                                                <h5 class="cg-content-title text-15 fw-semibold text-neutral-800 mb-0"><c:out value="${assessmentItem.title}"/></h5>
+                                                                                <div class="cg-content-meta-state">
+                                                                                    <span class="${assessmentItem.stateBadgeClass} px-10 py-5 rounded-pill text-12"><c:out value="${assessmentItem.stateLabel}"/></span>
+                                                                                </div>
+                                                                                <div class="cg-content-meta-type">
+                                                                                    <span class="bg-neutral-20 text-neutral-600 px-10 py-5 rounded-pill text-12"><c:out value="${assessmentItem.typeLabel}"/></span>
+                                                                                </div>
                                                                             </div>
                                                                             <p class="text-13 text-neutral-500 mb-0">
                                                                                 <c:out value="${assessmentItem.questionCountLabel}"/> | <c:out value="${assessmentItem.attemptCountLabel}"/> | <c:out value="${assessmentItem.correctionModeLabel}"/> correction
@@ -1645,7 +1792,7 @@
                                                                             <i class="ph ph-eye"></i>
                                                                         </a>
                                                                         <c:if test="${canManageClassGroupContent}">
-                                                                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}/edit" class="cg-icon-button" title="Edit">
+                                                                            <a href="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}/edit" data-assessment-modal-url="${pageContext.request.contextPath}/learning/assessments/${assessmentItem.id}/edit" data-assessment-modal-title="Edit Assessment" class="cg-icon-button" title="Edit Assessment" aria-label="Edit Assessment">
                                                                                 <i class="ph ph-pencil-simple-line text-20"></i>
                                                                             </a>
                                                                         </c:if>
@@ -1672,12 +1819,6 @@
 
                                         <c:if test="${canManageClassGroupContent}">
                                             <div class="cg-block-toolbar">
-                                                <a href="${pageContext.request.contextPath}/learning/lessons/new?classGroupId=${classGroup.id}&contentBlockId=${block.id}"
-                                                   class="cg-outline-button"
-                                                   data-lesson-modal-url="${pageContext.request.contextPath}/learning/lessons/new?classGroupId=${classGroup.id}&contentBlockId=${block.id}"
-                                                   data-lesson-modal-title="Create Lesson">
-                                                    <i class="ph ph-chalkboard-teacher me-8"></i>New Lesson
-                                                </a>
                                                 <button type="button" class="cg-primary-button" data-bs-toggle="modal" data-bs-target="#addContent${block.id}">
                                                     <i class="ph ph-plus-circle me-8"></i>Add Content
                                                 </button>
@@ -1705,7 +1846,7 @@
                                                                     <button type="button" class="cg-activity-category" data-content-category="repository"><i class="ph ph-folder-open"></i>Repository</button>
                                                                     <button type="button" class="cg-activity-category is-active" data-content-category="multimedia"><i class="ph ph-monitor-play"></i>Multimedia</button>
                                                                     <button type="button" class="cg-activity-category" data-content-category="class"><i class="ph ph-chalkboard-teacher"></i>Class</button>
-                                                                    <button type="button" class="cg-activity-category" data-content-category="assessment"><i class="ph ph-eye"></i>Assessment</button>
+                                                                    <button type="button" class="cg-activity-category" data-content-category="assessment"><i class="ph ph-clipboard-text"></i>Assessment</button>
                                                                 </div>
                                                             </div>
                                                             <div class="cg-activity-main">
@@ -1878,14 +2019,14 @@
                                                                         <span><strong class="text-15 text-neutral-800 d-block mb-4">Hybrid</strong><span class="text-13 text-neutral-500">Meeting link and physical room.</span></span>
                                                                     </button>
                                                                     <button type="button" class="cg-activity-option cg-assessment-option" data-content-option data-category="assessment" data-supported="true" data-format="other" data-role="assessment" data-source-kind="assessment-create" data-title="Online Assessment" data-submit-label="Create" data-assessment-type="form" data-assessment-mode="online" data-assessment-correction-mode="automatic" data-assessment-subject-id="${classGroup.subjectId}" data-assessment-content-block-id="${block.id}" data-assessment-summary="Reusable online assessment with setup, questions, enrollment policy and attempts." data-assessment-settings="Assessment | Online | Automatic correction">
-                                                                        <span class="cg-activity-icon bg-info-600"><i class="ph ph-eye"></i></span>
+                                                                        <span class="cg-activity-icon bg-info-600"><i class="ph ph-clipboard-text"></i></span>
                                                                         <span>
                                                                             <strong class="text-15 text-neutral-800 d-block mb-4">Online</strong>
                                                                             <span class="text-13 text-neutral-500">Form, test or exam completed online.</span>
                                                                         </span>
                                                                     </button>
                                                                     <button type="button" class="cg-activity-option cg-assessment-option" data-content-option data-category="assessment" data-supported="true" data-format="other" data-role="assessment" data-source-kind="assessment-create" data-title="In-Person Assessment" data-submit-label="Create" data-assessment-type="form" data-assessment-mode="onsite" data-assessment-correction-mode="manual" data-assessment-subject-id="${classGroup.subjectId}" data-assessment-content-block-id="${block.id}" data-assessment-summary="Reusable in-person assessment with setup, questions, enrollment policy and attempts." data-assessment-settings="Assessment | In-Person | Manual correction">
-                                                                        <span class="cg-activity-icon bg-main-two-600"><i class="ph ph-eye"></i></span>
+                                                                        <span class="cg-activity-icon bg-main-two-600"><i class="ph ph-clipboard-text"></i></span>
                                                                         <span>
                                                                             <strong class="text-15 text-neutral-800 d-block mb-4">In-Person</strong>
                                                                             <span class="text-13 text-neutral-500">Form, test or exam delivered in the classroom.</span>
@@ -2250,100 +2391,6 @@
 
                         <%@ include file="/WEB-INF/fragments/class-group-enrollment-management.jspf" %>
 
-                        <section id="students" class="d-none">
-                            <div class="d-flex align-items-start justify-content-between gap-16 flex-wrap mb-18">
-                                <div>
-                                    <h3 class="text-18 fw-semibold text-neutral-800 mb-6">Students</h3>
-                                    <span class="text-14 text-neutral-500">Enroll, approve, reject and review student membership in this class group.</span>
-                                </div>
-                                <span class="bg-main-50 text-main-600 px-14 py-8 rounded-pill text-13">
-                                    <c:out value="${classGroup.activeEnrollmentCountLabel}"/>
-                                </span>
-                            </div>
-                            <c:if test="${canManageClassGroupEnrollments}">
-                                <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollment-policy" method="post" class="d-flex align-items-center gap-10 flex-wrap mb-20">
-                                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                    <span class="text-14 text-neutral-600 fw-medium">Enrollment policy</span>
-                                    <select name="approvalMode" class="form-select px-14 py-8 text-13 bg-neutral-20 border-neutral-30 border rounded-8" style="max-width: 190px;">
-                                        <option value="manual" <c:if test="${classGroupEnrollmentPolicy ne 'auto_approve'}">selected</c:if>>Manual approval</option>
-                                        <option value="auto_approve" <c:if test="${classGroupEnrollmentPolicy eq 'auto_approve'}">selected</c:if>>Auto approve</option>
-                                    </select>
-                                    <button type="submit" class="cg-outline-button px-12 py-8 text-13">Save policy</button>
-                                </form>
-                                <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments" method="post" class="border border-neutral-30 rounded-8 px-18 py-18 mb-20">
-                                    <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                    <div class="row gy-3 align-items-start">
-                                        <div class="col-lg-8 gape-select-field">
-                                            <label for="studentUserId" class="fw-medium text-base text-neutral-800 mb-12">Student</label>
-                                            <select id="studentUserId" name="studentUserId" required class="form-select px-20 py-12 text-14 bg-neutral-20 border-neutral-30 border rounded-8 js-example-basic-single gape-eduall-select">
-                                                <option value="">Select student</option>
-                                                <c:forEach var="student" items="${studentOptions}">
-                                                    <c:if test="${not activeEnrollmentByStudent[student.id]}">
-                                                        <option value="${student.id}"><c:out value="${student.name}"/> - <c:out value="${student.email}"/></option>
-                                                    </c:if>
-                                                </c:forEach>
-                                            </select>
-                                        </div>
-                                        <div class="col-12">
-                                            <button type="submit" class="cg-primary-button">Enroll Student</button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </c:if>
-                            <div class="cg-table-wrap">
-                                <table class="table mb-0 cg-data-table">
-                                    <thead>
-                                    <tr>
-                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Student</th>
-                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600">Period</th>
-                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600">State</th>
-                                        <th class="py-14 px-16 text-14 fw-medium text-neutral-600 text-end">Management</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <c:forEach var="enrollment" items="${classGroupEnrollments}">
-                                        <tr class="hover-bg-neutral-20 border-bottom transition-03">
-                                            <td class="py-16 px-16">
-                                                <span class="fw-medium text-14 text-neutral-700"><c:out value="${enrollment.studentName}"/></span>
-                                                <span class="d-block text-12 text-neutral-500"><c:out value="${enrollment.studentEmail}"/></span>
-                                            </td>
-                                            <td class="py-16 px-16 text-14 text-neutral-500" data-gape-datetime-display><c:out value="${enrollment.startDate}"/> to <c:out value="${enrollment.endDate}"/></td>
-                                            <td class="py-16 px-16">
-                                                <span class="${enrollment.stateBadgeClass} px-12 py-6 border-neutral-30 border rounded-pill text-12">
-                                                    <c:out value="${enrollment.stateLabel}"/>
-                                                </span>
-                                            </td>
-                                            <td class="py-16 px-16 text-end">
-                                                <c:if test="${canManageClassGroupEnrollments and enrollment.pending}">
-                                                    <div class="d-inline-flex align-items-center gap-8 flex-wrap justify-content-end">
-                                                        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments/${enrollment.studentUserId}/approve" method="post" class="m-0 d-inline-flex align-items-center gap-8 flex-wrap justify-content-end">
-                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                            <button type="submit" class="cg-primary-button px-12 py-8 text-13">Approve</button>
-                                                        </form>
-                                                        <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments/${enrollment.studentUserId}/reject" method="post" class="m-0">
-                                                            <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                            <button type="submit" class="cg-outline-button px-12 py-8 text-13">Reject</button>
-                                                        </form>
-                                                    </div>
-                                                </c:if>
-                                                <c:if test="${canManageClassGroupEnrollments and enrollment.active}">
-                                                    <form action="${pageContext.request.contextPath}/learning/class-groups/${classGroup.id}/enrollments/${enrollment.studentUserId}/withdraw" method="post" class="m-0 d-inline-flex align-items-center gap-8 flex-wrap justify-content-end">
-                                                        <input type="hidden" name="csrfToken" value="${sessionScope['gape.auth.csrfToken']}">
-                                                        <button type="submit" class="cg-outline-button px-12 py-8 text-13">Remove</button>
-                                                    </form>
-                                                </c:if>
-                                            </td>
-                                        </tr>
-                                    </c:forEach>
-                                    <c:if test="${empty classGroupEnrollments}">
-                                        <tr>
-                                            <td colspan="4" class="py-32 px-16 text-center text-14 text-neutral-500">No students enrolled in this class group.</td>
-                                        </tr>
-                                    </c:if>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </section>
                         </c:if>
                     </div>
 

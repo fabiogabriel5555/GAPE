@@ -78,8 +78,10 @@
                                                                     <span class="aac-tree-meta"><c:out value="${subjectGroup.occurrenceLabel}"/> | ${subjectGroup.sheetCount} class sheets</span>
                                                                 </div>
                                                             </div>
-                                                            <div class="aac-tree-actions">
+                                                            <div class="aac-tree-status">
                                                                 <span class="${subjectGroup.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13"><c:out value="${subjectGroup.stateLabel}"/></span>
+                                                            </div>
+                                                            <div class="aac-tree-actions">
                                                                 <button type="button" class="aac-icon-button bg-main-50 text-main-600 collapsed" title="Show all" aria-label="Show class sheets" data-bs-toggle="collapse" data-bs-target="#gradeSubjectClasses${gradeManagementIdPrefix}${courseGroup.courseId}_${subjectGroup.subjectId}_${subjectGroup.occurrenceId}" aria-expanded="false"><i class="ph ph-caret-down"></i></button>
                                                                 <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View subject grade sheet" data-bs-toggle="modal" data-bs-target="#gradeSubjectSheetDetail${gradeManagementIdPrefix}${courseGroup.courseId}_${subjectGroup.subjectId}_${subjectGroup.occurrenceId}"><i class="ph ph-eye"></i></button>
                                                                 <div class="dropdown">
@@ -102,8 +104,10 @@
                                                                                 <span class="aac-tree-meta"><c:out value="${sheet.title}"/> | <c:out value="${sheet.typeLabel}"/> | ${sheet.recordCount} records</span>
                                                                             </div>
                                                                         </div>
-                                                                        <div class="aac-tree-actions">
+                                                                        <div class="aac-tree-status">
                                                                             <span class="${sheet.stateBadgeClass} px-14 py-8 border-neutral-30 border rounded-pill text-13"><c:out value="${sheet.stateLabel}"/></span>
+                                                                        </div>
+                                                                        <div class="aac-tree-actions">
                                                                             <button type="button" class="aac-icon-button bg-neutral-20 text-neutral-600" title="Detail" aria-label="View grade sheet" data-bs-toggle="modal" data-bs-target="#gradeSheetDetail${gradeManagementIdPrefix}${sheet.id}"><i class="ph ph-eye"></i></button>
                                                                             <c:if test="${not empty sheet.classGroupIds}">
                                                                                 <button type="button" class="aac-icon-button bg-info-50 text-info-600" title="Edit" aria-label="Edit grade sheet weights" data-bs-toggle="modal" data-bs-target="#gradeSheetSetup${gradeManagementIdPrefix}${sheet.id}"><i class="ph ph-pencil-simple-line"></i></button>

@@ -3,6 +3,7 @@ package pt.isel.gape.learning.service;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.util.List;
 import java.util.Objects;
 
 import pt.isel.gape.access.dao.PermissionDAO;
@@ -39,6 +40,7 @@ public final class EnrollmentService {
     private final EnrollmentDAO enrollmentDAO;
     private final ClassGroupEnrollmentDAO classGroupEnrollmentDAO;
     private final CertificateDAO certificateDAO;
+    private final GradeLifecycleService gradeLifecycleService;
     private final PermissionChecker permissionChecker;
     private final AuditService auditService;
     private final Clock clock;
@@ -62,6 +64,7 @@ public final class EnrollmentService {
                 "classGroupEnrollmentDAO is required"
         );
         this.certificateDAO = new CertificateDAO(connectionProvider);
+        this.gradeLifecycleService = new GradeLifecycleService(connectionProvider, clock);
         this.permissionChecker = Objects.requireNonNull(permissionChecker, "permissionChecker is required");
         this.auditService = Objects.requireNonNull(auditService, "auditService is required");
         this.clock = Objects.requireNonNull(clock, "clock is required");
@@ -188,6 +191,12 @@ public final class EnrollmentService {
                     classGroupEnrollmentDAO.withdrawActiveInCourseOccurrence(
                             connection, studentUserId, courseId, occurrence.id(), occurrence.endsAt()
                     );
+                    synchronizeClassGroupGradeSheets(
+                            connection,
+                            studentUserId,
+                            courseId,
+                            occurrence.id()
+                    );
                     enrollmentDAO.withdrawCourse(
                             connection, studentUserId, courseId, occurrence.id(), occurrence.endsAt()
                     );
@@ -248,6 +257,12 @@ public final class EnrollmentService {
                                 occurrence.id(),
                                 occurrence.endsAt()
                         );
+                        synchronizeClassGroupGradeSheets(
+                                connection,
+                                studentUserId,
+                                courseId,
+                                occurrence.id()
+                        );
                     }
                     enrollmentDAO.updateCourseEnrollment(
                             connection,
@@ -307,11 +322,21 @@ public final class EnrollmentService {
                     requireActiveCourse(course);
                     enrollmentDAO.findCourseEnrollment(connection, studentUserId, courseId, occurrence.id())
                             .orElseThrow(() -> new IllegalArgumentException("Course enrollment not found"));
-                    classGroupEnrollmentDAO.deleteInCourseOccurrence(connection, studentUserId, courseId, occurrence.id());
-                    enrollmentDAO.deleteCourseEnrollment(connection, studentUserId, courseId, occurrence.id());
                     auditService.record(connection, actorUserId, sessionId, "COURSE_ENROLL_DELETE",
                             "course_enrollment", courseEnrollmentIdentifier(studentUserId, courseId, occurrence.id()),
                             "success", sourceIp);
+                    List<Long> affectedClassGroupIds = classGroupEnrollmentDAO
+                            .findClassGroupIdsByStudentCourseOccurrence(
+                                    connection,
+                                    studentUserId,
+                                    courseId,
+                                    occurrence.id()
+                            );
+                    classGroupEnrollmentDAO.deleteInCourseOccurrence(connection, studentUserId, courseId, occurrence.id());
+                    for (Long classGroupId : affectedClassGroupIds) {
+                        gradeLifecycleService.synchronizeAfterClassGroupEnrollmentChange(connection, classGroupId);
+                    }
+                    enrollmentDAO.deleteCourseEnrollment(connection, studentUserId, courseId, occurrence.id());
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();
@@ -330,6 +355,22 @@ public final class EnrollmentService {
     private Course requireCourse(Connection connection, long courseId) throws SQLException {
         return courseDAO.findById(connection, courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+    }
+
+    private void synchronizeClassGroupGradeSheets(
+            Connection connection,
+            long studentUserId,
+            long courseId,
+            long courseOccurrenceId
+    ) throws SQLException {
+        for (Long classGroupId : classGroupEnrollmentDAO.findClassGroupIdsByStudentCourseOccurrence(
+                connection,
+                studentUserId,
+                courseId,
+                courseOccurrenceId
+        )) {
+            gradeLifecycleService.synchronizeAfterClassGroupEnrollmentChange(connection, classGroupId);
+        }
     }
 
     private void validateStudent(Connection connection, long studentUserId) throws SQLException {

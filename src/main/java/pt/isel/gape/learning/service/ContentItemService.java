@@ -21,6 +21,7 @@ import pt.isel.gape.common.validation.AcademicTextValidator;
 import pt.isel.gape.common.validation.MediaPathValidator;
 import pt.isel.gape.learning.dao.ContentAssociationDAO;
 import pt.isel.gape.learning.dao.ContentItemDAO;
+import pt.isel.gape.learning.dao.PedagogicalItemIdAllocator;
 import pt.isel.gape.learning.model.ContentAssociationType;
 import pt.isel.gape.learning.model.ContentContext;
 import pt.isel.gape.learning.model.ContentDeletionResult;
@@ -46,6 +47,7 @@ public final class ContentItemService {
     private final ConnectionProvider connectionProvider;
     private final ContentItemDAO contentItemDAO;
     private final ContentAssociationDAO contentAssociationDAO;
+    private final PedagogicalItemIdAllocator pedagogicalItemIdAllocator;
     private final ContentAccessPolicy contentAccessPolicy;
     private final AuditService auditService;
     private final Clock clock;
@@ -61,6 +63,7 @@ public final class ContentItemService {
         this.connectionProvider = Objects.requireNonNull(connectionProvider, "connectionProvider is required");
         this.contentItemDAO = Objects.requireNonNull(contentItemDAO, "contentItemDAO is required");
         this.contentAssociationDAO = Objects.requireNonNull(contentAssociationDAO, "contentAssociationDAO is required");
+        this.pedagogicalItemIdAllocator = new PedagogicalItemIdAllocator();
         this.contentAccessPolicy = new ContentAccessPolicy(
                 Objects.requireNonNull(permissionChecker, "permissionChecker is required"),
                 contentAssociationDAO
@@ -92,20 +95,52 @@ public final class ContentItemService {
             ContentItemCreateCommand command,
             String sourceIp
     ) {
+        return createContentItem(actorUserId, sessionId, actorProfileType, command, sourceIp, null);
+    }
+
+    /**
+     * Creates content, optionally allocating its ID from the target content
+     * block's pedagogical-item namespace. The block lock and insert happen in
+     * one transaction; this keeps concurrent lesson, assessment and content
+     * creation deterministic even before the association request is committed.
+     */
+    public ContentItem createContentItem(
+            long actorUserId,
+            Long sessionId,
+            AccessProfileType actorProfileType,
+            ContentItemCreateCommand command,
+            String sourceIp,
+            Long targetContentBlockId
+    ) {
         try {
             validateActor(actorUserId, actorProfileType);
             validateCreateCommand(command);
+            if (targetContentBlockId != null && targetContentBlockId <= 0) {
+                throw new IllegalArgumentException("targetContentBlockId must be positive");
+            }
             try (Connection connection = connectionProvider.getConnection()) {
                 boolean originalAutoCommit = connection.getAutoCommit();
                 connection.setAutoCommit(false);
                 try {
                     contentAccessPolicy.requireActiveProfile(actorUserId, sessionId, actorProfileType, sourceIp);
-                    long contentItemId = contentItemDAO.create(
-                            connection,
-                            actorUserId,
-                            command,
-                            LocalDateTime.now(clock)
-                    );
+                    long contentItemId = targetContentBlockId == null
+                            ? contentItemDAO.create(
+                                    connection,
+                                    actorUserId,
+                                    command,
+                                    LocalDateTime.now(clock)
+                            )
+                            : contentItemDAO.create(
+                                    connection,
+                                    pedagogicalItemIdAllocator.nextId(
+                                            connection,
+                                            targetContentBlockId,
+                                            PedagogicalItemIdAllocator.ItemType.CONTENT
+                                    ),
+                                    actorUserId,
+                                    command,
+                                    LocalDateTime.now(clock)
+                            );
                     auditService.record(connection, actorUserId, sessionId, "CONTENT_ITEM_CREATE",
                             "content_item", Long.toString(contentItemId), "success", sourceIp);
                     connection.commit();
@@ -330,21 +365,22 @@ public final class ContentItemService {
                 try {
                     ContentItem contentItem = requireContentItem(connection, contentItemId);
                     requireDeletionPrivilege(connection, actorUserId, sessionId, actorProfileType, contentItem, sourceIp);
-                    ContentDeletionResult result;
-                    if (isPhysicalDeletionBlocked(connection, contentItemId)) {
+                    boolean physicalDeletion = !isPhysicalDeletionBlocked(connection, contentItemId);
+                    ContentDeletionResult result = physicalDeletion
+                            ? ContentDeletionResult.PHYSICALLY_DELETED
+                            : ContentDeletionResult.INACTIVATED;
+                    auditService.record(connection, actorUserId, sessionId, "CONTENT_ITEM_DELETE",
+                            "content_item", Long.toString(contentItemId), result.name().toLowerCase(), sourceIp);
+                    if (!physicalDeletion) {
                         contentItemDAO.updateState(
                                 connection,
                                 contentItemId,
                                 ContentItemState.INACTIVE,
                                 LocalDateTime.now(clock)
                         );
-                        result = ContentDeletionResult.INACTIVATED;
                     } else {
                         contentItemDAO.delete(connection, contentItemId);
-                        result = ContentDeletionResult.PHYSICALLY_DELETED;
                     }
-                    auditService.record(connection, actorUserId, sessionId, "CONTENT_ITEM_DELETE",
-                            "content_item", Long.toString(contentItemId), result.name().toLowerCase(), sourceIp);
                     connection.commit();
                     return result;
                 } catch (RuntimeException | SQLException exception) {
@@ -381,9 +417,9 @@ public final class ContentItemService {
                     if (!contentAssociationDAO.findContextsForContent(connection, contentItemId).isEmpty()) {
                         throw new SecurityException("Associated content cannot be discarded as pending");
                     }
-                    contentItemDAO.delete(connection, contentItemId);
                     auditService.record(connection, actorUserId, sessionId, "CONTENT_ITEM_PENDING_DISCARD",
                             "content_item", Long.toString(contentItemId), "success", sourceIp);
+                    contentItemDAO.delete(connection, contentItemId);
                     connection.commit();
                 } catch (RuntimeException | SQLException exception) {
                     connection.rollback();
@@ -453,26 +489,28 @@ public final class ContentItemService {
                             .findAssociation(connection, ContentAssociationType.CONTENT_BLOCK, contentBlockId, contentItemId)
                             .orElseThrow(() -> new IllegalArgumentException("Content association not found"));
 
-                    ContentDeletionResult result;
-                    List<String> orphanedPaths = List.of();
-                    if (isPhysicalDeletionBlocked(connection, contentItemId)) {
+                    boolean physicalDeletion = !isPhysicalDeletionBlocked(connection, contentItemId);
+                    ContentDeletionResult result = physicalDeletion
+                            ? ContentDeletionResult.PHYSICALLY_DELETED
+                            : ContentDeletionResult.INACTIVATED;
+                    List<String> orphanedPaths = physicalDeletion
+                            ? orphanedStoredPaths(connection, contentItem)
+                            : List.of();
+                    auditService.record(connection, actorUserId, sessionId, "CONTENT_ITEM_DELETE_FROM_BLOCK",
+                            "content_block", contentBlockId + ":" + contentItemId, result.name().toLowerCase(), sourceIp);
+                    if (!physicalDeletion) {
                         contentItemDAO.updateState(
                                 connection,
                                 contentItemId,
                                 ContentItemState.INACTIVE,
                                 LocalDateTime.now(clock)
                         );
-                        result = ContentDeletionResult.INACTIVATED;
                     } else {
-                        orphanedPaths = orphanedStoredPaths(connection, contentItem);
                         if (orphanedPaths.isEmpty()) {
                             preserveStoredFileMetadataForReuse(connection, contentItem);
                         }
                         contentItemDAO.delete(connection, contentItemId);
-                        result = ContentDeletionResult.PHYSICALLY_DELETED;
                     }
-                    auditService.record(connection, actorUserId, sessionId, "CONTENT_ITEM_DELETE_FROM_BLOCK",
-                            "content_block", contentBlockId + ":" + contentItemId, result.name().toLowerCase(), sourceIp);
                     connection.commit();
                     return new ContentRemovalResult(result, orphanedPaths);
                 } catch (RuntimeException | SQLException exception) {

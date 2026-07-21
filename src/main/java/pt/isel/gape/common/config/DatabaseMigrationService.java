@@ -47,6 +47,7 @@ public final class DatabaseMigrationService {
     );
 
     private static final Set<SchemaObject> REQUIRED_COLUMNS = Set.of(
+            new SchemaObject("user_account", "document_number_fingerprint"),
             new SchemaObject("course", "frequency"),
             new SchemaObject("course_occurrence", "reference_year"),
             new SchemaObject("class_group", "id_course_occurrence"),
@@ -67,7 +68,10 @@ public final class DatabaseMigrationService {
             new SchemaObject("integrate_subject", "ended_at"),
             new SchemaObject("direct_message_channel", "id_user_low"),
             new SchemaObject("direct_message_channel", "id_user_high"),
-            new SchemaObject("direct_message_channel", "id_channel")
+            new SchemaObject("direct_message_channel", "id_channel"),
+            new SchemaObject("management_view", "scope_target_type"),
+            new SchemaObject("management_view", "scope_target_id"),
+            new SchemaObject("management_view", "owner_user_id")
     );
 
     private static final Set<SchemaObject> REQUIRED_NOT_NULL_COLUMNS = Set.of(
@@ -101,6 +105,7 @@ public final class DatabaseMigrationService {
     );
 
     private static final Set<SchemaObject> REQUIRED_TARGET_UNIQUE_INDEXES = Set.of(
+            new SchemaObject("user_account", "uq_user_account_document_fingerprint"),
             new SchemaObject("certificate", "uq_certificate_occurrence_student"),
             new SchemaObject("class_group", "uq_class_group_occurrence_subject_code"),
             new SchemaObject("course_occurrence", "uq_course_occurrence_reference_year"),
@@ -196,6 +201,18 @@ public final class DatabaseMigrationService {
 
             createHistoryTable(connection);
             Map<Long, InstalledMigration> installed = loadInstalledMigrations(connection);
+
+            /*
+             * A destructive bootstrap executes schema.sql, which already represents
+             * the current schema.  Its migrations are intentionally skipped during
+             * that startup, so the next normal startup must establish the matching
+             * history instead of attempting obsolete intermediate migrations.
+             */
+            if (installed.isEmpty() && isCurrentTargetSchema(connection)) {
+                replaceMigrationHistory(connection, migrations);
+                installed = loadInstalledMigrations(connection);
+                System.out.println("[GAPE][DB] Recovered migration history for the current schema.");
+            }
             validateInstalledMigrations(installed, migrations);
 
             MigrationDefinition baseline = migrations.get(0);
@@ -335,6 +352,15 @@ public final class DatabaseMigrationService {
 
     private static void validateTargetStructure(Connection connection) throws SQLException {
         validateStructure(connection, true);
+    }
+
+    private static boolean isCurrentTargetSchema(Connection connection) {
+        try {
+            validateTargetStructure(connection);
+            return true;
+        } catch (SQLException ignored) {
+            return false;
+        }
     }
 
     private static void validateStructure(Connection connection, boolean rejectLegacyArtifacts) throws SQLException {
@@ -555,6 +581,18 @@ public final class DatabaseMigrationService {
             statement.setLong(5, executionTimeMs);
             statement.setBoolean(6, success);
             statement.executeUpdate();
+        }
+    }
+
+    private static void replaceMigrationHistory(
+            Connection connection,
+            List<MigrationDefinition> migrations
+    ) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("DELETE FROM " + HISTORY_TABLE);
+        }
+        for (MigrationDefinition migration : migrations) {
+            recordMigration(connection, migration, 0L, true);
         }
     }
 

@@ -26,7 +26,7 @@
                 </div>
             </div>
 
-            <div class="gape-structure-list-header">
+            <div class="gape-structure-list-header gape-subject-grade-sheet-list-header">
                 <span>Course Occurrence</span><span>Course</span><span>Grade Sheets</span><span>State</span><span class="text-end">Actions</span>
             </div>
 

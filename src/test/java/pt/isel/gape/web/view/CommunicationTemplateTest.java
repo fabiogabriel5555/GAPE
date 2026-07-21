@@ -29,7 +29,9 @@ class CommunicationTemplateTest {
         assertTrue(jsp.contains("New message"));
         assertTrue(jsp.contains("studentMessagesPage"));
         assertTrue(jsp.contains("messages-student-hero-band"));
-        assertTrue(jsp.contains("messages-student-hero-heading"));
+        assertTrue(jsp.contains("gape-student-page-heading"));
+        assertTrue(jsp.contains("gape-student-dashboard-layout"));
+        assertTrue(jsp.contains("student-dashboard-sidebar.jspf"));
         assertTrue(threadFragment.contains("aria-label=\"Attach files\""));
         assertFalse(jsp.contains("active chats"));
         assertTrue(messageRowsFragment.contains("message-bubble"));
@@ -104,15 +106,10 @@ class CommunicationTemplateTest {
     @Test
     void dashboardMenusUseDynamicMessagesRouteAfterTopbarRemoval() throws IOException {
         String topbar = Files.readString(WEBAPP.resolve("WEB-INF/fragments/dashboard-topbar.jspf"));
-        String dropdown = Files.readString(WEBAPP.resolve("WEB-INF/fragments/dashboard-notification-dropdown.jspf"));
         String sidebar = Files.readString(WEBAPP.resolve("WEB-INF/fragments/dashboard-sidebar.jspf"));
         String studentSidebar = Files.readString(WEBAPP.resolve("WEB-INF/fragments/student-dashboard-sidebar.jspf"));
 
         assertTrue(topbar.contains("gape-dashboard-mobile-menu-toggle"));
-        assertTrue(!topbar.contains("dashboard-notification-dropdown.jspf"));
-        assertTrue(dropdown.contains("notificationUnreadCount"));
-        assertTrue(dropdown.contains("/messages?messageId="));
-        assertFalse(dropdown.contains("channelId="));
         assertTrue(sidebar.contains("value=\"/messages\""));
         assertTrue(sidebar.contains("data-sidebar-message-badge"));
         assertTrue(sidebar.contains("data-sidebar-event-badge"));
@@ -134,13 +131,13 @@ class CommunicationTemplateTest {
     }
 
     @Test
-    void legacyMessagePagesForwardToServlet() throws IOException {
-        assertForward("admin/admin-message.jsp");
-        assertForward("messages.jsp");
-        assertForward("student/student-message.jsp");
-        assertForward("student/student/message/student-message.jsp");
-        assertForward("instructor/instructor-message.jsp");
-        assertForward("coordinator/coordinator-message.jsp");
+    void rootMessageAliasIsRemovedAndLegacyRouteKeepsCompatibility() throws IOException {
+        assertFalse(Files.exists(WEBAPP.resolve("messages.jsp")));
+        String legacyRedirect = Files.readString(JAVA.resolve(
+                "pt/isel/gape/web/controller/LegacyPageRedirectServlet.java"
+        ));
+        assertTrue(legacyRedirect.contains("\"/messages.jsp\""));
+        assertTrue(legacyRedirect.contains("case \"/messages.jsp\" -> \"/messages\""));
     }
 
     @Test
@@ -171,8 +168,4 @@ class CommunicationTemplateTest {
                 && csrfFilter.contains("sessionManager.isValidCsrfToken"));
     }
 
-    private static void assertForward(String relativePath) throws IOException {
-        String jsp = Files.readString(WEBAPP.resolve(relativePath));
-        assertTrue(jsp.contains("<jsp:forward page=\"/messages\" />"), relativePath);
-    }
 }
