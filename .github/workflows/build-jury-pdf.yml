@@ -1,0 +1,35 @@
+name: Build jury PDF
+
+on:
+  push:
+    branches:
+      - documentacao-juri
+    paths:
+      - documentacao-juri/.build-pdf-trigger
+
+permissions:
+  contents: write
+
+jobs:
+  build-pdf:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: documentacao-juri
+
+      - name: Reconstruct PDF
+        shell: bash
+        run: |
+          cat documentacao-juri/upload-parts/part-*.b64 | tr -d '\r\n' | base64 --decode > documentacao-juri/modelo-entidade-associacao-detalhado.pdf
+          echo "14f7d8f2e6a4fbe6038603bbb50a089c5f376281ff85a191831e287463338af0  documentacao-juri/modelo-entidade-associacao-detalhado.pdf" | sha256sum --check --strict
+
+      - name: Commit reconstructed PDF
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add documentacao-juri/modelo-entidade-associacao-detalhado.pdf
+          git commit -m "docs: publicar modelo entidade-associação detalhado" || exit 0
+          git push origin HEAD:documentacao-juri
