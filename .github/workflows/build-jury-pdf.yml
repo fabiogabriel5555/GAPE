@@ -19,10 +19,12 @@ jobs:
         with:
           ref: documentacao-juri
 
-      - name: Reconstruct PDF
+      - name: Reconstruct and verify PDF
         shell: bash
         run: |
-          cat documentacao-juri/upload-parts/part-*.b64 | tr -d '\r\n' | base64 --decode > documentacao-juri/modelo-entidade-associacao-detalhado.pdf
+          cat documentacao-juri/upload-parts/part-*.b64 | tr -d '\r\n' | base64 --decode > /tmp/modelo-entidade-associacao-detalhado.pdf.xz
+          echo "824010e8006a01d7ce97d07feded96a22acba9db39aaa22b325c9c15a59aacf4  /tmp/modelo-entidade-associacao-detalhado.pdf.xz" | sha256sum --check --strict
+          xz --decompress --stdout /tmp/modelo-entidade-associacao-detalhado.pdf.xz > documentacao-juri/modelo-entidade-associacao-detalhado.pdf
           echo "14f7d8f2e6a4fbe6038603bbb50a089c5f376281ff85a191831e287463338af0  documentacao-juri/modelo-entidade-associacao-detalhado.pdf" | sha256sum --check --strict
 
       - name: Commit reconstructed PDF
